@@ -1,0 +1,87 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_01_far_west"
+display_name = "Dust Creek"
+biome = &"far_west"
+palette = {
+"adobe": Color(0.78, 0.52, 0.36, 1),
+"extraction": Color(0.3, 0.85, 0.45, 0.45),
+"floor": Color(0.55, 0.38, 0.24, 1),
+"mine_floor": Color(0.36, 0.28, 0.22, 1),
+"mine_wall": Color(0.24, 0.18, 0.15, 1),
+"roof": Color(0.46, 0.22, 0.16, 1),
+"sand": Color(0.86, 0.68, 0.44, 1),
+"shadow": Color(0.12, 0.15, 0.28, 1),
+"sky_bottom": Color(0.98, 0.58, 0.32, 1),
+"sky_mid": Color(0.93, 0.45, 0.52, 1),
+"sky_top": Color(0.42, 0.26, 0.5, 1),
+"stairs": Color(0.72, 0.55, 0.36, 1),
+"street": Color(0.8, 0.62, 0.4, 1),
+"void": Color(0.07, 0.1, 0.18, 1),
+"wall": Color(0.38, 0.25, 0.19, 1),
+"wood": Color(0.6, 0.47, 0.34, 1),
+"wood_weathered": Color(0.68, 0.6, 0.5, 1)
+}
+enemy_roster = {
+&"boss": {
+&"gunslinger": 1.0,
+&"outlaw_knife": 1.0,
+&"sandstone_colossus": 2.0,
+&"shotgun_brute": 1.0
+},
+&"combat": {
+&"gunslinger": 3.0,
+&"outlaw_knife": 5.0,
+&"shotgun_brute": 1.5
+},
+&"corridor": {
+&"gunslinger": 2.0,
+&"outlaw_knife": 4.0,
+&"shotgun_brute": 1.0
+},
+&"extraction": {
+&"gunslinger": 2.0,
+&"outlaw_knife": 3.0,
+&"shotgun_brute": 1.0
+},
+&"loot": {
+&"gunslinger": 2.0,
+&"outlaw_knife": 3.0
+},
+&"rest": {
+&"outlaw_knife": 1.0
+},
+&"spawn": {
+&"outlaw_knife": 1.0
+},
+&"super_loot": {
+&"gunslinger": 1.0,
+&"sandstone_colossus": 2.0,
+&"shotgun_brute": 3.0
+},
+&"trap": {
+&"gunslinger": 1.0,
+&"outlaw_knife": 3.0,
+&"shotgun_brute": 1.0
+}
+}
+building_archetypes = Array[StringName]([&"saloon", &"bank", &"sheriff", &"store", &"hotel", &"stable", &"church", &"mine"])
+building_names = {
+&"bank": PackedStringArray("Banque de Dust Creek", "Banque des Pionniers", "Comptoir de l'Or Rouge"),
+&"church": PackedStringArray("Église Saint-Judas", "Chapelle du Désert", "Mission des Masques"),
+&"hotel": PackedStringArray("Grand Hôtel", "Hôtel de la Diligence", "Pension Ma Baker"),
+&"mine": PackedStringArray("Mine du Crâne d'Argent", "Puits de la Veuve", "Mine du Coyote"),
+&"saloon": PackedStringArray("Saloon du Masque Rouge", "Saloon du Dernier Verre", "Le Serpent à Sonnette"),
+&"sheriff": PackedStringArray("Bureau du shérif", "Prison du comté", "Poste du marshal"),
+&"stable": PackedStringArray("Écurie du maréchal-ferrant", "Relais de poste", "Écurie Carson"),
+&"store": PackedStringArray("Magasin général", "Bazar Hoggins", "Comptoir des chercheurs d'or")
+}
+container_kinds = Array[StringName]([&"crate", &"barrel", &"chest", &"cupboard", &"wardrobe", &"wagon", &"stagecoach", &"corpse"])
+prop_kinds = Array[StringName]([&"cactus", &"hitching_post", &"water_trough", &"wagon_wheel", &"saloon_bar", &"piano", &"poker_table", &"bed", &"desk", &"jail_bars", &"rail_track", &"mine_cart", &"lantern", &"wanted_poster", &"bench", &"altar", &"hay_bale", &"safe", &"shelf", &"counter", &"tumbleweed", &"water_tower", &"pew", &"ore_pile", &"support_beam"])
+floors_min = -1
+floors_max = 1
+boss_kind = &"sandstone_colossus"
