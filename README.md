@@ -25,9 +25,8 @@ Ce que vous trouvez ne vous appartient qu'après l'**extraction**. Il faut rejoi
 ## Installation
 
 1. Installez [Godot 4.4.1](https://godotengine.org/download/archive/4.4.1-stable/) (version standard, pas .NET).
-2. Clonez le dépôt (avec Git LFS, voir plus bas) :
+2. Clonez le dépôt :
    ```bash
-   git lfs install
    git clone <url-du-depot> royaumes-des-masques
    ```
 3. Dans le gestionnaire de projets de Godot, cliquez sur **Importer** et sélectionnez `project.godot`.
@@ -54,7 +53,7 @@ Une CI GitHub Actions (`.github/workflows/tests.yml`) exécute les tests à chaq
 
 ```
 addons/gut/      Framework de tests GUT
-assets/          Sprites, sons, musiques, shaders (binaires via Git LFS)
+assets/          Sprites, sons, musiques, shaders (binaires stockés directement dans git)
 data/            Données de jeu : armes, ennemis, tables de loot, masques… + balance.cfg
 docs/            Conventions techniques (contrat entre modules)
 scenes/          Scènes : player, enemies, rooms, ui, hub, combat
@@ -77,21 +76,16 @@ Pour l'Android, si les secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_ALIA
 
 ## Relier à GitHub
 
-Le dépôt est local au départ. Pour le publier :
+Le dépôt est publié sur GitHub : https://github.com/MrCranito/maskit
 
-1. Créez un dépôt **vide** sur GitHub, sans README ni licence.
-2. Activez Git LFS (une fois par machine), puis reliez et poussez :
-   ```bash
-   git lfs install
-   git remote add origin git@github.com:<utilisateur>/royaumes-des-masques.git
-   # ou : git remote add origin https://github.com/<utilisateur>/royaumes-des-masques.git
-   git branch develop          # si la branche develop n'existe pas encore
-   git push -u origin main develop
-   ```
-3. Sur GitHub, définissez `develop` comme branche par défaut et protégez `main` (pas de push direct, PR obligatoire et tests verts).
-4. Pour une nouvelle fonctionnalité : `git switch -c feature/<phase> develop`, puis une PR vers `develop`.
+```bash
+git clone https://github.com/MrCranito/maskit
+```
 
-Les binaires (png, ogg, wav, ttf, glb…) passent par Git LFS selon les règles de `.gitattributes`. Vérifiez qu'ils sont bien suivis avec `git lfs ls-files`.
+- Le travail est poussé directement sur `main` ; les pull requests ne sont utilisées que sur demande.
+- Les tests GUT tournent automatiquement à chaque push (`.github/workflows/tests.yml`).
+- Pour produire les exports Windows, Linux, Web et Android, créez un tag : `git tag v0.1.0 && git push origin v0.1.0`.
+- Les binaires (png, ogg, wav, ttf…) sont stockés directement dans git (Git LFS n'est pas utilisé).
 
 ## Licence
 

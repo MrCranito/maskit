@@ -90,7 +90,7 @@ Armes de boss avec effets uniques. Objectif : au moins 30 armes au départ, ajou
 - Mobile : pooling projectiles/effets, cible 60 fps.
 
 ## GitHub
-- .gitignore Godot, .gitattributes avec Git LFS pour les binaires, README, LICENSE, ROADMAP.md.
+- .gitignore Godot, .gitattributes (fins de ligne LF, binaires directement dans git, pas de LFS), README, LICENSE, ROADMAP.md.
 - GitHub Actions : export Windows, Linux, Web, Android à chaque tag `v*` (image godot-ci), + job qui lance les tests GUT sur chaque PR.
 
 ## ROADMAP
