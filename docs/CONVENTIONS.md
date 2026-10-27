@@ -102,3 +102,37 @@ Lire d'abord CLAUDE.md, sections « Mondes et biomes » et « Structure des cart
 
 ### Couches de rendu (z_index)
 Sol 0 · décors au sol 1 · personnages/ennemis/murs triés en Y (y_sort) 10 · toits 50 · brouillard 80 · UI dans CanvasLayer.
+
+## Refonte « retour de test » (après la phase 3)
+### Règles de performance (OBLIGATOIRES pour tout le monde — l'iPhone chauffait)
+- Pas de `queue_redraw()` à chaque frame : seulement quand l'état visuel change. Les dessins statiques sont faits une fois (ou mis en cache dans une texture).
+- Pas d'allocation par frame (tableaux, dictionnaires, `PackedVector2Array` recréés) dans `_process`/`_physics_process` ; réutiliser des buffers.
+- Raycasts et requêtes physiques espacées (timers 0,1 s), jamais N×M par frame.
+- `set_process(false)` / `set_physics_process(false)` pour ce qui est hors écran ou inactif (ennemis loin du joueur, décors).
+- Aucun shader plein écran coûteux : une seule passe pour le brouillard, pas de boucles lourdes dans les fragment shaders.
+- Cible : 60 fps stables, CPU faible. Le projet limite à 60 fps et active l'interpolation physique.
+
+### Orientation et contrôles
+- Jeu **uniquement en paysage** : viewport 1280×720, `window/handheld/orientation` = paysage (capteur).
+- **Deux joysticks** (mobile) : gauche = déplacement, droit = viser et tirer (tir continu tant que le stick droit est poussé au-delà de la zone morte). PC : ZQSD/WASD + souris (viser), clic gauche (tirer). Plus de tir automatique.
+- Les joysticks sont deux instances de `TouchJoystick` avec `side` = `&"left"` / `&"right"`, groupes `joystick_move` / `joystick_aim`.
+
+### Joueur (API ajoutée)
+- `aim_direction: Vector2` (normalisé), `is_moving() -> bool`, `is_hidden() -> bool`, `set_hidden(on: bool, spot: Node = null)`.
+- `get_noise_level() -> float` (0..1) : 0 immobile, ~0,35 en marche, 1 juste après un tir (décroît en ~0,6 s). Signal `fired(direction: Vector2)`. Caché = bruit 0 et invisible pour les ennemis.
+- Sprite du héros : `res://assets/sprites/hero3d/hero_frames.tres` (SpriteFrames) avec animations `idle_<dir>` et `run_<dir>`, `<dir>` ∈ `e, se, s, sw, w, nw, n, ne` ; métadonnées `res://assets/sprites/hero3d/hero_meta.json` (`frame_size`, `feet_offset` [x,y] en px depuis le coin haut-gauche du cadre, `display_height` en unités monde, `fps`). Repli : anciens SVG.
+- Arme tenue : `res://assets/sprites/weapons/<id>.png` (pointe vers la droite) + `res://assets/sprites/weapons/<id>.json` (`grip` [x,y] en px = point de rotation dans la main, `muzzle` [x,y] = bout du canon, `scale`). Première arme : `revolver`. Le joueur la fait tourner vers `aim_direction` (flip vertical quand on vise à gauche).
+- Portraits de masques pour les menus : `res://assets/ui/masks/<mask_id>.png` (`colosse`, `spectre`, `alchimiste`, `marionnettiste`, `kitsune`).
+
+### Masques (choix au menu)
+- `res://scripts/core/mask_data.gd` (`MaskData`, Resource) + `data/masks/<id>.tres` : id, display_name, description, aura_color, stats (max_hp_mult, speed_mult, damage_mult, fire_rate_mult). `GameState.selected_mask_id` (défaut `&"kitsune"`).
+
+### Discrétion (ennemis)
+- Chaque ennemi a une **jauge de reconnaissance** 0..1 affichée au-dessus de la tête quand > 0 : monte avec la vue (joueur dans le champ de vision, ligne de vue, plus vite de près) et le bruit (`get_noise_level()` × proximité), redescend lentement sinon. Pleine → attaque (état Alert puis Chase). Joueur caché → la jauge ne monte pas (sauf si l'ennemi l'a vu se cacher de très près).
+
+### Butin, inventaire, cachettes
+- `scripts/loot/item_data.gd` (`ItemData`), `data/items/*.tres`, tables `data/loot_tables/*.tres`, raretés 0..4 (Commun→Légendaire, couleurs de CLAUDE.md).
+- Conteneurs (`scripts/loot/loot_container.gd`, groupe `containers`, `fog_hideable`) placés depuis `layout.container_spawns` ; fouille = maintenir l'interaction ~1,2 s (interrompue si on bouge ou si on est touché).
+- Cachettes (`scripts/loot/hiding_spot.gd`, groupe `hiding_spots`) : tonneau, armoire, botte de foin… ; entrer/sortir par l'interaction.
+- Interaction : bouton tactile « action » (à droite, au-dessus du stick de visée) + touche E. Signal `EventBus.interact_target_changed(target: Node)` ; les cibles ont `get_interact_label() -> String` et `interact(player)`.
+- Inventaire de raid : `GameState.raid_inventory` (`Inventory`, RefCounted) ; écran d'inventaire (bouton sac en haut à droite / touche I / Tab).
