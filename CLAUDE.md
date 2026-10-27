@@ -17,7 +17,7 @@ Ce fichier est la référence du projet : relis-le avant chaque phase.
 - Git : commits courts et explicites, push directement sur `main`. Pas de branche ni de pull request, sauf si l'utilisateur en demande une explicitement.
 
 ## Direction artistique (référence unique : la planche « Les royaumes des masques »)
-Seule la partie « Les royaumes des masques » de l'image de référence fait foi. La partie « Les royaumes assemblés » (matériaux, royaumes de bois/métal, etc.) n'est PAS utilisée.
+Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaumes des masques » de l'image de référence fait foi. La partie « Les royaumes assemblés » (matériaux, royaumes de bois/métal, etc.) n'est PAS utilisée.
 - Style : fantasy stylisée, rendu peint semi-réaliste, personnages aux proportions héroïques légèrement exagérées, contours nets, très lisible sur mobile.
 - Décor : cours et remparts de château en pierre ocre, tours, grandes bannières rouges à emblème blanc, ciel de coucher de soleil (orange, rose, violet), lumière chaude rasante, ombres bleu nuit.
 - Héros de référence : masque blanc type kitsune avec marques rouges et yeux rouges lumineux, cornes/plumes rouges, écharpe rouge, armure sombre aux liserés rouges et cuir, lame courbe.
