@@ -90,3 +90,14 @@ git clone https://github.com/MrCranito/maskit
 ## Licence
 
 [MIT](LICENSE) © 2026 Victor Moreau
+
+## Export iOS (Xcode)
+
+Godot exporte un projet Xcode (preset « iOS »), à compiler sur un Mac :
+
+```bash
+godot --headless --path . --export-debug "iOS" build/ios/Maskit.xcodeproj
+python3 tools/ios_fix_metalfx.py build/ios/Maskit.xcodeproj
+```
+
+Le script corrige l'erreur « Framework 'MetalFX' not found » sur le simulateur iOS : MetalFX n'est lié que pour les vrais iPhone.
