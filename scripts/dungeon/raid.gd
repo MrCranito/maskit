@@ -449,6 +449,8 @@ func go_to_floor(index: int, arrival_cell: Vector2i) -> bool:
 	_build_floor(index)
 	place_player(_arrival_offset(arrival_cell))
 	_stairs_cooldown = Balance.get_float("raid", "stairs_cooldown", 0.8)
+	if world_root != null and world_root.has_method("set_stairs_cooldown"):
+		world_root.call("set_stairs_cooldown", _stairs_cooldown)
 	_update_banner(true)
 	EventBus.floor_changed.emit(current_floor)
 	return true
