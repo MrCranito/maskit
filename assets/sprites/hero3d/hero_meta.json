@@ -1,0 +1,35 @@
+{
+  "frame_size": [
+    160,
+    160
+  ],
+  "feet_offset": [
+    80,
+    131
+  ],
+  "display_height": 82.6,
+  "fps": {
+    "idle": 8,
+    "run": 12
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "frames": {
+    "idle": 6,
+    "run": 8
+  },
+  "hero_height_px": 124,
+  "sheets": {
+    "idle": "res://assets/sprites/hero3d/hero_idle.png",
+    "run": "res://assets/sprites/hero3d/hero_run.png"
+  },
+  "notes": "display_height = hauteur du cadre entier (frame_size.y px) en unités monde : scale = display_height / frame_size.y. feet_offset = point des pieds (px depuis le coin haut-gauche du cadre) -> offset = -(feet_offset - frame_size/2) si centered."
+}
