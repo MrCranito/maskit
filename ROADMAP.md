@@ -11,15 +11,15 @@ Les phases se font une par une. Chacune se termine par un résumé, des tests et
 - [x] Caméra qui suit le joueur, salle de test avec cible d'entraînement
 - [x] Overlay de debug F3 : FPS, seed, zones de portée
 
-## Phase 2 — Ennemis *(prochaine)*
-- [ ] StateMachine générique réutilisable (Idle/Patrouille → Alerte → Poursuite → Attaque → Retour)
-- [ ] Zone de détection (cercle ou cône) et raycast de ligne de vue bloqué par les murs
-- [ ] Indicateur « ! » à l'alerte et propagation de l'alerte aux voisins proches
-- [ ] Navigation avec NavigationAgent2D
-- [ ] Premiers archétypes : mêlée, distance, kamikaze
-- [ ] Debug F3 : cônes de détection, état courant de chaque ennemi
+## Phase 2 — Ennemis *(terminée)*
+- [x] StateMachine générique réutilisable (Idle/Patrouille → Alerte → Poursuite → Attaque → Retour)
+- [x] Zone de détection (cercle ou cône) et raycast de ligne de vue bloqué par les murs
+- [x] Indicateur « ! » à l'alerte et propagation de l'alerte aux voisins proches
+- [x] Navigation avec NavigationAgent2D
+- [x] Premiers archétypes : mêlée, distance, kamikaze
+- [x] Debug F3 : cônes de détection, état courant de chaque ennemi
 
-## Phase 3 — Donjon
+## Phase 3 — Donjon *(prochaine)*
 - [ ] Générateur de graphe de salles à partir d'une seed rejouable
 - [ ] Types de salles : combat, fouille, piège, repos, super-loot, boss, extraction
 - [ ] Couloirs entre les salles, collisions et navigation

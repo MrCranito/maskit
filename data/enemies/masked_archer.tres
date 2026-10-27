@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"masked_archer"
+display_name = "Archer masqué"
+max_hp = 30.0
+move_speed = 120.0
+body_radius = 18.0
+detection_radius = 460.0
+detection_angle_deg = 160.0
+lose_sight_time = 3.0
+alert_duration = 0.45
+alert_neighbors_radius = 300.0
+patrol_radius = 100.0
+attack_type = 1
+attack_range = 380.0
+attack_damage = 7.0
+attack_cooldown = 1.6
+attack_windup = 0.55
+projectile_speed = 360.0
+retreat_distance = 200.0
+aura_color = Color(1, 1, 1, 0)

@@ -1,13 +1,15 @@
 class_name TestRoom
 extends Node2D
-## Salle de test jouable (scène principale de la phase 1).
-## Tout est construit en code : sol, murs, piliers, joueur, cibles, UI, debug.
+## Salle de test jouable (scène principale, phases 1-2).
+## Tout est construit en code : sol, murs, piliers, navigation, joueur, cible, ennemis, UI, debug.
+## À la mort du joueur, la salle est rechargée après [test_room] reload_delay secondes.
 ## Les scènes du joueur et du joystick sont chargées de façon tolérante :
 ## si elles n'existent pas encore, on avertit et la salle tourne quand même.
 
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const JOYSTICK_SCENE_PATH := "res://scenes/ui/virtual_joystick.tscn"
 const DUMMY_SCENE_PATH := "res://scenes/enemies/target_dummy.tscn"
+const ENEMY_SCENE_PATH := "res://scenes/enemies/enemy.tscn"
 const DEBUG_OVERLAY_SCENE_PATH := "res://scenes/ui/debug_overlay.tscn"
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const DEBUG_WORLD_DRAW_SCRIPT := preload("res://scripts/debug/debug_world_draw.gd")
@@ -22,13 +24,21 @@ const PILLARS: Array[Dictionary] = [
 	{"at": Vector2(0.24, 0.70), "size": Vector2(130, 130)},
 	{"at": Vector2(0.76, 0.30), "size": Vector2(130, 130)},
 ]
-## Cibles : position (fraction) et apparence (0 = mannequin de pierre, 1 = golem).
-## La première est cachée derrière le pilier central vu depuis le point d'apparition.
+## Cible d'entraînement : position (fraction) et apparence (0 = mannequin de pierre, 1 = golem).
+## Visible et à portée dès l'apparition : valide le tir auto sans bouger.
 const DUMMIES: Array[Dictionary] = [
-	{"at": Vector2(0.5, 0.40), "variant": 1},
-	{"at": Vector2(0.25, 0.42), "variant": 0},
-	# Visible et à portée dès l'apparition : valide le tir auto sans bouger.
 	{"at": Vector2(0.70, 0.68), "variant": 0},
+]
+## Ennemis : position (fraction) et données (data/enemies/*.tres).
+const ENEMIES: Array[Dictionary] = [
+	# Deux fantassins proches l'un de l'autre : teste l'alerte des voisins.
+	{"at": Vector2(0.24, 0.50), "data": "res://data/enemies/masked_grunt.tres"},
+	{"at": Vector2(0.33, 0.47), "data": "res://data/enemies/masked_grunt.tres"},
+	# Archer caché derrière le pilier central (vu depuis le point d'apparition).
+	{"at": Vector2(0.5, 0.40), "data": "res://data/enemies/masked_archer.tres"},
+	# Plus loin, au fond de la cour.
+	{"at": Vector2(0.76, 0.17), "data": "res://data/enemies/golem.tres"},
+	{"at": Vector2(0.25, 0.15), "data": "res://data/enemies/masked_brute.tres"},
 ]
 const PLAYER_SPAWN := Vector2(0.5, 0.85)
 
@@ -38,6 +48,9 @@ var tile_size: float = 80.0
 
 var player: Node2D = null
 var dummies: Array[Node2D] = []
+var enemies: Array[Node2D] = []
+var nav_region: NavigationRegion2D = null
+var enemies_container: Node2D = null
 var ui_layer: CanvasLayer = null
 var debug_world_draw: Node2D = null
 var hud: Control = null
@@ -55,10 +68,23 @@ func _ready() -> void:
 	_build_floor()
 	_build_walls()
 	_build_pillars()
+	_build_navigation()
 	_spawn_dummies()
+	_spawn_enemies()
 	_spawn_player()
 	_build_debug_world_draw()
 	_build_ui()
+	EventBus.player_died.connect(_on_player_died)
+
+
+func _on_player_died() -> void:
+	var delay := Balance.get_float("test_room", "reload_delay", 2.0)
+	get_tree().create_timer(delay).timeout.connect(_reload_room)
+
+
+func _reload_room() -> void:
+	if is_inside_tree() and get_tree().current_scene == self:
+		get_tree().reload_current_scene()
 
 
 # --- Construction du monde ---------------------------------------------------
@@ -120,15 +146,59 @@ func _make_wall_body(r: Rect2, is_pillar: bool) -> StaticBody2D:
 	return body
 
 
+## Navigation : région couvrant le sol, piliers creusés (marge = rayon d'agent).
+## Cuite de façon synchrone à partir des rectangles connus (fiable en headless).
+func _build_navigation() -> void:
+	var poly := NavigationPolygon.new()
+	poly.agent_radius = Balance.get_float("test_room", "nav_agent_radius", 30.0)
+	var source := NavigationMeshSourceGeometryData2D.new()
+	var floor_rect := Rect2(Vector2.ZERO, room_size)
+	source.add_traversable_outline(_rect_outline(floor_rect))
+	for r: Rect2 in _pillar_rects:
+		source.add_obstruction_outline(_rect_outline(r))
+	NavigationServer2D.bake_from_source_geometry_data(poly, source)
+	nav_region = NavigationRegion2D.new()
+	nav_region.name = "NavigationRegion2D"
+	nav_region.navigation_polygon = poly
+	add_child(nav_region)
+
+
+static func _rect_outline(r: Rect2) -> PackedVector2Array:
+	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
+
+
+func _get_enemies_container() -> Node2D:
+	if enemies_container == null:
+		enemies_container = Node2D.new()
+		enemies_container.name = "Enemies"
+		enemies_container.y_sort_enabled = true
+		add_child(enemies_container)
+	return enemies_container
+
+
+func _spawn_enemies() -> void:
+	if not ResourceLoader.exists(ENEMY_SCENE_PATH):
+		push_warning("TestRoom: %s introuvable, pas d'ennemis." % ENEMY_SCENE_PATH)
+		return
+	var scene := load(ENEMY_SCENE_PATH) as PackedScene
+	var container := _get_enemies_container()
+	for i: int in ENEMIES.size():
+		var entry: Dictionary = ENEMIES[i]
+		var data := load(String(entry["data"])) as Resource
+		var enemy := scene.instantiate() as Node2D
+		enemy.set("data", data)
+		enemy.name = "%s%d" % [str(data.get("kind")).to_pascal_case(), i + 1]
+		enemy.position = (entry["at"] as Vector2) * room_size
+		container.add_child(enemy)
+		enemies.append(enemy)
+
+
 func _spawn_dummies() -> void:
 	if not ResourceLoader.exists(DUMMY_SCENE_PATH):
 		push_warning("TestRoom: %s introuvable, pas de cibles." % DUMMY_SCENE_PATH)
 		return
 	var scene := load(DUMMY_SCENE_PATH) as PackedScene
-	var container := Node2D.new()
-	container.name = "Enemies"
-	container.y_sort_enabled = true
-	add_child(container)
+	var container := _get_enemies_container()
 	for i: int in DUMMIES.size():
 		var data: Dictionary = DUMMIES[i]
 		var dummy := scene.instantiate() as Node2D
@@ -165,11 +235,40 @@ func _build_debug_world_draw() -> void:
 	add_child(debug_world_draw)
 	# Exemple d'extension : contour des obstacles bloquant la ligne de vue.
 	debug_world_draw.call("register_drawer", _draw_debug_obstacles)
+	debug_world_draw.call("register_drawer", _draw_debug_nearest_enemy)
 
 
 func _draw_debug_obstacles(canvas: Node2D) -> void:
 	for r: Rect2 in _pillar_rects:
 		canvas.draw_rect(r, Color(0.4, 0.7, 1.0, 0.9), false, 2.0)
+
+
+## Encart sous le joueur : get_debug_info() de l'ennemi vivant le plus proche.
+func _draw_debug_nearest_enemy(canvas: Node2D) -> void:
+	if not is_instance_valid(player):
+		return
+	var best: Node2D = null
+	var best_d := INF
+	for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+		if e is Node2D and e.has_method("get_debug_info"):
+			var d := player.global_position.distance_to((e as Node2D).global_position)
+			if d < best_d:
+				best_d = d
+				best = e
+	if best == null:
+		return
+	var info: Dictionary = best.call("get_debug_info")
+	var lines: PackedStringArray = ["Proche : %s (%.0f px)" % [best.name, best_d]]
+	for k: Variant in info:
+		var v: Variant = info[k]
+		lines.append("  %s : %s" % [str(k), ("%.1f" % v) if v is float else str(v)])
+	var font := ThemeDB.fallback_font
+	var origin := player.global_position + Vector2(-90, 60)
+	var box := Rect2(origin - Vector2(8, 18), Vector2(230, 20.0 * lines.size() + 10))
+	canvas.draw_rect(box, Color(0.071, 0.102, 0.18, 0.85))
+	canvas.draw_rect(box, Color(0.85, 0.88, 0.95, 0.7), false, 1.0)
+	for i: int in lines.size():
+		canvas.draw_string(font, origin + Vector2(0, 20.0 * i), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
 
 
 func _build_ui() -> void:
