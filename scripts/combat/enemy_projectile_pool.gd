@@ -40,11 +40,14 @@ func _create_one() -> EnemyProjectile:
 	return p
 
 
-func spawn(pos: Vector2, dir: Vector2, speed: float, damage: float, source: Node) -> EnemyProjectile:
+## lifetime ≤ 0 : durée de balance.cfg. style : voir EnemyProjectile (&"" = orbe, &"bullet" = balle).
+func spawn(pos: Vector2, dir: Vector2, speed: float, damage: float, source: Node,
+		lifetime: float = -1.0, style: StringName = &"") -> EnemyProjectile:
 	if _free.is_empty():
 		_create_one()
 	var p: EnemyProjectile = _free.pop_back()
-	p.launch(pos, dir, speed, damage, source, Balance.get_float("enemy_ai", "projectile_lifetime", 2.5))
+	var life := lifetime if lifetime > 0.0 else Balance.get_float("enemy_ai", "projectile_lifetime", 2.5)
+	p.launch(pos, dir, speed, damage, source, life, style)
 	EventBus.projectile_fired.emit(p)
 	return p
 

@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="110" height="130" viewBox="0 0 110 130">
+  <!-- Pistolero masque : long cache-poussiere, chapeau a large bord, deux revolvers, masque de theatre aux yeux lumineux. -->
+  <defs>
+    <linearGradient id="hat" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#4a4660"/>
+      <stop offset="0.5" stop-color="#2a2638"/>
+      <stop offset="1" stop-color="#14121e"/>
+    </linearGradient>
+    <linearGradient id="brim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a5470"/>
+      <stop offset="1" stop-color="#1c1a28"/>
+    </linearGradient>
+    <linearGradient id="coat" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#7a7088"/>
+      <stop offset="0.45" stop-color="#463e58"/>
+      <stop offset="1" stop-color="#1a1626"/>
+    </linearGradient>
+    <linearGradient id="coatDark" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#564c66"/>
+      <stop offset="0.5" stop-color="#302a40"/>
+      <stop offset="1" stop-color="#14121e"/>
+    </linearGradient>
+    <linearGradient id="bone" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="0.6" stop-color="#e2d8c8"/>
+      <stop offset="1" stop-color="#a399a6"/>
+    </linearGradient>
+    <linearGradient id="vest" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a1c26"/>
+      <stop offset="1" stop-color="#34101c"/>
+    </linearGradient>
+    <linearGradient id="gun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8eaf0"/>
+      <stop offset="1" stop-color="#5a5e74"/>
+    </linearGradient>
+    <linearGradient id="pants" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3e3e56"/>
+      <stop offset="1" stop-color="#181826"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#14111b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Pans arriere du manteau, evases -->
+    <path d="M30,62 L16,118 Q30,124 40,118 L44,80 Z" fill="url(#coatDark)"/>
+    <path d="M80,62 L94,118 Q80,124 70,118 L66,80 Z" fill="#221e2e"/>
+    <!-- Jambes -->
+    <path d="M42,92 L54,92 L53,116 L41,116 Z" fill="url(#pants)"/>
+    <path d="M56,92 L68,92 L70,116 L57,116 Z" fill="url(#pants)"/>
+    <!-- Bottes + eperons -->
+    <path d="M37,126 L39,112 L54,112 L54,126 Z" fill="#4a2c1e"/>
+    <path d="M56,126 L56,112 L71,112 L74,126 Z" fill="#3a2218"/>
+    <path d="M38,122 L32,122 M72,122 L78,122" fill="none" stroke-width="1.6"/>
+    <circle cx="30" cy="122" r="3" fill="#d8c08a" stroke-width="1.3"/>
+    <circle cx="80" cy="122" r="3" fill="#b89a64" stroke-width="1.3"/>
+    <!-- Torse : gilet rouge sombre -->
+    <path d="M38,56 Q55,50 72,56 L70,96 L40,96 Z" fill="url(#vest)"/>
+    <path d="M55,58 L55,94" fill="none" stroke-width="1.3"/>
+    <circle cx="52" cy="66" r="1.2" fill="#d8b866" stroke-width="0.8"/>
+    <circle cx="52" cy="76" r="1.2" fill="#d8b866" stroke-width="0.8"/>
+    <!-- Ceinturon a cartouches + etuis -->
+    <path d="M36,88 L74,88 L74,96 L36,96 Z" fill="#4a3020" stroke-width="1.6"/>
+    <g fill="#e2b25a" stroke-width="0.9">
+      <rect x="40" y="89.5" width="2.6" height="5"/>
+      <rect x="45" y="89.5" width="2.6" height="5"/>
+      <rect x="62" y="89.5" width="2.6" height="5"/>
+      <rect x="67" y="89.5" width="2.6" height="5"/>
+    </g>
+    <path d="M51,87 L59,87 L59,97 L51,97 Z" fill="#d8b866" stroke-width="1.4"/>
+    <!-- Revers du manteau (devant) -->
+    <path d="M38,56 L48,56 L44,96 L40,122 Q32,124 26,120 L34,76 Z" fill="url(#coat)"/>
+    <path d="M72,56 L62,56 L66,96 L70,122 Q78,124 84,120 L76,76 Z" fill="url(#coatDark)"/>
+    <!-- Bras gauche : revolver pointe vers le bas, en avant -->
+    <path d="M24,58 L36,58 L34,82 L22,82 Z" fill="url(#coat)"/>
+    <path d="M16,86 L24,80 L28,84 L22,92 Z" fill="#2a2030" stroke-width="1.6"/>
+    <path d="M10,86 L24,80 L26,84 L12,92 Z" fill="url(#gun)" stroke-width="1.6"/>
+    <circle cx="27" cy="84" r="4.5" fill="#3a2a28"/>
+    <!-- Bras droit leve : revolver vise vers l'avant -->
+    <path d="M74,58 L86,56 L90,74 L80,78 Z" fill="url(#coatDark)"/>
+    <path d="M84,68 L104,62 L105,67 L86,73 Z" fill="url(#gun)" stroke-width="1.6"/>
+    <path d="M85,70 L83,79 L88,79 L90,71 Z" fill="#5a3422" stroke-width="1.4"/>
+    <circle cx="90" cy="70" r="3.4" fill="#5a5e74" stroke-width="1.3"/>
+    <circle cx="85" cy="74" r="4.5" fill="#3a2a28"/>
+    <!-- Epaules du manteau (pelerine) -->
+    <path d="M20,64 Q22,50 38,48 Q55,46 72,48 Q88,50 90,64 Q80,70 68,62 Q55,58 42,62 Q30,70 20,64 Z" fill="url(#coat)"/>
+    <!-- Foulard -->
+    <path d="M44,50 Q55,56 66,50 L64,58 Q55,62 46,58 Z" fill="#3a2a40" stroke-width="1.6"/>
+    <!-- Tete -->
+    <path d="M42,32 Q42,22 55,21 Q68,22 68,32 L67,44 Q62,54 55,54 Q48,54 43,44 Z" fill="#221a26"/>
+    <!-- Masque de theatre (sourire triste) -->
+    <path d="M42,25 Q55,19 68,25 L67,40 Q63,52 55,53 Q47,52 43,40 Z" fill="url(#bone)"/>
+    <!-- Fentes des yeux (lueur dessinee en code) -->
+    <path d="M45,30 L53,33 L52,36.5 L46,35 Z" fill="#1c141e" stroke-width="1.2"/>
+    <path d="M65,30 L57,33 L58,36.5 L64,35 Z" fill="#1c141e" stroke-width="1.2"/>
+    <!-- Bouche de theatre crispee -->
+    <path d="M48,46 Q55,42 62,46 Q55,49 48,46 Z" fill="#1c141e" stroke-width="1.1"/>
+    <!-- Chapeau a large bord -->
+    <path d="M42,24 Q40,8 55,6 Q70,8 68,24 Z" fill="url(#hat)"/>
+    <path d="M43,19 Q55,16 67,19 L68,23 Q55,20 42,23 Z" fill="#9a1c26" stroke-width="1.2"/>
+    <path d="M14,26 Q18,17 42,20 Q55,17 68,20 Q92,17 96,26 Q90,31 68,28 Q55,26 42,28 Q20,31 14,26 Z" fill="url(#brim)"/>
+    <path d="M49,6.5 L55,11 L61,6.5" fill="none" stroke-width="1.3"/>
+  </g>
+  <!-- Larmes noires et marques rouges du masque -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M47,37.5 L46.5,43" stroke="#14111b" stroke-width="1.5"/>
+    <path d="M63,37.5 L63.5,43" stroke="#14111b" stroke-width="1.5"/>
+    <path d="M55,24 L55,30" stroke="#b2262a" stroke-width="1.6"/>
+  </g>
+  <g fill="none" stroke="#f2ece4" stroke-width="1.5" stroke-linecap="round">
+    <path d="M47.5,33.6 L51,34.2"/>
+    <path d="M62.5,33.6 L59,34.2"/>
+  </g>
+  <!-- Reflets -->
+  <g fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.65">
+    <path d="M44,24.5 Q49,21.5 54,21"/>
+    <path d="M45,10 Q49,7.5 53,7"/>
+    <path d="M88,66 L102,62"/>
+    <path d="M12,87 L22,82"/>
+    <path d="M18,25 Q24,20 36,21"/>
+  </g>
+  <g fill="none" stroke="#ffd29a" stroke-width="1.2" stroke-linecap="round" opacity="0.6">
+    <path d="M24,62 Q30,52 40,51"/>
+    <path d="M36,78 L30,116"/>
+  </g>
+</svg>

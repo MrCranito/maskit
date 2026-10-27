@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"sandstone_colossus"
+display_name = "Colosse de grès"
+max_hp = 240.0
+move_speed = 58.0
+body_radius = 40.0
+detection_radius = 270.0
+detection_angle_deg = 360.0
+lose_sight_time = 4.0
+alert_duration = 0.9
+alert_neighbors_radius = 240.0
+patrol_radius = 70.0
+attack_type = 0
+attack_range = 80.0
+attack_damage = 18.0
+attack_cooldown = 2.6
+attack_windup = 1.1
+projectile_speed = 0.0
+retreat_distance = 0.0
+projectile_count = 1
+projectile_spread_deg = 0.0
+projectile_lifetime = 0.0
+projectile_style = &""
+aoe_radius = 115.0
+aura_color = Color(1, 1, 1, 0)

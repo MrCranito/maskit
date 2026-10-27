@@ -195,6 +195,13 @@ func _build_visual() -> void:
 		visual.call("setup", data.kind)
 	if data.aura_color.a > 0.0 and visual.has_method("set_aura"):
 		visual.call("set_aura", data.aura_color)
+	# Télégraphes spécifiques (méthodes optionnelles du visuel).
+	if data.is_area_attack():
+		_visual_call(&"set_attack_area", [data.aoe_radius])
+	elif data.is_ranged() and data.projectile_count > 1:
+		var reach := data.projectile_speed * (data.projectile_lifetime if data.projectile_lifetime > 0.0
+			else Balance.get_float("enemy_ai", "projectile_lifetime", 2.5))
+		_visual_call(&"set_attack_cone", [data.projectile_spread_deg, minf(reach, data.attack_range * 1.2)])
 	if visual.has_signal("death_finished"):
 		visual.connect("death_finished", _on_death_finished)
 	_visual_call(&"set_facing", [facing])
@@ -469,14 +476,39 @@ func perform_attack() -> bool:
 		if pool == null:
 			return false
 		var muzzle := global_position + dir.normalized() * (data.body_radius + 6.0)
-		pool.spawn(muzzle, dir, data.projectile_speed, data.attack_damage, self)
+		for shot_dir: Vector2 in get_shot_directions(dir):
+			pool.spawn(muzzle, shot_dir, data.projectile_speed, data.attack_damage, self,
+				data.projectile_lifetime, data.projectile_style)
 		return true
+	# Coup de zone au sol : touche le joueur s'il est dans aoe_radius (pas de tolérance).
+	if data.is_area_attack():
+		_visual_call(&"play_ground_slam", [data.aoe_radius])
+		if global_position.distance_to(p.global_position) <= data.aoe_radius and p.has_method("take_damage"):
+			p.call("take_damage", data.attack_damage, self)
+			return true
+		return false
 	# Mêlée : le joueur doit encore être à portée (il a pu esquiver pendant le télégraphe).
 	var tolerance := Balance.get_float("enemy_ai", "melee_hit_tolerance", 16.0)
 	if global_position.distance_to(p.global_position) <= data.attack_range + tolerance and p.has_method("take_damage"):
 		p.call("take_damage", data.attack_damage, self)
 		return true
 	return false
+
+
+## Directions des projectiles d'un tir : une seule (projectile_count = 1) ou un éventail
+## régulier de projectile_count directions sur projectile_spread_deg, centré sur `aim`.
+func get_shot_directions(aim: Vector2) -> Array[Vector2]:
+	var base := aim.normalized() if aim.length_squared() > 0.0001 else facing
+	var out: Array[Vector2] = []
+	var n := maxi(data.projectile_count, 1)
+	if n == 1:
+		out.append(base)
+		return out
+	var spread := deg_to_rad(data.projectile_spread_deg)
+	for i: int in n:
+		var t := float(i) / float(n - 1) - 0.5
+		out.append(base.rotated(spread * t))
+	return out
 
 
 # --- Interface de dégâts ------------------------------------------------------------

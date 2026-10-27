@@ -10,6 +10,10 @@ const MASK_WORLD_AND_PLAYER := 1 | 2
 
 const COLOR_CORE := Color(1.0, 0.85, 0.55)
 const COLOR_GLOW := Color(1.0, 0.38, 0.12)
+## Style « bullet » (hors-la-loi) : balle jaune-orangé, traînée fine.
+const STYLE_BULLET := &"bullet"
+const BULLET_CORE := Color(1.0, 0.97, 0.75)
+const BULLET_GLOW := Color(1.0, 0.72, 0.15)
 
 var active: bool = false
 var direction: Vector2 = Vector2.RIGHT
@@ -17,6 +21,7 @@ var speed: float = 0.0
 var damage: float = 0.0
 var lifetime_left: float = 0.0
 var source: Node = null
+var style: StringName = &""
 var _pulse: float = 0.0
 
 
@@ -28,7 +33,9 @@ func _ready() -> void:
 	_set_active(false)
 
 
-func launch(pos: Vector2, dir: Vector2, proj_speed: float, proj_damage: float, from: Node, lifetime: float) -> void:
+func launch(pos: Vector2, dir: Vector2, proj_speed: float, proj_damage: float, from: Node, lifetime: float,
+		proj_style: StringName = &"") -> void:
+	style = proj_style
 	global_position = pos
 	direction = dir.normalized() if dir != Vector2.ZERO else Vector2.RIGHT
 	rotation = direction.angle()
@@ -80,6 +87,15 @@ func _on_hit(other: Node) -> void:
 
 func _draw() -> void:
 	var k := 1.0 + 0.15 * sin(_pulse * 25.0)
+	if style == STYLE_BULLET:
+		# Balle : longue traînée fine jaune-orangé, coeur blanc chaud.
+		draw_line(Vector2(-30, 0), Vector2(4, 0), Color(BULLET_GLOW, 0.18), 10.0 * k, true)
+		draw_line(Vector2(-24, 0), Vector2(4, 0), Color(BULLET_GLOW, 0.5), 4.5, true)
+		draw_line(Vector2(-14, 0), Vector2(4, 0), Color(BULLET_CORE, 0.9), 2.0, true)
+		draw_circle(Vector2(3, 0), 6.5 * k, Color(BULLET_GLOW, 0.4))
+		draw_circle(Vector2(3, 0), 3.8, BULLET_GLOW.lightened(0.3))
+		draw_circle(Vector2(3.5, 0), 2.2, BULLET_CORE)
+		return
 	draw_line(Vector2(-26, 0), Vector2(4, 0), Color(COLOR_GLOW, 0.2), 14.0 * k, true)
 	draw_line(Vector2(-18, 0), Vector2(4, 0), Color(COLOR_GLOW, 0.55), 7.0, true)
 	draw_circle(Vector2(2, 0), 9.0 * k, Color(COLOR_GLOW, 0.45))

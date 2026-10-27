@@ -41,6 +41,19 @@ enum AttackType { MELEE, RANGED }
 ## Distance (px) sous laquelle l'ennemi recule pour garder ses distances (0 = jamais).
 @export var retreat_distance: float = 0.0
 
+@export_group("Tir multiple et zone")
+## Nombre de projectiles par tir (distance). 1 = tir simple (comportement historique).
+@export_range(1, 16) var projectile_count: int = 1
+## Ouverture totale (degrés) de l'éventail quand projectile_count > 1.
+@export_range(0.0, 180.0) var projectile_spread_deg: float = 0.0
+## Durée de vie (s) des projectiles de cet ennemi (≤ 0 = valeur de balance.cfg).
+## Courte durée = courte portée (fusil à canon scié).
+@export var projectile_lifetime: float = 0.0
+## Apparence des projectiles : &"" = orbe orange (défaut), &"bullet" = balle jaune-orangé.
+@export var projectile_style: StringName = &""
+## Rayon (px) du coup de zone au sol autour de l'ennemi (mêlée). 0 = coup simple à portée.
+@export var aoe_radius: float = 0.0
+
 @export_group("Visuel")
 ## Teinte d'aura de masque (alpha 0 = aucune).
 @export var aura_color: Color = Color(1, 1, 1, 0)
@@ -48,3 +61,8 @@ enum AttackType { MELEE, RANGED }
 
 func is_ranged() -> bool:
 	return attack_type == AttackType.RANGED
+
+
+## Coup de zone au sol (mêlée avec aoe_radius > 0).
+func is_area_attack() -> bool:
+	return attack_type == AttackType.MELEE and aoe_radius > 0.0

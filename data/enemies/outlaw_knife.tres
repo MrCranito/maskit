@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"outlaw_knife"
+display_name = "Bandit au couteau"
+max_hp = 26.0
+move_speed = 180.0
+body_radius = 17.0
+detection_radius = 330.0
+detection_angle_deg = 150.0
+lose_sight_time = 2.5
+alert_duration = 0.35
+alert_neighbors_radius = 300.0
+patrol_radius = 150.0
+attack_type = 0
+attack_range = 52.0
+attack_damage = 7.0
+attack_cooldown = 0.85
+attack_windup = 0.3
+projectile_speed = 0.0
+retreat_distance = 0.0
+projectile_count = 1
+projectile_spread_deg = 0.0
+projectile_lifetime = 0.0
+projectile_style = &""
+aoe_radius = 0.0
+aura_color = Color(1, 1, 1, 0)

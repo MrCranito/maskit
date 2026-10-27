@@ -88,7 +88,47 @@ const KINDS: Dictionary = {
 		"eyes": [Vector2(58, 39.3), Vector2(72, 39.3)], "eye_r": 2.8,
 		"debris": [Color(0.22, 0.23, 0.32), Color(0.93, 0.9, 0.84), Color(0.5, 0.52, 0.62)],
 	},
+	# --- Monde 1 : Far West (hors-la-loi masqués) ---
+	# "aura" (optionnel) : couleur d'aura par défaut du kind (remplacée par set_aura).
+	&"outlaw_knife": {
+		"path": "res://assets/sprites/enemies/outlaw_knife.svg",
+		"svg_size": Vector2(100, 124), "feet": Vector2(50, 120), "scale": 0.45,
+		"head": Vector2(0, -56), "shadow": 17.0,
+		"eyes": [Vector2(44, 32.3), Vector2(56, 32.3)], "eye_r": 2.4,
+		"aura": Color(1.0, 0.24, 0.16),
+		"debris": [Color(0.48, 0.08, 0.13), Color(0.95, 0.92, 0.86), Color(0.47, 0.29, 0.17)],
+	},
+	&"gunslinger": {
+		"path": "res://assets/sprites/enemies/gunslinger.svg",
+		"svg_size": Vector2(110, 130), "feet": Vector2(55, 126), "scale": 0.45,
+		"head": Vector2(0, -57), "shadow": 19.0,
+		"eyes": [Vector2(49, 33.4), Vector2(61, 33.4)], "eye_r": 2.4,
+		"aura": Color(1.0, 0.78, 0.22),
+		"debris": [Color(0.43, 0.34, 0.27), Color(0.95, 0.92, 0.86), Color(0.17, 0.15, 0.22)],
+	},
+	&"shotgun_brute": {
+		"path": "res://assets/sprites/enemies/shotgun_brute.svg",
+		"svg_size": Vector2(130, 136), "feet": Vector2(65, 132), "scale": 0.54,
+		"head": Vector2(0, -70), "shadow": 29.0,
+		"eyes": [Vector2(57.5, 37.2), Vector2(72.5, 37.2)], "eye_r": 2.8,
+		"aura": Color(1.0, 0.5, 0.14),
+		"debris": [Color(0.54, 0.23, 0.15), Color(0.93, 0.9, 0.84), Color(0.89, 0.75, 0.48)],
+	},
+	&"sandstone_colossus": {
+		"path": "res://assets/sprites/enemies/sandstone_colossus.svg",
+		"svg_size": Vector2(180, 160), "feet": Vector2(90, 156), "scale": 0.6,
+		"head": Vector2(0, -94), "shadow": 46.0,
+		"eyes": [Vector2(82, 55.5), Vector2(98, 55.5)], "eye_r": 3.2,
+		"aura": Color(1.0, 0.56, 0.16),
+		"debris": [Color(0.82, 0.48, 0.29), Color(0.6, 0.27, 0.22), Color(0.94, 0.66, 0.42), Color(0.95, 0.92, 0.86)],
+	},
 }
+
+## Télégraphe de cône (tir en éventail) et de zone (coup au sol).
+const CONE_FILL := Color(1.0, 0.25, 0.1, 0.10)
+const CONE_EDGE := Color(1.0, 0.35, 0.12)
+const SLAM_DURATION := 0.45
+const SLAM_COLOR := Color(1.0, 0.62, 0.22)
 
 var kind: StringName = &""
 
@@ -111,6 +151,15 @@ var _windup_duration: float = 0.0
 var _dying: bool = false
 var _death_t: float = 0.0
 var _particles: Array[Dictionary] = []
+## Vrai si set_aura a été appelé explicitement (sinon aura par défaut du kind).
+var _aura_custom: bool = false
+## Télégraphes optionnels (0 = aucun) ; _aim en coordonnées non retournées.
+var _area_radius: float = 0.0
+var _cone_deg: float = 0.0
+var _cone_len: float = 0.0
+var _aim: Vector2 = Vector2.RIGHT
+var _slam_t: float = -1.0
+var _slam_radius: float = 0.0
 
 
 func _ready() -> void:
@@ -153,7 +202,12 @@ func setup(new_kind: StringName) -> void:
 	_mat.set_shader_parameter("dissolve", 0.0)
 	_mat.set_shader_parameter("flash", 0.0)
 	_mat.set_shader_parameter("windup", 0.0)
-	set_aura(_aura)
+	_slam_t = -1.0
+	_area_radius = 0.0
+	_cone_deg = 0.0
+	_cone_len = 0.0
+	var aura: Color = _aura if _aura_custom else (_data.get("aura", DEFAULT_AURA) as Color)
+	_apply_aura(aura)
 	queue_redraw()
 
 
@@ -201,6 +255,36 @@ func play_death() -> void:
 ## Teinte de masque par royaume : yeux lumineux, légère teinte du sprite,
 ## bord de dissolution.
 func set_aura(color: Color) -> void:
+	_aura_custom = true
+	_apply_aura(color)
+
+
+## Télégraphe de coup de zone : anneau au sol de `radius` (monde) pendant le windup.
+func set_attack_area(radius: float) -> void:
+	_area_radius = maxf(radius, 0.0)
+
+
+## Télégraphe de tir en éventail : cône d'ouverture `spread_deg` et de longueur `length`.
+func set_attack_cone(spread_deg: float, length: float) -> void:
+	_cone_deg = maxf(spread_deg, 0.0)
+	_cone_len = maxf(length, 0.0)
+
+
+## Direction de visée (pour orienter le cône de télégraphe).
+func set_aim_direction(dir: Vector2) -> void:
+	if dir.length_squared() > 0.0001:
+		_aim = dir.normalized()
+
+
+## Onde de choc au sol (coup de zone) : anneau qui s'étend jusqu'à `radius`.
+func play_ground_slam(radius: float) -> void:
+	if _dying:
+		return
+	_slam_radius = maxf(radius, 1.0)
+	_slam_t = 0.0
+
+
+func _apply_aura(color: Color) -> void:
 	_aura = color
 	if _mat != null:
 		_mat.set_shader_parameter("aura_tint", Color(color.r, color.g, color.b, AURA_SPRITE_TINT))
@@ -288,6 +372,11 @@ func _process(delta: float) -> void:
 		if _alert_t > ALERT_DURATION:
 			_alert_t = -1.0
 
+	if _slam_t >= 0.0:
+		_slam_t += delta
+		if _slam_t > SLAM_DURATION:
+			_slam_t = -1.0
+
 	var sx := (1.0 + squash - breath * 0.5) * (_facing if absf(_facing) > 0.05 else 0.05)
 	var sy := 1.0 - squash + breath
 	if _dying:
@@ -365,6 +454,10 @@ func _draw_fx() -> void:
 	if _alert_t >= 0.0:
 		_draw_alert()
 	if _windup_t >= 0.0 and _windup_duration > 0.0:
+		_draw_special_telegraph(clampf(_windup_t / _windup_duration, 0.0, 1.0))
+	if _slam_t >= 0.0:
+		_draw_slam()
+	if _windup_t >= 0.0 and _windup_duration > 0.0:
 		var w := clampf(_windup_t / _windup_duration, 0.0, 1.0)
 		var r: float = float(_data.get("shadow", 20.0)) * (1.0 + 0.25 * w)
 		_fx.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, SHADOW_FLATTEN))
@@ -396,6 +489,42 @@ func _draw_fx() -> void:
 			closed.append(pts[0])
 			_fx.draw_polyline(closed, Color(OUTLINE, c.a), 1.6, true)
 			_fx.draw_line(pts[0], pts[1], Color(_aura.lerp(Color.WHITE, 0.5), c.a * 0.8), 1.2, true)
+
+
+## Cône d'éventail ou anneau de zone qui se remplit pendant le télégraphe.
+func _draw_special_telegraph(w: float) -> void:
+	if _cone_deg > 0.0 and _cone_len > 0.0:
+		var half := deg_to_rad(_cone_deg) * 0.5
+		var a0 := _aim.angle()
+		var steps := 18
+		var pts := PackedVector2Array([Vector2.ZERO])
+		var fill_pts := PackedVector2Array([Vector2.ZERO])
+		for i: int in steps + 1:
+			var ang := a0 - half + 2.0 * half * float(i) / float(steps)
+			pts.append(Vector2.from_angle(ang) * _cone_len)
+			fill_pts.append(Vector2.from_angle(ang) * _cone_len * w)
+		_fx.draw_colored_polygon(pts, Color(CONE_FILL, CONE_FILL.a * (0.6 + 0.6 * w)))
+		_fx.draw_colored_polygon(fill_pts, Color(CONE_EDGE, 0.18 + 0.2 * w))
+		var edge := pts.duplicate()
+		edge.append(Vector2.ZERO)
+		_fx.draw_polyline(edge, Color(CONE_EDGE, 0.45 + 0.5 * w), 2.0 + 1.5 * w, true)
+	if _area_radius > 0.0:
+		_fx.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, SHADOW_FLATTEN * 1.4))
+		_fx.draw_circle(Vector2.ZERO, _area_radius, Color(CONE_FILL, CONE_FILL.a * (0.6 + 0.8 * w)))
+		_fx.draw_circle(Vector2.ZERO, _area_radius * w, Color(CONE_EDGE, 0.16 + 0.22 * w))
+		_fx.draw_arc(Vector2.ZERO, _area_radius, 0.0, TAU, 56, Color(CONE_EDGE, 0.5 + 0.5 * w), 2.5 + 2.0 * w, true)
+		_fx.draw_set_transform(Vector2.ZERO)
+
+
+func _draw_slam() -> void:
+	var t := clampf(_slam_t / SLAM_DURATION, 0.0, 1.0)
+	var r := _slam_radius * ease(t, 0.35)
+	var a := 1.0 - t
+	_fx.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, SHADOW_FLATTEN * 1.4))
+	_fx.draw_circle(Vector2.ZERO, r, Color(SLAM_COLOR, 0.22 * a))
+	_fx.draw_arc(Vector2.ZERO, r, 0.0, TAU, 56, Color(SLAM_COLOR.lerp(Color.WHITE, 0.4), 0.9 * a), 6.0 * a + 1.5, true)
+	_fx.draw_arc(Vector2.ZERO, r * 0.75, 0.0, TAU, 48, Color(SLAM_COLOR, 0.5 * a), 3.0, true)
+	_fx.draw_set_transform(Vector2.ZERO)
 
 
 func _draw_alert() -> void:

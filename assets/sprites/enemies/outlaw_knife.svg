@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="124" viewBox="0 0 100 124">
+  <!-- Bandit masque au couteau bowie : chapeau troue, bandana rouge sombre, masque blanc fendu. -->
+  <defs>
+    <linearGradient id="hat" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#8a6448"/>
+      <stop offset="0.5" stop-color="#5a3c2c"/>
+      <stop offset="1" stop-color="#2c1c1c"/>
+    </linearGradient>
+    <linearGradient id="brim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a07454"/>
+      <stop offset="1" stop-color="#3a2620"/>
+    </linearGradient>
+    <linearGradient id="bone" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="0.6" stop-color="#e2d8c8"/>
+      <stop offset="1" stop-color="#a399a6"/>
+    </linearGradient>
+    <linearGradient id="bandana" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#b2262a"/>
+      <stop offset="0.55" stop-color="#7a1420"/>
+      <stop offset="1" stop-color="#3e0a18"/>
+    </linearGradient>
+    <linearGradient id="shirt" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#5a5a78"/>
+      <stop offset="0.5" stop-color="#34344c"/>
+      <stop offset="1" stop-color="#1a1a2a"/>
+    </linearGradient>
+    <linearGradient id="leather" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#b07a4a"/>
+      <stop offset="0.5" stop-color="#7a4a2c"/>
+      <stop offset="1" stop-color="#3c2218"/>
+    </linearGradient>
+    <linearGradient id="pants" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4a62"/>
+      <stop offset="1" stop-color="#1c1c2c"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.5" stop-color="#cfd3de"/>
+      <stop offset="1" stop-color="#6d7289"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#14111b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Pans du bandana qui flottent derriere -->
+    <path d="M36,46 Q24,50 14,62 Q24,60 30,58 Q26,64 22,72 Q34,62 40,52 Z" fill="url(#bandana)"/>
+    <!-- Jambes flechies (posture rapide) -->
+    <path d="M38,88 L50,88 L46,108 L34,108 Z" fill="url(#pants)"/>
+    <path d="M52,88 L64,88 L68,108 L56,108 Z" fill="url(#pants)"/>
+    <!-- Bottes + eperons -->
+    <path d="M30,120 L32,104 L47,104 L48,114 L50,120 Z" fill="url(#leather)"/>
+    <path d="M54,120 L55,104 L69,104 L70,114 L74,120 Z" fill="#5a3422"/>
+    <path d="M30,116 L24,116" fill="none" stroke-width="1.6"/>
+    <circle cx="22" cy="116" r="3" fill="#d8c08a" stroke-width="1.3"/>
+    <path d="M70,116 L77,116" fill="none" stroke-width="1.6"/>
+    <circle cx="79" cy="116" r="3" fill="#b89a64" stroke-width="1.3"/>
+    <!-- Bras gauche -->
+    <path d="M26,58 L36,58 L34,80 L24,80 Z" fill="url(#shirt)"/>
+    <circle cx="28" cy="83" r="4.6" fill="#6a4630"/>
+    <!-- Torse : chemise + gilet de cuir -->
+    <path d="M30,54 Q50,47 70,54 L68,92 L32,92 Z" fill="url(#shirt)"/>
+    <path d="M30,54 Q38,50 46,50 L44,90 L32,92 Z" fill="url(#leather)" stroke-width="1.8"/>
+    <path d="M70,54 Q62,50 54,50 L56,90 L68,92 Z" fill="#5e3820" stroke-width="1.8"/>
+    <!-- Cartouchiere en bandouliere -->
+    <path d="M32,58 L36,54 L70,84 L66,90 Z" fill="#4a3020" stroke-width="1.6"/>
+    <g fill="#e2b25a" stroke-width="1">
+      <rect x="39" y="59.5" width="3" height="5" transform="rotate(-48 40.5 62)"/>
+      <rect x="45" y="64.5" width="3" height="5" transform="rotate(-48 46.5 67)"/>
+      <rect x="51" y="69.5" width="3" height="5" transform="rotate(-48 52.5 72)"/>
+      <rect x="57" y="74.5" width="3" height="5" transform="rotate(-48 58.5 77)"/>
+    </g>
+    <!-- Ceinture + boucle -->
+    <path d="M31,85 L69,85 L69,92 L31,92 Z" fill="#3a2418" stroke-width="1.6"/>
+    <path d="M46,84 L54,84 L54,93 L46,93 Z" fill="#d8b866" stroke-width="1.4"/>
+    <!-- Bras droit tendu vers l'avant avec le couteau bowie -->
+    <path d="M64,56 L74,54 L82,74 L74,78 Z" fill="url(#shirt)"/>
+    <path d="M74,74 L82,70 L84,76 L77,80 Z" fill="#6a4630" stroke-width="1.6"/>
+    <!-- Lame bowie (pointe en contre-tranchant) -->
+    <path d="M80,72 L94,52 Q97,47 99,50 L97,56 L84,77 Z" fill="url(#steel)"/>
+    <path d="M77,70 L87,77" fill="none" stroke-width="2.6"/>
+    <circle cx="79" cy="76" r="4.6" fill="#6a4630"/>
+    <!-- Epaules -->
+    <path d="M22,60 Q22,50 32,50 Q40,52 40,58 Q34,64 22,60 Z" fill="url(#leather)"/>
+    <path d="M78,60 Q78,50 68,50 Q60,52 60,58 Q66,64 78,60 Z" fill="#5e3820"/>
+    <!-- Tete -->
+    <path d="M37,30 Q37,22 50,21 Q63,22 63,30 L62,44 Q56,52 50,52 Q44,52 38,44 Z" fill="#2c1e24"/>
+    <!-- Masque blanc fendu -->
+    <path d="M37,25 Q50,19 63,25 L62,38 Q56,42 50,42 Q44,42 38,38 Z" fill="url(#bone)"/>
+    <!-- Fentes des yeux (lueur dessinee en code) -->
+    <path d="M40,29 L48,31.5 L47,35 L41,33.5 Z" fill="#1c141e" stroke-width="1.2"/>
+    <path d="M60,29 L52,31.5 L53,35 L59,33.5 Z" fill="#1c141e" stroke-width="1.2"/>
+    <!-- Bandana sur le bas du visage -->
+    <path d="M36,37 Q50,43 64,37 L64,45 L50,58 L36,45 Z" fill="url(#bandana)"/>
+    <!-- Chapeau troue -->
+    <path d="M37,22 Q35,6 50,4 Q65,6 63,22 Z" fill="url(#hat)"/>
+    <path d="M38,18 Q50,15 62,18 L63,22 Q50,19 37,22 Z" fill="#7a1420" stroke-width="1.4"/>
+    <path d="M18,24 Q22,17 38,19 Q50,16 62,19 Q78,17 82,24 Q78,28 62,26 Q50,24 38,26 Q22,28 18,24 Z" fill="url(#brim)"/>
+    <path d="M44,4.5 L50,9 L56,4.5" fill="none" stroke-width="1.4"/>
+  </g>
+  <!-- Trous de balles dans le chapeau -->
+  <g stroke="#14111b" stroke-width="0.8">
+    <circle cx="44" cy="12" r="1.8" fill="#14111b"/>
+    <circle cx="57" cy="10" r="1.5" fill="#14111b"/>
+    <circle cx="72" cy="23" r="1.4" fill="#14111b"/>
+  </g>
+  <!-- Fente du masque + marques rouges -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M53,21 L50,26 L53,30 L49,35 L51,41" stroke="#14111b" stroke-width="1.6"/>
+    <path d="M42,26 L46,24" stroke="#b2262a" stroke-width="1.4"/>
+    <path d="M58,36.5 L61,35" stroke="#b2262a" stroke-width="1.4"/>
+  </g>
+  <!-- Reflets des yeux -->
+  <g fill="none" stroke="#f2ece4" stroke-width="1.5" stroke-linecap="round">
+    <path d="M42.5,32.3 L46,33"/>
+    <path d="M57.5,32.3 L54,33"/>
+  </g>
+  <!-- Reflets chauds -->
+  <g fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.65">
+    <path d="M39,24.5 Q44,21.5 49,21"/>
+    <path d="M40,8 Q44,5.5 48,5"/>
+    <path d="M85,68 L95,53"/>
+    <path d="M22,23 Q26,20 34,20"/>
+  </g>
+  <g fill="none" stroke="#ffd29a" stroke-width="1.1" stroke-linecap="round" opacity="0.7">
+    <path d="M33,57 L33,86"/>
+    <path d="M24,57 Q26,52 31,52"/>
+  </g>
+</svg>
