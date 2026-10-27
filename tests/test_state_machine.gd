@@ -72,11 +72,12 @@ func test_transition_calls_exit_then_enter_with_msg() -> void:
 	assert_eq(_changes.back(), [&"A", &"B"])
 
 
-## NB : affiche volontairement « ERROR: StateMachine: état inconnu » dans la sortie.
+## Affiche volontairement « ERROR: StateMachine: état inconnu » ; l'erreur est attendue.
 func test_unknown_state_is_refused() -> void:
 	_sm.start(null, &"A")
 	assert_false(_sm.transition_to(&"Nope"))
 	assert_eq(_sm.current_state, _a)
+	assert_push_error("état inconnu")
 
 
 func test_state_requests_transition() -> void:

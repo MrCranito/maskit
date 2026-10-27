@@ -1,4 +1,4 @@
-class_name VirtualJoystick
+class_name TouchJoystick
 extends Control
 ## Joystick virtuel flottant : apparaît là où le doigt touche dans la moitié basse
 ## de l'écran. `output` : direction de longueur 0..1 (zone morte appliquée).

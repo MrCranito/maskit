@@ -1,7 +1,7 @@
 # Conventions techniques (contrat entre modules)
 
 ## Moteur
-- Godot 4.4.1, GDScript **typé** (annoter variables, paramètres, retours).
+- Godot 4.7.2 (depuis la phase 3 ; 4.4.1 avant), GDScript **typé** (annoter variables, paramètres, retours).
 - Binaire : `godot` (dans le PATH). Projet : `/home/claude/royaumes-des-masques`.
 - Vérif compilation : `godot --headless --path . --import` puis `godot --headless --path . --quit`.
 - Vérif exécution de la scène principale : `godot --headless --path . --quit-after 300` (aucune erreur SCRIPT ERROR ne doit sortir).
@@ -42,7 +42,7 @@ func is_alive() -> bool
   - Propriétés publiques : `hp: float`, `max_hp: float`, `weapon: WeaponData`, `current_target: Node2D` (peut être null).
   - Contient sa propre Camera2D.
   - Émet `EventBus.player_spawned.emit(self)` dans `_ready`.
-- Joystick virtuel : `res://scenes/ui/virtual_joystick.tscn` (Control, script `res://scripts/ui/virtual_joystick.gd`, classe `VirtualJoystick`), propriété `output: Vector2` (longueur 0..1). Le joueur le trouve via le groupe `virtual_joystick`.
+- Joystick virtuel : `res://scenes/ui/virtual_joystick.tscn` (Control, script `res://scripts/ui/virtual_joystick.gd`, classe `TouchJoystick` (renommée : Godot 4.7 a une classe native VirtualJoystick)), propriété `output: Vector2` (longueur 0..1). Le joueur le trouve via le groupe `virtual_joystick`.
 - Ressource arme : `res://scripts/combat/weapon_data.gd` (classe `WeaponData`, Resource).
 - Projectile : `res://scenes/combat/projectile.tscn`, pooling via `res://scripts/combat/projectile_pool.gd` (classe `ProjectilePool`).
 - Cible d'entraînement : `res://scenes/enemies/target_dummy.tscn`.

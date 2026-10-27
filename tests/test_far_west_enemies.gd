@@ -114,7 +114,7 @@ func test_kinds_setup_in_visual() -> void:
 		v.play_alert()
 		v.play_attack_windup(0.3)
 		v.play_ground_slam(80.0)
-		await wait_frames(2)
+		await wait_physics_frames(2)
 		assert_false(v.is_dying())
 
 

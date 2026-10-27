@@ -1,6 +1,6 @@
 # Les Royaumes des Masques : Extraction
 
-Rogue-lite d'extraction en vue de dessus, dans l'esprit d'Archero, pour PC et mobile. Développé avec **Godot 4.4** en GDScript typé.
+Rogue-lite d'extraction en vue de dessus, dans l'esprit d'Archero, pour PC et mobile. Développé avec **Godot 4.7.2** en GDScript typé.
 
 ## Le jeu
 
@@ -24,7 +24,7 @@ Ce que vous trouvez ne vous appartient qu'après l'**extraction**. Il faut rejoi
 
 ## Installation
 
-1. Installez [Godot 4.4.1](https://godotengine.org/download/archive/4.4.1-stable/) (version standard, pas .NET).
+1. Installez [Godot 4.7.2](https://godotengine.org/download/archive/4.7.2-stable/) (version standard, pas .NET).
 2. Clonez le dépôt :
    ```bash
    git clone <url-du-depot> royaumes-des-masques
@@ -34,7 +34,7 @@ Ce que vous trouvez ne vous appartient qu'après l'**extraction**. Il faut rejoi
 
 ## Lancer les tests
 
-Les tests utilisent [GUT](https://github.com/bitwes/Gut) 9.4.0, installé dans `addons/gut`.
+Les tests utilisent [GUT](https://github.com/bitwes/Gut) 9.7.1, installé dans `addons/gut`.
 
 En ligne de commande (headless) :
 
@@ -100,4 +100,4 @@ godot --headless --path . --export-debug "iOS" build/ios/Maskit.xcodeproj
 python3 tools/ios_fix_xcode.py build/ios/Maskit.xcodeproj
 ```
 
-Le script corrige deux défauts des modèles iOS de Godot 4.4.1 : « Framework 'MetalFX' not found » (MetalFX lié seulement sur iPhone) et « Undefined symbol: _main » sur le simulateur des Mac Apple Silicon (la bibliothèque officielle du simulateur ne contient que du x86_64 : le script fabrique une version arm64 à partir de celle de l'iPhone). Le simulateur tourne alors nativement.
+Le script corrige deux défauts des modèles iOS de Godot (vérifié jusqu’à 4.7.2) : « Framework 'MetalFX' not found » (MetalFX lié seulement sur iPhone) et « Undefined symbol: _main » sur le simulateur des Mac Apple Silicon (la bibliothèque officielle du simulateur ne contient que du x86_64 : le script fabrique une version arm64 à partir de celle de l'iPhone). Le simulateur tourne alors nativement.

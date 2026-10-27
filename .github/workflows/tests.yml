@@ -11,11 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GODOT_VERSION: "4.4.1"
+  GODOT_VERSION: "4.7.2"
 
 jobs:
   gut:
-    name: Tests GUT (Godot 4.4.1)
+    name: Tests GUT (Godot 4.7.2)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

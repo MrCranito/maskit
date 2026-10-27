@@ -1,6 +1,6 @@
 # Exports multiplateformes à chaque tag `v*` (ex : v0.1.0), puis Release GitHub.
 #
-# Image : barichello/godot-ci:4.4.1 (Godot + templates d'export + SDK Android).
+# Image : barichello/godot-ci:4.7.2 (Godot + templates d'export + SDK Android).
 #
 # --- Android : secrets du dépôt (Settings > Secrets and variables > Actions) ---
 #   ANDROID_KEYSTORE_BASE64    keystore de release encodé en base64
@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 env:
-  GODOT_VERSION: "4.4.1"
+  GODOT_VERSION: "4.7.2"
   EXPORT_NAME: royaumes-des-masques
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: barichello/godot-ci:4.4.1
+      image: barichello/godot-ci:4.7.2
     strategy:
       fail-fast: false
       matrix:
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: barichello/godot-ci:4.4.1
+      image: barichello/godot-ci:4.7.2
     env:
       ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
       ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
@@ -101,7 +101,7 @@ jobs:
           mkdir -p ~/.local/share/godot/export_templates ~/.config/godot
           mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
              ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          # editor_settings-4.4.tres fourni par l'image (chemins SDK Android, keystore debug)
+          # editor_settings-4.7.tres fourni par l'image (chemins SDK Android, keystore debug)
           cp /root/.config/godot/editor_settings-*.tres ~/.config/godot/ || true
 
       - name: Préparer le keystore

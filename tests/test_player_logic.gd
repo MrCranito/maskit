@@ -36,17 +36,17 @@ func test_nearest_target_ignores_invalid_entries() -> void:
 
 
 func test_joystick_dead_zone() -> void:
-	assert_eq(VirtualJoystick.compute_output(Vector2(10, 0), 100.0, 0.15), Vector2.ZERO)
+	assert_eq(TouchJoystick.compute_output(Vector2(10, 0), 100.0, 0.15), Vector2.ZERO)
 
 
 func test_joystick_full_tilt_is_unit_length() -> void:
-	var out: Vector2 = VirtualJoystick.compute_output(Vector2(0, 250), 100.0, 0.15)
+	var out: Vector2 = TouchJoystick.compute_output(Vector2(0, 250), 100.0, 0.15)
 	assert_almost_eq(out.length(), 1.0, 0.001)
 	assert_almost_eq(out.y, 1.0, 0.001)
 
 
 func test_joystick_output_remapped_after_dead_zone() -> void:
-	var out: Vector2 = VirtualJoystick.compute_output(Vector2(50, 0), 100.0, 0.0)
+	var out: Vector2 = TouchJoystick.compute_output(Vector2(50, 0), 100.0, 0.0)
 	assert_almost_eq(out.x, 0.5, 0.001)
 
 
