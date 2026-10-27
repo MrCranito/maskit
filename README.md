@@ -97,7 +97,7 @@ Godot exporte un projet Xcode (preset « iOS »), à compiler sur un Mac :
 
 ```bash
 godot --headless --path . --export-debug "iOS" build/ios/Maskit.xcodeproj
-python3 tools/ios_fix_metalfx.py build/ios/Maskit.xcodeproj
+python3 tools/ios_fix_xcode.py build/ios/Maskit.xcodeproj
 ```
 
-Le script corrige l'erreur « Framework 'MetalFX' not found » sur le simulateur iOS : MetalFX n'est lié que pour les vrais iPhone.
+Le script corrige deux défauts des modèles iOS de Godot 4.4.1 : « Framework 'MetalFX' not found » (MetalFX lié seulement sur iPhone) et « Undefined symbol: _main » sur le simulateur des Mac Apple Silicon (la bibliothèque du simulateur ne contient que du x86_64 : le simulateur tourne alors sous Rosetta). Sur un vrai iPhone, aucune restriction.
