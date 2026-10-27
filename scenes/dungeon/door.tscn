@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/door.gd" id="1_door"]
+
+[node name="Door" type="StaticBody2D" groups=["doors"]]
+collision_mask = 0
+script = ExtResource("1_door")

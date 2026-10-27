@@ -19,15 +19,15 @@ Les phases se font une par une. Chacune se termine par un résumé, des tests et
 - [x] Premiers archétypes : mêlée, distance, kamikaze
 - [x] Debug F3 : cônes de détection, état courant de chaque ennemi
 
-## Phase 3 — Donjon *(prochaine)*
-- [ ] Générateur de graphe de salles à partir d'une seed rejouable
-- [ ] Types de salles : combat, fouille, piège, repos, super-loot, boss, extraction
-- [ ] Couloirs entre les salles, collisions et navigation
-- [ ] Plusieurs étages reliés par des escaliers, avec une difficulté croissante
-- [ ] Brouillard de guerre à 3 états (texture de masque et shader sur un CanvasLayer)
-- [ ] Debug F3 : graphe des salles, seed
+## Phase 3 — Donjon (monde 1 Far West) *(terminée)*
+- [x] Générateur de graphe de salles à partir d'une seed rejouable
+- [x] Types de salles : combat, fouille, piège, repos, super-loot, boss, extraction
+- [x] Couloirs entre les salles, collisions et navigation
+- [x] Plusieurs étages reliés par des escaliers, avec une difficulté croissante
+- [x] Brouillard de guerre à 3 états (texture de masque et shader sur un CanvasLayer)
+- [x] Debug F3 : graphe des salles, seed
 
-## Phase 4 — Loot
+## Phase 4 — Loot *(prochaine)*
 - [ ] Ressources ItemData / raretés (gris, vert, bleu, violet, orange avec lueur)
 - [ ] Tables de loot pondérées selon le conteneur, la difficulté, l'étage et la zone
 - [ ] Conteneurs fouillables avec une animation de fouille interruptible
