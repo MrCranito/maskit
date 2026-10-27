@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120" viewBox="0 0 100 120">
+  <defs>
+    <linearGradient id="armor" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#55597a"/>
+      <stop offset="0.5" stop-color="#2f3247"/>
+      <stop offset="1" stop-color="#181a28"/>
+    </linearGradient>
+    <linearGradient id="cloth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a2a40"/>
+      <stop offset="1" stop-color="#2a0f1e"/>
+    </linearGradient>
+    <linearGradient id="bone" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#fbf5ea"/>
+      <stop offset="0.6" stop-color="#d9cfc0"/>
+      <stop offset="1" stop-color="#9b91a0"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef0f4"/>
+      <stop offset="1" stop-color="#7d8299"/>
+    </linearGradient>
+    <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#454a66"/>
+      <stop offset="1" stop-color="#1b1d2c"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#14111b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Echarpe flottante derriere -->
+    <path d="M36,60 Q22,70 16,88 Q26,82 34,80 Q30,74 40,64 Z" fill="url(#cloth)"/>
+    <!-- Jambes -->
+    <path d="M37,92 L49,92 L48,110 L36,110 Z" fill="url(#armor)"/>
+    <path d="M51,92 L63,92 L65,110 L52,110 Z" fill="url(#armor)"/>
+    <path d="M33,116 L34,108 L49,108 L49,116 Z" fill="#2a2230"/>
+    <path d="M51,116 L51,108 L66,108 L68,116 Z" fill="#231d2a"/>
+    <!-- Bras gauche -->
+    <path d="M25,62 L35,62 L34,84 L24,83 Z" fill="url(#armor)"/>
+    <circle cx="28" cy="86" r="5" fill="#3a3046"/>
+    <!-- Torse -->
+    <path d="M30,58 Q50,50 70,58 L68,94 L32,94 Z" fill="url(#armor)"/>
+    <!-- Tabard sombre -->
+    <path d="M41,62 L59,62 L61,104 L50,110 L39,104 Z" fill="url(#cloth)"/>
+    <path d="M50,70 L54,78 L50,86 L46,78 Z" fill="#d9cfc0" stroke-width="1.4"/>
+    <!-- Ceinture -->
+    <path d="M32,86 L68,86 L68,92 L32,92 Z" fill="#5a3e2e" stroke-width="1.6"/>
+    <path d="M47,85 L53,85 L53,93 L47,93 Z" fill="#b9ad9e" stroke-width="1.4"/>
+    <!-- Bras droit + lame courte -->
+    <path d="M65,62 L75,60 L79,80 L70,83 Z" fill="url(#armor)"/>
+    <path d="M73,84 L80,80 L97,104 L92,109 Z" fill="url(#steel)"/>
+    <path d="M68,82 L80,76 L82,80 L70,86 Z" fill="#6b4a32" stroke-width="1.6"/>
+    <circle cx="74" cy="82" r="4.5" fill="#3a3046"/>
+    <!-- Epaulieres -->
+    <path d="M20,62 Q20,50 32,50 Q40,52 40,60 Q34,66 20,62 Z" fill="url(#armor)"/>
+    <path d="M80,62 Q80,50 68,50 Q60,52 60,60 Q66,66 80,62 Z" fill="url(#armor)"/>
+    <!-- Echarpe au cou -->
+    <path d="M34,55 Q50,62 66,55 L65,63 Q50,70 35,63 Z" fill="url(#cloth)"/>
+    <!-- Capuche / casque -->
+    <path d="M29,40 Q28,13 50,10 Q72,13 71,40 Q67,56 50,58 Q33,56 29,40 Z" fill="url(#hood)"/>
+    <!-- Masque d'os -->
+    <path d="M36,27 Q50,17 64,27 L62,43 Q57,55 50,56 Q43,55 38,43 Z" fill="url(#bone)"/>
+    <!-- Fentes des yeux (lueur dessinee en code) -->
+    <path d="M39,33 L48,36 L47,40 L40,38 Z" fill="#1c141e" stroke-width="1.2"/>
+    <path d="M61,33 L52,36 L53,40 L60,38 Z" fill="#1c141e" stroke-width="1.2"/>
+    <path d="M42,37 L46,37.6" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <path d="M58,37 L54,37.6" fill="none" stroke="#f2ece4" stroke-width="1.6"/>
+    <!-- Nez et bouche cousue -->
+    <path d="M50,42 L52,46 L48,46 Z" fill="#2a2030" stroke-width="1"/>
+    <path d="M45,50 L55,50 M47,48.5 L47,51.5 M50,48.5 L50,51.5 M53,48.5 L53,51.5" fill="none" stroke-width="1.1"/>
+  </g>
+  <!-- Fissure et marques du masque -->
+  <g fill="none" stroke="#3a2a3a" stroke-width="1.2" stroke-linecap="round">
+    <path d="M50,19 L48,26 L51,31"/>
+    <path d="M42,41 L41,47"/>
+    <path d="M58,41 L59,47"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" opacity="0.7">
+    <path d="M38,26 Q44,21 50,20"/>
+    <path d="M36,16 Q40,12 46,11"/>
+    <path d="M77,68 L91,95"/>
+  </g>
+</svg>

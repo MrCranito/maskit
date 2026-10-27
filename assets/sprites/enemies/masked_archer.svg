@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="124" viewBox="0 0 100 124">
+  <defs>
+    <linearGradient id="cloak" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#47566b"/>
+      <stop offset="0.5" stop-color="#2a3446"/>
+      <stop offset="1" stop-color="#141925"/>
+    </linearGradient>
+    <linearGradient id="leather" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6e5448"/>
+      <stop offset="1" stop-color="#2b2024"/>
+    </linearGradient>
+    <linearGradient id="bone" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0" stop-color="#fbf5ea"/>
+      <stop offset="0.6" stop-color="#d6ccbe"/>
+      <stop offset="1" stop-color="#958ca0"/>
+    </linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a2714a"/>
+      <stop offset="1" stop-color="#4a2e22"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#14111b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Carquois dans le dos -->
+    <path d="M60,34 L70,30 L80,58 L70,62 Z" fill="url(#leather)"/>
+    <path d="M62,32 L60,22 L66,27 Z M67,30 L68,19 L72,26 Z M72,28 L76,19 L77,27 Z" fill="#e9e0d2" stroke-width="1.4"/>
+    <!-- Cape -->
+    <path d="M30,50 Q50,42 70,50 L76,112 Q50,118 24,112 Z" fill="url(#cloak)"/>
+    <!-- Jambes fines -->
+    <path d="M41,96 L48,96 L47,113 L40,113 Z" fill="#232838"/>
+    <path d="M52,96 L59,96 L61,113 L53,113 Z" fill="#1d2130"/>
+    <path d="M37,120 L38,111 L48,111 L48,120 Z" fill="#3a2a26"/>
+    <path d="M52,120 L52,111 L62,111 L64,120 Z" fill="#33241f"/>
+    <!-- Torse de cuir -->
+    <path d="M37,56 Q50,51 63,56 L61,98 L39,98 Z" fill="url(#leather)"/>
+    <path d="M38,60 L62,92" fill="none" stroke-width="3.5"/>
+    <path d="M38,60 L62,92" fill="none" stroke="#7a5a3e" stroke-width="1.6"/>
+    <path d="M38,88 L62,88 L62,93 L38,93 Z" fill="#3c2a24" stroke-width="1.5"/>
+    <!-- Bras droit le long du corps -->
+    <path d="M62,58 L69,60 L70,84 L63,84 Z" fill="url(#cloak)"/>
+    <circle cx="66.5" cy="86" r="3.8" fill="#3a2c2c"/>
+    <!-- Arc tenu a gauche -->
+    <path d="M27,36 Q8,72 27,110" fill="none" stroke-width="6"/>
+    <path d="M27,36 Q8,72 27,110" fill="none" stroke="url(#wood)" stroke-width="3"/>
+    <path d="M27,36 L27,110" fill="none" stroke="#e8e0d0" stroke-width="0.9"/>
+    <!-- Bras gauche tendu vers l'arc -->
+    <path d="M38,58 L26,68 L28,76 L40,66 Z" fill="url(#cloak)"/>
+    <circle cx="21" cy="73" r="4" fill="#3a2c2c"/>
+    <!-- Capuche pointue -->
+    <path d="M31,44 Q32,16 52,5 Q68,16 69,44 Q61,58 50,59 Q39,58 31,44 Z" fill="url(#cloak)"/>
+    <!-- Masque long et etroit -->
+    <path d="M41,28 Q50,21 59,28 L58,44 Q54,55 50,56 Q46,55 42,44 Z" fill="url(#bone)"/>
+    <!-- Yeux ronds (lueur dessinee en code) -->
+    <circle cx="46" cy="35" r="2.8" fill="#1c141e" stroke-width="1"/>
+    <circle cx="54" cy="35" r="2.8" fill="#1c141e" stroke-width="1"/>
+    <circle cx="46" cy="35" r="1.3" fill="#f2ece4" stroke="none"/>
+    <circle cx="54" cy="35" r="1.3" fill="#f2ece4" stroke="none"/>
+  </g>
+  <!-- Ombre de la capuche sur le masque -->
+  <path d="M41,28 Q50,21 59,28 L58.6,32 Q50,26 41.4,32 Z" fill="#141925" opacity="0.55"/>
+  <!-- Marques du masque -->
+  <g fill="none" stroke="#3a2a3a" stroke-width="1.2" stroke-linecap="round">
+    <path d="M50,25 L50,31"/>
+    <path d="M46,41 L46,44 M50,43 L50,47 M54,41 L54,44"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-width="1.1" stroke-linecap="round" opacity="0.6">
+    <path d="M38,22 Q44,12 51,8"/>
+    <path d="M34,50 Q46,46 56,47"/>
+  </g>
+</svg>
