@@ -78,3 +78,27 @@ func is_alive() -> bool
 - Couleurs chaudes, contours nets.
 - Construire les structures complexes en code ; garder les .tscn minimaux.
 - Commentaires et textes de jeu en français.
+
+## Phase 3 : monde Far West, bâtiments, étages, brouillard
+Lire d'abord CLAUDE.md, sections « Mondes et biomes » et « Structure des cartes ».
+
+### Données de carte (déjà écrites)
+`res://scripts/dungeon/floor_layout.gd` (`FloorLayout`, RefCounted, pur données) : grille `tiles` (enum `Tile` : VOID, STREET, FLOOR, WALL, DOOR, STAIRS_UP, STAIRS_DOWN), `rooms` (Room : id, rect, outdoor, building_id, type, name), `buildings` (archetype, rect, room_ids, door_ids), `doors` (cell, vertical, state OPEN/CLOSED/LOCKED, key_id, room_a/b), `stairs` (cell, up, target_floor, target_cell), `player_spawn`, `extraction_cells`, `enemy_spawns` / `container_spawns` / `prop_spawns` (Spawn : cell, kind, room_id).
+- `FloorLayout.TILE_SIZE = 64`, `cell_to_world(c)` (centre de case), `world_to_cell(p)`.
+- `FloorLayout.make_sample()` : carte écrite à la main (rue, saloon + escalier, banque + coffre verrouillé `key_bank_vault`, shérif, ruelle d'extraction). Sert à développer en parallèle du générateur.
+- VOID et WALL sont infranchissables et opaques. Une case DOOR est opaque et infranchissable tant que la porte est fermée.
+- Scripts `extends SceneTree` lancés avec `--script` : faire `godot --headless --path . --import` avant, sinon les `class_name` récents ne sont pas connus.
+
+### Modules et propriétaires
+| Module | Fichiers | API |
+|---|---|---|
+| Monde | `scripts/dungeon/world_data.gd` (`WorldData`, Resource), `data/worlds/world_01_far_west.tres` | id, display_name, biome, palette (Dictionary de Color), enemy_roster (Dictionary type de salle → {kind: poids}), building_archetypes, container_kinds, prop_kinds, floors_min/max |
+| Générateur | `scripts/dungeon/dungeon_generator.gd` (`DungeonGenerator`) | `static generate_run(seed: int, world: WorldData, difficulty: int) -> Array[FloorLayout]` (étages -1, 0, 1 selon le monde ; escaliers cohérents entre étages) ; `static generate_floor(seed, world, difficulty, floor_index) -> FloorLayout` |
+| Décor | `scripts/dungeon/world_builder.gd` (`WorldBuilder`), `scripts/dungeon/door.gd` (`DoorNode`) + `scenes/dungeon/door.tscn`, `scripts/dungeon/roof.gd`, `scripts/dungeon/prop.gd`, `assets/sprites/far_west/` | `WorldBuilder.build(layout: FloorLayout, world: WorldData) -> Node2D` (sol, murs avec collisions couche world, toits, portes, escaliers, décors). Renvoie un nœud racine ayant `get_doors() -> Array[DoorNode]`, `get_stairs_areas() -> Array[Area2D]` (meta `stairs` = FloorLayout.Stairs), signal `stairs_entered(stairs)` |
+| Portes | `DoorNode` (StaticBody2D, couche world quand fermée, groupe `doors`) | `cell: Vector2i`, `is_open()`, `is_locked()`, `open()`, `close()`, `try_unlock(key_id) -> bool`, signal `state_changed(door)`. S'ouvre automatiquement quand le joueur ou un ennemi en poursuite la touche (adapté au mobile) ; verrouillée = cadenas + message « Clef requise ». |
+| Brouillard | `scripts/dungeon/fog_of_war.gd` (`FogOfWar`, Node2D) + `assets/shaders/fog_of_war.gdshader` | `setup(layout: FloorLayout)`, `set_door_query(callable: Callable)` (cell → bool ouverte), `update_from(world_pos: Vector2)`, `is_cell_visible(c)`, `is_cell_explored(c)`, `reveal_all(on: bool)`, `get_state() -> PackedByteArray` / `set_state(...)` (mémoire par étage). Cache les nœuds du groupe `fog_hideable` (ennemis, conteneurs) hors des cases visibles. |
+| Ennemis Far West | `assets/sprites/enemies/` (nouveaux kinds), `scripts/enemies/enemy_visual.gd` (KINDS), `data/enemies/*.tres` | Nouveaux kinds : `outlaw_knife`, `gunslinger`, `shotgun_brute`, `sandstone_colossus`. Les anciens kinds restent (autres mondes). |
+| Raid | `scripts/dungeon/raid.gd` (`Raid`) + `scenes/dungeon/raid.tscn` (nouvelle scène principale) | Charge le monde 1, génère (ou `make_sample()` si le générateur manque), construit l'étage, place joueur/ennemis, brouillard, UI ; change d'étage par les escaliers en conservant l'état de chaque étage ; marqueur d'extraction (logique en phase 6). |
+
+### Couches de rendu (z_index)
+Sol 0 · décors au sol 1 · personnages/ennemis/murs triés en Y (y_sort) 10 · toits 50 · brouillard 80 · UI dans CanvasLayer.

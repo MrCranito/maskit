@@ -38,13 +38,13 @@ Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaum
 - Marionnettiste : invocations alliées.
 Chaque masque = une ressource MaskData (stats, pouvoir actif, passif, armes autorisées).
 
-## Royaumes
-Un royaume par famille de masques, tous dans l'univers château fantasy de la planche :
-- Forteresse du Colosse : remparts de pierre et d'or, golems, gardiens lourds.
-- Ruines du Spectre : citadelle hantée, brumes et éclairs cyan, ennemis rapides.
-- Forges de l'Alchimiste : bastion en flammes, ennemis élémentaires, explosions.
-- Théâtre du Marionnettiste : cour violette, pantins et invocateurs.
-Chacun : palette, ennemis, boss, tables de loot, armes propres.
+## Mondes et biomes
+Chaque monde a son propre biome (décor, palette, ennemis, boss, tables de loot, armes propres). Les personnages et masques gardent la direction artistique de la planche ; le biome change le décor.
+- **Monde 1 — Far West** : ville fantôme au coucher du soleil (bois délavé, adobe, sable ocre, ciel orange-rose-violet, ombres bleu nuit). Bâtiments : saloon (étage), banque (coffre-fort = salle de super-loot), bureau du shérif (cellules), magasin général, hôtel (étage), écurie, église, entrée de mine (sous-sol). Ennemis : hors-la-loi masqués (bandit au couteau, pistolero, brute au fusil, colosse de grès). Conteneurs : caisses, tonneaux, chariots, diligences, coffres, placards, armoires, cadavres.
+- Mondes suivants : biomes à définir.
+
+## Structure des cartes
+PAS de monde ouvert. Une carte = des bâtiments dans lesquels le joueur entre, reliés par des rues et ruelles qui servent de couloirs. Salles ouvertes (rues, places) et fermées (intérieurs derrière des portes). Les portes bloquent mouvement et vision tant qu'elles sont fermées. Le toit d'un bâtiment masque son intérieur et s'efface quand le joueur entre. Étages : étage supérieur (saloon, hôtel) et sous-sol (mine), reliés par des escaliers.
 
 ## Boucle de jeu
 1. Hub : choix du masque, de l'équipement, du niveau de donjon (Facile → Cauchemar). Difficulté = ennemis plus forts + loot plus rare.
