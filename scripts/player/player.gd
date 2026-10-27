@@ -7,7 +7,8 @@ extends CharacterBody2D
 const LAYER_PLAYER := 2
 const MASK_WORLD := 1
 const MASK_ENEMIES := 4
-const BODY_RADIUS := 22.0
+## Rayon du corps (collision aux pieds, cf. player.tscn).
+const BODY_RADIUS := 15.0
 const MUZZLE_OFFSET := 24.0
 const DEFAULT_WEAPON: WeaponData = preload("res://data/weapons/starter_bow.tres")
 
@@ -50,6 +51,7 @@ func _ready() -> void:
 	if weapon == null:
 		weapon = DEFAULT_WEAPON
 	hp = max_hp
+	_build_visual()
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = Balance.get_float("camera", "smoothing_speed", 8.0)
 	var z: float = Balance.get_float("camera", "zoom", 1.0)
@@ -198,6 +200,7 @@ func fire(dir: Vector2) -> void:
 			offset = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
 		var d: Vector2 = dir.rotated(offset)
 		projectile_pool.spawn(global_position + d * MUZZLE_OFFSET, d, weapon, self)
+	_on_fired_visual(dir)
 
 
 # --- Dégâts ----------------------------------------------------------------
@@ -246,86 +249,174 @@ func get_debug_info() -> Dictionary:
 		"pool_active": projectile_pool.get_active_count() if projectile_pool != null else 0,
 	}
 
+# --- Visuel : sprite SVG du héros kitsune -------------------------------------
+# Le sprite (Sprite2D construit en code) porte le personnage ; _draw() ne dessine
+# que l'ombre au sol et la flèche de visée (sous le sprite). Un nœud overlay
+# au-dessus du sprite dessine l'arc de lame rouge et la barre de vie.
 
-# --- Dessin placeholder ------------------------------------------------------
-# Héros de référence : masque blanc kitsune, marques et yeux rouges lumineux,
-# cornes rouges, écharpe rouge, armure sombre à liserés rouges, ombre bleu nuit.
+const TEX_IDLE: Texture2D = preload("res://assets/sprites/hero/hero_kitsune.svg")
+const TEX_WALK: Array[Texture2D] = [
+	preload("res://assets/sprites/hero/hero_kitsune_walk_1.svg"),
+	preload("res://assets/sprites/hero/hero_kitsune_walk_2.svg"),
+]
+const HIT_FLASH_SHADER: Shader = preload("res://assets/shaders/hit_flash.gdshader")
+## Hauteur du héros en unités monde (≈ 70 px à l'écran avec le zoom 1.3).
+const SPRITE_WORLD_HEIGHT := 54.0
+## Marge transparente sous les pieds dans le SVG (viewBox 200 de haut, pieds à y≈197).
+const SPRITE_FOOT_MARGIN := 3.0 / 200.0
+const WALK_FRAME_TIME := 0.13
+const BREATH_SPEED := 2.6
+const BREATH_AMOUNT := 0.025
+const SLASH_DURATION := 0.12
+const SLASH_RADIUS := 32.0
+const SLASH_HALF_ANGLE := 1.15
+const SLASH_HEIGHT := 16.0
+const KICK_DURATION := 0.14
 
-const COL_ARMOR := Color(0.14, 0.13, 0.17)
-const COL_ARMOR_TRIM := Color(0.85, 0.12, 0.12)
-const COL_LEATHER := Color(0.45, 0.27, 0.15)
-const COL_SCARF := Color(0.82, 0.1, 0.1)
-const COL_MASK := Color(0.97, 0.95, 0.92)
-const COL_MARK := Color(0.88, 0.06, 0.1)
-const COL_EYE := Color(1.0, 0.18, 0.12)
-const COL_OUTLINE := Color(0.04, 0.03, 0.06)
 const COL_SHADOW := Color(0.07, 0.1, 0.25, 0.45)
 const COL_AIM := Color(1.0, 0.25, 0.15)
+const COL_SLASH := Color(1.0, 0.16, 0.12)
+const COL_SLASH_CORE := Color(1.0, 0.85, 0.7)
+
+var _sprite: Sprite2D = null
+var _overlay: Node2D = null
+var _flash_mat: ShaderMaterial = null
+var _sprite_base_scale: float = 1.0
+var _anim_time: float = 0.0
+var _walk_time: float = 0.0
+var _slash_left: float = 0.0
+var _slash_dir: Vector2 = Vector2.UP
+var _kick_left: float = 0.0
+var _facing_left: bool = false
+
+
+func _build_visual() -> void:
+	_sprite = Sprite2D.new()
+	_sprite.name = "HeroSprite"
+	_sprite.texture = TEX_IDLE
+	_sprite.centered = true
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var tex_h: float = float(TEX_IDLE.get_height())
+	_sprite_base_scale = SPRITE_WORLD_HEIGHT / tex_h
+	# Pieds (bas-centre) à l'origine du CharacterBody2D.
+	_sprite.offset = Vector2(0.0, -tex_h * 0.5 + tex_h * SPRITE_FOOT_MARGIN)
+	_sprite.scale = Vector2.ONE * _sprite_base_scale
+	_flash_mat = ShaderMaterial.new()
+	_flash_mat.shader = HIT_FLASH_SHADER
+	_sprite.material = _flash_mat
+	add_child(_sprite)
+	_overlay = Node2D.new()
+	_overlay.name = "HeroOverlay"
+	_overlay.draw.connect(_draw_overlay)
+	add_child(_overlay)
+
+
+func _process(delta: float) -> void:
+	if _sprite == null:
+		return
+	_anim_time += delta
+	_slash_left = maxf(_slash_left - delta, 0.0)
+	_kick_left = maxf(_kick_left - delta, 0.0)
+
+	# Orientation gauche/droite : visée prioritaire au tir, sinon déplacement.
+	var face_x: float = aim_direction.x
+	if _is_moving and _kick_left <= 0.0 and absf(velocity.x) > 5.0:
+		face_x = velocity.x
+	if absf(face_x) > 0.15:
+		_facing_left = face_x < 0.0
+	_sprite.flip_h = _facing_left
+
+	# Marche : alternance des frames ; arrêt : respiration (scale Y).
+	var sy: float = 1.0
+	if _alive and _is_moving:
+		_walk_time += delta
+		var idx: int = int(_walk_time / WALK_FRAME_TIME) % 4
+		_sprite.texture = TEX_WALK[0] if idx == 0 else (TEX_WALK[1] if idx == 2 else TEX_IDLE)
+	else:
+		_walk_time = 0.0
+		_sprite.texture = TEX_IDLE
+		sy = 1.0 + sin(_anim_time * BREATH_SPEED) * BREATH_AMOUNT
+	_sprite.scale = Vector2(_sprite_base_scale, _sprite_base_scale * sy)
+
+	# Poussée vers l'avant + inclinaison au tir.
+	var kick: float = _kick_left / KICK_DURATION
+	kick = kick * kick
+	_sprite.position = _slash_dir * 3.5 * kick
+	_sprite.rotation = signf(_slash_dir.x if absf(_slash_dir.x) > 0.1 else (-1.0 if _facing_left else 1.0)) * 0.14 * kick
+
+	# Flash blanc (shader) + clignotement d'invulnérabilité (alpha).
+	_flash_mat.set_shader_parameter("flash_amount", clampf(_flash_left / maxf(hit_flash_duration, 0.001), 0.0, 1.0))
+	var alpha: float = 1.0
+	if not _alive:
+		alpha = 0.35
+	elif _invulnerable_left > 0.0 and _flash_left <= 0.0:
+		alpha = 0.45 if int(_invulnerable_left * 20.0) % 2 == 0 else 1.0
+	_sprite.modulate.a = alpha
+	_overlay.queue_redraw()
+
+
+## Déclenche l'arc de lame rouge et la poussée (appelé à chaque salve).
+func _on_fired_visual(dir: Vector2) -> void:
+	_slash_dir = dir.normalized() if dir.length_squared() > 0.0001 else aim_direction
+	_slash_left = SLASH_DURATION
+	_kick_left = KICK_DURATION
 
 
 func _draw() -> void:
-	var flash: bool = _flash_left > 0.0
-	var alpha: float = 1.0
-	if _invulnerable_left > 0.0 and not flash:
-		alpha = 0.45 if int(_invulnerable_left * 20.0) % 2 == 0 else 1.0
+	var alpha: float = 0.35 if not _alive else 1.0
+	# Ombre ovale bleu nuit sous les pieds
+	draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, 0.42))
+	draw_circle(Vector2.ZERO, 17.0, Color(COL_SHADOW, COL_SHADOW.a * alpha))
+	draw_circle(Vector2.ZERO, 12.0, Color(COL_SHADOW, COL_SHADOW.a * 0.6 * alpha))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	if not _alive:
-		alpha = 0.35
-	var tint := func(c: Color) -> Color: return Color(1, 1, 1, 1) if flash else Color(c, c.a * alpha)
+		return
+	# Flèche de visée au sol (lueur rouge), en perspective écrasée.
+	var flat := Vector2(1.0, 0.6)
+	var tip: Vector2 = aim_direction * 30.0 * flat
+	var base: Vector2 = aim_direction * 21.0 * flat
+	var side: Vector2 = aim_direction.orthogonal() * 6.0 * flat
+	draw_colored_polygon(PackedVector2Array([tip * 1.12, base + side * 1.5, base - side * 1.5]), Color(COL_AIM, 0.3))
+	draw_colored_polygon(PackedVector2Array([tip, base + side, base - side]), COL_AIM)
 
-	# Ombre bleu nuit
-	draw_set_transform(Vector2(0, 8), 0.0, Vector2(1.0, 0.55))
-	draw_circle(Vector2.ZERO, BODY_RADIUS + 3.0, Color(COL_SHADOW, COL_SHADOW.a * alpha))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-	# Flèche de visée (lueur rouge)
-	var tip: Vector2 = aim_direction * (BODY_RADIUS + 18.0)
-	var base: Vector2 = aim_direction * (BODY_RADIUS + 6.0)
-	var side: Vector2 = aim_direction.orthogonal() * 7.0
-	draw_colored_polygon(PackedVector2Array([tip, base + side, base - side]), tint.call(COL_AIM))
-
-	# Tout le corps est orienté vers la visée : repère local où -Y = avant.
-	var ang: float = aim_direction.angle() + PI * 0.5
-	draw_set_transform(Vector2.ZERO, ang, Vector2.ONE)
-	# Pans d'écharpe flottant à l'arrière
-	draw_colored_polygon(PackedVector2Array([Vector2(-4, 8), Vector2(-14, 30), Vector2(-6, 28), Vector2(0, 10)]), tint.call(COL_SCARF))
-	draw_colored_polygon(PackedVector2Array([Vector2(3, 9), Vector2(10, 32), Vector2(15, 26), Vector2(7, 8)]), tint.call(COL_SCARF.darkened(0.2)))
-	# Épaulières / armure sombre
-	draw_circle(Vector2.ZERO, BODY_RADIUS + 2.0, tint.call(COL_OUTLINE))
-	draw_circle(Vector2.ZERO, BODY_RADIUS, tint.call(COL_ARMOR))
-	draw_arc(Vector2.ZERO, BODY_RADIUS - 2.5, 0.0, TAU, 32, tint.call(COL_ARMOR_TRIM), 2.0, true)
-	# Sangle de cuir en diagonale
-	draw_line(Vector2(-12, -9), Vector2(11, 11), tint.call(COL_LEATHER), 3.0, true)
-	# Écharpe autour du cou
-	draw_arc(Vector2(0, -2), 10.0, PI * 0.1, PI * 0.9, 12, tint.call(COL_SCARF), 5.0, true)
-	# Cornes / plumes rouges
-	draw_colored_polygon(PackedVector2Array([Vector2(-7, -14), Vector2(-14, -27), Vector2(-3, -17)]), tint.call(COL_MARK))
-	draw_colored_polygon(PackedVector2Array([Vector2(7, -14), Vector2(14, -27), Vector2(3, -17)]), tint.call(COL_MARK))
-	# Masque kitsune : tête ovale + museau pointu vers l'avant
-	var mask := PackedVector2Array([
-		Vector2(-9, -6), Vector2(-10, -13), Vector2(-6, -19), Vector2(0, -25),
-		Vector2(6, -19), Vector2(10, -13), Vector2(9, -6), Vector2(0, -2)])
-	var mask_outline := PackedVector2Array()
-	for v: Vector2 in mask:
-		mask_outline.append(v * 1.15 + Vector2(0, 1.5))
-	draw_colored_polygon(mask_outline, tint.call(COL_OUTLINE))
-	draw_colored_polygon(mask, tint.call(COL_MASK))
-	# Marques rouges sur le masque
-	draw_line(Vector2(0, -24), Vector2(0, -17), tint.call(COL_MARK), 2.0, true)
-	draw_line(Vector2(-8, -8), Vector2(-4, -11), tint.call(COL_MARK), 2.0, true)
-	draw_line(Vector2(8, -8), Vector2(4, -11), tint.call(COL_MARK), 2.0, true)
-	# Yeux rouges lumineux (halo + coeur)
-	for ex: float in [-4.0, 4.0]:
-		var e := Vector2(ex, -14)
-		draw_circle(e, 3.6, Color(COL_EYE, 0.35 * alpha))
-		draw_circle(e, 1.8, Color(1, 1, 1) if flash else Color(1.0, 0.55, 0.4, alpha))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-	# Barre de vie (panneau bleu nuit)
-	var w: float = 44.0
-	var h: float = 6.0
-	var top_left := Vector2(-w * 0.5, -BODY_RADIUS - 22.0)
+func _draw_overlay() -> void:
+	# Arc de lame rouge lumineux devant le héros
+	if _slash_left > 0.0:
+		var t: float = 1.0 - _slash_left / SLASH_DURATION
+		var center := Vector2(0.0, -SLASH_HEIGHT) + _slash_dir * 8.0
+		var a0: float = _slash_dir.angle()
+		var sweep: float = lerpf(0.35, 1.0, minf(t * 2.0, 1.0))
+		var from: float = a0 - SLASH_HALF_ANGLE
+		var to: float = a0 - SLASH_HALF_ANGLE + SLASH_HALF_ANGLE * 2.0 * sweep
+		var fade: float = 1.0 - maxf(t - 0.4, 0.0) / 0.6
+		_draw_crescent(center, SLASH_RADIUS + 4.0, 11.0, from, to, Color(COL_SLASH, 0.28 * fade))
+		_draw_crescent(center, SLASH_RADIUS, 7.0, from, to, Color(COL_SLASH, 0.85 * fade))
+		_draw_crescent(center, SLASH_RADIUS + 1.0, 2.5, from, to, Color(COL_SLASH_CORE, 0.9 * fade))
+	# Barre de vie (panneau bleu nuit) au-dessus de la tête
+	var w: float = 40.0
+	var h: float = 5.0
+	var top_left := Vector2(-w * 0.5, -SPRITE_WORLD_HEIGHT - 9.0)
 	var ratio: float = clampf(hp / maxf(max_hp, 1.0), 0.0, 1.0)
-	draw_rect(Rect2(top_left - Vector2(1.5, 1.5), Vector2(w + 3, h + 3)), Color(0.07, 0.1, 0.18, 0.9))
-	draw_rect(Rect2(top_left, Vector2(w, h)), Color(0.25, 0.05, 0.07))
+	_overlay.draw_rect(Rect2(top_left - Vector2(1.5, 1.5), Vector2(w + 3, h + 3)), Color(0.07, 0.1, 0.18, 0.9))
+	_overlay.draw_rect(Rect2(top_left, Vector2(w, h)), Color(0.25, 0.05, 0.07))
 	var hp_col: Color = Color(0.35, 0.9, 0.35).lerp(Color(0.95, 0.2, 0.15), 1.0 - ratio)
-	draw_rect(Rect2(top_left, Vector2(w * ratio, h)), hp_col)
+	_overlay.draw_rect(Rect2(top_left, Vector2(w * ratio, h)), hp_col)
+
+
+## Croissant : épais au milieu, effilé aux extrémités, aplati en perspective.
+func _draw_crescent(center: Vector2, radius: float, thickness: float, from: float, to: float, col: Color) -> void:
+	var n: int = 14
+	var outer := PackedVector2Array()
+	var inner := PackedVector2Array()
+	var flat := Vector2(1.0, 0.7)
+	for i: int in n + 1:
+		var k: float = float(i) / float(n)
+		var a: float = lerpf(from, to, k)
+		var th: float = thickness * sin(k * PI)
+		var dir := Vector2(cos(a), sin(a))
+		outer.append(center + dir * (radius + th * 0.5) * flat)
+		inner.append(center + dir * (radius - th * 0.5) * flat)
+	inner.reverse()
+	outer.append_array(inner)
+	_overlay.draw_colored_polygon(outer, col)
