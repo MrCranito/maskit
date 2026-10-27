@@ -55,7 +55,7 @@ PAS de monde ouvert. Une carte = des bâtiments dans lesquels le joueur entre, r
 4. Retour au hub : vente, amélioration, nouveau raid.
 
 ## Vue et exploration
-- Caméra de dessus qui suit le joueur. Joystick virtuel (mobile), WASD/ZQSD + souris (PC). Tir automatique sur l'ennemi le plus proche, visée manuelle optionnelle sur PC.
+- Jeu uniquement en paysage. Caméra de dessus qui suit le joueur et anticipe la visée. Mobile : deux joysticks (gauche = déplacement, droit = viser et tirer). PC : ZQSD/WASD + souris pour viser, clic gauche pour tirer. Pas de tir automatique.
 - Brouillard de guerre à 3 états : jamais vu (noir), exploré hors vue (grisé, ennemis cachés), visible. Vision bloquée par les murs. Implémentation : texture de masque mise à jour depuis la position du joueur + shader sur CanvasLayer.
 - Donjon procédural : graphe de salles reliées par des couloirs, seed rejouable.
   Types de salles : combat, fouille, piège, repos, super-loot verrouillée, boss, extraction.

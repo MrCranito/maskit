@@ -19,6 +19,7 @@ var color: Color = Color.WHITE
 var source: Node = null
 ## Cibles déjà touchées pendant ce vol (évite les doubles touches).
 var _hit_ids: Dictionary = {}
+var _drawn_color: Color = Color(0, 0, 0, 0)
 
 
 func _ready() -> void:
@@ -44,7 +45,12 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node) -> void:
 	source = from
 	_hit_ids.clear()
 	_set_active(true)
-	queue_redraw()
+	# Recyclé depuis le pool : pas d'interpolation depuis son ancienne position.
+	reset_physics_interpolation()
+	# Le dessin (traînée) ne dépend que de la couleur : redessin seulement si elle change.
+	if color != _drawn_color:
+		_drawn_color = color
+		queue_redraw()
 
 
 func deactivate() -> void:

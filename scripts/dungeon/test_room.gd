@@ -280,14 +280,11 @@ func _build_ui() -> void:
 	hud = HUD_SCRIPT.new() as Control
 	ui_layer.add_child(hud)
 
-	if ResourceLoader.exists(JOYSTICK_SCENE_PATH):
-		var js_scene := load(JOYSTICK_SCENE_PATH) as PackedScene
-		if js_scene != null:
-			var joystick := js_scene.instantiate()
-			joystick.name = "VirtualJoystick"
-			ui_layer.add_child(joystick)
-	else:
+	# Double joystick : gauche = déplacement, droit = visée + tir.
+	if TouchJoystick.create_pair(ui_layer).is_empty():
 		push_warning("TestRoom: joystick virtuel introuvable (%s)." % JOYSTICK_SCENE_PATH)
+	if is_instance_valid(player) and player.has_method("refresh_joysticks"):
+		player.call("refresh_joysticks")
 
 	if ResourceLoader.exists(DEBUG_OVERLAY_SCENE_PATH):
 		var overlay := (load(DEBUG_OVERLAY_SCENE_PATH) as PackedScene).instantiate()

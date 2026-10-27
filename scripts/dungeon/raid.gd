@@ -536,6 +536,8 @@ func place_player(cell: Vector2i) -> void:
 	player.global_position = FloorLayout.cell_to_world(cell)
 	if player is CharacterBody2D:
 		(player as CharacterBody2D).velocity = Vector2.ZERO
+	# Téléportation : pas d'interpolation physique entre l'ancienne et la nouvelle position.
+	player.reset_physics_interpolation()
 	var cam := player.get_node_or_null("Camera2D") as Camera2D
 	if cam != null:
 		cam.reset_smoothing()
@@ -644,23 +646,21 @@ func _build_ui() -> void:
 	_build_banner()
 	_build_toast()
 
-	if ResourceLoader.exists(JOYSTICK_SCENE_PATH):
-		var js_scene := load(JOYSTICK_SCENE_PATH) as PackedScene
-		if js_scene != null:
-			var joystick := js_scene.instantiate()
-			joystick.name = "VirtualJoystick"
-			ui_layer.add_child(joystick)
-	else:
+	# Double joystick (paysage) : gauche = déplacement, droit = visée + tir.
+	# Ajoutés AVANT les autres contrôles : ceux-ci (bouton action, sac…) reçoivent
+	# les touches en premier, les sticks ne prennent que les touches non gérées.
+	var sticks: Array[TouchJoystick] = TouchJoystick.create_pair(ui_layer)
+	for j: TouchJoystick in sticks:
+		ui_layer.move_child(j, 0)
+	if sticks.is_empty():
 		push_warning("Raid: joystick virtuel introuvable (%s)." % JOYSTICK_SCENE_PATH)
+	if is_instance_valid(player) and player.has_method("refresh_joysticks"):
+		player.call("refresh_joysticks")
 
 	if ResourceLoader.exists(DEBUG_OVERLAY_SCENE_PATH):
 		var overlay := (load(DEBUG_OVERLAY_SCENE_PATH) as PackedScene).instantiate()
 		ui_layer.add_child(overlay)
-		if overlay is Control:
-			# Sous le bandeau monde/étage (après _ready, qui fixe ses ancres).
-			var shift := Balance.get_float("raid", "debug_overlay_offset", 90.0)
-			(overlay as Control).offset_top += shift
-			(overlay as Control).offset_bottom += shift
+		_layout_debug_overlay(overlay)
 	else:
 		push_warning("Raid: overlay debug introuvable (%s)." % DEBUG_OVERLAY_SCENE_PATH)
 
@@ -705,14 +705,32 @@ static func _make_label(size: int, color: Color, bold: bool) -> Label:
 	return l
 
 
-## Bandeau monde + étage + salle actuelle, sous la barre de vie.
+## Overlay F3 (paysage) : sous la barre de vie, à gauche, police compacte.
+func _layout_debug_overlay(overlay: Node) -> void:
+	var top := Balance.get_float("hud", "debug_overlay_top", 96.0)
+	var left := Balance.get_float("hud", "margin", 16.0)
+	var font_size := int(Balance.get_value("hud", "debug_overlay_font_size", 15))
+	for c: Node in overlay.get_children():
+		if c is PanelContainer:
+			(c as PanelContainer).position = Vector2(left, top)
+			for l: Node in c.get_children():
+				if l is Label and (l as Label).label_settings != null:
+					(l as Label).label_settings.font_size = font_size
+
+
+## Bandeau monde + étage + salle actuelle, en haut au centre (paysage).
 func _build_banner() -> void:
 	var center := CenterContainer.new()
 	center.name = "Banner"
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	center.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	center.offset_top = 104
-	center.offset_bottom = 104 + 76
+	center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	center.anchor_left = 0.5
+	center.anchor_right = 0.5
+	var top := Balance.get_float("hud", "banner_top", 12.0)
+	center.offset_left = -260
+	center.offset_right = 260
+	center.offset_top = top
+	center.offset_bottom = top + 60
 	ui_layer.add_child(center)
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -722,9 +740,9 @@ func _build_banner() -> void:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-	_banner_title = _make_label(24, Color.WHITE, true)
+	_banner_title = _make_label(20, Color.WHITE, true)
 	vbox.add_child(_banner_title)
-	_banner_room = _make_label(19, TEXT_SECONDARY, false)
+	_banner_room = _make_label(16, TEXT_SECONDARY, false)
 	vbox.add_child(_banner_room)
 
 
