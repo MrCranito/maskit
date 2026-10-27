@@ -2,16 +2,16 @@
 
 Les phases se font une par une. Chacune se termine par un résumé, des tests et une PR vers `develop`.
 
-## Phase 1 — Base *(en cours)*
+## Phase 1 — Base *(terminée)*
 - [x] Dépôt : .gitignore, .gitattributes (LFS), LICENSE, README, ROADMAP
 - [x] GUT installé, tests headless et CI GitHub Actions (tests + exports)
 - [x] Autoloads : EventBus, Balance (`data/balance.cfg`), InputSetup, GameState
-- [ ] Joueur : déplacement clavier (ZQSD/WASD/flèches) et joystick virtuel mobile
-- [ ] Tir automatique sur l'ennemi le plus proche avec pooling des projectiles, plus un tir manuel au clic gauche
-- [ ] Caméra qui suit le joueur, salle de test avec cible d'entraînement
-- [ ] Overlay de debug F3 : FPS, seed, zones de portée
+- [x] Joueur : déplacement clavier (ZQSD/WASD/flèches) et joystick virtuel mobile
+- [x] Tir automatique sur l'ennemi le plus proche avec pooling des projectiles, plus un tir manuel au clic gauche
+- [x] Caméra qui suit le joueur, salle de test avec cible d'entraînement
+- [x] Overlay de debug F3 : FPS, seed, zones de portée
 
-## Phase 2 — Ennemis
+## Phase 2 — Ennemis *(prochaine)*
 - [ ] StateMachine générique réutilisable (Idle/Patrouille → Alerte → Poursuite → Attaque → Retour)
 - [ ] Zone de détection (cercle ou cône) et raycast de ligne de vue bloqué par les murs
 - [ ] Indicateur « ! » à l'alerte et propagation de l'alerte aux voisins proches
