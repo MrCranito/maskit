@@ -1,0 +1,180 @@
+# Exports multiplateformes à chaque tag `v*` (ex : v0.1.0), puis Release GitHub.
+#
+# Image : barichello/godot-ci:4.4.1 (Godot + templates d'export + SDK Android).
+#
+# --- Android : secrets du dépôt (Settings > Secrets and variables > Actions) ---
+#   ANDROID_KEYSTORE_BASE64    keystore de release encodé en base64
+#                              (Linux/macOS : `base64 -w 0 release.keystore`)
+#   ANDROID_KEYSTORE_ALIAS     alias de la clef dans le keystore
+#   ANDROID_KEYSTORE_PASSWORD  mot de passe du keystore
+# Si ces secrets sont absents, le job génère un keystore DEBUG jetable et
+# produit un APK de debug (installable pour tester, non publiable sur un store).
+# Ne versionnez JAMAIS de keystore dans le dépôt.
+name: Export
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.4.1"
+  EXPORT_NAME: royaumes-des-masques
+
+permissions:
+  contents: read
+
+jobs:
+  export-desktop-web:
+    name: Export ${{ matrix.preset }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: barichello/godot-ci:4.4.1
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: "Windows Desktop"
+            slug: windows
+            file: royaumes-des-masques.exe
+          - preset: "Linux"
+            slug: linux
+            file: royaumes-des-masques.x86_64
+          - preset: "Web"
+            slug: web
+            file: index.html
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Installer les templates d'export
+        # L'image place les templates dans /root ; GitHub Actions utilise HOME=/github/home.
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
+             ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+
+      - name: Importer le projet
+        run: godot --headless --path . --import
+
+      - name: Exporter
+        run: |
+          mkdir -p "build/${{ matrix.slug }}"
+          godot --headless --path . --export-release "${{ matrix.preset }}" \
+            "build/${{ matrix.slug }}/${{ matrix.file }}"
+          test -n "$(ls -A build/${{ matrix.slug }})"
+
+      - name: Zipper
+        run: |
+          apt-get update -qq && apt-get install -y -qq zip >/dev/null || true
+          cd "build/${{ matrix.slug }}"
+          zip -r -q "../../${EXPORT_NAME}-${{ matrix.slug }}-${GITHUB_REF_NAME}.zip" .
+
+      - name: Publier l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}
+          path: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}-*.zip
+          if-no-files-found: error
+
+  export-android:
+    name: Export Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container:
+      image: barichello/godot-ci:4.4.1
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Installer templates et réglages éditeur
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates ~/.config/godot
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable \
+             ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          # editor_settings-4.4.tres fourni par l'image (chemins SDK Android, keystore debug)
+          cp /root/.config/godot/editor_settings-*.tres ~/.config/godot/ || true
+
+      - name: Préparer le keystore
+        id: keystore
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Keystore de release fourni par les secrets."
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$ANDROID_KEYSTORE_ALIAS" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Secrets Android absents : génération d'un keystore debug jetable."
+            KS=/root/debug.keystore
+            if [ ! -f "$KS" ]; then
+              KS="$RUNNER_TEMP/debug.keystore"
+              keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+                -keypass android -storepass android -keystore "$KS" \
+                -dname "CN=Android Debug,O=Android,C=US" -validity 9999
+            fi
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+            echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Importer le projet
+        run: godot --headless --path . --import
+
+      - name: Exporter l'APK
+        run: |
+          mkdir -p build/android
+          if [ "${{ steps.keystore.outputs.mode }}" = "release" ]; then
+            godot --headless --path . --export-release "Android" "build/android/${EXPORT_NAME}.apk"
+          else
+            godot --headless --path . --export-debug "Android" "build/android/${EXPORT_NAME}-debug.apk"
+          fi
+          ls -la build/android
+          test -n "$(ls build/android/*.apk 2>/dev/null)"
+
+      - name: Zipper
+        run: |
+          apt-get update -qq && apt-get install -y -qq zip >/dev/null || true
+          cd build/android
+          zip -r -q "../../${EXPORT_NAME}-android-${GITHUB_REF_NAME}.zip" .
+
+      - name: Publier l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXPORT_NAME }}-android
+          path: ${{ env.EXPORT_NAME }}-android-*.zip
+          if-no-files-found: error
+
+  release:
+    name: Release GitHub
+    needs: [export-desktop-web, export-android]
+    # Pas de release sur un déclenchement manuel, uniquement sur tag.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Récupérer les artefacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Créer la Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          files: dist/*.zip
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}

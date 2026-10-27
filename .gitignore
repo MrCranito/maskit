@@ -1,0 +1,48 @@
+# --- Godot 4 ---
+# Cache de l'éditeur et des imports (régénéré automatiquement).
+# NB : les fichiers *.import à côté des assets DOIVENT être versionnés.
+.godot/
+# Ancien dossier d'import Godot 3 (au cas où)
+.import/
+# Fichiers de mono / C# (non utilisé, mais sans risque)
+.mono/
+data_*/
+mono_crash.*.json
+
+# --- Exports et builds ---
+build/
+builds/
+export/
+exports/
+*.apk
+*.aab
+*.pck
+*.zip
+
+# Android : modèle Gradle installé par l'éditeur
+android/build/
+android/.build_version
+
+# Keystores (ne JAMAIS versionner de clefs de signature)
+*.keystore
+*.jks
+
+# Identifiants d'export (Godot 4.4 sépare les secrets dans ce fichier)
+.godot/export_credentials.cfg
+export_credentials.cfg
+
+# --- Résultats de tests ---
+.gut_editor_config.json
+.gut_editor_shortcuts.cfg
+test_results*.xml
+
+# --- Temporaires / OS / éditeurs ---
+*.tmp
+*.bak
+*~
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

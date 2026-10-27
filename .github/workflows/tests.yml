@@ -1,0 +1,77 @@
+# Tests unitaires GUT en headless sur chaque PR et chaque push vers develop/main.
+name: Tests GUT
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.4.1"
+
+jobs:
+  gut:
+    name: Tests GUT (Godot 4.4.1)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache du binaire Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Télécharger Godot (binaire Linux officiel)
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot-bin
+          cd ~/godot-bin
+          URL="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl -fsSL -o godot.zip "$URL"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          chmod +x godot
+          rm godot.zip
+
+      - name: Ajouter Godot au PATH
+        run: |
+          echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+
+      - name: Version de Godot
+        run: godot --version
+
+      - name: Importer le projet
+        run: godot --headless --path . --import
+
+      - name: Lancer les tests GUT
+        run: |
+          set -o pipefail
+          godot --headless --path . -s addons/gut/gut_cmdln.gd \
+            -gdir=res://tests -ginclude_subdirs -gexit \
+            -gjunit_xml_file=res://test_results.xml 2>&1 | tee gut_output.log
+          # Sécurité supplémentaire : GUT sort avec 1 en cas d'échec, mais on
+          # vérifie aussi le résumé pour ne jamais laisser passer un échec.
+          if grep -qE "^\s*Failing\s+[1-9]|Script Error|Parse Error" gut_output.log; then
+            echo "::error::Des tests GUT ont échoué ou un script ne compile pas."
+            exit 1
+          fi
+
+      - name: Publier le rapport JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gut-results
+          path: |
+            test_results.xml
+            gut_output.log
+          if-no-files-found: ignore

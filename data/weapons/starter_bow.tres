@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" uid="uid://bwo1n5qqyssu6" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"starter_bow"
+display_name = "Arc du novice"
+family = "bow"
+rarity = 0
+damage = 10.0
+fire_rate = 2.5
+projectile_speed = 700.0
+range = 520.0
+projectile_lifetime = 1.2
+projectile_count = 1
+spread_degrees = 0.0
+pierce = 0
+projectile_color = Color(1, 0.22, 0.15, 1)
+affixes = Array[StringName]([])

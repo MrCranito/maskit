@@ -1,0 +1,58 @@
+# Normalisation : texte en LF partout (Godot est sensible aux fins de ligne dans les diffs)
+* text=auto eol=lf
+
+*.gd       text eol=lf
+*.gdshader text eol=lf
+*.tscn     text eol=lf
+*.tres     text eol=lf
+*.cfg      text eol=lf
+*.godot    text eol=lf
+*.import   text eol=lf
+*.uid      text eol=lf
+*.md       text eol=lf
+*.json     text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.svg      text eol=lf
+*.txt      text eol=lf
+
+# Binaires : stockés via Git LFS (lancer `git lfs install` une fois)
+*.png   filter=lfs diff=lfs merge=lfs -text
+*.jpg   filter=lfs diff=lfs merge=lfs -text
+*.jpeg  filter=lfs diff=lfs merge=lfs -text
+*.webp  filter=lfs diff=lfs merge=lfs -text
+*.gif   filter=lfs diff=lfs merge=lfs -text
+*.bmp   filter=lfs diff=lfs merge=lfs -text
+*.tga   filter=lfs diff=lfs merge=lfs -text
+*.exr   filter=lfs diff=lfs merge=lfs -text
+*.hdr   filter=lfs diff=lfs merge=lfs -text
+*.psd   filter=lfs diff=lfs merge=lfs -text
+*.kra   filter=lfs diff=lfs merge=lfs -text
+*.aseprite filter=lfs diff=lfs merge=lfs -text
+*.ogg   filter=lfs diff=lfs merge=lfs -text
+*.wav   filter=lfs diff=lfs merge=lfs -text
+*.mp3   filter=lfs diff=lfs merge=lfs -text
+*.flac  filter=lfs diff=lfs merge=lfs -text
+*.ttf   filter=lfs diff=lfs merge=lfs -text
+*.otf   filter=lfs diff=lfs merge=lfs -text
+*.woff  filter=lfs diff=lfs merge=lfs -text
+*.woff2 filter=lfs diff=lfs merge=lfs -text
+*.glb   filter=lfs diff=lfs merge=lfs -text
+*.gltf  filter=lfs diff=lfs merge=lfs -text
+*.fbx   filter=lfs diff=lfs merge=lfs -text
+*.obj   filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.mp4   filter=lfs diff=lfs merge=lfs -text
+*.webm  filter=lfs diff=lfs merge=lfs -text
+*.ogv   filter=lfs diff=lfs merge=lfs -text
+
+# Fichiers fournis par l'addon GUT : versionnés normalement (pas LFS),
+# pour que le dépôt reste utilisable sans LFS pour les tests en CI.
+addons/gut/**/*.png -filter -diff -merge binary
+addons/gut/**/*.ttf -filter -diff -merge binary
+addons/gut/**/*.otf -filter -diff -merge binary
+
+# Exclusions des archives `git archive`
+.github/       export-ignore
+.gitattributes export-ignore
+.gitignore     export-ignore

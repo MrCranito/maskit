@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Icône : masque blanc stylisé, marques rouges, fond bleu nuit -->
+  <defs>
+    <radialGradient id="fond" cx="50%" cy="40%" r="70%">
+      <stop offset="0" stop-color="#2a3a6e"/>
+      <stop offset="1" stop-color="#0f1630"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="url(#fond)" stroke="#0a0f22" stroke-width="4"/>
+  <!-- Contour du masque -->
+  <path d="M64 18 C90 18 104 32 104 56 C104 84 86 106 64 112 C42 106 24 84 24 56 C24 32 38 18 64 18 Z"
+        fill="#f4efe6" stroke="#1b1b26" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Ombre douce sur la moitié droite -->
+  <path d="M64 18 C90 18 104 32 104 56 C104 84 86 106 64 112 Z" fill="#d9d1c4" opacity="0.55"/>
+  <!-- Marques rouges -->
+  <path d="M64 24 L58 40 L64 46 L70 40 Z" fill="#c8202f"/>
+  <path d="M34 72 C40 76 46 82 48 92" fill="none" stroke="#c8202f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M94 72 C88 76 82 82 80 92" fill="none" stroke="#c8202f" stroke-width="5" stroke-linecap="round"/>
+  <!-- Yeux -->
+  <path d="M36 56 C42 46 54 46 58 58 C50 62 42 62 36 56 Z" fill="#1b1b26"/>
+  <path d="M92 56 C86 46 74 46 70 58 C78 62 86 62 92 56 Z" fill="#1b1b26"/>
+  <!-- Bouche -->
+  <path d="M54 92 Q64 98 74 92" fill="none" stroke="#1b1b26" stroke-width="4" stroke-linecap="round"/>
+</svg>

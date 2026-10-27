@@ -1,0 +1,52 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Les Royaumes des Masques : Extraction"
+run/main_scene="res://scenes/rooms/test_room.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://scripts/core/event_bus.gd"
+Balance="*res://scripts/core/balance.gd"
+InputSetup="*res://scripts/core/input_setup.gd"
+GameState="*res://scripts/core/game_state.gd"
+SaveManager="*res://scripts/save/save_manager.gd"
+LootManager="*res://scripts/loot/loot_manager.gd"
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=540
+window/size/window_height_override=960
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=1
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gut/plugin.cfg")
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[layer_names]
+
+2d_physics/layer_1="world"
+2d_physics/layer_2="player"
+2d_physics/layer_3="enemies"
+2d_physics/layer_4="player_projectiles"
+2d_physics/layer_5="enemy_projectiles"
+2d_physics/layer_6="interactables"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=1
+environment/defaults/default_clear_color=Color(0.07, 0.1, 0.18, 1)
