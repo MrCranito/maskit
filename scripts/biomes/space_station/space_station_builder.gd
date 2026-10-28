@@ -67,6 +67,8 @@ const HIDING_DEFS := {
 	&"cryo": {"name": "Capsule cryogénique", "scale": 0.55, "block": Vector2(40, 16), "shadow": 24.0, "foot": 4.0, "reach": 4.0},
 }
 ## Grands décors : décalage (monde) du centre de l'empreinte depuis la case d'appui.
+## Échelle des décors muraux de l'aménagement.
+const WALL_DECOR_SCALE := 1.3
 const BIG_OFFSET := {&"shuttle": Vector2(0, -64), &"reactor_core": Vector2(-32, -32)}
 
 var layout: FloorLayout = null
@@ -596,6 +598,10 @@ class WallLayer extends Node2D:
 		var f := Rect2(o + Vector2(0, cap_h), Vector2(TS, wh))
 		var fd := builder.face_desc(c)
 		draw_texture_rect_region(tex, f, SpaceStationBuilder.wall_region(fd["key"], fd["v"]), Color(0.92, 0.95, 1.0))
+		var wd: Variant = L.wall_decor_cells.get(c, null)
+		if wd != null and Prop.has_piece(String(wd)):
+			# Décor mural de l'aménagement (écran, grille, signalétique…), posé sur la face.
+			draw_texture_rect_region(Prop.ATLAS, Prop.piece_dest(String(wd), Vector2(f.get_center().x, f.end.y - 4.0), WALL_DECOR_SCALE), Prop.piece_region(String(wd)))
 		var west_open := not _is_wall(c + Vector2i.LEFT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(-1, 1)))
 		var east_open := not _is_wall(c + Vector2i.RIGHT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(1, 1)))
 		if west_open:
@@ -704,11 +710,22 @@ class LiftVisual extends Node2D:
 # --- Décors ----------------------------------------------------------------------------------
 
 func _build_props() -> void:
+	# Une seule StaticBody2D pour toutes les collisions de décors (shape owners).
+	var shared := Prop.make_shared_body()
+	add_child(shared)
+	if not layout.decor_spawns.is_empty():
+		var fl := FloorDetails.new()
+		fl.name = "FloorDetails"
+		fl.spawns = layout.decor_spawns
+		fl.atlas = Prop.ATLAS
+		fl.meta = Prop.AtlasMeta.PIECES
+		fl.z_index = 1
+		add_child(fl)
 	for s: FloorLayout.Spawn in layout.prop_spawns:
-		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25)
+		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25) + s.offset
 		if BIG_OFFSET.has(s.kind):
 			pos = FloorLayout.cell_to_world(s.cell) + BIG_OFFSET[s.kind] + Vector2(0.0, TS * 0.5)
-		var p := Prop.create(s.kind, pos)
+		var p := Prop.create(s.kind, pos, shared, s.flip)
 		add_child(p)
 		_props.append(p)
 		var g: Array = p.call("get_glow")
@@ -719,6 +736,26 @@ func _build_props() -> void:
 			_alarms.append([pos + g[0], 90.0])
 		else:
 			add_glow(pos + g[0], 210.0 if big else 70.0, g[1], 1.2 if big else 0.8)
+
+
+## Détails au sol non bloquants de l'aménagement (tapis, papiers, outils…) : pièces de l'atlas des
+## décors du biome, un seul nœud dessiné une fois.
+class FloorDetails extends Node2D:
+	var spawns: Array[FloorLayout.Spawn] = []
+	var atlas: Texture2D = null
+	var meta: Dictionary = {}
+
+	func _draw() -> void:
+		for s: FloorLayout.Spawn in spawns:
+			var e: Variant = meta.get(String(s.kind), null)
+			if e == null:
+				continue
+			var r: Array = (e as Dictionary)["rect"]
+			var reg := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			var size := reg.size * 0.5
+			draw_set_transform(FloorLayout.cell_to_world(s.cell) + s.offset, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
+			draw_texture_rect_region(atlas, Rect2(-size * 0.5, size), reg)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # --- Extraction ------------------------------------------------------------------------------

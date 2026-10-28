@@ -11,6 +11,9 @@ extends RefCounted
 ## Ameublement choisi d'après Room.tags[0] (rôle posé par mall_layout.gd).
 
 const Cfg := preload("res://scripts/biomes/mall/mall_config.gd")
+const Fur := preload("res://scripts/dungeon/gen/furnisher.gd")
+const Tpl := preload("res://scripts/biomes/mall/mall_templates.gd")
+const PropScript := preload("res://scripts/biomes/mall/mall_prop.gd")
 const T := FloorLayout.Tile
 
 ## Emprise (cases) des grands décors : [largeur, hauteur]. Le point d'appui (spawn) est
@@ -139,6 +142,7 @@ class Ctx:
 	var room_of: PackedInt32Array
 	var door_adj: Dictionary = {}
 	var cand_cache: Dictionary = {}
+	var fur: Fur.Ctx = null          ## Aménagement par gabarits (salles intérieures)
 
 	func room_id_at(p: Vector2i) -> int:
 		if not L.in_bounds(p):
@@ -153,7 +157,13 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 	_reserve(c)
 	_index_rooms(c)
 	_centerpieces(c)
+	# Salles intérieures à gabarit (boutiques, réserves, bureaux…) : aménagement ordonné ; les
+	# espaces ouverts (galeries, parking, toit) gardent l'ameublement par règles ci-dessous.
+	c.fur = Fur.make_ctx(L, c.blocked, c.reserved, c.enemy_cells, c.room_of, furniture_defs(), world.has_container)
+	Fur.prepare(c.fur, Tpl.templates(), seed_value, "mall")
 	for room in L.rooms:
+		if Fur.templated(c.fur, room):
+			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash([seed_value, L.floor_index, room.id, "mall_furnish"])
 		_furnish(c, room, rng)
@@ -169,9 +179,9 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 
 
 ## Cases occupées par l'emprise d'un grand décor dont le point d'appui est `anchor`.
-static func footprint(kind: StringName, anchor: Vector2i) -> Array[Vector2i]:
+static func footprint(kind: StringName, anchor: Vector2i, size: Vector2i = Vector2i.ZERO) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	var fp: Vector2i = BIG.get(kind, Vector2i.ONE)
+	var fp: Vector2i = size if size != Vector2i.ZERO else BIG.get(kind, Vector2i.ONE)
 	var x0 := anchor.x - (fp.x - 1) / 2
 	for dy in fp.y:
 		for dx in fp.x:
@@ -190,6 +200,29 @@ static func enemy_count(room: FloorLayout.Room, floor_index: int, difficulty: in
 		bonus = Cfg.geti("guards_min", 2) + int(Cfg.by_index("guards_bonus", difficulty, [0, 0, 1, 1, 2]))
 		cap += bonus
 	return mini(int(floor(n)) + bonus, cap)
+
+
+## Cases occupées par un spawn de décor : emprise du gabarit (Spawn.size) ou grand décor (BIG).
+static func spawn_footprint(s: FloorLayout.Spawn) -> Array[Vector2i]:
+	if s.size != Vector2i.ONE:
+		return FloorLayout.spawn_cells(s)
+	return footprint(s.kind, s.cell)
+
+
+static var _defs_cache: Dictionary = {}
+
+
+## Définitions de mobilier (collision de mall_prop.gd + compléments du gabarit), décors de l'atlas.
+static func furniture_defs() -> Dictionary:
+	if not _defs_cache.is_empty():
+		return _defs_cache
+	for k: StringName in PropScript.DEFS:
+		if not PropScript.has_piece("prop_" + String(k)):
+			continue
+		var d: Dictionary = (PropScript.DEFS[k] as Dictionary).duplicate()
+		d.merge(Tpl.META.get(k, {}), true)
+		_defs_cache[k] = d
+	return _defs_cache
 
 
 # --- Réservations ---------------------------------------------------------------
@@ -327,7 +360,8 @@ static func _try_place(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerato
 					crowded = true
 			if crowded:
 				continue
-		if _keeps_connectivity(c, p):
+		# Connexité locale + accès conservé aux conteneurs / cachettes voisins.
+		if Fur.keeps(c.fur, p):
 			c.blocked[p] = true
 			cells.remove_at(i)
 			return p
@@ -426,12 +460,21 @@ static func _containers(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerat
 	if room.type == FloorLayout.ROOM_SUPER_LOOT:
 		mn = Cfg.geti("super_loot_chests", 2)
 	n = clampi(maxi(n, mn), 0, Cfg.geti("container_max_per_room", 5))
+	if Fur.templated(c.fur, room):
+		# Salle aménagée : conteneurs intégrés au mobilier (emplacements du gabarit).
+		var firsts: Array = []
+		if room.type == FloorLayout.ROOM_SUPER_LOOT and c.world.has_container(SUPER_LOOT_CONTAINER):
+			for k in mn:
+				firsts.append(SUPER_LOOT_CONTAINER)
+		Fur.loot(c.fur, room, c.L.container_spawns, n, func() -> StringName: return _weighted(filtered, rng), firsts, "loot")
+		return
 	for i in n:
 		var forced := room.type == FloorLayout.ROOM_SUPER_LOOT and i < mn and c.world.has_container(SUPER_LOOT_CONTAINER)
 		var kind: StringName = SUPER_LOOT_CONTAINER if forced else _weighted(filtered, rng)
 		var p := _place_blocking(c, room, rng, &"wall")
 		if p.x < 0:
 			break
+		c.fur.access[p] = true
 		c.L.add_spawn(c.L.container_spawns, p, kind, room.id)
 
 
@@ -462,9 +505,14 @@ static func _hiding_spots(c: Ctx, seed_value: int) -> void:
 			if placed >= want:
 				return
 			var kind := _weighted(HIDING[_role(room)], rng)
+			if Fur.templated(c.fur, room):
+				if Fur.loot(c.fur, room, L.hiding_spot_spawns, 1, func() -> StringName: return kind, [kind], "hide") > 0:
+					placed += 1
+				continue
 			var p := _place_blocking(c, room, rng, &"wall")
 			if p.x < 0:
 				continue
+			c.fur.access[p] = true
 			L.add_spawn(L.hiding_spot_spawns, p, kind, room.id)
 			placed += 1
 

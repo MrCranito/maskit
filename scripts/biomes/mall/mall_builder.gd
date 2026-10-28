@@ -22,6 +22,8 @@ extends Node2D
 signal stairs_entered(stairs: FloorLayout.Stairs)
 
 const TS := float(FloorLayout.TILE_SIZE)
+## Échelle des décors muraux de l'aménagement.
+const WALL_DECOR_SCALE := 1.3
 const LAYER_WORLD := 1
 const MASK_PLAYER := 2
 const DoorScript := preload("res://scripts/biomes/mall/mall_door.gd")
@@ -834,6 +836,10 @@ class WallLayer extends Node2D:
 		if face:
 			var f := Rect2(o + Vector2(0, cap_h), Vector2(TS, wh))
 			draw_texture_rect_region(tex, f, MallBuilder.wall_region(fd["key"], fd["v"]), fd["mod"])
+			var wd: Variant = L.wall_decor_cells.get(c, null)
+			if wd != null and PropScript.has_piece(String(wd)):
+				# Décor mural de l'aménagement (affiche, horloge, étagère…), posé sur la face.
+				draw_texture_rect_region(PropScript.ATLAS, PropScript.piece_dest(String(wd), Vector2(f.get_center().x, f.end.y - 4.0), WALL_DECOR_SCALE), PropScript.piece_region(String(wd)))
 			var neon: Color = fd["neon"]
 			if neon.a > 0.0:
 				var nr := MallBuilder.wall_region("neon")
@@ -1042,21 +1048,52 @@ class StairsVisual extends Node2D:
 # --- Décors ----------------------------------------------------------------------
 
 func _build_props() -> void:
+	# Une seule StaticBody2D pour toutes les collisions de décors (shape owners).
+	var shared := PropScript.make_shared_body()
+	add_child(shared)
+	if not layout.decor_spawns.is_empty():
+		var fl := FloorDetails.new()
+		fl.name = "FloorDetails"
+		fl.spawns = layout.decor_spawns
+		fl.atlas = PropScript.ATLAS
+		fl.meta = PropScript.AtlasMeta.PIECES
+		fl.z_index = 1
+		add_child(fl)
 	for s: FloorLayout.Spawn in layout.prop_spawns:
 		var pos: Vector2
-		if Pop.BIG.has(s.kind):
+		if Pop.BIG.has(s.kind) and s.size == Vector2i.ONE:
 			var fp: Vector2i = Pop.BIG[s.kind]
 			var x0 := s.cell.x - (fp.x - 1) / 2
 			pos = Vector2(float(x0) + float(fp.x) * 0.5, float(s.cell.y) + 1.0 - float(fp.y) * 0.5) * TS
 		else:
-			pos = FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25)
-		var p := PropScript.create(s.kind, pos)
+			pos = FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25) + s.offset
+		var p := PropScript.create(s.kind, pos, shared, s.flip)
 		add_child(p)
 		_props.append(p)
 		var def: Dictionary = PropScript.def_of(s.kind)
 		var go: Vector2 = p.call("get_glow_offset")
 		if go != Vector2.INF and def.has("glow"):
 			add_glow(pos + go, float(def["glow"]), 1.0, def.get("tint", Color(1.0, 0.7, 0.4)))
+
+
+## Détails au sol non bloquants de l'aménagement (tapis, papiers, outils…) : pièces de l'atlas des
+## décors du biome, un seul nœud dessiné une fois.
+class FloorDetails extends Node2D:
+	var spawns: Array[FloorLayout.Spawn] = []
+	var atlas: Texture2D = null
+	var meta: Dictionary = {}
+
+	func _draw() -> void:
+		for s: FloorLayout.Spawn in spawns:
+			var e: Variant = meta.get(String(s.kind), null)
+			if e == null:
+				continue
+			var r: Array = (e as Dictionary)["rect"]
+			var reg := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			var size := reg.size * 0.5
+			draw_set_transform(FloorLayout.cell_to_world(s.cell) + s.offset, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
+			draw_texture_rect_region(atlas, Rect2(-size * 0.5, size), reg)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # --- Extraction -------------------------------------------------------------------

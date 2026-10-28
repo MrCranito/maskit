@@ -36,22 +36,48 @@ const DEFS := {
 	&"shuttle": {"block": Vector2(250, 96), "glow": Color(0.35, 0.65, 1.0)},
 	&"workbench": {"block": Vector2(80, 22), "glow": Color(1.0, 0.72, 0.35)},
 	&"fuel_drums": {"block": Vector2(50, 22)},
+	# Mobilier des gabarits d'aménagement (art/blender/space_station/build_furniture.py)
+	&"desk_station": {"block": Vector2(92, 40), "glow": Color(0.35, 0.85, 1.0)},
+	&"locker_bank": {"block": Vector2(100, 22)},
+	&"supply_shelf": {"block": Vector2(104, 24)},
+	&"crew_table": {"block": Vector2(70, 40), "glow": Color(0.35, 0.85, 1.0)},
+	&"med_cabinet_wall": {"block": Vector2(48, 18)},
+	&"tool_wall": {"block": Vector2(100, 22)},
+	&"crate_pallet": {"block": Vector2(50, 36)},
+	&"bio_bed": {"block": Vector2(52, 60), "glow": Color(0.8, 0.95, 1.0)},
+	&"ss_planter": {"block": Vector2(22, 16)},
+	&"ss_chair": {"block": Vector2.ZERO},
 }
 
 static var _tex_cache: Dictionary = {}
 
 var kind: StringName = &""
 var is_placeholder: bool = false
+## Corps de collision : le sien, ou le corps partagé de l'étage (create(…, shared)).
 var body: StaticBody2D = null
+var flipped: bool = false
+var _tex: Texture2D = null
 
 
-static func create(p_kind: StringName, pos: Vector2) -> Node2D:
+## `shared` : corps statique commun de l'étage (forme ajoutée par shape owner : aucun nœud de
+## collision ni de sprite par décor, le sprite est dessiné une fois dans _draw).
+static func create(p_kind: StringName, pos: Vector2, shared: StaticBody2D = null, p_flip: bool = false) -> Node2D:
 	var p: Node2D = (load("res://scripts/biomes/space_station/ss_prop.gd") as GDScript).new()
 	p.name = "Prop_%s" % String(p_kind)
 	p.set("kind", p_kind)
+	p.set("flipped", p_flip)
 	p.position = pos
-	p.call("_setup")
+	p.call("_setup", shared)
 	return p
+
+
+## Corps statique commun aux décors d'un étage (couche world).
+static func make_shared_body() -> StaticBody2D:
+	var b := StaticBody2D.new()
+	b.name = "PropBodies"
+	b.collision_layer = LAYER_WORLD
+	b.collision_mask = 0
+	return b
 
 
 static func has_piece(piece: String) -> bool:
@@ -116,8 +142,9 @@ func get_glow() -> Array:
 	return [off, d["glow"], bool(d.get("alarm", false))]
 
 
-func _setup() -> void:
+func _setup(shared: StaticBody2D = null) -> void:
 	set_process(false)
+	set_physics_process(false)
 	var tex: Texture2D = get_texture(kind) if DEFS.has(kind) else null
 	if tex == null:
 		is_placeholder = true
@@ -126,15 +153,16 @@ func _setup() -> void:
 		return
 	var def: Dictionary = DEFS[kind]
 	z_index = 1 if bool(def.get("flat", false)) else 10
-	var spr := Sprite2D.new()
-	spr.name = "Sprite"
-	spr.texture = tex
-	spr.centered = false
-	spr.scale = Vector2.ONE / PX_PER_WORLD
-	spr.offset = -piece_feet("prop_" + String(kind))
-	add_child(spr)
+	_tex = tex
 	var block: Vector2 = def.get("block", Vector2.ZERO)
-	if block != Vector2.ZERO:
+	if block != Vector2.ZERO and shared != null:
+		body = shared
+		var oid := shared.create_shape_owner(self)
+		var r0 := RectangleShape2D.new()
+		r0.size = block
+		shared.shape_owner_add_shape(oid, r0)
+		shared.shape_owner_set_transform(oid, Transform2D(0.0, position + Vector2(0.0, -block.y * 0.5) - shared.position))
+	elif block != Vector2.ZERO:
 		body = StaticBody2D.new()
 		body.name = "Body"
 		body.collision_layer = LAYER_WORLD
@@ -149,6 +177,12 @@ func _setup() -> void:
 
 
 func _draw() -> void:
+	if _tex != null:
+		if flipped:
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+		var piece := "prop_" + String(kind)
+		draw_texture_rect_region(ATLAS, piece_dest(piece, Vector2.ZERO), piece_region(piece))
+		return
 	if is_placeholder:
 		draw_rect(Rect2(-14, -26, 28, 26), Color(0.4, 0.45, 0.55))
 		draw_rect(Rect2(-14, -26, 28, 26), Color(0.05, 0.05, 0.1), false, 2.0)

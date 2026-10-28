@@ -29,7 +29,7 @@ const DEFS := {
 	&"barrel": {"block": Vector2(24, 12)},
 	&"saloon_bar": {"block": Vector2(144, 22)},
 	&"piano": {"block": Vector2(64, 16)},
-	&"poker_table": {"block": Vector2(48, 18)},
+	&"poker_table": {"block": Vector2(48, 18), "centered": true},
 	&"bed": {"block": Vector2(46, 40)},
 	&"desk": {"block": Vector2(60, 18)},
 	&"jail_bars": {"block": Vector2(64, 10)},
@@ -48,6 +48,23 @@ const DEFS := {
 	&"support_beam": {"block": Vector2(14, 10)},
 	&"altar": {"block": Vector2(64, 18)},
 	&"water_tower": {"block": Vector2(76, 30)},
+	# Mobilier des gabarits d'aménagement (art/blender/build_props.py)
+	&"bottle_shelf": {"block": Vector2(116, 22)},
+	&"stage": {"block": Vector2(184, 104)},
+	&"dresser": {"block": Vector2(54, 22)},
+	&"washstand": {"block": Vector2(40, 18)},
+	&"nightstand": {"block": Vector2(26, 16)},
+	&"gun_rack": {"block": Vector2(56, 14)},
+	&"bookcase": {"block": Vector2(56, 18)},
+	&"crate_stack": {"block": Vector2(50, 30)},
+	&"sacks": {"block": Vector2(44, 22)},
+	&"dining_table": {"block": Vector2(104, 44)},
+	&"table_chairs": {"block": Vector2(96, 30)},
+	&"candelabra": {"block": Vector2.ZERO},
+	&"settee": {"block": Vector2(100, 26)},
+	&"stove": {"block": Vector2(40, 30)},
+	&"bucket": {"block": Vector2.ZERO},
+	&"tool_rack": {"block": Vector2(56, 14)},
 }
 
 static var _tex_cache: Dictionary = {}
@@ -55,18 +72,24 @@ static var _glow_material: CanvasItemMaterial = null
 
 var kind: StringName = &""
 var is_placeholder: bool = false
+## Corps de collision : le sien, ou le corps partagé de l'étage (voir create(…, shared)).
 var body: StaticBody2D = null
+## Retourné horizontalement.
+var flipped: bool = false
 var _def: Dictionary = {}
-var _sprite: Sprite2D = null
+var _tex: Texture2D = null
 
 
 ## Crée un décor posé au sol à `pos` (monde). Le décor bloque si sa définition le prévoit.
-static func create(p_kind: StringName, pos: Vector2) -> WorldProp:
+## `shared` : corps statique commun (aucun nœud de collision par décor : la forme est
+## ajoutée par shape owner, beaucoup moins de nœuds par étage).
+static func create(p_kind: StringName, pos: Vector2, shared: StaticBody2D = null, p_flip: bool = false) -> WorldProp:
 	var p := WorldProp.new()
 	p.name = "Prop_%s" % String(p_kind)
 	p.kind = p_kind
 	p.position = pos
-	p._setup()
+	p.flipped = p_flip
+	p._setup(shared)
 	return p
 
 
@@ -134,8 +157,9 @@ func is_blocking() -> bool:
 	return body != null
 
 
-func _setup() -> void:
+func _setup(shared: StaticBody2D = null) -> void:
 	set_process(false)
+	set_physics_process(false)
 	var tex: Texture2D = get_texture(kind) if DEFS.has(kind) else null
 	if not DEFS.has(kind) or tex == null:
 		is_placeholder = true
@@ -146,27 +170,40 @@ func _setup() -> void:
 	_def = DEFS[kind]
 	var flat: bool = bool(_def.get("flat", false))
 	z_index = 1 if flat else 10
-	var piece := "prop_" + String(kind)
-	_sprite = Sprite2D.new()
-	_sprite.name = "Sprite"
-	_sprite.texture = tex
-	_sprite.centered = false
-	_sprite.scale = Vector2.ONE / PX_PER_WORLD
-	_sprite.offset = -piece_feet(piece)
-	add_child(_sprite)
+	_tex = tex
 	var block: Vector2 = _def.get("block", Vector2.ZERO)
-	if block != Vector2.ZERO:
-		body = StaticBody2D.new()
-		body.name = "Body"
-		body.collision_layer = LAYER_WORLD
-		body.collision_mask = 0
-		var cs := CollisionShape2D.new()
-		var rect := RectangleShape2D.new()
-		rect.size = block
-		cs.shape = rect
-		cs.position = Vector2(0.0, -block.y * 0.5)
-		body.add_child(cs)
-		add_child(body)
+	if block == Vector2.ZERO:
+		return
+	var center := Vector2(0.0, 0.0) if bool(_def.get("centered", false)) else Vector2(0.0, -block.y * 0.5)
+	if shared != null:
+		# Forme ajoutée au corps commun (position monde).
+		body = shared
+		var owner_id := shared.create_shape_owner(self)
+		var rect0 := RectangleShape2D.new()
+		rect0.size = block
+		shared.shape_owner_add_shape(owner_id, rect0)
+		shared.shape_owner_set_transform(owner_id, Transform2D(0.0, position + center - shared.position))
+		return
+	body = StaticBody2D.new()
+	body.name = "Body"
+	body.collision_layer = LAYER_WORLD
+	body.collision_mask = 0
+	var cs := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = block
+	cs.shape = rect
+	cs.position = center
+	body.add_child(cs)
+	add_child(body)
+
+
+## Corps statique commun aux décors d'un étage (couche world, aucune forme au départ).
+static func make_shared_body() -> StaticBody2D:
+	var b := StaticBody2D.new()
+	b.name = "PropBodies"
+	b.collision_layer = LAYER_WORLD
+	b.collision_mask = 0
+	return b
 
 
 ## Position monde (relative au décor) de sa source de lumière, ou Vector2.INF.
@@ -177,6 +214,13 @@ func get_glow_offset() -> Vector2:
 
 
 func _draw() -> void:
+	if _tex != null:
+		# Sprite de l'atlas dessiné une seule fois (pas de nœud Sprite2D par décor).
+		var piece := "prop_" + String(kind)
+		if flipped:
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+		draw_texture_rect_region(ATLAS, piece_dest(piece, Vector2.ZERO), piece_region(piece))
+		return
 	if is_placeholder:
 		var box := Rect2(-14.0, -26.0, 28.0, 26.0)
 		draw_rect(box, Color(0.62, 0.42, 0.26))

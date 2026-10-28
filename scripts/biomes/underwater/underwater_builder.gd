@@ -22,6 +22,8 @@ extends Node2D
 signal stairs_entered(stairs: FloorLayout.Stairs)
 
 const TS := float(FloorLayout.TILE_SIZE)
+## Échelle des décors muraux de l'aménagement.
+const WALL_DECOR_SCALE := 1.3
 const LAYER_WORLD := 1
 const MASK_PLAYER := 2
 const SECTION := "underwater"
@@ -683,6 +685,10 @@ class WallLayer extends Node2D:
 			var f := Rect2(o + Vector2(0, cap_h), Vector2(TS, wh))
 			var fd := builder.face_desc(c)
 			draw_texture_rect_region(tex, f, UnderwaterBuilder.wall_region(fd["key"], fd["v"]), fd["mod"])
+			var wd: Variant = L.wall_decor_cells.get(c, null)
+			if wd != null and UnderwaterProp.has_piece(String(wd)):
+				# Décor mural de l'aménagement (hublot, manomètres, carte…), posé sur la face.
+				draw_texture_rect_region(UnderwaterProp.ATLAS, UnderwaterProp.piece_dest(String(wd), Vector2(f.get_center().x, f.end.y - 4.0), WALL_DECOR_SCALE), UnderwaterProp.piece_region(String(wd)))
 			var west_open := not _is_wall(c + Vector2i.LEFT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(-1, 1)))
 			var east_open := not _is_wall(c + Vector2i.RIGHT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(1, 1)))
 			if west_open:
@@ -766,14 +772,45 @@ class StairsPiece extends Node2D:
 # --- Décors ----------------------------------------------------------------------
 
 func _build_props() -> void:
+	# Une seule StaticBody2D pour toutes les collisions de décors (shape owners).
+	var shared := UnderwaterProp.make_shared_body()
+	add_child(shared)
+	if not layout.decor_spawns.is_empty():
+		var fl := FloorDetails.new()
+		fl.name = "FloorDetails"
+		fl.spawns = layout.decor_spawns
+		fl.atlas = UnderwaterProp.ATLAS
+		fl.meta = UnderwaterProp.AtlasMeta.PIECES
+		fl.z_index = 1
+		add_child(fl)
 	for s: FloorLayout.Spawn in layout.prop_spawns:
-		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25)
-		var p := UnderwaterProp.create(s.kind, pos)
+		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25) + s.offset
+		var p := UnderwaterProp.create(s.kind, pos, shared, s.flip)
 		add_child(p)
 		_props.append(p)
 		var g := p.get_glow()
 		if not g.is_empty():
 			add_glow(pos + (g[0] as Vector2), float(g[1]), g[2] as Color, 0.85)
+
+
+## Détails au sol non bloquants de l'aménagement (tapis, papiers, outils…) : pièces de l'atlas des
+## décors du biome, un seul nœud dessiné une fois.
+class FloorDetails extends Node2D:
+	var spawns: Array[FloorLayout.Spawn] = []
+	var atlas: Texture2D = null
+	var meta: Dictionary = {}
+
+	func _draw() -> void:
+		for s: FloorLayout.Spawn in spawns:
+			var e: Variant = meta.get(String(s.kind), null)
+			if e == null:
+				continue
+			var r: Array = (e as Dictionary)["rect"]
+			var reg := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			var size := reg.size * 0.5
+			draw_set_transform(FloorLayout.cell_to_world(s.cell) + s.offset, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
+			draw_texture_rect_region(atlas, Rect2(-size * 0.5, size), reg)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # --- Extraction (capsule de remontée) ---------------------------------------------------

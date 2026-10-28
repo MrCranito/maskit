@@ -40,6 +40,17 @@ const DEFS := {
 	&"toy_pile": {"block": Vector2(46, 20)},
 	&"medicine_shelf": {"block": Vector2(82, 20), "glow": 36.0, "tint": Color(0.4, 1.0, 0.55)},
 	&"generator": {"block": Vector2(84, 36)},
+	# Mobilier des gabarits d'aménagement (art/blender/mall/build_mall_furniture.py)
+	&"gondola": {"block": Vector2(110, 50)},
+	&"shoe_rack": {"block": Vector2(104, 20)},
+	&"display_table": {"block": Vector2(90, 46)},
+	&"food_counter": {"block": Vector2(156, 34), "glow": 70.0, "tint": Color(1.0, 0.5, 0.75)},
+	&"office_desk": {"block": Vector2(90, 40), "glow": 40.0, "tint": Color(0.5, 0.85, 1.0)},
+	&"stock_rack": {"block": Vector2(110, 28)},
+	&"glass_case": {"block": Vector2(96, 26), "glow": 44.0, "tint": Color(1.0, 0.9, 0.6)},
+	&"bookshelf": {"block": Vector2(104, 20)},
+	&"mall_sofa": {"block": Vector2(116, 30)},
+	&"tray_cart": {"block": Vector2(40, 22)},
 }
 ## Grands décors : collision centrée sur l'origine (centre de l'emprise) au lieu d'être posée devant.
 const CENTERED := [&"fountain", &"store_shelf", &"car_wreck", &"cinema_seats"]
@@ -48,16 +59,29 @@ static var _tex_cache: Dictionary = {}
 
 var kind: StringName = &""
 var body: StaticBody2D = null
-var _sprite: Sprite2D = null
+var flipped: bool = false
+var _tex: Texture2D = null
 
 
-static func create(p_kind: StringName, pos: Vector2) -> Node2D:
+## `shared` : corps statique commun de l'étage (forme ajoutée par shape owner : aucun nœud de
+## collision ni de sprite par décor, le sprite est dessiné une fois dans _draw).
+static func create(p_kind: StringName, pos: Vector2, shared: StaticBody2D = null, p_flip: bool = false) -> Node2D:
 	var p: Node2D = (load("res://scripts/biomes/mall/mall_prop.gd") as GDScript).new()
 	p.name = "Prop_%s" % String(p_kind)
 	p.set("kind", p_kind)
+	p.set("flipped", p_flip)
 	p.position = pos
-	p.call("_setup")
+	p.call("_setup", shared)
 	return p
+
+
+## Corps statique commun aux décors d'un étage (couche world).
+static func make_shared_body() -> StaticBody2D:
+	var b := StaticBody2D.new()
+	b.name = "PropBodies"
+	b.collision_layer = LAYER_WORLD
+	b.collision_mask = 0
+	return b
 
 
 static func has_piece(piece: String) -> bool:
@@ -107,24 +131,26 @@ static func def_of(k: StringName) -> Dictionary:
 	return DEFS.get(k, {"block": Vector2(24, 12)})
 
 
-func _setup() -> void:
+func _setup(shared: StaticBody2D = null) -> void:
 	var def := def_of(kind)
 	var flat: bool = bool(def.get("flat", false))
 	z_index = 1 if flat else 10
 	var tex := get_texture(kind)
 	if tex != null:
-		_sprite = Sprite2D.new()
-		_sprite.name = "Sprite"
-		_sprite.texture = tex
-		_sprite.centered = false
-		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		_sprite.scale = Vector2.ONE / PX_PER_WORLD
-		_sprite.offset = -piece_feet("prop_" + String(kind))
-		add_child(_sprite)
+		_tex = tex
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	else:
 		push_warning("MallProp: pièce absente de l'atlas : %s" % kind)
 	var block: Vector2 = def.get("block", Vector2.ZERO)
-	if block != Vector2.ZERO:
+	if block != Vector2.ZERO and shared != null:
+		body = shared
+		var oid := shared.create_shape_owner(self)
+		var r0 := RectangleShape2D.new()
+		r0.size = block
+		shared.shape_owner_add_shape(oid, r0)
+		var ctr := Vector2.ZERO if CENTERED.has(kind) else Vector2(0.0, -block.y * 0.5)
+		shared.shape_owner_set_transform(oid, Transform2D(0.0, position + ctr - shared.position))
+	elif block != Vector2.ZERO:
 		body = StaticBody2D.new()
 		body.name = "Body"
 		body.collision_layer = LAYER_WORLD
@@ -143,3 +169,12 @@ func _setup() -> void:
 ## Point de lueur (monde, relatif au nœud), ou Vector2.INF.
 func get_glow_offset() -> Vector2:
 	return piece_glow("prop_" + String(kind))
+
+
+func _draw() -> void:
+	if _tex == null:
+		return
+	if flipped:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	var piece := "prop_" + String(kind)
+	draw_texture_rect_region(ATLAS, piece_dest(piece, Vector2.ZERO), piece_region(piece))

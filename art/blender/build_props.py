@@ -6,6 +6,8 @@ Usage (depuis la racine du projet ; ordre complet de régénération du décor) 
     python3 art/blender/build_props.py        # décors + empaquetage de TOUT dans l'atlas
     python3 art/blender/build_props.py --only cactus,barrel   # re-rendre quelques décors puis empaqueter
     python3 art/blender/build_props.py --pack                  # empaqueter seulement
+    python3 art/blender/build_props.py --keep --furniture      # reprendre l'atlas actuel + mobilier
+                                                               # des gabarits d'aménagement
 
 Sorties : assets/sprites/far_west/atlas.png (+ atlas_meta.gd : rect, pieds en px d'atlas).
 Échelle : 2 px par unité monde. 1 BU Blender projeté = 36 unités monde (comme le héros :
@@ -77,6 +79,8 @@ PAL = {
     "green_paint": ("#4e7a6a", "#1e3440", "#7aa894"),
     "steel": ("#8890a0", "#3a3c54", "#d0d4e0"),
     "candle": ("#f4ead0", "#9a8a90", "#ffffff"),
+    "mirror": ("#9ab8c8", "#4a5a7a", "#e4f4fa"),
+    "sky": ("#e89060", "#7a4a6a", "#ffc890"),
 }
 
 
@@ -700,6 +704,498 @@ def p_altar(B: Builder) -> None:
         B.sphere("fl%.1f" % sx, 0.05, (sx, 0, h + 0.6), M("flame"), scale=(1, 1, 1.7), shadow=False, outline=False)
 
 
+# ----------------------------------------------------------------------------- mobilier des gabarits
+# (aménagement par type de pièce : scripts/dungeon/gen/fw_templates.gd)
+
+def _bottles(B: Builder, prefix: str, x0: float, x1: float, y: float, z: float, n: int, seed: int) -> None:
+    import random
+    rnd = random.Random(seed)
+    for i in range(n):
+        x = x0 + (x1 - x0) * (i + 0.5) / n + rnd.uniform(-0.04, 0.04)
+        mat = M(rnd.choice(["bottle_g", "bottle_b", "bottle_g", "cream"]))
+        hh = rnd.uniform(0.22, 0.32)
+        B.cyl("%sb%d" % (prefix, i), 0.065, 0.065, hh, (x, y, z + hh / 2), mat, seg=8)
+        B.cyl("%sn%d" % (prefix, i), 0.026, 0.026, 0.1, (x, y, z + hh + 0.05), mat, seg=6, outline=False)
+
+
+def p_bottle_shelf(B: Builder) -> None:
+    """Étagère à bouteilles derrière le bar (miroir au centre)."""
+    w, d, h = 3.2, 0.5, 2.4
+    B.box("back", (w, 0.08, h), (0, d / 2, h / 2), M("wood_dark"))
+    B.box("mirror", (1.0, 0.03, 0.9), (0, d / 2 - 0.06, 1.55), M("mirror"), outline=False)
+    B.box("mframe", (1.12, 0.05, 1.02), (0, d / 2 - 0.04, 1.55), M("brass"))
+    for sx in (-w / 2, w / 2):
+        B.box("side%.1f" % sx, (0.1, d, h), (sx, 0, h / 2), M("wood"))
+    B.box("crown", (w + 0.2, d + 0.1, 0.12), (0, 0, h + 0.06), M("wood_dark"), bevel=0.02)
+    B.box("base", (w, d, 0.7), (0, 0, 0.35), M("wood"))
+    for i in range(4):
+        x = -w / 2 + (i + 0.5) * w / 4
+        B.box("door%d" % i, (w / 4 - 0.12, 0.03, 0.5), (x, -d / 2 - 0.01, 0.36), M("wood_red"), bevel=0.01)
+    for k, z in enumerate((0.72, 1.3, 1.88)):
+        for sx, x0, x1 in ((-1, -w / 2 + 0.08, -0.62), (1, 0.62, w / 2 - 0.08)):
+            B.box("sh%d%d" % (k, sx), (x1 - x0, d - 0.1, 0.05), ((x0 + x1) / 2, 0, z), M("wood"))
+            _bottles(B, "bt%d%d" % (k, sx), x0, x1, -0.02, z + 0.03, 4, k * 7 + sx)
+    B.box("shmid", (1.24, d - 0.1, 0.05), (0, 0, 0.72), M("wood"))
+    _bottles(B, "btm", -0.55, 0.55, -0.02, 0.75, 4, 99)
+
+
+def p_stage(B: Builder) -> None:
+    """Petite scène de saloon : estrade, rideaux rouges, rampe de lumières."""
+    w, d, h = 5.0, 2.7, 0.5
+    B.box("deck", (w, d, h), (0, 0, h / 2), M("wood"), bevel=0.02)
+    B.plank_row("front", -w / 2, w / 2, -d / 2 - 0.01, 0.02, h - 0.04, 0.03, M("wood_red"), 8)
+    B.box("lip", (w + 0.1, 0.12, 0.08), (0, -d / 2, h), M("wood_dark"))
+    for sx in (-w / 2 + 0.15, w / 2 - 0.15):
+        B.box("post%.1f" % sx, (0.18, 0.18, 2.8), (sx, d / 2 - 0.2, h + 1.4), M("wood_dark"))
+    B.box("valance", (w, 0.14, 0.4), (0, d / 2 - 0.2, h + 2.65), M("cloth_red"), bevel=0.02)
+    B.box("trim", (w, 0.03, 0.06), (0, d / 2 - 0.28, h + 2.47), M("gold"), outline=False)
+    for sx in (-1, 1):
+        secs = []
+        for i in range(6):
+            x = sx * (w / 2 - 0.3 - i * 0.16)
+            z0 = h
+            secs.append([(x, d / 2 - 0.25 + 0.08 * math.sin(i * 1.7), z0), (x, d / 2 - 0.25 + 0.08 * math.sin(i * 1.7), h + 2.5)])
+        for i, sec in enumerate(secs):
+            B.box("cur%d%d" % (sx, i), (0.18, 0.08, 2.5), (sec[0][0], sec[0][1], h + 1.25), M("cloth_red"))
+        B.tube("tie%d" % sx, [(sx * (w / 2 - 0.25), d / 2 - 0.3, h + 1.2), (sx * (w / 2 - 1.05), d / 2 - 0.3, h + 1.2)], [0.03, 0.03], M("gold"))
+    B.box("backdrop", (w - 0.4, 0.06, 2.5), (0, d / 2 - 0.12, h + 1.25), M("wood_red"))
+    for i in range(7):
+        x = -w / 2 + 0.5 + i * (w - 1.0) / 6
+        B.cyl("lamp%d" % i, 0.07, 0.09, 0.1, (x, -d / 2 + 0.12, h + 0.05), M("brass"), seg=8)
+        B.sphere("lampf%d" % i, 0.045, (x, -d / 2 + 0.12, h + 0.13), M("flame"), shadow=False, outline=False)
+    B.cyl("chair", 0.22, 0.22, 0.08, (-0.6, 0.2, h + 0.55), M("wood"), seg=12)
+    B.cyl("chairl", 0.04, 0.06, 0.55, (-0.6, 0.2, h + 0.27), M("wood_dark"), seg=6)
+    B.box("guitar", (0.35, 0.08, 0.9), (0.7, 0.3, h + 0.45), M("wood_red"), rot=(0, 0.3, 0), bevel=0.05)
+
+
+def p_dresser(B: Builder) -> None:
+    w, d, h = 1.4, 0.6, 1.2
+    B.box("body", (w, d, h), (0, 0, h / 2 + 0.08), M("wood"), bevel=0.02)
+    B.box("top", (w + 0.08, d + 0.06, 0.06), (0, 0, h + 0.11), M("wood_dark"))
+    for k in range(3):
+        z = 0.3 + k * 0.36
+        B.box("dr%d" % k, (w - 0.14, 0.03, 0.3), (0, -d / 2 - 0.01, z), M("wood_red"), bevel=0.01)
+        for sx in (-0.3, 0.3):
+            B.sphere("kn%d%.1f" % (k, sx), 0.03, (sx, -d / 2 - 0.04, z), M("brass"), seg=6, rings=4, outline=False)
+    B.box("mframe", (0.9, 0.06, 0.95), (0, d / 2 - 0.08, h + 0.6), M("wood_dark"), bevel=0.03)
+    B.box("mirror", (0.74, 0.02, 0.8), (0, d / 2 - 0.12, h + 0.6), M("mirror"), outline=False)
+    B.cyl("vase", 0.07, 0.05, 0.25, (-0.45, -0.05, h + 0.27), M("cream"), seg=8)
+    B.box("brush", (0.22, 0.08, 0.04), (0.4, -0.1, h + 0.16), M("leather"))
+
+
+def p_washstand(B: Builder) -> None:
+    w, d, h = 1.0, 0.55, 0.9
+    B.box("body", (w, d, h), (0, 0, h / 2), M("wood"), bevel=0.02)
+    B.box("top", (w + 0.06, d + 0.04, 0.05), (0, 0, h + 0.03), M("cream"))
+    B.box("door", (w - 0.2, 0.03, h - 0.3), (0, -d / 2 - 0.01, h / 2), M("wood_red"), bevel=0.01)
+    B.cyl("basin", 0.3, 0.18, 0.14, (0, 0, h + 0.12), M("ivory"), seg=16)
+    B.cyl("water", 0.26, 0.26, 0.01, (0, 0, h + 0.18), M("water"), seg=16, outline=False)
+    B.cyl("pitcher", 0.1, 0.13, 0.36, (0.32, 0.08, h + 0.24), M("ivory"), seg=10)
+    B.box("towel", (0.3, 0.03, 0.4), (-0.42, -d / 2 - 0.03, h - 0.15), M("cloth_cream"))
+    B.box("splash", (w, 0.05, 0.5), (0, d / 2, h + 0.27), M("wood_dark"))
+
+
+def p_nightstand(B: Builder) -> None:
+    w, d, h = 0.6, 0.5, 0.75
+    B.box("body", (w, d, h), (0, 0, h / 2), M("wood"), bevel=0.02)
+    B.box("dr", (w - 0.1, 0.03, 0.2), (0, -d / 2 - 0.01, h - 0.18), M("wood_red"))
+    B.sphere("kn", 0.03, (0, -d / 2 - 0.04, h - 0.18), M("brass"), seg=6, rings=4, outline=False)
+    B.cyl("holder", 0.1, 0.08, 0.05, (0.05, 0.05, h + 0.03), M("brass"), seg=10)
+    B.cyl("candle", 0.04, 0.04, 0.24, (0.05, 0.05, h + 0.17), M("candle"), seg=8)
+    B.sphere("fl", 0.045, (0.05, 0.05, h + 0.33), M("flame"), scale=(1, 1, 1.7), shadow=False, outline=False)
+    B.box("book", (0.22, 0.16, 0.05), (-0.15, -0.05, h + 0.03), M("cloth_red"), rot=(0, 0, 0.3))
+
+
+def p_gun_rack(B: Builder) -> None:
+    w, h = 1.5, 2.0
+    B.box("board", (w, 0.08, h), (0, 0.1, h / 2 + 0.2), M("wood_dark"), bevel=0.02)
+    B.box("shelf", (w, 0.3, 0.06), (0, -0.02, 0.45), M("wood"))
+    B.box("rail", (w, 0.12, 0.08), (0, 0.0, 1.85), M("wood"))
+    for i in range(4):
+        x = -w / 2 + 0.25 + i * (w - 0.5) / 3
+        B.box("stock%d" % i, (0.12, 0.07, 0.45), (x, -0.02, 0.7), M("wood_red"), bevel=0.02)
+        B.cyl("barrel%d" % i, 0.025, 0.025, 1.1, (x, -0.02, 1.4), M("iron_dark"), seg=6)
+    B.box("ammo", (0.32, 0.22, 0.14), (0.45, -0.05, 0.08), M("green_paint"))
+    B.box("ammo2", (0.28, 0.2, 0.12), (0.4, -0.05, 0.21), M("wood"))
+
+
+def p_bookcase(B: Builder) -> None:
+    import random
+    w, d, h = 1.5, 0.5, 2.3
+    B.box("back", (w, 0.06, h), (0, d / 2, h / 2), M("wood_dark"))
+    for sx in (-w / 2, w / 2):
+        B.box("side%.1f" % sx, (0.08, d, h), (sx, 0, h / 2), M("wood"))
+    B.box("crown", (w + 0.12, d + 0.08, 0.1), (0, 0, h + 0.05), M("wood_dark"))
+    rnd = random.Random(12)
+    for k in range(4):
+        z = 0.1 + k * 0.56
+        B.box("sh%d" % k, (w, d, 0.05), (0, 0, z), M("wood"))
+        x = -w / 2 + 0.08
+        while x < w / 2 - 0.15:
+            bw = rnd.uniform(0.06, 0.11)
+            bh = rnd.uniform(0.32, 0.44)
+            tilt = rnd.uniform(-0.15, 0.15) if rnd.random() < 0.15 else 0.0
+            B.box("bk%d%.2f" % (k, x), (bw, d * 0.7, bh), (x + bw / 2, -0.02, z + 0.03 + bh / 2),
+                  M(rnd.choice(["cloth_red", "green_paint", "leather", "wood_red", "cream", "black"])), rot=(0, tilt, 0))
+            x += bw + 0.01
+            if rnd.random() < 0.08:
+                x += 0.12
+
+
+def p_crate_stack(B: Builder) -> None:
+    def crate(name, s, loc, rot=0.0):
+        B.box(name, (s, s, s), loc, M("plank_light"), rot=(0, 0, rot), bevel=0.02)
+        x, y, z = loc
+        for k in (-1, 1):
+            B.box(name + "b%d" % k, (s + 0.02, 0.06, 0.08), (x, y - s / 2 - 0.01, z + k * (s / 2 - 0.06)), M("wood_dark"), rot=(0, 0, rot))
+        B.box(name + "x", (0.06, 0.03, s * 1.3), (x, y - s / 2 - 0.02, z), M("wood_dark"), rot=(0, 0.78, 0))
+    crate("c1", 0.75, (-0.3, 0.0, 0.375))
+    crate("c2", 0.62, (0.42, 0.05, 0.31), 0.1)
+    crate("c3", 0.6, (-0.2, 0.05, 1.05), -0.15)
+    B.box("lid", (0.5, 0.4, 0.04), (0.45, -0.02, 0.64), M("paper"), rot=(0, 0, 0.3))
+
+
+def p_sacks(B: Builder) -> None:
+    for i, (x, y, z, r) in enumerate(((-0.35, 0.05, 0.25, 0.2), (0.3, 0.0, 0.25, -0.3), (0.0, 0.1, 0.62, 0.1))):
+        B.sphere("sack%d" % i, 0.42, (x, y, z), M("cloth_cream"), scale=(1.15, 0.8, 0.62), seg=12, rings=8)
+        B.sphere("tie%d" % i, 0.09, (x + 0.38 * math.cos(r), y - 0.05, z + 0.08), M("hay_dark"), scale=(1.4, 0.8, 0.8), seg=8, rings=5)
+    B.box("stamp", (0.3, 0.02, 0.18), (-0.33, -0.29, 0.28), M("cloth_red"), outline=False)
+
+
+def p_dining_table(B: Builder) -> None:
+    w, d, h = 2.6, 1.0, 0.9
+    B.box("top", (w, d, 0.08), (0, 0, h), M("wood_dark"), bevel=0.02)
+    B.box("cloth", (w * 0.95, d * 0.5, 0.02), (0, 0, h + 0.05), M("cloth_cream"), outline=False)
+    for sx in (-w / 2 + 0.15, w / 2 - 0.15):
+        for sy in (-d / 2 + 0.12, d / 2 - 0.12):
+            B.box("leg%.1f%.1f" % (sx, sy), (0.1, 0.1, h), (sx, sy, h / 2), M("wood_dark"))
+    for i, x in enumerate((-0.8, 0.0, 0.8)):
+        B.cyl("plate%d" % i, 0.14, 0.14, 0.02, (x, -0.25, h + 0.07), M("ivory"), seg=12, outline=False)
+        B.cyl("plate2%d" % i, 0.14, 0.14, 0.02, (x, 0.25, h + 0.07), M("ivory"), seg=12, outline=False)
+    B.cyl("cand", 0.035, 0.035, 0.3, (0, 0, h + 0.2), M("candle"), seg=8)
+    B.sphere("fl", 0.04, (0, 0, h + 0.38), M("flame"), scale=(1, 1, 1.7), shadow=False, outline=False)
+    _bottles(B, "tb", 0.3, 0.6, 0.0, h + 0.04, 2, 5)
+    for sy, back in ((-d / 2 - 0.4, -1), (d / 2 + 0.4, 1)):
+        for x in (-0.8, 0.0, 0.8):
+            B.box("seat%.1f%.1f" % (x, sy), (0.46, 0.44, 0.07), (x, sy, 0.55), M("wood"))
+            for lx in (-0.18, 0.18):
+                for ly in (-0.17, 0.17):
+                    B.box("cl%.1f%.1f%.2f%.2f" % (x, sy, lx, ly), (0.05, 0.05, 0.55), (x + lx, sy + ly, 0.27), M("wood_dark"))
+            B.box("back%.1f%.1f" % (x, sy), (0.46, 0.05, 0.6), (x, sy + back * 0.2, 0.88), M("wood"))
+
+
+def p_table_chairs(B: Builder) -> None:
+    """Petite table carrée et deux chaises (bureau du shérif, sacristie, salle à manger)."""
+    h = 0.9
+    B.box("top", (1.0, 0.9, 0.07), (0, 0, h), M("wood"), bevel=0.02)
+    for sx in (-0.4, 0.4):
+        for sy in (-0.35, 0.35):
+            B.box("leg%.1f%.1f" % (sx, sy), (0.08, 0.08, h), (sx, sy, h / 2), M("wood_dark"))
+    B.box("paper", (0.3, 0.22, 0.01), (-0.15, 0.05, h + 0.04), M("paper"), rot=(0, 0, 0.3), outline=False)
+    B.cyl("mug", 0.06, 0.06, 0.12, (0.25, -0.1, h + 0.1), M("iron"), seg=8)
+    for sx in (-1, 1):
+        x = sx * 0.92
+        B.box("seat%d" % sx, (0.44, 0.46, 0.07), (x, 0, 0.55), M("wood"))
+        for lx in (-0.17, 0.17):
+            for ly in (-0.18, 0.18):
+                B.box("cl%d%.2f%.2f" % (sx, lx, ly), (0.05, 0.05, 0.55), (x + lx, ly, 0.27), M("wood_dark"))
+        B.box("back%d" % sx, (0.05, 0.46, 0.6), (x + sx * 0.2, 0, 0.88), M("wood"))
+
+
+def p_candelabra(B: Builder) -> None:
+    B.cyl("foot", 0.22, 0.26, 0.06, (0, 0, 0.03), M("brass"), seg=12)
+    B.cyl("stem", 0.04, 0.05, 1.4, (0, 0, 0.75), M("brass"), seg=8)
+    B.tube("arms", [(-0.3, 0, 1.55), (-0.25, 0, 1.4), (0, 0, 1.35), (0.25, 0, 1.4), (0.3, 0, 1.55)], [0.025] * 5, M("brass"))
+    for x in (-0.3, 0.0, 0.3):
+        z = 1.55 if x else 1.5
+        B.cyl("cup%.1f" % x, 0.06, 0.04, 0.05, (x, 0, z), M("brass"), seg=8)
+        B.cyl("c%.1f" % x, 0.035, 0.035, 0.22, (x, 0, z + 0.13), M("candle"), seg=8)
+        B.sphere("f%.1f" % x, 0.04, (x, 0, z + 0.29), M("flame"), scale=(1, 1, 1.7), shadow=False, outline=False)
+
+
+def p_settee(B: Builder) -> None:
+    w, d = 2.4, 0.8
+    B.box("seat", (w, d, 0.3), (0, 0, 0.45), M("cloth_red"), bevel=0.08)
+    B.box("back", (w, 0.25, 0.7), (0, d / 2 - 0.1, 0.85), M("cloth_red"), bevel=0.1)
+    for sx in (-w / 2, w / 2):
+        B.box("arm%.1f" % sx, (0.22, d, 0.55), (sx, 0, 0.55), M("cloth_red"), bevel=0.08)
+        for sy in (-d / 2 + 0.1, d / 2 - 0.1):
+            B.cyl("leg%.1f%.1f" % (sx, sy), 0.05, 0.04, 0.3, (sx, sy, 0.15), M("wood_dark"), seg=6)
+    B.box("frame", (w + 0.1, d + 0.05, 0.08), (0, 0, 0.3), M("wood_dark"))
+    for sx in (-0.6, 0.6):
+        B.box("cush%.1f" % sx, (0.4, 0.15, 0.35), (sx, d / 2 - 0.3, 0.8), M("cloth_cream"), bevel=0.06, rot=(0.2, 0, 0))
+
+
+def p_stove(B: Builder) -> None:
+    B.cyl("body", 0.38, 0.38, 0.9, (0, 0, 0.6), M("iron_dark"), seg=16)
+    B.cyl("belly", 0.44, 0.44, 0.3, (0, 0, 0.6), M("iron_dark"), seg=16)
+    B.cyl("top", 0.42, 0.42, 0.06, (0, 0, 1.08), M("iron"), seg=16)
+    B.cyl("pipe", 0.12, 0.12, 1.6, (0, 0.1, 1.9), M("iron_dark"), seg=10)
+    B.box("door", (0.3, 0.04, 0.24), (0, -0.44, 0.55), M("iron"))
+    B.box("glow", (0.22, 0.02, 0.06), (0, -0.47, 0.5), M("flame"), outline=False, shadow=False)
+    for a in (0.6, 2.5, 4.4):
+        B.cyl("foot%.1f" % a, 0.05, 0.07, 0.15, (math.cos(a) * 0.3, math.sin(a) * 0.3, 0.07), M("iron_dark"), seg=6)
+    B.cyl("kettle", 0.15, 0.12, 0.18, (0.15, -0.1, 1.2), M("steel"), seg=10)
+
+
+def p_bucket(B: Builder) -> None:
+    B.cyl("bucket", 0.22, 0.17, 0.38, (0, 0, 0.19), M("wood"), seg=14)
+    for z in (0.08, 0.3):
+        B.torus("hoop%.1f" % z, 0.19 + z * 0.08, 0.02, (0, 0, z), M("iron"), seg=18, rseg=4)
+    B.cyl("water", 0.2, 0.2, 0.01, (0, 0, 0.36), M("water"), seg=14, outline=False)
+    B.tube("handle", [(-0.22, 0, 0.38), (0, 0, 0.6), (0.22, 0, 0.38)], [0.015] * 3, M("iron"))
+
+
+def p_tool_rack(B: Builder) -> None:
+    w, h = 1.5, 1.9
+    B.box("board", (w, 0.08, h), (0, 0.1, h / 2 + 0.15), M("wood_grey"), bevel=0.02)
+    B.box("pick", (0.06, 0.06, 1.2), (-0.45, 0.0, 1.1), M("wood"), rot=(0, 0.1, 0))
+    B.tube("pickh", [(-0.75, -0.02, 1.62), (-0.45, -0.02, 1.72), (-0.15, -0.02, 1.62)], [0.03, 0.05, 0.03], M("iron"))
+    B.box("shovel", (0.06, 0.06, 1.1), (0.05, 0.0, 1.1), M("wood"))
+    B.box("blade", (0.3, 0.04, 0.4), (0.05, -0.02, 0.5), M("iron"), bevel=0.03)
+    B.torus("rope", 0.22, 0.04, (0.5, -0.02, 1.3), M("hay_dark"), rot=(math.pi / 2, 0, 0), seg=18, rseg=5)
+    B.cyl("lamp", 0.08, 0.08, 0.2, (0.5, -0.05, 0.75), M("glass"), seg=8)
+
+
+# Décors muraux (dessinés sur la face avant des murs, sans ombre portée ; (0,0,0) = bas du décor,
+# plaqué contre le mur : géométrie en y ≈ 0, face vers -Y).
+
+def k_frame(B: Builder) -> None:
+    B.box("frame", (0.8, 0.06, 0.62), (0, 0, 0.95), M("brass"), bevel=0.02)
+    B.box("canvas", (0.66, 0.02, 0.48), (0, -0.04, 0.95), M("sky"), outline=False)
+    B.box("hill", (0.66, 0.025, 0.16), (0, -0.05, 0.79), M("cactus"), outline=False)
+    B.box("sun", (0.12, 0.03, 0.12), (0.15, -0.055, 1.05), M("gold"), outline=False)
+
+
+def k_horns(B: Builder) -> None:
+    B.box("plaque", (0.36, 0.05, 0.42), (0, 0, 1.0), M("wood_dark"), bevel=0.03)
+    B.sphere("skull", 0.16, (0, -0.07, 1.0), M("bone"), scale=(0.85, 0.6, 1.2), seg=10, rings=7)
+    for sx in (-1, 1):
+        B.tube("horn%d" % sx, [(sx * 0.1, -0.08, 1.12), (sx * 0.45, -0.1, 1.15), (sx * 0.7, -0.1, 1.32)], [0.06, 0.04, 0.012], M("ivory"))
+
+
+def k_mirror(B: Builder) -> None:
+    B.box("frame", (0.62, 0.05, 0.86), (0, 0, 1.0), M("wood_dark"), bevel=0.04)
+    B.box("glass", (0.5, 0.02, 0.74), (0, -0.03, 1.0), M("mirror"), outline=False)
+    B.box("hl", (0.06, 0.025, 0.5), (-0.12, -0.04, 1.05), M("ivory"), rot=(0, 0.4, 0), outline=False)
+
+
+def k_poster(B: Builder) -> None:
+    B.box("paper", (0.5, 0.02, 0.7), (0, 0, 0.95), M("paper"), rot=(0, 0.05, 0))
+    B.box("title", (0.4, 0.025, 0.08), (0, -0.02, 1.2), M("black"), outline=False)
+    B.box("face", (0.24, 0.025, 0.26), (0, -0.02, 0.97), M("wood_dark"), outline=False)
+    B.box("mask", (0.16, 0.03, 0.06), (0, -0.025, 1.0), M("red"), outline=False)
+    B.box("rew", (0.34, 0.025, 0.05), (0, -0.02, 0.75), M("black"), outline=False)
+
+
+def k_clock(B: Builder) -> None:
+    B.box("case", (0.42, 0.12, 0.95), (0, 0, 0.95), M("wood_dark"), bevel=0.03)
+    B.cyl("face", 0.16, 0.16, 0.02, (0, -0.07, 1.22), M("ivory"), rot=(math.pi / 2, 0, 0), seg=16)
+    B.box("hand", (0.02, 0.025, 0.12), (0, -0.09, 1.26), M("black"), outline=False)
+    B.box("hand2", (0.09, 0.025, 0.02), (0.04, -0.09, 1.22), M("black"), outline=False)
+    B.box("glass", (0.24, 0.02, 0.4), (0, -0.07, 0.75), M("mirror"), outline=False)
+    B.cyl("pend", 0.06, 0.06, 0.02, (0, -0.08, 0.65), M("gold"), rot=(math.pi / 2, 0, 0), seg=10)
+
+
+def k_map(B: Builder) -> None:
+    B.box("map", (0.9, 0.02, 0.6), (0, 0, 0.95), M("paper"))
+    B.box("land", (0.5, 0.025, 0.3), (-0.1, -0.015, 0.98), M("hay"), rot=(0, 0.3, 0), outline=False)
+    B.tube("river", [(-0.4, -0.02, 0.8), (-0.1, -0.02, 0.95), (0.2, -0.02, 0.9), (0.4, -0.02, 1.15)], [0.012] * 4, M("water"), outline=False)
+    for (x, z) in ((-0.3, 1.1), (0.25, 0.85), (0.1, 1.1)):
+        B.sphere("pin%.1f" % x, 0.03, (x, -0.04, z), M("red"), seg=6, rings=4, outline=False)
+
+
+def k_tools(B: Builder) -> None:
+    B.box("hook", (0.9, 0.06, 0.06), (0, 0, 1.4), M("wood_dark"))
+    B.tube("rope", [(-0.3, -0.03, 1.38), (-0.32, -0.04, 1.0), (-0.28, -0.03, 0.75)], [0.03] * 3, M("hay_dark"))
+    B.torus("coil", 0.16, 0.04, (-0.3, -0.05, 0.95), M("hay_dark"), rot=(math.pi / 2, 0, 0), seg=16, rseg=5)
+    B.box("saw", (0.5, 0.02, 0.14), (0.15, -0.03, 1.05), M("steel"), rot=(0, 0.2, 0))
+    B.box("sawh", (0.14, 0.04, 0.12), (0.43, -0.03, 1.11), M("wood"), rot=(0, 0.2, 0))
+    B.cyl("lamp", 0.07, 0.07, 0.18, (0.32, -0.05, 1.28), M("glass"), seg=8)
+
+
+def k_horseshoe(B: Builder) -> None:
+    B.box("board", (0.5, 0.04, 0.3), (0, 0, 1.0), M("wood_grey"), bevel=0.02)
+    for i, x in enumerate((-0.12, 0.12)):
+        pts = [(x + 0.08 * math.cos(a), -0.04, 1.0 + 0.09 * math.sin(a)) for a in [math.pi * (0.1 + 0.8 * k / 8) for k in range(9)]]
+        B.tube("hs%d" % i, pts, [0.018] * 9, M("iron"), seg=4)
+    B.tube("bridle", [(0.25, -0.04, 1.1), (0.3, -0.06, 0.8), (0.2, -0.06, 0.6)], [0.025] * 3, M("leather"))
+
+
+def k_bottles(B: Builder) -> None:
+    w = 1.6
+    B.box("shelf", (w, 0.22, 0.05), (0, -0.08, 0.95), M("wood"))
+    for sx in (-w / 2 + 0.1, w / 2 - 0.1):
+        B.box("br%.1f" % sx, (0.05, 0.18, 0.18), (sx, -0.06, 0.85), M("wood_dark"))
+    _bottles(B, "wb", -w / 2 + 0.1, w / 2 - 0.1, -0.08, 0.98, 8, 33)
+    B.box("sign", (0.7, 0.04, 0.24), (0, 0, 1.48), M("wood_red"), bevel=0.02)
+    B.box("signt", (0.5, 0.045, 0.06), (0, -0.01, 1.48), M("gold"), outline=False)
+
+
+def k_keys(B: Builder) -> None:
+    B.box("board", (0.8, 0.05, 0.55), (0, 0, 1.05), M("wood_dark"), bevel=0.02)
+    for i in range(8):
+        x = -0.3 + (i % 4) * 0.2
+        z = 1.18 - (i // 4) * 0.25
+        B.cyl("hook%d" % i, 0.012, 0.012, 0.06, (x, -0.04, z), M("brass"), rot=(math.pi / 2, 0, 0), seg=4, outline=False)
+        if i not in (2, 5):
+            B.box("key%d" % i, (0.04, 0.02, 0.14), (x, -0.05, z - 0.08), M("gold"), outline=False)
+
+
+def k_cross(B: Builder) -> None:
+    B.box("v", (0.12, 0.06, 0.9), (0, 0, 1.0), M("wood_dark"), bevel=0.02)
+    B.box("h", (0.5, 0.06, 0.12), (0, 0, 1.18), M("wood_dark"), bevel=0.02)
+    B.box("vg", (0.05, 0.065, 0.8), (0, -0.01, 1.0), M("gold"), outline=False)
+
+
+def k_rifles(B: Builder) -> None:
+    for i, z in enumerate((0.85, 1.2)):
+        for sx in (-0.45, 0.45):
+            B.box("peg%d%.1f" % (i, sx), (0.06, 0.12, 0.06), (sx, -0.05, z - 0.05), M("wood_dark"))
+        B.box("stock%d" % i, (0.32, 0.06, 0.11), (-0.5, -0.1, z), M("wood_red"), bevel=0.02)
+        B.cyl("barrel%d" % i, 0.022, 0.022, 0.95, (0.1, -0.1, z + 0.02), M("iron_dark"), rot=(0, math.pi / 2, 0), seg=6)
+
+
+def k_bars(B: Builder) -> None:
+    """Grille de cellule vue à travers le mur (barreaux sur toute la face)."""
+    w = 1.6
+    B.box("dark", (w, 0.02, 1.7), (0, 0.06, 0.85), M("black"), outline=False)
+    B.box("top", (w, 0.08, 0.1), (0, 0, 1.68), M("iron_dark"))
+    B.box("mid", (w, 0.06, 0.07), (0, 0, 0.9), M("iron"))
+    for i in range(7):
+        x = -w / 2 + 0.12 + i * (w - 0.24) / 6
+        B.cyl("bar%d" % i, 0.035, 0.035, 1.7, (x, -0.02, 0.85), M("iron"), seg=6)
+
+
+# Détails au sol (vue de dessus, posés à plat, centrés sur (0, 0)).
+
+def d_bottles(B: Builder) -> None:
+    for i, (x, y, a, mat) in enumerate(((-0.2, 0.05, 0.6, "bottle_g"), (0.25, -0.1, -1.2, "bottle_b"))):
+        B.cyl("b%d" % i, 0.07, 0.07, 0.3, (x, y, 0.07), M(mat), rot=(math.pi / 2, 0, a), seg=8)
+    B.cyl("glass", 0.06, 0.05, 0.1, (0.05, 0.22, 0.05), M("cream"), seg=8)
+    B.sphere("spill", 0.2, (0.05, -0.05, 0.0), M("bottle_b"), scale=(1.4, 0.9, 0.05), seg=12, rings=4, outline=False)
+
+
+def d_cards(B: Builder) -> None:
+    import random
+    rnd = random.Random(3)
+    for i in range(6):
+        a = rnd.uniform(0, 6.28)
+        r = rnd.uniform(0.05, 0.35)
+        B.box("card%d" % i, (0.16, 0.22, 0.01), (math.cos(a) * r, math.sin(a) * r, 0.01), M("ivory"), rot=(0, 0, a), outline=False)
+    for i in range(4):
+        B.cyl("chip%d" % i, 0.06, 0.06, 0.02, (rnd.uniform(-0.3, 0.3), rnd.uniform(-0.3, 0.3), 0.02), M("red" if i % 2 else "cream"), seg=10)
+
+
+def d_papers(B: Builder) -> None:
+    import random
+    rnd = random.Random(6)
+    for i in range(5):
+        B.box("p%d" % i, (0.32, 0.42, 0.01), (rnd.uniform(-0.3, 0.3), rnd.uniform(-0.2, 0.2), 0.01 * i),
+              M("paper" if i % 3 else "cream"), rot=(0, 0, rnd.uniform(-1, 1)))
+
+
+def d_coins(B: Builder) -> None:
+    import random
+    rnd = random.Random(8)
+    for i in range(9):
+        B.cyl("c%d" % i, 0.06, 0.06, 0.02, (rnd.uniform(-0.35, 0.35), rnd.uniform(-0.25, 0.25), 0.01), M("gold"), seg=10)
+    B.box("bar", (0.32, 0.14, 0.1), (0.1, 0.05, 0.05), M("gold"), bevel=0.02)
+    B.box("bag", (0.3, 0.3, 0.2), (-0.25, 0.1, 0.1), M("cloth_cream"), bevel=0.08)
+
+
+def d_runner(B: Builder) -> None:
+    """Tronçon de tapis de couloir (une case de long, raccords invisibles)."""
+    L, W = 1.78, 1.0
+    B.box("rug", (W, L, 0.02), (0, 0, 0.01), M("cloth_red"), outline=False)
+    for sx in (-1, 1):
+        B.box("border%d" % sx, (0.08, L, 0.022), (sx * (W / 2 - 0.1), 0, 0.012), M("gold"), outline=False)
+        B.box("edge%d" % sx, (0.04, L, 0.024), (sx * (W / 2 - 0.02), 0, 0.012), M("wood_red"), outline=False)
+    B.box("motif", (0.3, 0.3, 0.023), (0, 0, 0.013), M("gold"), rot=(0, 0, math.pi / 4), outline=False)
+    B.box("motif2", (0.2, 0.2, 0.024), (0, 0, 0.014), M("cloth_red"), rot=(0, 0, math.pi / 4), outline=False)
+
+
+def d_rug_round(B: Builder) -> None:
+    B.cyl("rug", 1.0, 1.0, 0.02, (0, 0, 0.01), M("wood_red"), seg=32)
+    B.cyl("in", 0.8, 0.8, 0.022, (0, 0, 0.012), M("cloth_cream"), seg=32, outline=False)
+    B.cyl("in2", 0.55, 0.55, 0.024, (0, 0, 0.014), M("cloth_red"), seg=32, outline=False)
+    B.cyl("c", 0.2, 0.2, 0.026, (0, 0, 0.016), M("gold"), seg=16, outline=False)
+
+
+FURNITURE = {
+    "bottle_shelf": p_bottle_shelf, "stage": p_stage, "dresser": p_dresser, "washstand": p_washstand,
+    "nightstand": p_nightstand, "gun_rack": p_gun_rack, "bookcase": p_bookcase, "crate_stack": p_crate_stack,
+    "sacks": p_sacks, "dining_table": p_dining_table, "table_chairs": p_table_chairs, "candelabra": p_candelabra,
+    "settee": p_settee, "stove": p_stove, "bucket": p_bucket, "tool_rack": p_tool_rack,
+}
+FURNITURE_FRAMES = {
+    "bottle_shelf": ((150, 140), 1.2), "stage": ((240, 230), 1.4), "dresser": ((90, 120), 1.0),
+    "washstand": ((80, 90), 0.6), "nightstand": ((60, 70), 0.5), "gun_rack": ((90, 120), 1.1),
+    "bookcase": ((90, 130), 1.2), "crate_stack": ((90, 90), 0.6), "sacks": ((80, 70), 0.4),
+    "dining_table": ((150, 140), 0.6), "table_chairs": ((120, 90), 0.6), "candelabra": ((50, 90), 0.9),
+    "settee": ((120, 90), 0.5), "stove": ((70, 140), 1.3), "bucket": ((40, 40), 0.3), "tool_rack": ((90, 110), 1.0),
+}
+FURNITURE_GLOW = {"candelabra": (0.0, 0.0, 1.8), "nightstand": (0.05, 0.05, 1.08), "stove": (0.0, -0.45, 0.5),
+                  "dining_table": (0.0, 0.0, 1.28), "stage": (0.0, -1.2, 0.6)}
+WALL_KIT = {
+    "frame": k_frame, "horns": k_horns, "mirror": k_mirror, "poster": k_poster, "clock": k_clock, "map": k_map,
+    "tools": k_tools, "horseshoe": k_horseshoe, "bottles": k_bottles, "keys": k_keys, "cross": k_cross,
+    "rifles": k_rifles, "bars": k_bars,
+}
+FLOOR_DETAILS = {"bottles": d_bottles, "cards": d_cards, "papers": d_papers, "coins": d_coins,
+                 "runner": d_runner, "rug_round": d_rug_round}
+
+
+def render_furniture(only: list[str] | None = None) -> None:
+    for k, fn in FURNITURE.items():
+        if only and k not in only:
+            continue
+        fr, tz = FURNITURE_FRAMES[k]
+        render_piece("prop_" + k, fn, fr, target_z=tz, glow=FURNITURE_GLOW.get(k))
+    for k, fn in WALL_KIT.items():
+        if only and "kit_wall_" + k not in only and "wall" not in only:
+            continue
+        # Vue presque de face : le décor est plaqué sur la face avant (verticale) du mur.
+        render_piece("kit_wall_" + k, fn, (70, 80), target_z=1.0, outline_px=3.5, shadow=False, elev=8.0)
+    for k, fn in FLOOR_DETAILS.items():
+        if only and "decal_" + k not in only and "floor" not in only:
+            continue
+        fr = (72, 72) if k not in ("rug_round",) else (80, 80)
+        if k == "runner":
+            fr = (40, 64)
+        render_piece("decal_" + k, fn, fr, target_z=0.0, flat=True, outline_px=2.5)
+
+
+def seed_from_atlas(out_dir: str, pieces_dir: str, skip_prefix: tuple = ("white", "glow")) -> int:
+    """Ré-extrait les pièces d'un atlas existant (rect + pieds + point chaud) vers pieces_dir,
+    pour pouvoir ré-empaqueter sans re-rendre ce qui existe déjà (sources absentes)."""
+    import re
+    import ast
+    from PIL import Image
+    meta_src = open(os.path.join(out_dir, "atlas_meta.gd")).read()
+    m = re.search(r"const PIECES := (\{.*\})", meta_src, re.S)
+    pieces = ast.literal_eval(m.group(1))
+    atlas = Image.open(os.path.join(out_dir, "atlas.png")).convert("RGBA")
+    os.makedirs(pieces_dir, exist_ok=True)
+    n = 0
+    for name, e in pieces.items():
+        if name in skip_prefix:
+            continue
+        x, y, w, h = e["rect"]
+        dst = os.path.join(pieces_dir, name + ".png")
+        if os.path.exists(dst):
+            continue
+        atlas.crop((x, y, x + w, y + h)).save(dst)
+        info = {"feet": e["feet"], "size": [w, h]}
+        for k in ("glow", "anchors"):
+            if k in e:
+                info[k] = e[k]
+        with open(os.path.join(pieces_dir, name + ".json"), "w") as f:
+            json.dump(info, f)
+        n += 1
+    return n
+
+
 PROPS = {
     "cactus": p_cactus, "barrel": p_barrel, "water_trough": p_water_trough, "hitching_post": p_hitching_post,
     "wagon": p_wagon, "wagon_wheel": p_wagon_wheel, "saloon_bar": p_saloon_bar, "piano": p_piano,
@@ -737,7 +1233,7 @@ def _shadow_objects(B: Builder) -> list[bpy.types.Object]:
 
 def render_piece(name: str, build_fn, frame_world: tuple[float, float], target_z: float = 1.0,
                  flat: bool = False, outline_px: float = 5.0, glow=None, extra: dict | None = None,
-                 shadow: bool = True) -> dict:
+                 shadow: bool = True, elev: float | None = None) -> dict:
     """Construit, rend (objet + ombre), compose et enregistre PIECES/<name>.png (+ .json)."""
     from PIL import Image, ImageFilter
     os.makedirs(PIECES, exist_ok=True)
@@ -746,7 +1242,8 @@ def render_piece(name: str, build_fn, frame_world: tuple[float, float], target_z
     C.setup_render((wpx * SS, hpx * SS), samples=3, outline_px=outline_px, inner_ratio=0.45)
     B = Builder()
     build_fn(B)
-    elev = 90.0 if flat else ELEV
+    if elev is None:
+        elev = 90.0 if flat else ELEV
     cam = C.ortho_camera(elev, max(wpx, hpx) / PX_PER_BU, target=(0, 0, target_z), dist=30.0)
     bpy.context.view_layer.update()
     feet = C.world_to_px(cam, (0, 0, 0))
@@ -902,9 +1399,15 @@ def _glow_sprite(n: int):
 
 
 def main() -> None:
+    """--keep : repart des pièces de l'atlas actuel (aucun re-rendu de l'existant).
+    --furniture [--only a,b] : rend le mobilier / décors muraux / détails au sol des gabarits."""
     args = sys.argv[1:]
-    if "--pack" not in args:
-        only = args[args.index("--only") + 1].split(",") if "--only" in args else None
+    only = args[args.index("--only") + 1].split(",") if "--only" in args else None
+    if "--keep" in args:
+        print("pièces reprises de l'atlas :", seed_from_atlas(OUT_DIR, PIECES))
+    if "--furniture" in args:
+        render_furniture(only)
+    elif "--pack" not in args:
         render_props(only)
     pack()
 

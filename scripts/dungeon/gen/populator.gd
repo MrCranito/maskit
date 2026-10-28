@@ -17,6 +17,8 @@ extends RefCounted
 ## les constructeurs : saloon_hall, jail_cell, street, tunnel…).
 
 const Cfg := preload("res://scripts/dungeon/gen/gen_config.gd")
+const Fur := preload("res://scripts/dungeon/gen/furnisher.gd")
+const Tpl := preload("res://scripts/dungeon/gen/fw_templates.gd")
 const T := FloorLayout.Tile
 
 ## Rôle → liste de [kind, min, max, placement] ; placement : &"wall" (contre un
@@ -130,6 +132,7 @@ class Ctx:
 	var room_of: PackedInt32Array      ## Case → id de salle (la plus petite), -1 sinon
 	var door_adj: Dictionary = {}      ## Portes et leurs 4 voisines
 	var cand_cache: Dictionary = {}    ## "room:placement" → Array[Vector2i]
+	var fur: Fur.Ctx = null            ## Aménagement par gabarits (salles intérieures)
 
 	func room_id_at(p: Vector2i) -> int:
 		if not L.in_bounds(p):
@@ -143,7 +146,11 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 	c.world = world
 	_reserve(c)
 	_index_rooms(c)
+	c.fur = Fur.make_ctx(L, c.blocked, c.reserved, c.enemy_cells, c.room_of, furniture_defs(), c.world.has_container)
+	Fur.prepare(c.fur, Tpl.TEMPLATES, seed_value, "fw")
 	for room in L.rooms:
+		if Fur.templated(c.fur, room):
+			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash([seed_value, L.floor_index, room.id, "furnish"])
 		_furnish(c, room, rng)
@@ -327,7 +334,8 @@ static func _try_place(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerato
 					crowded = true
 			if crowded:
 				continue
-		if _keeps_connectivity(c, p):
+		# Connexité locale + accès conservé aux conteneurs / cachettes voisins.
+		if Fur.keeps(c.fur, p):
 			c.blocked[p] = true
 			cells.remove_at(i)
 			return p
@@ -336,6 +344,46 @@ static func _try_place(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerato
 
 static func _role(room: FloorLayout.Room) -> StringName:
 	return StringName(room.tags[0]) if room.tags.size() > 0 else &"street"
+
+
+# --- Aménagement par gabarits ---------------------------------------------------
+
+## Salle aménagée par gabarit (intérieurs Far West dont le rôle a un gabarit).
+static func has_template(room: FloorLayout.Room) -> bool:
+	return not room.outdoor and Tpl.TEMPLATES.has(_role(room))
+
+
+static var _defs_cache: Dictionary = {}
+
+
+## Définitions de mobilier (collision de WorldProp.DEFS + compléments du gabarit), limitées
+## aux décors présents dans l'atlas.
+static func furniture_defs() -> Dictionary:
+	if not _defs_cache.is_empty():
+		return _defs_cache
+	for k: StringName in WorldProp.DEFS:
+		if not WorldProp.is_known_kind(k):
+			continue
+		var d: Dictionary = (WorldProp.DEFS[k] as Dictionary).duplicate()
+		d.merge(Tpl.META.get(k, {}), true)
+		_defs_cache[k] = d
+	return _defs_cache
+
+
+## Cases bloquées par les décors d'un étage (emprises comprises), conteneurs et cachettes.
+static func blocked_cells(L: FloorLayout) -> Dictionary:
+	var defs := furniture_defs()
+	var out := {}
+	for s in L.prop_spawns:
+		var d: Dictionary = defs.get(s.kind, {"block": Vector2(1, 1)})
+		if d.get("block", Vector2.ZERO) == Vector2.ZERO:
+			continue
+		for q in FloorLayout.spawn_cells(s):
+			out[q] = true
+	for l: Array in [L.container_spawns, L.hiding_spot_spawns]:
+		for s2: FloorLayout.Spawn in l:
+			out[s2.cell] = true
+	return out
 
 
 # --- Décors ------------------------------------------------------------------
@@ -378,11 +426,20 @@ static func _containers(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerat
 	if room.type == FloorLayout.ROOM_SUPER_LOOT:
 		mn = Cfg.geti("super_loot_chests", 2)
 	n = clampi(maxi(n, mn), 0, Cfg.geti("container_max_per_room", 5))
+	if Fur.templated(c.fur, room):
+		# Salle aménagée : conteneurs intégrés au mobilier (emplacements du gabarit).
+		var firsts: Array = []
+		if room.type == FloorLayout.ROOM_SUPER_LOOT and c.world.has_container(&"chest"):
+			for k in mn:
+				firsts.append(&"chest")
+		Fur.loot(c.fur, room, c.L.container_spawns, n, func() -> StringName: return _weighted(filtered, rng), firsts, "loot")
+		return
 	for i in n:
 		var kind: StringName = &"chest" if room.type == FloorLayout.ROOM_SUPER_LOOT and i < mn and c.world.has_container(&"chest") else _weighted(filtered, rng)
 		var p := _place_blocking(c, room, rng, &"wall")
 		if p.x < 0:
 			break
+		c.fur.access[p] = true
 		c.L.add_spawn(c.L.container_spawns, p, kind, room.id)
 
 
@@ -418,9 +475,15 @@ static func _hiding_spots(c: Ctx, seed_value: int) -> void:
 			if placed >= want:
 				return
 			var kind := _weighted(HIDING[_role(room)], rng)
+			if Fur.templated(c.fur, room):
+				# Salle aménagée : cachette à un emplacement du gabarit (coin, contre un meuble).
+				if Fur.loot(c.fur, room, L.hiding_spot_spawns, 1, func() -> StringName: return kind, [kind], "hide") > 0:
+					placed += 1
+				continue
 			var p := _place_blocking(c, room, rng, &"wall")
 			if p.x < 0:
 				continue
+			c.fur.access[p] = true
 			L.add_spawn(L.hiding_spot_spawns, p, kind, room.id)
 			placed += 1
 

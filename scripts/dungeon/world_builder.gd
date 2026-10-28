@@ -40,6 +40,8 @@ const WallsMeta := preload("res://assets/textures/walls_meta.gd")
 const TILE_TEX_WORLD := 256.0
 const OUTLINE := Color(0.09, 0.05, 0.08)
 const NIGHT := Color(0.12, 0.14, 0.34)
+## Échelle des décors muraux (rendus à l'échelle des meubles, agrandis pour la lisibilité).
+const WALL_DECOR_SCALE := 1.3
 
 ## Matériaux de sol
 enum Ground { VOID, SAND, PLANKS, MINE }
@@ -443,7 +445,6 @@ class GroundDecals extends Node2D:
 				elif g == Ground.PLANKS:
 					_plank_detail(atlas, c)
 		_ruts(atlas)
-		_rugs(atlas)
 		_sunset(L)
 		# Ombres et occlusion par-dessus les décalques.
 		var walls := WorldBuilder.TEX_WALLS
@@ -750,6 +751,12 @@ class WallLayer extends Node2D:
 		if bool(fd["lamp"]):
 			var at := Vector2(f.get_center().x, f.position.y + 14.0)
 			draw_texture_rect_region(WorldProp.ATLAS, WorldProp.piece_dest("kit_lantern", at), WorldProp.piece_region("kit_lantern"))
+		var wd: Variant = L.wall_decor_cells.get(c, null)
+		if wd != null and WorldProp.has_piece(String(wd)):
+			# Décor mural (cadre, affiche, étagère…) : point d'appui = bas du décor, posé
+			# contre la face (léger retrait au-dessus de la plinthe).
+			var at2 := Vector2(f.get_center().x, f.end.y - 4.0)
+			draw_texture_rect_region(WorldProp.ATLAS, WorldProp.piece_dest(String(wd), at2, WALL_DECOR_SCALE), WorldProp.piece_region(String(wd)))
 		# Contours verticaux là où la face se termine (angles du bâtiment).
 		var west_open := not _is_wall(c + Vector2i.LEFT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(-1, 1)))
 		var east_open := not _is_wall(c + Vector2i.RIGHT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(1, 1)))
@@ -1115,15 +1122,42 @@ class StairsVisual extends Node2D:
 # --- Décors ----------------------------------------------------------------------
 
 func _build_props() -> void:
+	# Une seule StaticBody2D pour toutes les collisions de décors (shape owners).
+	var shared := WorldProp.make_shared_body()
+	add_child(shared)
 	for s: FloorLayout.Spawn in layout.prop_spawns:
-		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25)
-		var p := WorldProp.create(s.kind, pos)
+		var pos := FloorLayout.cell_to_world(s.cell) + Vector2(0.0, TS * 0.25) + s.offset
+		var p := WorldProp.create(s.kind, pos, shared, s.flip)
 		add_child(p)
 		_props.append(p)
 		var go := p.get_glow_offset()
 		if go != Vector2.INF:
 			var big := s.kind == &"lantern"
 			add_glow(pos + go, (130.0 if layout.floor_index < 0 else 80.0) if big else 56.0, 1.0)
+	if not layout.decor_spawns.is_empty():
+		var fl := FloorDetails.new()
+		fl.name = "FloorDetails"
+		fl.spawns = layout.decor_spawns
+		fl.z_index = 1
+		add_child(fl)
+
+
+## Détails au sol non bloquants de l'aménagement (tapis, papiers, paille, rails…) :
+## pièces de l'atlas des décors, un seul nœud dessiné une fois.
+class FloorDetails extends Node2D:
+	var spawns: Array[FloorLayout.Spawn] = []
+
+	func _draw() -> void:
+		for s: FloorLayout.Spawn in spawns:
+			var piece := String(s.kind)
+			if not WorldProp.has_piece(piece):
+				continue
+			var reg := WorldProp.piece_region(piece)
+			var size := reg.size / WorldProp.PX_PER_WORLD
+			var c := FloorLayout.cell_to_world(s.cell) + s.offset
+			draw_set_transform(c, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
+			draw_texture_rect_region(WorldProp.ATLAS, Rect2(-size * 0.5, size), reg)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 # --- Extraction ------------------------------------------------------------------

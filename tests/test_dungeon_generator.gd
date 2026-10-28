@@ -209,14 +209,40 @@ func test_super_loot_inatteignables_sans_clef() -> void:
 			assert_eq(leak, 0, "%s : %s atteignable sans clef" % [_tag(f), r.name])
 
 
-## Décors et conteneurs bloquants ne coupent aucun passage.
+## Cases occupées par décors (emprise complète), conteneurs et cachettes.
+func _blocked(f: FloorLayout) -> Dictionary:
+	var blocked := {}
+	for s in f.prop_spawns:
+		for q in FloorLayout.spawn_cells(s):
+			blocked[q] = true
+	for l: Array in [f.container_spawns, f.hiding_spot_spawns]:
+		for s2: FloorLayout.Spawn in l:
+			blocked[s2.cell] = true
+	return blocked
+
+
+## Composante accessible depuis les entrées en évitant `blocked`.
+func _reach(f: FloorLayout, blocked: Dictionary) -> Dictionary:
+	var seen := {}
+	var stack: Array[Vector2i] = []
+	for e in _entries(f):
+		seen[e] = true
+		stack.append(e)
+	while not stack.is_empty():
+		var c: Vector2i = stack.pop_back()
+		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var n := c + d
+			if seen.has(n) or blocked.has(n) or not FloorLayout.is_walkable_tile(f.get_tile(n)):
+				continue
+			seen[n] = true
+			stack.append(n)
+	return seen
+
+
+## Décors (emprises comprises), conteneurs et cachettes ne coupent aucun passage.
 func test_decors_ne_bloquent_pas() -> void:
 	for f in _all_floors():
-		var blocked := {}
-		for s in f.prop_spawns:
-			blocked[s.cell] = true
-		for s2 in f.container_spawns:
-			blocked[s2.cell] = true
+		var blocked := _blocked(f)
 		var seen := {}
 		var stack: Array[Vector2i] = []
 		for e in _entries(f):
@@ -361,18 +387,35 @@ func test_spawn_joueur_et_extraction_eloignes() -> void:
 
 
 func test_decors_coherents_avec_archetype() -> void:
-	var expect := {&"saloon": [&"saloon_bar", &"piano"], &"sheriff": [&"jail_bars"], &"mine": [&"rail_track"]}
+	# Aménagement par gabarits : bar (ou comptoir) + piano au saloon, barreaux des cellules
+	# peints sur les murs du bureau du shérif (décor mural), rails au sol dans la mine.
+	var piano_ok := 0
+	var saloons := 0
 	for per_diff: Array in runs:
 		var g := _floor(per_diff[0], 0)
 		for b in g.buildings:
-			if not expect.has(b.archetype):
-				continue
 			var kinds := {}
 			for sp in g.prop_spawns:
 				if b.room_ids.has(sp.room_id):
 					kinds[sp.kind] = true
-			for k: StringName in expect[b.archetype]:
-				assert_true(kinds.has(k), "%s : décor %s" % [b.name, k])
+			var decals := {}
+			for dc in g.decor_spawns:
+				if b.room_ids.has(dc.room_id):
+					decals[dc.kind] = true
+			match b.archetype:
+				&"saloon":
+					saloons += 1
+					assert_true(kinds.has(&"saloon_bar") or kinds.has(&"counter"), "%s : bar" % b.name)
+					if kinds.has(&"piano"):
+						piano_ok += 1
+				&"sheriff":
+					var bars := 0
+					for c: Vector2i in g.wall_decor_cells:
+						if g.wall_decor_cells[c] == &"kit_wall_bars" and b.rect.has_point(c):
+							bars += 1
+					assert_gt(bars, 0, "%s : barreaux des cellules" % b.name)
+				&"mine":
+					assert_true(decals.has(&"prop_rail_track"), "%s : rails" % b.name)
 		var outdoor := {}
 		for sp2 in g.prop_spawns:
 			var r := g.get_room(sp2.room_id)
@@ -383,7 +426,173 @@ func test_decors_coherents_avec_archetype() -> void:
 		var mk := {}
 		for sp3 in mine.prop_spawns:
 			mk[sp3.kind] = true
-		assert_true(mk.has(&"rail_track") and mk.has(&"mine_cart"), "rails et chariots dans la mine")
+		var md := {}
+		for dc2 in mine.decor_spawns:
+			md[dc2.kind] = true
+		assert_true(md.has(&"prop_rail_track") and mk.has(&"mine_cart"), "rails et chariots dans la mine")
+	assert_gt(float(piano_ok) / maxf(1.0, float(saloons)), 0.8, "piano dans la plupart des saloons")
+
+
+# --- Aménagement par gabarits ---------------------------------------------------------------
+
+const Pop := preload("res://scripts/dungeon/gen/populator.gd")
+const Tpl := preload("res://scripts/dungeon/gen/fw_templates.gd")
+
+
+## Conteneurs et cachettes : au moins une case voisine accessible depuis les entrées.
+func test_conteneurs_accessibles() -> void:
+	for f in _all_floors():
+		var reach := _reach(f, _blocked(f))
+		var bad := 0
+		for l: Array in [f.container_spawns, f.hiding_spot_spawns]:
+			for s: FloorLayout.Spawn in l:
+				var ok := false
+				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					if reach.has(s.cell + d):
+						ok = true
+				if not ok:
+					bad += 1
+		assert_eq(bad, 0, "%s : conteneurs / cachettes inaccessibles" % _tag(f))
+
+
+## Rien de bloquant (décor, conteneur, cachette, cloison) sur une porte, un escalier, une case
+## d'extraction ou la case intérieure juste devant une porte / un escalier.
+func test_abords_portes_escaliers_extraction_libres() -> void:
+	for f in _all_floors():
+		var blocked := _blocked(f)
+		for p: Vector2i in f.partition_cells:
+			blocked[p] = true
+		var bad := 0
+		var gates: Array[Vector2i] = []
+		for d in f.doors:
+			gates.append(d.cell)
+			gates.append(d.cell + (Vector2i.LEFT if d.vertical else Vector2i.UP))
+			gates.append(d.cell + (Vector2i.RIGHT if d.vertical else Vector2i.DOWN))
+		for st in f.stairs:
+			gates.append(st.cell)
+			for dd: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				if FloorLayout.is_walkable_tile(f.get_tile(st.cell + dd)):
+					gates.append(st.cell + dd)
+		for e in f.extraction_cells:
+			gates.append(e)
+		gates.append(f.player_spawn)
+		for g in gates:
+			if blocked.has(g):
+				bad += 1
+		assert_eq(bad, 0, "%s : abord de porte / escalier / extraction encombré" % _tag(f))
+
+
+## Chaque salle intérieure dont le rôle a un gabarit reçoit du mobilier (ou des cloisons), et
+## chaque rôle de gabarit est rencontré sur l'ensemble des runs.
+func test_chaque_piece_recoit_son_gabarit() -> void:
+	var seen_roles := {}
+	var empty := 0
+	var total := 0
+	for f in _all_floors():
+		var per_room := {}
+		for s in f.prop_spawns:
+			per_room[s.room_id] = int(per_room.get(s.room_id, 0)) + 1
+		for p: Vector2i in f.partition_cells:
+			var r0 := f.room_at(p)
+			if r0 != null:
+				per_room[r0.id] = int(per_room.get(r0.id, 0)) + 1
+		for r in f.rooms:
+			if not Pop.has_template(r):
+				continue
+			var role := StringName(r.tags[0])
+			seen_roles[role] = true
+			# Couloirs : tapis et cadres seulement (pas de mobilier).
+			if role == &"corridor" or role == &"upper_corridor":
+				continue
+			total += 1
+			if int(per_room.get(r.id, 0)) == 0:
+				empty += 1
+	gut.p("Salles aménagées sans mobilier : %d / %d" % [empty, total])
+	assert_lt(float(empty), float(total) * 0.03, "presque toutes les salles reçoivent leur gabarit")
+	for role: StringName in [&"saloon_hall", &"bank_hall", &"bank_vault", &"sheriff_office", &"jail_cell", &"store_shop",
+			&"hotel_reception", &"bedroom", &"stable_main", &"stable_box", &"church_nave", &"ore_room", &"storage"]:
+		assert_true(seen_roles.has(role), "gabarit %s utilisé" % role)
+
+
+## Meubles signature par pièce (mobilier groupé et cohérent).
+func test_meubles_signature() -> void:
+	var expect := {&"church_nave": [&"altar", &"pew"], &"jail_cell": [&"bed"], &"bedroom": [&"bed"],
+		&"saloon_hall": [&"poker_table"], &"stable_main": [&"hay_bale"], &"store_shop": [&"shelf"]}
+	var hits := {}
+	var counts := {}
+	for f in _all_floors():
+		var kinds_by_room := {}
+		for s in f.prop_spawns:
+			if not kinds_by_room.has(s.room_id):
+				kinds_by_room[s.room_id] = {}
+			(kinds_by_room[s.room_id] as Dictionary)[s.kind] = true
+		for r in f.rooms:
+			var role := StringName(r.tags[0]) if r.tags.size() > 0 else &""
+			if not expect.has(role) or r.outdoor:
+				continue
+			counts[role] = int(counts.get(role, 0)) + 1
+			var ks: Dictionary = kinds_by_room.get(r.id, {})
+			var all := true
+			for k: StringName in expect[role]:
+				if not ks.has(k):
+					all = false
+			if all:
+				hits[role] = int(hits.get(role, 0)) + 1
+	for role2: StringName in expect:
+		var n := int(counts.get(role2, 0))
+		if n == 0:
+			continue
+		assert_gt(float(int(hits.get(role2, 0))) / float(n), 0.8, "%s : meubles %s dans la plupart des salles" % [role2, expect[role2]])
+
+
+## Les salles du saloon / de la banque ont un bar ou un comptoir contre un mur.
+func test_bar_et_comptoir_contre_un_mur() -> void:
+	for f in _all_floors():
+		for s in f.prop_spawns:
+			if s.kind != &"saloon_bar" and s.kind != &"counter":
+				continue
+			var cells := FloorLayout.spawn_cells(s)
+			var touches := false
+			for q in cells:
+				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var t := f.get_tile(q + d)
+					if t == T.WALL or t == T.VOID:
+						touches = true
+			assert_true(touches, "%s : %s en %s adossé (mur ou cloison)" % [_tag(f), s.kind, s.cell])
+			if not touches:
+				return
+
+
+## Cloisons : uniquement dans des salles intérieures, jamais sur une case réservée, et le
+## champ partition_cells correspond bien à des murs.
+func test_cloisons_coherentes() -> void:
+	var n := 0
+	for f in _all_floors():
+		for p: Vector2i in f.partition_cells:
+			n += 1
+			assert_eq(f.get_tile(p), T.WALL, "cloison = mur")
+			var r := f.room_at(p)
+			assert_true(r != null and not r.outdoor, "cloison dans une salle intérieure")
+	assert_gt(n, 0, "des cloisons sont posées (stalles, guichets, piliers)")
+
+
+## Décors muraux : uniquement sur des cases de mur dont le sud est praticable (face visible),
+## et une partie des murs reste libre (tourelles).
+func test_decors_muraux() -> void:
+	var dec := 0
+	var faces := 0
+	for f in _all_floors():
+		for c: Vector2i in f.wall_decor_cells:
+			assert_eq(f.get_tile(c), T.WALL, "décor mural sur un mur")
+			assert_true(FloorLayout.is_walkable_tile(f.get_tile(c + Vector2i.DOWN)), "face visible")
+			dec += 1
+		for y in f.size.y:
+			for x in f.size.x:
+				if f.get_tile(Vector2i(x, y)) == T.WALL and FloorLayout.is_walkable_tile(f.get_tile(Vector2i(x, y + 1))):
+					faces += 1
+	gut.p("Faces de murs décorées : %d / %d" % [dec, faces])
+	assert_gt(dec, 0)
+	assert_lt(float(dec), float(faces) * 0.5, "la majorité des murs reste libre")
 
 
 func test_ennemis_croissent_avec_difficulte() -> void:
@@ -421,9 +630,13 @@ func _sig(f: FloorLayout) -> String:
 	var parts: PackedStringArray = []
 	for d in f.doors:
 		parts.append("D%s%d%s" % [d.cell, d.state, d.key_id])
-	for l: Array in [f.enemy_spawns, f.container_spawns, f.prop_spawns]:
+	for l: Array in [f.enemy_spawns, f.container_spawns, f.prop_spawns, f.hiding_spot_spawns, f.decor_spawns]:
 		for s: FloorLayout.Spawn in l:
-			parts.append("%s%s%d" % [s.cell, s.kind, s.room_id])
+			parts.append("%s%s%d%s%s" % [s.cell, s.kind, s.room_id, s.offset, s.size])
+	var wd := f.wall_decor_cells.keys()
+	wd.sort()
+	for c: Vector2i in wd:
+		parts.append("W%s%s" % [c, f.wall_decor_cells[c]])
 	parts.append(str(f.player_spawn))
 	parts.append(str(f.extraction_cells))
 	return ";".join(parts)

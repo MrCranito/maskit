@@ -80,6 +80,16 @@ class Spawn:
 	var cell: Vector2i
 	var kind: StringName             ## Ennemi (golem…), conteneur (crate…) ou décor (cactus…)
 	var room_id: int = -1
+	## (Ajout aménagement) Décalage monde du point d'appui par rapport à la position
+	## standard (centre de case + 0,25 case vers le bas). ZERO = position standard.
+	var offset: Vector2 = Vector2.ZERO
+	## (Ajout aménagement) Emprise en cases : colonnes cell.x - (size.x-1)/2 … ,
+	## rangées cell.y - size.y + 1 … cell.y (cell = rangée du bas). ONE = une case.
+	var size: Vector2i = Vector2i.ONE
+	## (Ajout aménagement) Retourné horizontalement (décors au sol, variantes).
+	var flip: bool = false
+	## (Ajout aménagement) Rotation (radians) des détails au sol (decor_spawns).
+	var rot: float = 0.0
 
 
 var floor_index: int = 0             ## 0 = rez-de-chaussée, 1 = étage, -1 = sous-sol
@@ -97,6 +107,16 @@ var prop_spawns: Array[Spawn] = []
 ## Cachettes (kind : barrel, wardrobe, haystack, porch). Bloquantes comme les conteneurs.
 ## Peut rester vide (cartes écrites à la main, anciens générateurs).
 var hiding_spot_spawns: Array[Spawn] = []
+## (Ajout aménagement) Détails au sol NON bloquants (tapis, papiers, bouteilles, paille…) :
+## kind = pièce d'atlas du biome (« decal_* »), offset en unités monde. Plusieurs par case
+## possibles ; jamais pris en compte pour les collisions ni la connectivité.
+var decor_spawns: Array[Spawn] = []
+## (Ajout aménagement) Cases WALL portant un décor mural (affiche, cadre, étagère murale,
+## lampe…) : Vector2i → StringName (pièce d'atlas). Les autres murs sont libres (tourelles).
+var wall_decor_cells: Dictionary = {}
+## (Ajout aménagement) Cases passées de FLOOR à WALL par l'aménagement (cloisons, murets,
+## alcôves) : Vector2i → true. Ce sont des murs comme les autres (opaques, bloquants).
+var partition_cells: Dictionary = {}
 
 
 func _init(p_size: Vector2i = Vector2i.ZERO) -> void:
@@ -218,6 +238,21 @@ func add_spawn(list: Array[Spawn], cell: Vector2i, kind: StringName, room_id: in
 	s.room_id = room_id
 	list.append(s)
 	return s
+
+
+## (Ajout aménagement) Cases couvertes par l'emprise d'un spawn (voir Spawn.size).
+static func spawn_cells(s: Spawn) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var x0 := s.cell.x - (s.size.x - 1) / 2
+	for dy in s.size.y:
+		for dx in s.size.x:
+			out.append(Vector2i(x0 + dx, s.cell.y - dy))
+	return out
+
+
+## (Ajout aménagement) true si la case de mur `c` porte un décor mural.
+func has_wall_decor(c: Vector2i) -> bool:
+	return wall_decor_cells.has(c)
 
 
 ## Cases atteignables depuis `from` en traversant toutes les portes (même verrouillées

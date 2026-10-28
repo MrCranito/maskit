@@ -253,7 +253,9 @@ func test_decors_ne_bloquent_pas() -> void:
 		var blocked := _big_prop_cells(f)
 		for l: Array in [f.prop_spawns, f.container_spawns, f.hiding_spot_spawns]:
 			for s: FloorLayout.Spawn in l:
-				blocked[s.cell] = true
+				# Emprise complète (mobilier de plusieurs cases posé par les gabarits).
+				for q in FloorLayout.spawn_cells(s):
+					blocked[q] = true
 		var seen := {f.player_spawn: true}
 		var stack: Array[Vector2i] = [f.player_spawn]
 		while not stack.is_empty():
@@ -579,3 +581,57 @@ func test_objets_du_biome() -> void:
 		assert_between(it.rarity, 0, 4)
 	assert_between(n, 10, 16, "10 à 15 objets propres au biome (+ clefs)")
 	assert_true(LootDB.get_item(&"uw_oxygen_tank").is_usable(), "bouteille d'oxygène utilisable")
+
+
+
+# --- Aménagement par gabarits (mobilier, cloisons, décors muraux) -------------------------
+
+const FurnishChecks := preload("res://tests/furnish_checks.gd")
+
+
+func test_amenagement_conteneurs_accessibles_et_abords_libres() -> void:
+	for f in _all_floors():
+		var starts: Array[Vector2i] = [f.player_spawn]
+		var bad := FurnishChecks.containers_reachable(f, starts, _big_prop_cells(f))
+		bad.append_array(FurnishChecks.gates_clear(f, _big_prop_cells(f)))
+		bad.append_array(FurnishChecks.partitions_ok(f))
+		bad.append_array(FurnishChecks.wall_decor_ok(f))
+		assert_eq(bad.size(), 0, "%s : %s" % [_tag(f), str(bad.slice(0, 4))])
+		if not bad.is_empty():
+			return
+
+
+func test_amenagement_chaque_piece_recoit_son_gabarit() -> void:
+	var tpl: Dictionary = preload("res://scripts/biomes/underwater/uw_templates.gd").TEMPLATES
+	var empty := 0
+	var total := 0
+	var seen := {}
+	for f in _all_floors():
+		var e := FurnishChecks.empty_templated_rooms(f, tpl)
+		empty += e.size()
+		for r in f.rooms:
+			if not r.outdoor and r.tags.size() > 0 and tpl.has(StringName(r.tags[0])):
+				total += 1
+				seen[StringName(r.tags[0])] = true
+	gut.p("Salles aménagées vides : %d / %d" % [empty, total])
+	assert_gt(total, 0)
+	assert_lt(float(empty), float(total) * 0.03, "presque toutes les salles reçoivent leur gabarit")
+	for role: StringName in [&"quarters", &"mess", &"storage", &"bio_lab", &"engine", &"workshop"]:
+		assert_true(seen.has(role), "gabarit %s utilisé" % role)
+
+
+func test_amenagement_murs_libres_pour_tourelles() -> void:
+	var worst := 0.0
+	for f in _all_floors():
+		worst = maxf(worst, FurnishChecks.wall_decor_ratio(f))
+	gut.p("Part maximale des faces de murs décorées : %.2f" % worst)
+	assert_lt(worst, 0.5, "la majorité des murs reste libre")
+
+
+func test_amenagement_deterministe() -> void:
+	for s in 3:
+		var a: Array = UnderwaterGenerator.generate_run(_seed(s), world, 2)
+		var b: Array = UnderwaterGenerator.generate_run(_seed(s), world, 2)
+		assert_eq(a.size(), b.size())
+		for i in a.size():
+			assert_eq(FurnishChecks.signature(a[i]), FurnishChecks.signature(b[i]), "aménagement identique (seed %d)" % s)
