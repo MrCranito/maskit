@@ -171,7 +171,7 @@ func damage_number(pos: Vector2, amount: float, crit: bool = false, target_id: i
 
 
 static func _fmt(amount: float) -> String:
-	return str(roundi(amount)) if amount >= 1.0 else "%.1f" % amount
+	return str(maxi(roundi(amount), 1))
 
 
 ## Traçante qui reste une fraction de seconde (sniper) de `from` à `to`.

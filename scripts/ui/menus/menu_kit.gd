@@ -177,11 +177,14 @@ static func add_feedback(b: BaseButton, hover_scale: float = 1.04) -> void:
 
 
 static func _scale_to(c: Control, s: float, t: float) -> void:
-	if not c.is_inside_tree():
+	if not c.is_inside_tree() or c.is_queued_for_deletion():
 		return
 	var old: Variant = c.get_meta(&"_scale_tween") if c.has_meta(&"_scale_tween") else null
 	if old is Tween and (old as Tween).is_valid():
 		(old as Tween).kill()
+	if c.scale.is_equal_approx(Vector2(s, s)):
+		c.remove_meta(&"_scale_tween")
+		return
 	var tw := c.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(c, "scale", Vector2(s, s), t)
 	c.set_meta(&"_scale_tween", tw)

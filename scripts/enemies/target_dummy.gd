@@ -131,7 +131,7 @@ func _set_collision_enabled(enabled: bool) -> void:
 
 func _spawn_damage_number(amount: float) -> void:
 	var label := Label.new()
-	label.text = str(roundi(amount)) if is_equal_approx(amount, roundf(amount)) else "%.1f" % amount
+	label.text = str(maxi(roundi(amount), 1))
 	var settings := LabelSettings.new()
 	settings.font_size = 28
 	settings.font_color = Color(1.0, 0.97, 0.9)

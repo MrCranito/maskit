@@ -2,10 +2,10 @@
 
 ## Moteur
 - Godot 4.7.2 (depuis la phase 3 ; 4.4.1 avant), GDScript **typé** (annoter variables, paramètres, retours).
-- Binaire : `godot` (dans le PATH). Projet : `/home/claude/royaumes-des-masques`.
+- Binaire : `godot` (dans le PATH). Projet : `/home/claude/maskit` (dépôt MrCranito/maskit).
 - Vérif compilation : `godot --headless --path . --import` puis `godot --headless --path . --quit`.
 - Vérif exécution de la scène principale : `godot --headless --path . --quit-after 300` (aucune erreur SCRIPT ERROR ne doit sortir).
-- Résolution de référence : 720 x 1280 (portrait, style Archero).
+- Résolution de référence : 1280 x 720 (paysage uniquement).
 
 ## Autoloads (déjà écrits, ne pas modifier sans raison)
 - `EventBus` : signaux globaux (player_spawned, player_damaged, player_died, enemy_spawned, enemy_died, projectile_fired, debug_toggled).
@@ -122,10 +122,9 @@ Sol 0 · décors au sol 1 · personnages/ennemis/murs triés en Y (y_sort) 10 ·
 - `get_noise_level() -> float` (0..1) : 0 immobile, ~0,35 en marche, 1 juste après un tir (décroît en ~0,6 s). Signal `fired(direction: Vector2)`. Caché = bruit 0 et invisible pour les ennemis.
 - Sprite du héros : `res://assets/sprites/hero3d/hero_frames.tres` (SpriteFrames) avec animations `idle_<dir>` et `run_<dir>`, `<dir>` ∈ `e, se, s, sw, w, nw, n, ne` ; métadonnées `res://assets/sprites/hero3d/hero_meta.json` (`frame_size`, `feet_offset` [x,y] en px depuis le coin haut-gauche du cadre, `display_height` en unités monde, `fps`). Repli : anciens SVG.
 - Arme tenue : `res://assets/sprites/weapons/<id>.png` (pointe vers la droite) + `res://assets/sprites/weapons/<id>.json` (`grip` [x,y] en px = point de rotation dans la main, `muzzle` [x,y] = bout du canon, `scale`). Première arme : `revolver`. Le joueur la fait tourner vers `aim_direction` (flip vertical quand on vise à gauche).
-- Portraits de masques pour les menus : `res://assets/ui/masks/<mask_id>.png` (`colosse`, `spectre`, `alchimiste`, `marionnettiste`, `kitsune`).
 
-### Masques (choix au menu)
-- `res://scripts/core/mask_data.gd` (`MaskData`, Resource) + `data/masks/<id>.tres` : id, display_name, description, aura_color, stats (max_hp_mult, speed_mult, damage_mult, fire_rate_mult). `GameState.selected_mask_id` (défaut `&"kitsune"`).
+### Masques — SUPPRIMÉS (refonte Exfil Rush)
+Remplacés par l'arsenal (voir la dernière section). Plus de MaskData, data/masks, assets/ui/masks.
 
 ### Discrétion (ennemis)
 - Chaque ennemi a une **jauge de reconnaissance** 0..1 affichée au-dessus de la tête quand > 0 : monte avec la vue (joueur dans le champ de vision, ligne de vue, plus vite de près) et le bruit (`get_noise_level()` × proximité), redescend lentement sinon. Pleine → attaque (état Alert puis Chase). Joueur caché → la jauge ne monte pas (sauf si l'ennemi l'a vu se cacher de très près).
@@ -224,3 +223,12 @@ Icône d'inventaire : `assets/ui/weapons/<sprite_id>.png` (vue de profil, fond t
 | Tourelles | `scripts/enemies/turret*.gd`, `scripts/dungeon/turret_placer.gd`, `scripts/enemies/turret_data.gd`, `data/turrets/*`, `assets/sprites/turrets/*`, `tests/test_turrets.gd` |
 | Décor | `scripts/dungeon/gen/*`, `scripts/dungeon/dungeon_generator.gd`, `scripts/dungeon/world_builder.gd`, `scripts/dungeon/prop.gd`, `scripts/biomes/**`, `assets/sprites/{far_west,space_station,mall,underwater}/**`, `art/blender/{mall,space_station,underwater}/*`, `art/blender/build_props.py`, `tests/test_dungeon_generator.gd`, `tests/test_world_builder.gd`, tests de biome |
 | Orchestrateur | `CLAUDE.md`, `docs/*`, `project.godot`, `data/balance.cfg` (les agents y AJOUTENT leur propre section/clés en fin de section, sans toucher aux autres), `scripts/core/*` (hors input_setup), suppression finale de `scripts/core/mask_data.gd` et `data/masks/` |
+
+### État après intégration (refonte Exfil Rush)
+- Flux : splash → menu principal (Jouer, Arsenal, Boutique, Options, Crédits) → choix de la carte (grille de vignettes + puces de catégorie + panneau bas) → arsenal de départ (`scenes/ui/menus/loadout.tscn`) → `GameState.begin_raid()` → raid → écran de fin (`scripts/ui/raid_end_screen.gd`) → menu principal.
+- Héros : planches `assets/sprites/hero3d/` (idle, run, backpedal, strafe_l, strafe_r, hit × 8 directions), skins dans `assets/sprites/hero3d/skins/<id>/`, chargés via `HeroSkin`. Main : `hand_height` lu dans hero_meta.json (22.6).
+- Armes : 38 dans data/weapons (tools/gen_weapons.py les régénère avec leurs objets `wpn_*` et les entrées des tables).
+- Joueur : logique d'armes dans `scripts/player/weapon_loadout.gd`, rendu dans `player_visual.gd` / `weapon_view.gd`, effets poolés dans `scripts/combat/vfx/`. Entrées : R recharger, 1/2/3, molette, `weapon_next` (Q physique = A en AZERTY).
+- Tourelles : `Turret`, `TurretData` (data/turrets, 3 familles × 4 biomes), `TurretPlacer` (évite portes, escaliers, extraction, spawn, murs décorés `FloorLayout.wall_decor_cells`).
+- Décor : `scripts/dungeon/gen/furnisher.gd` (moteur commun) + gabarits par biome (`gen/fw_templates.gd`, `biomes/*/*_templates.gd`). FloorLayout : `Spawn.offset/size/flip/rot`, `decor_spawns`, `wall_decor_cells`, `partition_cells`.
+- Debug (F3 activé) : F5 extraction instantanée, F6 mort instantanée.

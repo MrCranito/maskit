@@ -117,6 +117,9 @@ static func _evaluate(L: FloorLayout, c: Vector2i, n: Vector2i, rw: Dictionary, 
 	var front := c + n
 	if not _is_ground(L.get_tile(front)) or not _is_ground(L.get_tile(front + n)):
 		return {}
+	# Mur déjà habillé (étagère, affiche, lampe… : FloorLayout.wall_decor_cells) : pas de tourelle.
+	if L.has_method(&"has_wall_decor") and bool(L.call(&"has_wall_decor", c)):
+		return {}
 	var side := Vector2i(n.y, n.x)
 	# Mur droit (pas un pilier ni l'extrémité d'une cloison) et pas coincé dans un angle.
 	if L.get_tile(c + side) != FloorLayout.Tile.WALL or L.get_tile(c - side) != FloorLayout.Tile.WALL:
