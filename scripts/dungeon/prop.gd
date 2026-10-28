@@ -1,62 +1,63 @@
 class_name WorldProp
 extends Node2D
-## Décor du monde (cactus, chariot, bar du saloon…). Sprite SVG
-## `res://assets/sprites/far_west/props/<kind>.svg`, ombre bleu nuit portée
-## vers le bas-droite, petite collision couche world pour les décors qui bloquent.
-## Origine du nœud = point d'appui au sol (tri en Y). kind inconnu : petit
-## placeholder (caisse) + push_warning, jamais d'erreur.
+## Décor du monde (cactus, chariot, bar du saloon…). Sprite 3D peint (Blender, même
+## caméra 3/4 que le héros) pris dans l'atlas unique `assets/sprites/far_west/atlas.png`
+## (pièce `prop_<kind>`, ombre bleu nuit déjà peinte dedans), petite collision couche
+## world pour les décors qui bloquent. Origine du nœud = point d'appui au sol (tri en Y).
+## Aucun traitement par image (set_process(false)). kind inconnu : placeholder + warning.
+## Régénérer l'atlas : art/blender/build_props.py (voir son en-tête).
 
-const PROPS_DIR := "res://assets/sprites/far_west/props/"
+const ATLAS: Texture2D = preload("res://assets/sprites/far_west/atlas.png")
+const AtlasMeta := preload("res://assets/sprites/far_west/atlas_meta.gd")
 const LAYER_WORLD := 1
-## 2 unités SVG = 1 px monde (SVG importés à svg/scale 1 → texture 2x, nette au zoom 1.3).
-const SVG_TO_WORLD := 0.5
-const SHADOW_COLOR := Color(0.07, 0.1, 0.25, 0.4)
+## Densité de l'atlas : 2 px par unité monde.
+const PX_PER_WORLD := 2.0
 const OUTLINE := Color(0.12, 0.07, 0.09)
+## Lueur additive (lanternes, bougies) : couleur chaude, rayon (unités monde).
+const GLOW_COLOR := Color(1.0, 0.62, 0.28, 0.55)
+const GLOW_RADIUS := 70.0
 
 ## kind → définition :
-##  block : taille (px monde) de la collision au sol (Vector2.ZERO = traversable)
-##  flat  : posé à plat au sol (z 1, non trié en Y, pas d'ombre)
-##  foot  : marge (px SVG) entre le bas de l'image et le point d'appui
-##  shadow: demi-largeur de l'ombre (px monde)
-##  glow  : lueur chaude (lanterne)
+##  block : taille (unités monde) de la collision au sol (Vector2.ZERO = traversable)
+##  flat  : posé à plat au sol (z 1, non trié en Y)
 const DEFS := {
-	&"cactus": {"block": Vector2(22, 12), "foot": 4.0, "shadow": 20.0},
-	&"hitching_post": {"block": Vector2.ZERO, "foot": 4.0, "shadow": 34.0},
-	&"water_trough": {"block": Vector2(56, 14), "foot": 2.0, "shadow": 30.0},
-	&"wagon": {"block": Vector2(110, 26), "foot": 4.0, "shadow": 64.0},
-	&"wagon_wheel": {"block": Vector2.ZERO, "foot": 4.0, "shadow": 18.0},
-	&"barrel": {"block": Vector2(24, 12), "foot": 2.0, "shadow": 15.0},
-	&"saloon_bar": {"block": Vector2(144, 22), "foot": 6.0, "shadow": 72.0},
-	&"piano": {"block": Vector2(64, 16), "foot": 4.0, "shadow": 34.0},
-	&"poker_table": {"block": Vector2(48, 18), "foot": 6.0, "shadow": 26.0},
-	&"bed": {"block": Vector2(46, 40), "foot": 2.0, "shadow": 26.0},
-	&"desk": {"block": Vector2(60, 18), "foot": 4.0, "shadow": 32.0},
-	&"jail_bars": {"block": Vector2(64, 10), "foot": 2.0, "shadow": 32.0},
+	&"cactus": {"block": Vector2(22, 12)},
+	&"hitching_post": {"block": Vector2.ZERO},
+	&"water_trough": {"block": Vector2(56, 14)},
+	&"wagon": {"block": Vector2(104, 26)},
+	&"wagon_wheel": {"block": Vector2.ZERO},
+	&"barrel": {"block": Vector2(24, 12)},
+	&"saloon_bar": {"block": Vector2(144, 22)},
+	&"piano": {"block": Vector2(64, 16)},
+	&"poker_table": {"block": Vector2(48, 18)},
+	&"bed": {"block": Vector2(46, 40)},
+	&"desk": {"block": Vector2(60, 18)},
+	&"jail_bars": {"block": Vector2(64, 10)},
 	&"rail_track": {"block": Vector2.ZERO, "flat": true},
-	&"mine_cart": {"block": Vector2(44, 16), "foot": 2.0, "shadow": 24.0},
-	&"lantern": {"block": Vector2.ZERO, "foot": 4.0, "shadow": 8.0, "glow": true},
-	&"wanted_poster": {"block": Vector2(36, 8), "foot": 2.0, "shadow": 18.0},
-	&"bench": {"block": Vector2(52, 12), "foot": 2.0, "shadow": 28.0},
-	&"hay_bale": {"block": Vector2(40, 18), "foot": 4.0, "shadow": 22.0},
-	&"safe": {"block": Vector2(36, 18), "foot": 2.0, "shadow": 20.0},
-	&"shelf": {"block": Vector2(56, 14), "foot": 4.0, "shadow": 30.0},
-	&"counter": {"block": Vector2(114, 20), "foot": 4.0, "shadow": 60.0},
-	&"tumbleweed": {"block": Vector2.ZERO, "foot": 2.0, "shadow": 12.0},
-	&"pew": {"block": Vector2(94, 14), "foot": 2.0, "shadow": 50.0},
-	&"ore_pile": {"block": Vector2(30, 12), "foot": 4.0, "shadow": 18.0},
-	&"support_beam": {"block": Vector2(14, 10), "foot": 2.0, "shadow": 12.0},
-	&"altar": {"block": Vector2(64, 18), "foot": 4.0, "shadow": 34.0},
-	&"water_tower": {"block": Vector2(76, 30), "foot": 4.0, "shadow": 46.0},
+	&"mine_cart": {"block": Vector2(44, 16)},
+	&"lantern": {"block": Vector2.ZERO},
+	&"wanted_poster": {"block": Vector2(36, 8)},
+	&"bench": {"block": Vector2(52, 12)},
+	&"hay_bale": {"block": Vector2(40, 18)},
+	&"safe": {"block": Vector2(36, 18)},
+	&"shelf": {"block": Vector2(56, 14)},
+	&"counter": {"block": Vector2(114, 20)},
+	&"tumbleweed": {"block": Vector2.ZERO},
+	&"pew": {"block": Vector2(90, 14)},
+	&"ore_pile": {"block": Vector2(30, 12)},
+	&"support_beam": {"block": Vector2(14, 10)},
+	&"altar": {"block": Vector2(64, 18)},
+	&"water_tower": {"block": Vector2(76, 30)},
 }
 
 static var _tex_cache: Dictionary = {}
+static var _glow_material: CanvasItemMaterial = null
 
 var kind: StringName = &""
 var is_placeholder: bool = false
 var body: StaticBody2D = null
 var _def: Dictionary = {}
 var _sprite: Sprite2D = null
-var _glow_time: float = 0.0
 
 
 ## Crée un décor posé au sol à `pos` (monde). Le décor bloque si sa définition le prévoit.
@@ -70,18 +71,63 @@ static func create(p_kind: StringName, pos: Vector2) -> WorldProp:
 
 
 static func is_known_kind(k: StringName) -> bool:
-	return DEFS.has(k)
+	return DEFS.has(k) and has_piece("prop_" + String(k))
 
 
+# --- Atlas ------------------------------------------------------------------------
+
+static func has_piece(piece: String) -> bool:
+	return AtlasMeta.PIECES.has(piece)
+
+
+## Région (px) d'une pièce de l'atlas.
+static func piece_region(piece: String) -> Rect2:
+	var r: Array = AtlasMeta.PIECES[piece]["rect"]
+	return Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+
+
+## Point d'appui (px, depuis le coin de la région).
+static func piece_feet(piece: String) -> Vector2:
+	var f: Array = AtlasMeta.PIECES[piece]["feet"]
+	return Vector2(float(f[0]), float(f[1]))
+
+
+## Point chaud (lueur) en unités monde relatif au point d'appui, ou Vector2.INF.
+static func piece_glow(piece: String) -> Vector2:
+	var e: Dictionary = AtlasMeta.PIECES[piece]
+	if not e.has("glow"):
+		return Vector2.INF
+	var g: Array = e["glow"]
+	return (Vector2(float(g[0]), float(g[1])) - piece_feet(piece)) / PX_PER_WORLD
+
+
+## Rectangle monde où dessiner la pièce pour que son point d'appui tombe sur `at`.
+static func piece_dest(piece: String, at: Vector2, scale_k: float = 1.0) -> Rect2:
+	var reg := piece_region(piece)
+	var s := scale_k / PX_PER_WORLD
+	return Rect2(at - piece_feet(piece) * s, reg.size * s)
+
+
+## Texture (AtlasTexture partagée) d'un décor, ou null si inconnu.
 static func get_texture(k: StringName) -> Texture2D:
 	if _tex_cache.has(k):
 		return _tex_cache[k]
-	var path := PROPS_DIR + String(k) + ".svg"
-	var tex: Texture2D = null
-	if ResourceLoader.exists(path):
-		tex = load(path) as Texture2D
+	var tex: AtlasTexture = null
+	var piece := "prop_" + String(k)
+	if has_piece(piece):
+		tex = AtlasTexture.new()
+		tex.atlas = ATLAS
+		tex.region = piece_region(piece)
 	_tex_cache[k] = tex
 	return tex
+
+
+## Matériau additif partagé des lueurs précalculées (une seule instance).
+static func glow_material() -> CanvasItemMaterial:
+	if _glow_material == null:
+		_glow_material = CanvasItemMaterial.new()
+		_glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	return _glow_material
 
 
 func is_blocking() -> bool:
@@ -89,26 +135,24 @@ func is_blocking() -> bool:
 
 
 func _setup() -> void:
+	set_process(false)
 	var tex: Texture2D = get_texture(kind) if DEFS.has(kind) else null
 	if not DEFS.has(kind) or tex == null:
 		is_placeholder = true
 		push_warning("WorldProp: décor inconnu « %s », placeholder." % String(kind))
-		_def = {"block": Vector2.ZERO, "shadow": 14.0}
+		_def = {"block": Vector2.ZERO}
 		z_index = 10
 		return
 	_def = DEFS[kind]
 	var flat: bool = bool(_def.get("flat", false))
 	z_index = 1 if flat else 10
+	var piece := "prop_" + String(kind)
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
 	_sprite.texture = tex
-	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	_sprite.scale = Vector2.ONE * SVG_TO_WORLD
-	_sprite.centered = true
-	if not flat:
-		# Pied (bas-centre de l'image, moins la marge) à l'origine.
-		var foot: float = float(_def.get("foot", 0.0))
-		_sprite.offset = Vector2(0.0, -tex.get_height() * 0.5 + foot)
+	_sprite.centered = false
+	_sprite.scale = Vector2.ONE / PX_PER_WORLD
+	_sprite.offset = -piece_feet(piece)
 	add_child(_sprite)
 	var block: Vector2 = _def.get("block", Vector2.ZERO)
 	if block != Vector2.ZERO:
@@ -123,32 +167,16 @@ func _setup() -> void:
 		cs.position = Vector2(0.0, -block.y * 0.5)
 		body.add_child(cs)
 		add_child(body)
-	if bool(_def.get("glow", false)):
-		set_process(true)
-	else:
-		set_process(false)
 
 
-func _process(delta: float) -> void:
-	_glow_time += delta
-	queue_redraw()
+## Position monde (relative au décor) de sa source de lumière, ou Vector2.INF.
+func get_glow_offset() -> Vector2:
+	if is_placeholder:
+		return Vector2.INF
+	return piece_glow("prop_" + String(kind))
 
 
 func _draw() -> void:
-	if bool(_def.get("flat", false)):
-		return
-	var r: float = float(_def.get("shadow", 16.0))
-	# Ombre portée bleu nuit vers le bas-droite (soleil couchant à l'ouest).
-	draw_set_transform(Vector2(r * 0.35, 3.0), 0.0, Vector2(1.0, 0.32))
-	draw_circle(Vector2.ZERO, r, SHADOW_COLOR)
-	draw_circle(Vector2.ZERO, r * 0.7, Color(SHADOW_COLOR, SHADOW_COLOR.a * 0.5))
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	if bool(_def.get("glow", false)):
-		var f := 0.85 + 0.15 * sin(_glow_time * 7.0) * sin(_glow_time * 3.1)
-		var c := Vector2(0.0, -18.0)
-		draw_circle(c, 46.0 * f, Color(1.0, 0.62, 0.25, 0.08))
-		draw_circle(c, 30.0 * f, Color(1.0, 0.7, 0.3, 0.12))
-		draw_circle(c, 16.0 * f, Color(1.0, 0.85, 0.5, 0.18))
 	if is_placeholder:
 		var box := Rect2(-14.0, -26.0, 28.0, 26.0)
 		draw_rect(box, Color(0.62, 0.42, 0.26))

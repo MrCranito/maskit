@@ -2,10 +2,16 @@ class_name WorldBuilder
 extends Node2D
 ## Constructeur du décor d'un étage (module « Décor », cf. docs/CONVENTIONS.md, phase 3).
 ##   WorldBuilder.build(layout, world) -> WorldBuilder (Node2D racine, y_sort activé)
-## Contient : sol (chunks dessinés une fois, textures répétées), murs 3/4 avec
-## collisions fusionnées (couche world), porches, toits (BuildingRoof, z 50),
-## portes (DoorNode), escaliers (Area2D, meta `stairs`), décors (WorldProp),
-## marqueurs d'extraction.
+## Contient : sol (un nœud par matière, shader tuilable), décalques et ombres (un nœud
+## dessiné une fois, atlas), murs 3/4 (faces peintes de l'atlas des murs) avec
+## collisions fusionnées (couche world), porches (kit Blender), toits (BuildingRoof, z 50),
+## portes (DoorNode), escaliers (Area2D, meta `stairs`), décors (WorldProp, atlas unique),
+## lueurs chaudes additives précalculées (un seul nœud), poussière (une couche de
+## particules GPU), teinte d'ambiance (CanvasModulate), marqueurs d'extraction.
+##
+## Performance (iPhone) : aucun _draw par image, aucune lumière dynamique ; tout le
+## décor statique vient de 2 atlas (murs/sols, décors/kit) → peu de draw calls.
+## Assets : art/blender/build_tiles.py, build_buildings.py, build_props.py.
 ##
 ## Modèle 3/4 : chaque case WALL reste dans sa case. Si la case au sud est
 ## praticable, la partie basse de la case montre la FACE AVANT du mur (hauteur
@@ -21,12 +27,19 @@ const TS := float(FloorLayout.TILE_SIZE)
 const LAYER_WORLD := 1
 const MASK_PLAYER := 2
 const DOOR_SCENE_PATH := "res://scenes/dungeon/door.tscn"
-const TEX_SAND: Texture2D = preload("res://assets/sprites/far_west/tiles/sand.svg")
-const TEX_PLANKS: Texture2D = preload("res://assets/sprites/far_west/tiles/planks.svg")
-const TEX_MINE: Texture2D = preload("res://assets/sprites/far_west/tiles/mine_floor.svg")
-## Taille (unités monde) couverte par une répétition de texture de sol.
+const TEX_SAND: Texture2D = preload("res://assets/textures/ground/sand.png")
+const TEX_SAND_B: Texture2D = preload("res://assets/textures/ground/sand_b.png")
+const TEX_PLANKS: Texture2D = preload("res://assets/textures/ground/planks.png")
+const TEX_MINE: Texture2D = preload("res://assets/textures/ground/mine.png")
+const TEX_MACRO: Texture2D = preload("res://assets/textures/ground/macro.png")
+const TEX_WALLS: Texture2D = preload("res://assets/textures/walls.png")
+const TEX_DUST: Texture2D = preload("res://assets/textures/dust.png")
+const GROUND_SHADER: Shader = preload("res://assets/shaders/ground.gdshader")
+const WallsMeta := preload("res://assets/textures/walls_meta.gd")
+## Taille (unités monde) couverte par une répétition de texture de sol (512 px à 2 px/u).
 const TILE_TEX_WORLD := 256.0
 const OUTLINE := Color(0.09, 0.05, 0.08)
+const NIGHT := Color(0.12, 0.14, 0.34)
 
 ## Matériaux de sol
 enum Ground { VOID, SAND, PLANKS, MINE }
@@ -44,6 +57,18 @@ const DEFAULT_PALETTE := {
 	"extraction": Color(0.3, 0.85, 0.45, 0.45),
 }
 
+## Papier peint / lambris intérieur par archétype (régions `face_int_*` de l'atlas des murs).
+const INTERIOR_FACE := {
+	&"saloon": "int_red", &"bank": "int_green", &"sheriff": "int_plank", &"church": "int_cream",
+	&"hotel": "int_purple", &"store": "int_green", &"stable": "int_plank", &"mine": "int_plank",
+}
+## Teinte multiplicative des façades extérieures par archétype (bois délavé / adobe).
+const FACADE_TINT := {
+	&"saloon": Color(1.0, 0.86, 0.78), &"store": Color(0.86, 0.96, 0.9), &"hotel": Color(0.98, 0.86, 0.9),
+	&"stable": Color(1.0, 0.8, 0.7), &"church": Color(1.08, 1.06, 1.04), &"bank": Color(1.04, 0.94, 0.86),
+	&"sheriff": Color(0.96, 0.92, 0.88), &"mine": Color(0.9, 0.86, 0.82),
+}
+
 var layout: FloorLayout = null
 var palette: Dictionary = {}
 var wall_height: float = 52.0
@@ -57,6 +82,8 @@ var _stairs_cooldown: float = 0.5
 ## Grilles précalculées (index y * w + x) : id de salle (-1) et id de bâtiment (-1).
 var _room_grid: PackedInt32Array = PackedInt32Array()
 var _building_grid: PackedInt32Array = PackedInt32Array()
+## Sources de lumière chaude (monde) : [position, rayon, intensité].
+var _glows: Array = []
 
 
 ## Construit l'étage complet. `world` : WorldData (ou null → palette par défaut).
@@ -116,11 +143,14 @@ func get_building_at_world(pos: Vector2) -> FloorLayout.Building:
 ## Ignore les entrées dans les escaliers pendant `sec` secondes (arrivée sur un étage).
 func set_stairs_cooldown(sec: float) -> void:
 	_stairs_cooldown = maxf(sec, 0.0)
+	set_process(_stairs_cooldown > 0.0)
 
 
 func _process(delta: float) -> void:
 	if _stairs_cooldown > 0.0:
 		_stairs_cooldown = maxf(_stairs_cooldown - delta, 0.0)
+	else:
+		set_process(false)
 
 
 # --- Construction ----------------------------------------------------------------
@@ -142,6 +172,7 @@ func _build(world: Resource) -> void:
 	_build_props()
 	_build_extraction()
 	_build_roofs()
+	_build_ambience()
 
 
 func _read_palette(world: Resource) -> void:
@@ -241,285 +272,323 @@ static func hash01(x: int, y: int, s: int = 0) -> float:
 	return float(h & 0xFFFF) / 65536.0
 
 
+## Région (px) `idx` (modulo) de l'atlas des murs.
+static func wall_region(key: String, idx: int = 0) -> Rect2:
+	var list: Array = WallsMeta.REGIONS.get(key, WallsMeta.REGIONS["white"])
+	var r: Array = list[posmod(idx, list.size())]
+	return Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+
+
+## Ajoute une source de lumière chaude (lueur additive précalculée).
+func add_glow(pos: Vector2, radius: float, strength: float = 1.0) -> void:
+	_glows.append([pos, radius, strength])
+
+
 # --- Sol -------------------------------------------------------------------------
 
+## Un nœud par matière de sol (sable, plancher, mine, vide) : chaque nœud dessine
+## une fois tous les rectangles fusionnés de sa matière, avec le shader tuilable.
 func _build_ground() -> void:
 	var ground := Node2D.new()
 	ground.name = "Ground"
 	ground.z_index = 0
 	add_child(ground)
-	var chunk := int(Balance.get_value("world_builder", "chunk_cells", 16))
-	chunk = maxi(chunk, 4)
-	for cy: int in range(0, layout.size.y, chunk):
-		for cx: int in range(0, layout.size.x, chunk):
-			var d := GroundChunk.new()
-			d.name = "Chunk_%d_%d" % [cx, cy]
-			d.builder = self
-			d.cells = Rect2i(cx, cy, mini(chunk, layout.size.x - cx), mini(chunk, layout.size.y - cy))
-			d.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-			d.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-			ground.add_child(d)
+	var mats := {
+		Ground.SAND: [TEX_SAND, TEX_SAND_B, 0.85, 0.1, 0.05],
+		Ground.PLANKS: [TEX_PLANKS, TEX_PLANKS, 0.0, 0.08, 0.0],
+		Ground.MINE: [TEX_MINE, TEX_MINE, 0.0, 0.16, 0.05],
+	}
+	var void_tex: Texture2D = TEX_SAND_B if layout.floor_index == 0 else TEX_MINE
+	var void_tint := Color(0.66, 0.5, 0.5) if layout.floor_index == 0 else Color(0.32, 0.28, 0.4)
+	for g: int in [Ground.VOID, Ground.SAND, Ground.PLANKS, Ground.MINE]:
+		var rects := _ground_rects(g)
+		if rects.is_empty():
+			continue
+		var m: Array = mats.get(g, [void_tex, void_tex, 0.0, 0.18, 0.05])
+		var layer := GroundLayer.new()
+		layer.name = "Ground_%s" % Ground.keys()[g]
+		layer.rects = rects
+		layer.builder = self
+		layer.ground = g
+		layer.tint = void_tint if g == Ground.VOID else Color.WHITE
+		var sm := ShaderMaterial.new()
+		sm.shader = GROUND_SHADER
+		sm.set_shader_parameter(&"tex_a", m[0])
+		sm.set_shader_parameter(&"tex_b", m[1])
+		sm.set_shader_parameter(&"macro", TEX_MACRO)
+		sm.set_shader_parameter(&"tile_world", TILE_TEX_WORLD)
+		sm.set_shader_parameter(&"b_amount", m[2])
+		sm.set_shader_parameter(&"value_var", m[3])
+		sm.set_shader_parameter(&"warp", m[4])
+		layer.material = sm
+		ground.add_child(layer)
 	var decals := GroundDecals.new()
 	decals.name = "Decals"
 	decals.builder = self
 	ground.add_child(decals)
 
 
-## Morceau de sol (chunk) : textures répétées par segments, détails, ombres.
-class GroundChunk extends Node2D:
+## Rectangles (monde) fusionnés couvrant la matière `g`, avec teinte par bâtiment.
+## Retour : Array de [Rect2, Color].
+func _ground_rects(g: int) -> Array:
+	var w := layout.size.x
+	var h := layout.size.y
+	var key := PackedInt32Array()
+	key.resize(w * h)
+	for y: int in h:
+		for x: int in w:
+			var c := Vector2i(x, y)
+			key[y * w + x] = (building_id_at(c) + 2) if ground_at(c) == g else 0
+	var used := PackedByteArray()
+	used.resize(w * h)
+	var out: Array = []
+	for y: int in h:
+		var x := 0
+		while x < w:
+			var k := key[y * w + x]
+			if k == 0 or used[y * w + x] != 0:
+				x += 1
+				continue
+			var x1 := x
+			while x1 < w and key[y * w + x1] == k and used[y * w + x1] == 0:
+				x1 += 1
+			var y1 := y + 1
+			while y1 < h:
+				var ok := true
+				for xx: int in range(x, x1):
+					if key[y1 * w + xx] != k or used[y1 * w + xx] != 0:
+						ok = false
+						break
+				if not ok:
+					break
+				y1 += 1
+			for yy: int in range(y, y1):
+				for xx: int in range(x, x1):
+					used[yy * w + xx] = 1
+			var r := Rect2(Vector2(x, y) * TS, Vector2(x1 - x, y1 - y) * TS)
+			# Le vide déborde d'une case autour de la carte (pas de bord noir à l'écran).
+			if g == Ground.VOID:
+				if x == 0:
+					r = r.grow_side(SIDE_LEFT, TS * 12.0)
+				if x1 == w:
+					r = r.grow_side(SIDE_RIGHT, TS * 12.0)
+				if y == 0:
+					r = r.grow_side(SIDE_TOP, TS * 12.0)
+				if y1 == h:
+					r = r.grow_side(SIDE_BOTTOM, TS * 12.0)
+			out.append([r, _ground_tint(Vector2i(x, y), g)])
+			x = x1
+	return out
+
+
+## Couche de sol d'une matière (dessinée une seule fois).
+class GroundLayer extends Node2D:
 	var builder: WorldBuilder = null
-	var cells: Rect2i = Rect2i()
+	var rects: Array = []
+	var ground: int = 0
+	var tint: Color = Color.WHITE
 
 	func _draw() -> void:
-		var L := builder.layout
-		var void_col := builder.col("void")
-		var shadow := builder.col("shadow")
-		for y: int in range(cells.position.y, cells.end.y):
-			var x := cells.position.x
-			while x < cells.end.x:
-				var g := builder.ground_at(Vector2i(x, y))
-				var tint := builder._ground_tint(Vector2i(x, y), g)
-				var x1 := x + 1
-				while x1 < cells.end.x and builder.ground_at(Vector2i(x1, y)) == g \
-						and builder._ground_tint(Vector2i(x1, y), g) == tint:
-					x1 += 1
-				var r := Rect2(Vector2(x, y) * TS, Vector2(x1 - x, 1) * TS)
-				_draw_ground_run(r, g, tint, void_col)
-				x = x1
-		# Détails et ombres, case par case.
-		for y: int in range(cells.position.y, cells.end.y):
-			for x: int in range(cells.position.x, cells.end.x):
-				var c := Vector2i(x, y)
-				var t := L.get_tile(c)
-				if t == FloorLayout.Tile.VOID:
-					_draw_void_edge(c)
-					continue
-				if not FloorLayout.is_walkable_tile(t):
-					continue
-				var g := builder.ground_at(c)
-				if g == Ground.SAND:
-					_draw_street_details(c)
-				elif g == Ground.MINE:
-					_draw_mine_details(c)
-				_draw_wall_shadows(c, shadow)
-
-	func _draw_ground_run(r: Rect2, g: int, tint: Color, void_col: Color) -> void:
-		var tex: Texture2D = null
-		match g:
-			Ground.SAND:
-				tex = TEX_SAND
-			Ground.PLANKS:
-				tex = TEX_PLANKS
-			Ground.MINE:
-				tex = TEX_MINE
-			_:
-				if builder.layout.floor_index == 0:
-					tex = TEX_SAND
-				elif builder.layout.floor_index < 0:
-					tex = TEX_MINE
-		if tex != null:
-			var k := float(tex.get_width()) / TILE_TEX_WORLD
-			draw_texture_rect_region(tex, r, Rect2(r.position * k, r.size * k), tint)
-		else:
-			draw_rect(r, void_col)
-
-	func _draw_street_details(c: Vector2i) -> void:
-		var o := Vector2(c) * TS
-		var h1 := WorldBuilder.hash01(c.x, c.y, 1)
-		if h1 < 0.16:
-			# Touffe d'herbe sèche.
-			var p := o + Vector2(10.0 + WorldBuilder.hash01(c.x, c.y, 2) * 44.0, 16.0 + WorldBuilder.hash01(c.x, c.y, 3) * 40.0)
-			draw_set_transform(p + Vector2(4, 2), 0.0, Vector2(1.0, 0.35))
-			draw_circle(Vector2.ZERO, 9.0, Color(0.12, 0.15, 0.32, 0.3))
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-			for i: int in 7:
-				var a := -PI * 0.5 + (float(i) - 3.0) * 0.28
-				var l := 10.0 + float((i * 5) % 7)
-				var tip := p + Vector2(cos(a), sin(a)) * l
-				draw_line(p, tip, Color(0.36, 0.3, 0.14), 3.0)
-				draw_line(p, tip, Color(0.82, 0.72, 0.36) if i % 2 == 0 else Color(0.66, 0.6, 0.28), 1.6)
-		elif h1 < 0.36:
-			# Cailloux (ombre portée bas-droite, reflet haut-gauche).
-			for i: int in 3:
-				var hp := WorldBuilder.hash01(c.x, c.y, 10 + i)
-				var p2 := o + Vector2(8.0 + hp * 48.0, 10.0 + WorldBuilder.hash01(c.x, c.y, 20 + i) * 44.0)
-				var rr := 2.5 + hp * 3.5
-				draw_set_transform(p2 + Vector2(1.5, 1.5), 0.0, Vector2(1.0, 0.7))
-				draw_circle(Vector2.ZERO, rr + 1.2, Color(0.12, 0.15, 0.32, 0.45))
-				draw_set_transform(p2, 0.0, Vector2(1.0, 0.7))
-				draw_circle(Vector2.ZERO, rr + 1.0, OUTLINE)
-				draw_circle(Vector2.ZERO, rr, Color(0.7, 0.6, 0.52))
-				draw_circle(Vector2(-rr * 0.3, -rr * 0.3), rr * 0.45, Color(0.92, 0.82, 0.68))
-				draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-		elif h1 < 0.4:
-			# Fissure de terre sèche.
-			var p3 := o + Vector2(14.0, 20.0 + h1 * 60.0)
-			var pts := PackedVector2Array([p3, p3 + Vector2(10, 4), p3 + Vector2(18, -2), p3 + Vector2(30, 5), p3 + Vector2(38, 1)])
-			draw_polyline(pts, Color(0.5, 0.33, 0.2, 0.7), 1.6)
-
-	## Bord du vide (désert hors-carte, talus) : liseré sombre + cailloux, ombre bleue.
-	func _draw_void_edge(c: Vector2i) -> void:
-		var L := builder.layout
-		var o := Vector2(c) * TS
-		var shadow := builder.col("shadow")
-		var dirs := {Vector2i.UP: [o, o + Vector2(TS, 0)], Vector2i.DOWN: [o + Vector2(0, TS), o + Vector2(TS, TS)],
-			Vector2i.LEFT: [o, o + Vector2(0, TS)], Vector2i.RIGHT: [o + Vector2(TS, 0), o + Vector2(TS, TS)]}
-		var any := false
-		for d: Vector2i in dirs:
-			if not FloorLayout.is_walkable_tile(L.get_tile(c + d)):
-				continue
-			any = true
-			var seg: Array = dirs[d]
-			var a: Vector2 = seg[0]
-			var b: Vector2 = seg[1]
-			var inward := -Vector2(d) * 10.0
-			draw_polygon(PackedVector2Array([a, b, b + inward, a + inward]),
-				PackedColorArray([Color(shadow, 0.55), Color(shadow, 0.55), Color(shadow, 0.0), Color(shadow, 0.0)]))
-			draw_line(a, b, Color(0.2, 0.12, 0.14, 0.9), 3.0)
-			for i: int in 3:
-				var f := (float(i) + 0.3 + WorldBuilder.hash01(c.x, c.y, 90 + i) * 0.4) / 3.0
-				var p := a.lerp(b, f) + inward * 0.6
-				var rr := 3.5 + WorldBuilder.hash01(c.x + i, c.y, 91) * 4.0
-				draw_circle(p, rr + 1.2, OUTLINE)
-				draw_circle(p, rr, Color(0.56, 0.44, 0.44))
-				draw_circle(p + Vector2(-1, -1), rr * 0.45, Color(0.78, 0.64, 0.58))
-		if not any and builder.layout.floor_index == 0 and WorldBuilder.hash01(c.x, c.y, 95) < 0.05:
-			# Buisson sec / rocher isolé dans le désert hors carte.
-			var p2 := o + Vector2(32, 36)
-			draw_set_transform(p2 + Vector2(6, 3), 0.0, Vector2(1.0, 0.4))
-			draw_circle(Vector2.ZERO, 12.0, Color(shadow, 0.35))
-			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-			draw_circle(p2, 9.0, OUTLINE)
-			draw_circle(p2, 7.5, Color(0.5, 0.4, 0.42))
-			draw_circle(p2 + Vector2(-2, -2), 3.5, Color(0.7, 0.58, 0.54))
-
-	func _draw_mine_details(c: Vector2i) -> void:
-		var h1 := WorldBuilder.hash01(c.x, c.y, 5)
-		if h1 < 0.08:
-			var p := Vector2(c) * TS + Vector2(20.0 + h1 * 200.0, 30.0)
-			draw_circle(p, 3.0, Color(1.0, 0.82, 0.3, 0.85))
-			draw_circle(p + Vector2(-1, -1), 1.2, Color(1.0, 0.96, 0.7))
-
-	func _draw_wall_shadows(c: Vector2i, shadow: Color) -> void:
-		var L := builder.layout
-		var o := Vector2(c) * TS
-		var n := L.get_tile(c + Vector2i.UP)
-		var w := L.get_tile(c + Vector2i.LEFT)
-		var nw := L.get_tile(c + Vector2i(-1, -1))
-		var a := Color(shadow, 0.5)
-		var z := Color(shadow, 0.0)
-		if FloorLayout.is_opaque_tile(n):
-			# Ombre portée du mur au nord, plus longue côté rue.
-			var depth := 26.0 if L.get_tile(c) == FloorLayout.Tile.STREET else 18.0
-			draw_polygon(PackedVector2Array([o, o + Vector2(TS, 0), o + Vector2(TS, depth), o + Vector2(0, depth)]),
-				PackedColorArray([a, a, z, z]))
-			draw_line(o + Vector2(0, 1), o + Vector2(TS, 1), Color(shadow, 0.6), 2.0)
-		if FloorLayout.is_opaque_tile(w):
-			draw_polygon(PackedVector2Array([o, o + Vector2(14, 0), o + Vector2(14, TS), o + Vector2(0, TS)]),
-				PackedColorArray([Color(shadow, 0.4), z, z, Color(shadow, 0.4)]))
-		elif FloorLayout.is_opaque_tile(nw) and not FloorLayout.is_opaque_tile(n):
-			draw_polygon(PackedVector2Array([o, o + Vector2(14, 0), o + Vector2(0, 18)]),
-				PackedColorArray([Color(shadow, 0.35), z, z]))
+		for e: Array in rects:
+			var c: Color = e[1]
+			draw_rect(e[0], Color(c.r * tint.r, c.g * tint.g, c.b * tint.b, 1.0))
 
 
-## Teinte du sol selon la salle (bâtiment) ; légère variation par case pour la rue.
+## Teinte du sol selon la salle (bâtiment).
 func _ground_tint(c: Vector2i, g: int) -> Color:
 	match g:
-		Ground.VOID:
-			if layout.floor_index == 0:
-				return Color(0.4, 0.33, 0.45)
-			return Color(0.3, 0.26, 0.36)
 		Ground.PLANKS:
 			var bid := building_id_at(c)
 			if bid >= 0:
 				match layout.buildings[bid].archetype:
 					&"bank":
-						return Color(0.82, 0.74, 0.74)
+						return Color(0.8, 0.74, 0.74)
 					&"church":
-						return Color(1.08, 1.0, 0.92)
+						return Color(1.1, 1.02, 0.92)
 					&"sheriff":
-						return Color(0.86, 0.84, 0.86)
+						return Color(0.88, 0.84, 0.84)
 					&"stable":
-						return Color(1.05, 0.95, 0.78)
+						return Color(1.08, 0.96, 0.8)
 					&"hotel":
-						return Color(0.9, 0.8, 0.84)
+						return Color(0.88, 0.78, 0.84)
+					&"store":
+						return Color(0.96, 0.92, 0.84)
 			return Color.WHITE
 		_:
 			return Color.WHITE
 
 
-## Ornières de roues sur les grandes rues + planches de trottoir (dessinés une fois).
+## Décalques (atlas des décors) + ombres portées + bords, dessinés une seule fois.
+## Tout est en rectangles texturés d'atlas : rendu groupé en très peu d'appels.
 class GroundDecals extends Node2D:
 	var builder: WorldBuilder = null
 
 	func _draw() -> void:
 		var L := builder.layout
-		var full := Rect2(Vector2.ZERO, Vector2(L.size) * TS)
-		var shadow := builder.col("shadow")
-		if L.floor_index < 0:
-			# Mine : vignettage bleu nuit léger.
-			draw_polygon(PackedVector2Array([full.position, Vector2(full.end.x, 0), full.end, Vector2(0, full.end.y)]),
-				PackedColorArray([Color(shadow, 0.1), Color(shadow, 0.25), Color(shadow, 0.3), Color(shadow, 0.15)]))
+		var atlas := WorldProp.ATLAS
+		for y: int in L.size.y:
+			for x: int in L.size.x:
+				var c := Vector2i(x, y)
+				var t := L.get_tile(c)
+				if t == FloorLayout.Tile.VOID:
+					_void_detail(atlas, c)
+					continue
+				if not FloorLayout.is_walkable_tile(t):
+					continue
+				var g := builder.ground_at(c)
+				if g == Ground.SAND:
+					_street_detail(atlas, c)
+				elif g == Ground.MINE:
+					_mine_detail(atlas, c)
+				elif g == Ground.PLANKS:
+					_plank_detail(atlas, c)
+		_ruts(atlas)
+		_rugs(atlas)
+		_sunset(L)
+		# Ombres et occlusion par-dessus les décalques.
+		var walls := WorldBuilder.TEX_WALLS
+		for y2: int in L.size.y:
+			for x2: int in L.size.x:
+				var c2 := Vector2i(x2, y2)
+				var t2 := L.get_tile(c2)
+				if FloorLayout.is_walkable_tile(t2):
+					_wall_shadows(walls, c2)
+				elif t2 == FloorLayout.Tile.VOID:
+					_void_edge(walls, c2)
+		_building_shadows(walls)
+
+	func _piece(atlas: Texture2D, piece: String, center: Vector2, mod: Color = Color.WHITE, k: float = 1.0, flip: bool = false) -> void:
+		if not WorldProp.has_piece(piece):
 			return
-		# Lumière de coucher de soleil : chaud au nord-ouest, violet au sud-est.
-		draw_polygon(PackedVector2Array([full.position, Vector2(full.end.x, 0), full.end, Vector2(0, full.end.y)]),
-			PackedColorArray([Color(1.0, 0.62, 0.3, 0.14), Color(0.95, 0.45, 0.45, 0.08),
-				Color(0.42, 0.26, 0.55, 0.16), Color(0.9, 0.5, 0.4, 0.06)]))
-		# Flaques de lumière de lampe à pétrole dans les intérieurs.
-		for room: FloorLayout.Room in L.rooms:
-			if room.outdoor or room.rect.get_area() < 6:
-				continue
-			var rr := Rect2(Vector2(room.rect.position) * TS, Vector2(room.rect.size) * TS)
-			var rad := minf(rr.size.x, rr.size.y) * 0.5
-			var cc := rr.get_center()
-			for k: int in 4:
-				var f := 1.0 - float(k) * 0.22
-				draw_circle(cc, rad * f, Color(1.0, 0.72, 0.38, 0.05))
-			# Coins assombris.
-			draw_polygon(PackedVector2Array([rr.position, Vector2(rr.end.x, rr.position.y), rr.end, Vector2(rr.position.x, rr.end.y)]),
-				PackedColorArray([Color(shadow, 0.18), Color(shadow, 0.24), Color(shadow, 0.3), Color(shadow, 0.22)]))
-		# Ombres longues portées par les bâtiments vers l'est (soleil à l'ouest).
-		var reach := TS * 0.9
-		for b: FloorLayout.Building in L.buildings:
-			var br := Rect2(Vector2(b.rect.position) * TS, Vector2(b.rect.size) * TS)
-			var p0 := Vector2(br.end.x, br.position.y + TS * 0.4)
-			var p1 := Vector2(br.end.x, br.end.y)
-			draw_polygon(PackedVector2Array([p0, p0 + Vector2(reach, TS * 0.35), p1 + Vector2(reach, TS * 0.2), p1]),
-				PackedColorArray([Color(shadow, 0.42), Color(shadow, 0.0), Color(shadow, 0.0), Color(shadow, 0.42)]))
-		if L.floor_index != 0:
+		var reg := WorldProp.piece_region(piece)
+		var size := reg.size / WorldProp.PX_PER_WORLD * k
+		var dst := Rect2(center - size * 0.5, size)
+		if flip:
+			dst = Rect2(Vector2(dst.end.x, dst.position.y), Vector2(-dst.size.x, dst.size.y))
+		draw_texture_rect_region(atlas, dst, reg, mod)
+
+	func _street_detail(atlas: Texture2D, c: Vector2i) -> void:
+		var h := WorldBuilder.hash01(c.x, c.y, 1)
+		var o := (Vector2(c) + Vector2(0.5, 0.5)) * TS
+		var j := Vector2(WorldBuilder.hash01(c.x, c.y, 2) - 0.5, WorldBuilder.hash01(c.x, c.y, 3) - 0.5) * TS * 0.6
+		var flip := WorldBuilder.hash01(c.x, c.y, 4) < 0.5
+		if h < 0.07:
+			_piece(atlas, "decal_grass_%d" % int(WorldBuilder.hash01(c.x, c.y, 5) * 3.0), o + j, Color.WHITE, 1.0, flip)
+		elif h < 0.13:
+			_piece(atlas, "decal_pebbles_%d" % int(WorldBuilder.hash01(c.x, c.y, 6) * 3.0), o + j, Color.WHITE, 1.0, flip)
+		elif h < 0.155:
+			_piece(atlas, "decal_crack_%d" % int(WorldBuilder.hash01(c.x, c.y, 7) * 2.0), o + j, Color(1, 1, 1, 0.8), 1.0, flip)
+		elif h < 0.17:
+			_piece(atlas, "decal_hoofprints", o + j, Color(1, 1, 1, 0.7), 1.0, flip)
+		elif h < 0.172 and WorldBuilder.hash01(c.x, c.y, 11) < 0.3:
+			_piece(atlas, "decal_bones", o + j, Color.WHITE, 1.0, flip)
+
+	func _void_detail(atlas: Texture2D, c: Vector2i) -> void:
+		if builder.layout.floor_index != 0:
 			return
+		var h := WorldBuilder.hash01(c.x, c.y, 95)
+		var o := (Vector2(c) + Vector2(0.5, 0.5)) * TS
+		if h < 0.08:
+			_piece(atlas, "decal_grass_%d" % int(WorldBuilder.hash01(c.x, c.y, 96) * 3.0), o, Color(0.8, 0.7, 0.72), 1.2)
+		elif h < 0.13:
+			_piece(atlas, "decal_pebbles_2", o, Color(0.8, 0.72, 0.74), 1.3)
+
+	func _mine_detail(atlas: Texture2D, c: Vector2i) -> void:
+		var h := WorldBuilder.hash01(c.x, c.y, 5)
+		var o := (Vector2(c) + Vector2(0.5, 0.5)) * TS
+		if h < 0.06:
+			_piece(atlas, "decal_pebbles_%d" % int(WorldBuilder.hash01(c.x, c.y, 8) * 3.0), o, Color(0.62, 0.58, 0.68), 1.0)
+		elif h < 0.09:
+			_piece(atlas, "decal_crack_0", o, Color(0.5, 0.45, 0.6, 0.7))
+
+	func _plank_detail(atlas: Texture2D, c: Vector2i) -> void:
+		var h := WorldBuilder.hash01(c.x, c.y, 9)
+		var o := (Vector2(c) + Vector2(0.5, 0.5)) * TS
+		var bid := builder.building_id_at(c)
+		var arch: StringName = builder.layout.buildings[bid].archetype if bid >= 0 else &""
+		if arch == &"stable" and h < 0.35:
+			_piece(atlas, "decal_straw", o, Color.WHITE, 1.0, h < 0.17)
+		elif h < 0.05:
+			_piece(atlas, "decal_stain", o, Color(1, 1, 1, 0.6))
+
+	## Lumière de couchant sur toute la carte (un seul polygone) : chaud au nord-ouest,
+	## violet au sud-est ; intérieurs/mine : vignettage bleu nuit discret.
+	func _sunset(L: FloorLayout) -> void:
+		var full := Rect2(Vector2(-12, -12) * TS, (Vector2(L.size) + Vector2(24, 24)) * TS)
+		var pts := PackedVector2Array([full.position, Vector2(full.end.x, full.position.y), full.end, Vector2(full.position.x, full.end.y)])
+		if L.floor_index == 0:
+			draw_polygon(pts, PackedColorArray([Color(1.0, 0.6, 0.28, 0.16), Color(1.0, 0.5, 0.45, 0.1),
+				Color(0.46, 0.28, 0.6, 0.16), Color(0.95, 0.5, 0.4, 0.08)]))
+		else:
+			var n := WorldBuilder.NIGHT
+			draw_polygon(pts, PackedColorArray([Color(n, 0.06), Color(n, 0.16), Color(n, 0.22), Color(n, 0.12)]))
+
+	## Ornières de roues le long des grandes rues (ville).
+	func _ruts(atlas: Texture2D) -> void:
+		var L := builder.layout
+		if L.floor_index != 0 or not WorldProp.has_piece("decal_rut"):
+			return
+		var reg := WorldProp.piece_region("decal_rut")
+		var seg := reg.size / WorldProp.PX_PER_WORLD
 		for r: FloorLayout.Room in L.rooms:
 			if not r.outdoor:
 				continue
 			var rr := Rect2(Vector2(r.rect.position) * TS, Vector2(r.rect.size) * TS)
-			if r.rect.size.x >= 8 and r.rect.size.x >= r.rect.size.y * 2:
-				for off: float in [-0.17, 0.17]:
-					_rut(rr.position + Vector2(0, rr.size.y * (0.5 + off)), Vector2(rr.size.x, 0), r.id)
-			elif r.rect.size.y >= 8 and r.rect.size.y >= r.rect.size.x * 2 and r.rect.size.x >= 3:
-				for off2: float in [-0.2, 0.2]:
-					_rut(rr.position + Vector2(rr.size.x * (0.5 + off2), 0), Vector2(0, rr.size.y), r.id + 7)
+			if r.rect.size.x >= 6 and r.rect.size.x >= r.rect.size.y * 2:
+				var y := rr.get_center().y - seg.y * 0.5 + TS * 0.25
+				var x := rr.position.x
+				while x < rr.end.x - 1.0:
+					var w := minf(seg.x, rr.end.x - x)
+					draw_texture_rect_region(atlas, Rect2(x, y, w, seg.y), Rect2(reg.position, Vector2(w * WorldProp.PX_PER_WORLD, reg.size.y)), Color(1, 1, 1, 0.85))
+					x += w
 
-	func _rut(from: Vector2, span: Vector2, s: int) -> void:
-		var steps := int(span.length() / 24.0)
-		if steps < 2:
+	## Tapis devant le bar du saloon / l'autel / la réception.
+	func _rugs(atlas: Texture2D) -> void:
+		var L := builder.layout
+		for r: FloorLayout.Room in L.rooms:
+			if r.outdoor or r.rect.size.x < 4 or r.rect.size.y < 3:
+				continue
+			if r.tags.has("saloon_hall") or r.tags.has("church_nave") or r.tags.has("hotel_reception") or r.tags.has("bank_hall"):
+				var rr := Rect2(Vector2(r.rect.position) * TS, Vector2(r.rect.size) * TS)
+				_piece(atlas, "decal_rug", rr.get_center(), Color.WHITE, 1.15)
+
+	func _wall_shadows(walls: Texture2D, c: Vector2i) -> void:
+		var L := builder.layout
+		var o := Vector2(c) * TS
+		var n := L.get_tile(c + Vector2i.UP)
+		var w := L.get_tile(c + Vector2i.LEFT)
+		var shadow := WorldBuilder.NIGHT
+		var gv := WorldBuilder.wall_region("grad_v")
+		var gh := WorldBuilder.wall_region("grad_h")
+		var interior := L.get_tile(c) != FloorLayout.Tile.STREET
+		if FloorLayout.is_opaque_tile(n):
+			var depth := 34.0 if not interior else 24.0
+			draw_texture_rect_region(walls, Rect2(o, Vector2(TS, depth)), gv, Color(shadow, 0.55))
+		if FloorLayout.is_opaque_tile(w):
+			draw_texture_rect_region(walls, Rect2(o, Vector2(18.0, TS)), gh, Color(shadow, 0.45))
+
+	## Bord du vide (talus) : ombre bleue vers l'intérieur de la case vide.
+	func _void_edge(walls: Texture2D, c: Vector2i) -> void:
+		var L := builder.layout
+		var o := Vector2(c) * TS
+		var shadow := WorldBuilder.NIGHT
+		if FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i.DOWN)):
+			draw_texture_rect_region(walls, Rect2(o + Vector2(0, TS - 16.0), Vector2(TS, 16.0)), WorldBuilder.wall_region("grad_v_up"), Color(shadow, 0.5))
+		if FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i.RIGHT)):
+			draw_texture_rect_region(walls, Rect2(o + Vector2(TS - 14.0, 0), Vector2(14.0, TS)), WorldBuilder.wall_region("grad_h_left"), Color(shadow, 0.4))
+
+	## Ombres longues des bâtiments vers l'est (soleil couchant à l'ouest).
+	func _building_shadows(walls: Texture2D) -> void:
+		var L := builder.layout
+		if L.floor_index != 0:
 			return
-		var side := Vector2(-span.y, span.x).normalized()
-		var pts := PackedVector2Array()
-		for i: int in steps + 1:
-			var f := float(i) / float(steps)
-			var wob := sin(f * 9.0 + float(s)) * 4.0 + (WorldBuilder.hash01(i, s, 3) - 0.5) * 3.0
-			pts.append(from + span * f + side * wob)
-		var dark := Color(0.55, 0.36, 0.22, 0.35)
-		var light := Color(1.0, 0.86, 0.6, 0.35)
-		draw_polyline(pts, dark, 9.0)
-		var pts2 := PackedVector2Array()
-		for p: Vector2 in pts:
-			pts2.append(p + side * -5.5)
-		draw_polyline(pts2, light, 2.0)
-		var pts3 := PackedVector2Array()
-		for p: Vector2 in pts:
-			pts3.append(p + side * 2.0)
-		draw_polyline(pts3, Color(0.45, 0.28, 0.18, 0.3), 3.0)
+		var gh := WorldBuilder.wall_region("grad_h")
+		for b: FloorLayout.Building in L.buildings:
+			var br := Rect2(Vector2(b.rect.position) * TS, Vector2(b.rect.size) * TS)
+			var x := br.end.x
+			var y0 := br.position.y + TS * 0.5
+			var r := Rect2(x, y0, TS * 1.3, br.end.y - y0 + TS * 0.2)
+			draw_texture_rect_region(walls, r, gh, Color(WorldBuilder.NIGHT, 0.42))
 
 
 # --- Murs ------------------------------------------------------------------------
@@ -530,14 +599,11 @@ func _build_walls() -> void:
 	walls.z_index = 10
 	walls.position = Vector2.ZERO
 	add_child(walls)
-	var chunk := maxi(int(Balance.get_value("world_builder", "chunk_cells", 16)), 4)
-	for cy: int in range(0, layout.size.y, chunk):
-		for cx: int in range(0, layout.size.x, chunk):
-			var d := WallChunk.new()
-			d.name = "WallChunk_%d_%d" % [cx, cy]
-			d.builder = self
-			d.cells = Rect2i(cx, cy, mini(chunk, layout.size.x - cx), mini(chunk, layout.size.y - cy))
-			walls.add_child(d)
+	var d := WallLayer.new()
+	d.name = "WallFaces"
+	d.builder = self
+	walls.add_child(d)
+	_collect_wall_glows()
 	_wall_body = StaticBody2D.new()
 	_wall_body.name = "WallBodies"
 	_wall_body.collision_layer = LAYER_WORLD
@@ -625,277 +691,138 @@ func facade_info(b: FloorLayout.Building) -> Dictionary:
 	return info
 
 
-## Morceau de murs : dessus sombre + face avant (bois, adobe, palissade, roche).
-class WallChunk extends Node2D:
+## Tous les murs de l'étage (un seul nœud, dessiné une fois) : dessus + face avant
+## peinte (bois, adobe, palissade, roche, papier peint/lambris intérieurs, fenêtres
+## éclairées). Uniquement des rectangles de l'atlas des murs → rendu groupé.
+class WallLayer extends Node2D:
 	var builder: WorldBuilder = null
-	var cells: Rect2i = Rect2i()
 
 	func _draw() -> void:
 		var L := builder.layout
-		for y: int in range(cells.position.y, cells.end.y):
-			for x: int in range(cells.position.x, cells.end.x):
+		var tex := WorldBuilder.TEX_WALLS
+		for y: int in L.size.y:
+			for x: int in L.size.x:
 				var c := Vector2i(x, y)
 				if L.get_tile(c) == FloorLayout.Tile.WALL:
-					_draw_wall_cell(c)
+					_draw_wall_cell(tex, c)
 
 	func _is_wall(c: Vector2i) -> bool:
 		var t := builder.layout.get_tile(c)
 		return t == FloorLayout.Tile.WALL or t == FloorLayout.Tile.DOOR
 
-	func _draw_wall_cell(c: Vector2i) -> void:
+	func _rect(tex: Texture2D, r: Rect2, col: Color) -> void:
+		draw_texture_rect_region(tex, r, WorldBuilder.wall_region("white"), col)
+
+	func _draw_wall_cell(tex: Texture2D, c: Vector2i) -> void:
 		var L := builder.layout
 		var wh := builder.wall_height
 		var mat := builder.wall_mat_at(c)
-		var south := L.get_tile(c + Vector2i.DOWN)
-		var face := FloorLayout.is_walkable_tile(south)
+		var face := FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i.DOWN))
 		var o := Vector2(c) * TS
 		var cap_h := TS - wh if face else TS
-		var cap := Rect2(o, Vector2(TS, cap_h))
-		var top_col := _cap_color(mat)
-		draw_rect(cap, top_col)
-		# Texture du dessus.
-		match mat:
-			WallMat.ROCK:
-				for i: int in 3:
-					var hp := WorldBuilder.hash01(c.x, c.y, 40 + i)
-					var p := o + Vector2(8.0 + hp * 48.0, 6.0 + WorldBuilder.hash01(c.x, c.y, 50 + i) * maxf(cap_h - 12.0, 1.0))
-					draw_circle(p, 4.0 + hp * 5.0, top_col.lightened(0.12))
-					draw_circle(p + Vector2(2, 2), 3.0 + hp * 3.0, top_col.darkened(0.2))
-			WallMat.ADOBE:
-				if cap_h > 20.0 and WorldBuilder.hash01(c.x, c.y, 41) < 0.3:
-					draw_line(o + Vector2(14, 12), o + Vector2(26, 22), top_col.darkened(0.25), 1.4)
-			_:
-				# Planches du dessus (dans le sens du mur).
-				var horiz := _is_wall(c + Vector2i.LEFT) or _is_wall(c + Vector2i.RIGHT)
-				if horiz and not (_is_wall(c + Vector2i.UP) and _is_wall(c + Vector2i.DOWN)):
-					var yy := o.y + 5.0
-					while yy < o.y + cap_h - 2.0:
-						draw_line(Vector2(o.x, yy), Vector2(o.x + TS, yy), top_col.darkened(0.22), 1.2)
-						yy += 9.0
-				else:
-					var xx := o.x + 10.0
-					while xx < o.x + TS:
-						draw_line(Vector2(xx, o.y), Vector2(xx, o.y + cap_h), top_col.darkened(0.22), 1.2)
-						xx += 11.0
-		# Arêtes : contour sombre là où le dessus touche autre chose qu'un mur ;
-		# liseré clair côté ouest/nord (lumière rasante du couchant).
-		var lit := top_col.lightened(0.35)
+		# Dessus : matière tuilable (une case = 128 px), plus sombre (dans l'ombre du toit).
+		var cap_key: String = {WallMat.ROCK: "cap_rock", WallMat.ADOBE: "cap_adobe", WallMat.FENCE: "cap_fence"}.get(mat, "cap_wood")
+		var cr := WorldBuilder.wall_region(cap_key)
+		var src := Rect2(cr.position + Vector2(0, posmod(c.y, 2) * 0.0), Vector2(cr.size.x, cr.size.y * cap_h / TS))
+		var cap_mod := Color(0.62, 0.58, 0.7) if mat != WallMat.ROCK else Color(0.85, 0.82, 0.95)
+		if mat == WallMat.FENCE:
+			cap_mod = Color(0.78, 0.66, 0.6)
+		draw_texture_rect_region(tex, Rect2(o, Vector2(TS, cap_h)), src, cap_mod)
+		# Arêtes : liseré chaud côté ouest/nord (couchant), contour sombre.
+		var lit := Color(1.0, 0.78, 0.52, 0.55)
 		if not _is_wall(c + Vector2i.UP):
-			draw_line(o + Vector2(0, 2), o + Vector2(TS, 2), lit, 3.0)
-			draw_line(o, o + Vector2(TS, 0), OUTLINE, 2.5)
+			_rect(tex, Rect2(o + Vector2(0, 2), Vector2(TS, 3)), lit)
+			_rect(tex, Rect2(o, Vector2(TS, 2)), OUTLINE)
 		if not _is_wall(c + Vector2i.LEFT):
-			draw_line(o + Vector2(2, 0), o + Vector2(2, cap_h), lit, 3.0)
-			draw_line(o, o + Vector2(0, TS), OUTLINE, 2.5)
+			_rect(tex, Rect2(o + Vector2(2, 0), Vector2(3, cap_h)), lit)
+			_rect(tex, Rect2(o, Vector2(2, TS)), OUTLINE)
 		if not _is_wall(c + Vector2i.RIGHT):
-			draw_line(o + Vector2(TS - 3, 0), o + Vector2(TS - 3, cap_h), top_col.darkened(0.35), 4.0)
-			draw_line(o + Vector2(TS, 0), o + Vector2(TS, TS), OUTLINE, 2.5)
+			_rect(tex, Rect2(o + Vector2(TS - 5, 0), Vector2(4, cap_h)), Color(WorldBuilder.NIGHT, 0.5))
+			_rect(tex, Rect2(o + Vector2(TS - 1.5, 0), Vector2(2, TS)), OUTLINE)
 		if face:
-			_draw_face(c, Rect2(o + Vector2(0, cap_h), Vector2(TS, wh)), mat)
-			draw_line(o + Vector2(0, cap_h), o + Vector2(TS, cap_h), OUTLINE, 2.0)
+			_draw_face(tex, c, Rect2(o + Vector2(0, cap_h), Vector2(TS, wh)), mat)
+			_rect(tex, Rect2(o + Vector2(0, cap_h - 1), Vector2(TS, 2)), OUTLINE)
 
-	func _cap_color(mat: int) -> Color:
-		match mat:
-			WallMat.ADOBE:
-				return builder.col("adobe").darkened(0.38)
-			WallMat.ROCK:
-				return builder.col("mine_wall").darkened(0.1)
-			WallMat.FENCE:
-				return builder.col("wall").darkened(0.15)
-			_:
-				return builder.col("wall")
-
-	func _draw_face(c: Vector2i, f: Rect2, mat: int) -> void:
+	func _draw_face(tex: Texture2D, c: Vector2i, f: Rect2, _mat: int) -> void:
 		var L := builder.layout
-		var south_c := c + Vector2i.DOWN
-		var bid := builder.building_id_at(c)
-		var south_rid := builder.room_id_at(south_c)
-		var south_room: FloorLayout.Room = L.get_room(south_rid) if south_rid >= 0 else null
-		var interior := mat != WallMat.ROCK and south_room != null and not south_room.outdoor \
-			and builder.building_id_at(south_c) >= 0 and L.get_tile(south_c) != FloorLayout.Tile.STREET
+		var fd := builder.face_desc(c)
+		draw_texture_rect_region(tex, f, WorldBuilder.wall_region(fd["key"], fd["v"]), fd["mod"])
+		if bool(fd["lamp"]):
+			var at := Vector2(f.get_center().x, f.position.y + 14.0)
+			draw_texture_rect_region(WorldProp.ATLAS, WorldProp.piece_dest("kit_lantern", at), WorldProp.piece_region("kit_lantern"))
+		# Contours verticaux là où la face se termine (angles du bâtiment).
 		var west_open := not _is_wall(c + Vector2i.LEFT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(-1, 1)))
 		var east_open := not _is_wall(c + Vector2i.RIGHT) or FloorLayout.is_walkable_tile(L.get_tile(c + Vector2i(1, 1)))
-		if interior:
-			_face_interior(c, f, bid)
-		else:
-			match mat:
-				WallMat.ADOBE:
-					_face_adobe(c, f)
-				WallMat.FENCE:
-					_face_fence(c, f)
-				WallMat.ROCK:
-					_face_rock(c, f)
-				_:
-					_face_wood(c, f)
-			if bid >= 0 and _is_window_cell(c, bid):
-				_draw_window(f, L.buildings[bid].archetype)
-		# Bas du mur : occlusion bleue + contour net.
-		draw_polygon(PackedVector2Array([f.position + Vector2(0, f.size.y - 10), f.position + Vector2(TS, f.size.y - 10), f.end, f.position + Vector2(0, f.size.y)]),
-			PackedColorArray([Color(0.1, 0.12, 0.3, 0.0), Color(0.1, 0.12, 0.3, 0.0), Color(0.1, 0.12, 0.3, 0.45), Color(0.1, 0.12, 0.3, 0.45)]))
-		draw_line(Vector2(f.position.x, f.end.y), f.end, OUTLINE, 2.5)
 		if west_open:
-			draw_line(f.position, Vector2(f.position.x, f.end.y), OUTLINE, 2.5)
+			_rect(tex, Rect2(f.position + Vector2(2, 0), Vector2(3, f.size.y)), Color(1.0, 0.8, 0.56, 0.45))
+			_rect(tex, Rect2(f.position, Vector2(2, f.size.y)), OUTLINE)
 		if east_open:
-			draw_line(Vector2(f.end.x, f.position.y), f.end, OUTLINE, 2.5)
-			# Arête est dans l'ombre.
-			draw_rect(Rect2(f.end.x - 6.0, f.position.y, 6.0, f.size.y), Color(0.1, 0.12, 0.3, 0.3))
+			draw_texture_rect_region(tex, Rect2(f.end.x - 10.0, f.position.y, 10.0, f.size.y), WorldBuilder.wall_region("grad_h_left"), Color(WorldBuilder.NIGHT, 0.5))
+			_rect(tex, Rect2(f.end.x - 1.5, f.position.y, 2, f.size.y), OUTLINE)
+		_rect(tex, Rect2(f.position.x, f.end.y - 1.5, f.size.x, 2.0), OUTLINE)
 
-	func _grad(r: Rect2, a: Color, b: Color) -> void:
-		draw_polygon(PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]),
-			PackedColorArray([a, a, b, b]))
 
-	func _face_wood(c: Vector2i, f: Rect2) -> void:
-		var base := builder.col("wood_weathered")
-		var bid := builder.building_id_at(c)
-		if bid >= 0:
-			match builder.layout.buildings[bid].archetype:
-				&"saloon":
-					base = Color(0.74, 0.5, 0.34)
-				&"store":
-					base = Color(0.62, 0.66, 0.56)
-				&"hotel":
-					base = Color(0.72, 0.56, 0.6)
-				&"stable":
-					base = Color(0.7, 0.42, 0.3)
-		_grad(f, base.lightened(0.12), base.darkened(0.28))
-		# Clins horizontaux (bardage à recouvrement).
-		var y := f.position.y + 9.0
-		while y < f.end.y - 4.0:
-			draw_line(Vector2(f.position.x, y), Vector2(f.end.x, y), base.darkened(0.42), 1.6)
-			draw_line(Vector2(f.position.x, y + 1.5), Vector2(f.end.x, y + 1.5), base.lightened(0.2), 1.0)
-			y += 9.0
-		# Joints de planches décalés.
-		var jx := f.position.x + 10.0 + WorldBuilder.hash01(c.x, c.y, 60) * 40.0
-		draw_line(Vector2(jx, f.position.y + 9), Vector2(jx, f.position.y + 18), base.darkened(0.42), 1.2)
-		# Liseré haut (corniche).
-		draw_rect(Rect2(f.position, Vector2(TS, 5.0)), base.lightened(0.3))
-		draw_line(f.position + Vector2(0, 5), f.position + Vector2(TS, 5), OUTLINE, 1.4)
+## Description de la face avant d'un mur (case WALL dont le sud est praticable) :
+## {key: région de l'atlas des murs, v: variante, mod: teinte, window: bool, lamp: bool}.
+func face_desc(c: Vector2i) -> Dictionary:
+	var mat := wall_mat_at(c)
+	var south_c := c + Vector2i.DOWN
+	var bid := building_id_at(c)
+	var arch: StringName = layout.buildings[bid].archetype if bid >= 0 else &""
+	var south_rid := room_id_at(south_c)
+	var south_room: FloorLayout.Room = layout.get_room(south_rid) if south_rid >= 0 else null
+	var interior := mat != WallMat.ROCK and south_room != null and not south_room.outdoor \
+		and building_id_at(south_c) >= 0 and layout.get_tile(south_c) != FloorLayout.Tile.STREET
+	var d := {"key": "", "v": int(hash01(c.x, c.y, 60) * 4.0), "mod": Color.WHITE, "window": false, "lamp": false}
+	if interior:
+		d["key"] = "face_" + String(INTERIOR_FACE.get(arch, "int_plank"))
+		d["mod"] = Color(0.92, 0.86, 0.82)
+		return d
+	match mat:
+		WallMat.ADOBE:
+			d["key"] = "face_adobe"
+		WallMat.FENCE:
+			d["key"] = "face_fence"
+		WallMat.ROCK:
+			d["key"] = "face_rock"
+			# Lampe de mineur accrochée à la paroi, une case sur ~6.
+			d["lamp"] = hash01(c.x, c.y, 62) < 0.16 and FloorLayout.is_walkable_tile(layout.get_tile(south_c))
+		_:
+			d["key"] = "face_wood"
+	d["mod"] = FACADE_TINT.get(arch, Color.WHITE)
+	if bid >= 0 and (mat == WallMat.WOOD or mat == WallMat.ADOBE) and _is_window_cell(c, bid):
+		d["key"] = "window_wood" if mat == WallMat.WOOD else "window_adobe"
+		d["v"] = 1 if arch == &"saloon" else int(hash01(c.x, c.y, 61) * 3.0)
+		d["window"] = true
+	return d
 
-	func _face_adobe(c: Vector2i, f: Rect2) -> void:
-		var base := builder.col("adobe")
-		var bid := builder.building_id_at(c)
-		if bid >= 0 and builder.layout.buildings[bid].archetype == &"church":
-			base = Color(0.94, 0.84, 0.7)
-		elif bid >= 0 and builder.layout.buildings[bid].archetype == &"bank":
-			base = Color(0.9, 0.7, 0.5)
-		_grad(f, base.lightened(0.1), base.darkened(0.22))
-		# Enduit écaillé et fissures.
-		var h := WorldBuilder.hash01(c.x, c.y, 61)
-		if h < 0.4:
-			var p := f.position + Vector2(10.0 + h * 80.0, 16.0)
-			draw_rect(Rect2(p, Vector2(14, 8)), base.darkened(0.18))
-			draw_line(p + Vector2(0, 2), p + Vector2(3, 0), base.darkened(0.35), 1.0)
-			for i: int in 2:
-				draw_rect(Rect2(p + Vector2(2 + i * 6, 2), Vector2(5, 3)), Color(0.66, 0.36, 0.26))
-		elif h < 0.7:
-			var q := f.position + Vector2(20.0 + h * 20.0, 10.0)
-			draw_polyline(PackedVector2Array([q, q + Vector2(4, 8), q + Vector2(1, 15), q + Vector2(6, 24)]), base.darkened(0.4), 1.2)
-		# Bandeau haut + vigas.
-		draw_rect(Rect2(f.position, Vector2(TS, 6.0)), base.lightened(0.22))
-		draw_line(f.position + Vector2(0, 6), f.position + Vector2(TS, 6), base.darkened(0.4), 1.4)
-		if (c.x % 2) == 0:
-			var v := Rect2(f.position + Vector2(26, 8), Vector2(10, 7))
-			draw_rect(Rect2(v.position + Vector2(2, 3), v.size), Color(0.1, 0.12, 0.3, 0.4))
-			draw_rect(v, Color(0.44, 0.27, 0.16))
-			draw_rect(v, OUTLINE, false, 1.2)
 
-	func _face_fence(c: Vector2i, f: Rect2) -> void:
-		# Palissade : poteaux pointus sur fond d'ombre (on voit à travers).
-		draw_rect(f, Color(0.16, 0.14, 0.26, 0.85))
-		var base := builder.col("wood_weathered").darkened(0.08)
-		var n := 4
-		var w := TS / float(n)
-		for i: int in n:
-			var x0 := f.position.x + float(i) * w + 1.5
-			var top := f.position.y + 6.0 + WorldBuilder.hash01(c.x * 4 + i, c.y, 62) * 6.0
-			var pts := PackedVector2Array([Vector2(x0, f.end.y), Vector2(x0, top + 6.0), Vector2(x0 + w * 0.5 - 1.5, top), Vector2(x0 + w - 3.0, top + 6.0), Vector2(x0 + w - 3.0, f.end.y)])
-			draw_polygon(pts, PackedColorArray([base.darkened(0.3), base.lightened(0.1), base.lightened(0.2), base, base.darkened(0.3)]))
-			pts.append(pts[0])
-			draw_polyline(pts, OUTLINE, 1.4)
-		for yy: float in [f.position.y + 18.0, f.end.y - 12.0]:
-			draw_rect(Rect2(f.position.x, yy, TS, 5.0), base.darkened(0.15))
-			draw_rect(Rect2(f.position.x, yy, TS, 5.0), OUTLINE, false, 1.0)
-
-	func _face_rock(c: Vector2i, f: Rect2) -> void:
-		var base := builder.col("mine_wall").lightened(0.15)
-		_grad(f, base.lightened(0.15), base.darkened(0.3))
-		for i: int in 4:
-			var hx := WorldBuilder.hash01(c.x, c.y, 70 + i)
-			var hy := WorldBuilder.hash01(c.x, c.y, 80 + i)
-			var p := f.position + Vector2(6.0 + hx * 50.0, 8.0 + hy * (f.size.y - 16.0))
-			var r := 6.0 + hx * 6.0
-			var pts := PackedVector2Array()
-			for k: int in 6:
-				var a := float(k) * TAU / 6.0 + hy
-				pts.append(p + Vector2(cos(a), sin(a) * 0.75) * r * (0.8 + 0.3 * WorldBuilder.hash01(k, i, c.x)))
-			draw_colored_polygon(pts, base.lerp(Color(0.5, 0.42, 0.42), hx * 0.6))
-			draw_line(pts[3], pts[4], base.lightened(0.35), 1.4)
-			pts.append(pts[0])
-			draw_polyline(pts, OUTLINE, 1.2)
-		# Étai de bois tous les 3 blocs.
-		if c.x % 3 == 0:
-			draw_rect(Rect2(f.position.x + 24, f.position.y, 12, f.size.y), Color(0.5, 0.34, 0.22))
-			draw_rect(Rect2(f.position.x + 24, f.position.y, 12, f.size.y), OUTLINE, false, 1.4)
-			draw_line(f.position + Vector2(26, 2), Vector2(f.position.x + 26, f.end.y - 2), Color(0.76, 0.56, 0.36), 1.4)
-
-	func _face_interior(c: Vector2i, f: Rect2, bid: int) -> void:
-		var paper := Color(0.46, 0.16, 0.18)
-		if bid >= 0:
-			match builder.layout.buildings[bid].archetype:
-				&"bank":
-					paper = Color(0.18, 0.34, 0.28)
-				&"sheriff":
-					paper = Color(0.56, 0.5, 0.42)
-				&"church":
-					paper = Color(0.9, 0.82, 0.68)
-				&"hotel":
-					paper = Color(0.36, 0.22, 0.4)
-				&"store":
-					paper = Color(0.5, 0.58, 0.46)
-				&"stable", &"mine":
-					paper = Color(0.56, 0.4, 0.28)
-		var upper := Rect2(f.position, Vector2(TS, f.size.y * 0.55))
-		_grad(upper, paper.lightened(0.1), paper.darkened(0.15))
-		var x := f.position.x + 8.0
-		while x < f.end.x:
-			draw_line(Vector2(x, upper.position.y), Vector2(x, upper.end.y), paper.lightened(0.18), 1.6)
-			x += 16.0
-		var low := Rect2(Vector2(f.position.x, upper.end.y), Vector2(TS, f.size.y - upper.size.y))
-		_grad(low, Color(0.5, 0.3, 0.18), Color(0.28, 0.16, 0.1))
-		draw_rect(Rect2(low.position + Vector2(8, 5), Vector2(TS - 16, low.size.y - 10)), Color(0.22, 0.12, 0.08), false, 1.4)
-		draw_line(low.position, Vector2(low.end.x, low.position.y), Color(0.82, 0.6, 0.38), 2.5)
-		draw_rect(Rect2(f.position, Vector2(TS, 4.0)), Color(0.36, 0.22, 0.14))
-
-	func _is_window_cell(c: Vector2i, bid: int) -> bool:
-		var b := builder.layout.buildings[bid]
-		if c.x <= b.rect.position.x or c.x >= b.rect.end.x - 1:
+func _is_window_cell(c: Vector2i, bid: int) -> bool:
+	var b := layout.buildings[bid]
+	if c.x <= b.rect.position.x or c.x >= b.rect.end.x - 1:
+		return false
+	# Façade : rangée haute ou basse de l'emprise.
+	if c.y != b.rect.position.y and c.y != b.rect.end.y - 1:
+		return false
+	for dx: int in [-1, 0, 1]:
+		if layout.get_tile(c + Vector2i(dx, 0)) == FloorLayout.Tile.DOOR:
 			return false
-		# Façade : rangée haute ou basse de l'emprise.
-		if c.y != b.rect.position.y and c.y != b.rect.end.y - 1:
-			return false
-		for dx: int in [-1, 0, 1]:
-			if builder.layout.get_tile(c + Vector2i(dx, 0)) == FloorLayout.Tile.DOOR:
-				return false
-		return (c.x - b.rect.position.x) % 2 == 0 or b.archetype == &"saloon"
+	return (c.x - b.rect.position.x) % 2 == 0 or b.archetype == &"saloon"
 
-	func _draw_window(f: Rect2, archetype: StringName) -> void:
-		var w := Rect2(f.position + Vector2(14, 11), Vector2(TS - 28, f.size.y - 22))
-		if archetype == &"church":
-			w = Rect2(f.position + Vector2(22, 10), Vector2(20, f.size.y - 18))
-		# Volets.
-		if archetype != &"church" and archetype != &"bank":
-			var sh := Color(0.24, 0.38, 0.4) if archetype != &"saloon" else Color(0.5, 0.2, 0.14)
-			for sx: float in [w.position.x - 8.0, w.end.x]:
-				draw_rect(Rect2(sx, w.position.y, 8.0, w.size.y), sh)
-				draw_rect(Rect2(sx, w.position.y, 8.0, w.size.y), OUTLINE, false, 1.2)
-				draw_line(Vector2(sx + 1, w.position.y + 6), Vector2(sx + 7, w.position.y + 6), sh.lightened(0.3), 1.0)
-		draw_rect(w.grow(2.0), Color(0.86, 0.72, 0.52))
-		# Vitre : reflet du couchant (orange → violet).
-		draw_polygon(PackedVector2Array([w.position, Vector2(w.end.x, w.position.y), w.end, Vector2(w.position.x, w.end.y)]),
-			PackedColorArray([Color(1.0, 0.66, 0.36), Color(0.86, 0.42, 0.46), Color(0.2, 0.16, 0.3), Color(0.32, 0.2, 0.34)]))
-		draw_line(w.position + Vector2(3, w.size.y - 4), w.position + Vector2(w.size.x * 0.6, 3), Color(1.0, 0.92, 0.75, 0.6), 2.0)
-		draw_line(Vector2(w.get_center().x, w.position.y), Vector2(w.get_center().x, w.end.y), Color(0.36, 0.22, 0.14), 2.0)
-		draw_line(Vector2(w.position.x, w.get_center().y), Vector2(w.end.x, w.get_center().y), Color(0.36, 0.22, 0.14), 2.0)
-		draw_rect(w.grow(2.0), OUTLINE, false, 1.8)
+
+## Lueurs des fenêtres éclairées et des lampes de mine (calculées à la construction).
+func _collect_wall_glows() -> void:
+	for y: int in layout.size.y:
+		for x: int in layout.size.x:
+			var c := Vector2i(x, y)
+			if layout.get_tile(c) != FloorLayout.Tile.WALL or not FloorLayout.is_walkable_tile(layout.get_tile(c + Vector2i.DOWN)):
+				continue
+			var fd := face_desc(c)
+			var center := Vector2(float(x) + 0.5, float(y) + 1.0) * TS - Vector2(0.0, wall_height * 0.5)
+			if bool(fd["window"]):
+				add_glow(center + Vector2(0, 16), 48.0, 0.55)
+			elif bool(fd["lamp"]):
+				add_glow(Vector2((float(x) + 0.5) * TS, float(y + 1) * TS + 10.0), 150.0, 1.0)
 
 
 # --- Porches (trottoir de planches, poteaux, auvent) -------------------------------
@@ -920,6 +847,9 @@ func _build_porches() -> void:
 		porch.z_index = 10
 		porch.position = Vector2(0.0, (float(b.rect.end.y) + 0.85) * TS)
 		add_child(porch)
+		# Lanterne murale à côté de la porte (lueur chaude).
+		if not is_nan(porch.door_x):
+			add_glow(Vector2(porch.door_x + TS * 0.62, float(b.rect.end.y) * TS - 30.0), 64.0, 0.9)
 
 
 ## Trottoirs de planches devant les façades (au sol, z 1).
@@ -943,63 +873,96 @@ class PorchDecks extends Node2D:
 					x1 += 1
 				var depth := TS * 0.85
 				var y0 := float(row) * TS if bool(fi["bottom"]) else (float(row) + 1.0) * TS - depth
-				var r := Rect2(float(x) * TS, y0, float(x1 - x) * TS, depth)
-				_deck(r)
+				_deck(Rect2(float(x) * TS, y0, float(x1 - x) * TS, depth), bool(fi["bottom"]))
 				x = x1
 
-	func _deck(r: Rect2) -> void:
-		var base := Color(0.66, 0.48, 0.32)
-		draw_rect(Rect2(r.position + Vector2(6, 8), r.size), Color(0.12, 0.15, 0.32, 0.35))
-		draw_rect(r, base)
+	func _deck(r: Rect2, bottom: bool) -> void:
+		var tex := WorldBuilder.TEX_WALLS
+		var cap := WorldBuilder.wall_region("cap_fence")
+		var white := WorldBuilder.wall_region("white")
+		# Ombre portée du trottoir (bas-droite).
+		draw_texture_rect_region(tex, Rect2(r.position + Vector2(6, r.size.y), Vector2(r.size.x, 8)), WorldBuilder.wall_region("grad_v"), Color(WorldBuilder.NIGHT, 0.45))
+		# Planches perpendiculaires à la rue : la matière (clins horizontaux) tournée
+		# n'existe pas, on tuile le bardage par blocs d'une case (lattes lisibles).
 		var x := r.position.x
-		var i := 0
-		while x < r.end.x:
-			var w := 12.0
-			var c := base.lightened(0.08) if i % 3 == 0 else (base.darkened(0.08) if i % 3 == 1 else base)
-			draw_rect(Rect2(x, r.position.y, w, r.size.y), c)
-			draw_line(Vector2(x, r.position.y), Vector2(x, r.end.y), Color(0.32, 0.2, 0.12), 1.4)
-			if i % 4 == 0:
-				draw_circle(Vector2(x + 6, r.position.y + 6), 1.2, Color(0.25, 0.2, 0.22))
-				draw_circle(Vector2(x + 6, r.end.y - 8), 1.2, Color(0.25, 0.2, 0.22))
+		while x < r.end.x - 0.5:
+			var w := minf(TS, r.end.x - x)
+			draw_texture_rect_region(tex, Rect2(x, r.position.y, w, r.size.y), Rect2(cap.position, Vector2(w * 2.0, r.size.y * 2.0)), Color(1.05, 0.92, 0.8))
 			x += w
-			i += 1
-		# Chant avant éclairé + bordure.
-		draw_rect(Rect2(r.position.x, r.end.y - 6.0, r.size.x, 6.0), base.darkened(0.35))
-		draw_line(Vector2(r.position.x, r.end.y - 6.0), Vector2(r.end.x, r.end.y - 6.0), base.lightened(0.3), 1.6)
-		draw_rect(r, OUTLINE, false, 2.0)
+		# Chant avant (épaisseur du plancher) + contour.
+		var lip := r.end.y - 6.0 if bottom else r.position.y
+		draw_texture_rect_region(tex, Rect2(r.position.x, lip, r.size.x, 6.0), white, Color(0.36, 0.22, 0.16))
+		draw_texture_rect_region(tex, Rect2(r.position.x, lip, r.size.x, 1.5), white, Color(0.95, 0.74, 0.5))
+		for e: Rect2 in [Rect2(r.position, Vector2(r.size.x, 2)), Rect2(r.position.x, r.end.y - 2, r.size.x, 2),
+				Rect2(r.position, Vector2(2, r.size.y)), Rect2(r.end.x - 2, r.position.y, 2, r.size.y)]:
+			draw_texture_rect_region(tex, e, white, OUTLINE)
 
 
-## Poteaux + auvent devant une façade sud (trié en Y avec les personnages).
+## Poteaux + auvent + décorations (bannières, lanterne, tonneaux) devant une façade sud
+## (trié en Y avec les personnages). Pièces du kit Blender (atlas des décors).
 class PorchFront extends Node2D:
 	var builder: WorldBuilder = null
 	var building: FloorLayout.Building = null
 	var door_x: float = NAN
 
 	func _draw() -> void:
+		var atlas := WorldProp.ATLAS
+		var walls := WorldBuilder.TEX_WALLS
+		var white := WorldBuilder.wall_region("white")
 		var r := building.rect
-		var x0 := float(r.position.x) * TS + 6.0
-		var x1 := float(r.end.x) * TS - 6.0
-		var post_h := 86.0
-		var posts: Array[float] = []
-		var x := x0
-		var spacing := 3.0 * TS
-		var n := maxi(int(round((x1 - x0) / spacing)), 1)
+		var arch := building.archetype
+		var x0 := float(r.position.x) * TS + 8.0
+		var x1 := float(r.end.x) * TS - 8.0
+		var wall_base := -0.85 * TS                      # bas de la face du mur (repère local)
+		var beam_y := wall_base - 40.0                    # poutre de l'auvent
+		var top_y := wall_base - builder.wall_height      # haut de la face (sous le toit)
+		# Auvent : bande de tôle/bardeaux entre le haut du mur et la poutre, ombre portée dessous.
+		var aw := Rect2(x0 - 6.0, top_y, x1 - x0 + 12.0, beam_y - top_y + 4.0)
+		draw_texture_rect_region(walls, Rect2(aw.position.x + 4.0, aw.end.y, aw.size.x, 16.0), WorldBuilder.wall_region("grad_v"), Color(WorldBuilder.NIGHT, 0.55))
+		var cols: Array = BuildingRoof.COLORS.get(arch, BuildingRoof.COLORS[&"saloon"])
+		var lit: Color = cols[0]
+		var cap := WorldBuilder.wall_region("cap_wood")
+		var xx := aw.position.x
+		while xx < aw.end.x - 0.5:
+			var w := minf(TS, aw.end.x - xx)
+			draw_texture_rect_region(walls, Rect2(xx, aw.position.y, w, aw.size.y), Rect2(cap.position, Vector2(w * 2.0, aw.size.y * 2.0)), lit.lerp(Color(0.8, 0.66, 0.54), 0.35))
+			xx += w
+		draw_texture_rect_region(walls, Rect2(aw.position.x, aw.end.y - 5.0, aw.size.x, 5.0), white, lit.darkened(0.45))
+		draw_texture_rect_region(walls, Rect2(aw.position.x, aw.position.y, aw.size.x, 2.0), white, Color(1.0, 0.85, 0.6, 0.7))
+		for e: Rect2 in [Rect2(aw.position.x, aw.end.y - 1.0, aw.size.x, 2.0), Rect2(aw.position.x - 1.0, aw.position.y, 2.0, aw.size.y),
+				Rect2(aw.end.x - 1.0, aw.position.y, 2.0, aw.size.y)]:
+			draw_texture_rect_region(walls, e, white, OUTLINE)
+		# Bannières / lanterne accrochées sous l'auvent.
+		var banner := ""
+		match arch:
+			&"saloon", &"hotel":
+				banner = "kit_banner_red"
+			&"sheriff":
+				banner = "kit_banner_blue"
+		if banner != "":
+			for bx: float in [x0 + TS * 0.9, x1 - TS * 0.9]:
+				if not is_nan(door_x) and absf(bx - door_x) < TS:
+					continue
+				_piece(atlas, banner, Vector2(bx, beam_y + 2.0), 0.9)
+		if not is_nan(door_x):
+			_piece(atlas, "kit_lantern", Vector2(door_x + TS * 0.62, wall_base - 34.0), 1.0)
+		# Poteaux (kit Blender), sauf devant la porte.
+		var post := "kit_post_iron" if arch == &"bank" else "kit_post"
+		var n := maxi(int(round((x1 - x0) / (3.0 * TS))), 1)
+		var post_h := WorldProp.piece_feet(post).y / WorldProp.PX_PER_WORLD
+		var k := (-beam_y + 4.0) / maxf(post_h, 1.0)
 		for i: int in n + 1:
 			var px := lerpf(x0, x1, float(i) / float(n))
 			if not is_nan(door_x) and absf(px - door_x) < TS * 0.75:
 				continue
-			posts.append(px)
-		var wood := Color(0.62, 0.44, 0.3)
-		var beam := Rect2(x0 - 4.0, -post_h - 6.0, x1 - x0 + 8.0, 8.0)
-		for px: float in posts:
-			# Ombre du poteau (bas-droite).
-			draw_line(Vector2(px + 2, 0), Vector2(px + 22, 8), Color(0.1, 0.12, 0.3, 0.4), 6.0)
-			draw_rect(Rect2(px - 4.0, -post_h, 8.0, post_h), wood)
-			draw_rect(Rect2(px - 4.0, -post_h, 3.0, post_h), wood.lightened(0.3))
-			draw_rect(Rect2(px - 4.0, -post_h, 8.0, post_h), OUTLINE, false, 1.8)
-		draw_rect(beam, wood.darkened(0.1))
-		draw_line(beam.position + Vector2(0, 2), Vector2(beam.end.x, beam.position.y + 2), wood.lightened(0.35), 2.0)
-		draw_rect(beam, OUTLINE, false, 1.8)
+			_piece(atlas, post, Vector2(px, 0.0), k)
+		# Tonneaux et sacs au bout du trottoir (magasin, écurie, saloon).
+		if arch == &"store" or arch == &"stable" or arch == &"saloon":
+			_piece(atlas, "kit_barrels", Vector2(x1 - TS * 0.55, -8.0), 1.0)
+
+	func _piece(atlas: Texture2D, piece: String, at: Vector2, k: float) -> void:
+		if WorldProp.has_piece(piece):
+			draw_texture_rect_region(atlas, WorldProp.piece_dest(piece, at, k), WorldProp.piece_region(piece))
 
 
 # --- Portes ----------------------------------------------------------------------
@@ -1052,6 +1015,8 @@ func _build_stairs() -> void:
 		area.add_child(cs)
 		add_child(area)
 		area.body_entered.connect(_on_stairs_body_entered.bind(st))
+		if st.up and (is_mine_cell(st.cell) or layout.floor_index < 0):
+			add_glow(FloorLayout.cell_to_world(st.cell), 90.0, 0.9)  # puits de lumière de la surface
 		_stairs_areas.append(area)
 
 
@@ -1155,6 +1120,10 @@ func _build_props() -> void:
 		var p := WorldProp.create(s.kind, pos)
 		add_child(p)
 		_props.append(p)
+		var go := p.get_glow_offset()
+		if go != Vector2.INF:
+			var big := s.kind == &"lantern"
+			add_glow(pos + go, (130.0 if layout.floor_index < 0 else 80.0) if big else 56.0, 1.0)
 
 
 # --- Extraction ------------------------------------------------------------------
@@ -1276,8 +1245,6 @@ func _build_roofs() -> void:
 		roof.facade_x = float(fi["door_x"])
 		var r := Rect2(Vector2(b.rect.position) * TS, Vector2(b.rect.size) * TS)
 		roof.footprint = r
-		# Le toit laisse voir la face avant du mur côté sud et, pour une façade
-		# au nord, toute la rangée de façade (porte et fenêtres visibles de la rue).
 		# Le toit couvre l'emprise sauf la face avant du mur sud (visible depuis la
 		# rue). Façade au nord : la rangée du mur nord reste découverte (porte visible).
 		var top := r.position.y - 4.0
@@ -1286,3 +1253,96 @@ func _build_roofs() -> void:
 		roof.roof_rect = Rect2(r.position.x - 4.0, top, r.size.x + 8.0, r.end.y - wall_height - top)
 		holder.add_child(roof)
 		_roofs.append(roof)
+
+
+# --- Ambiance (léger : aucune lumière dynamique) -----------------------------------
+
+func _build_ambience() -> void:
+	# Teinte globale : couchant chaud en ville, intérieur d'étage plus sombre, mine bleue.
+	var cm := CanvasModulate.new()
+	cm.name = "AmbientTint"
+	var key := "ambient_town" if layout.floor_index == 0 else ("ambient_upper" if layout.floor_index > 0 else "ambient_mine")
+	var defaults := {"ambient_town": Color(1.0, 0.92, 0.84), "ambient_upper": Color(0.9, 0.8, 0.74), "ambient_mine": Color(0.6, 0.64, 0.84)}
+	var v: Variant = Balance.get_value("world_builder", key, defaults[key])
+	cm.color = v if v is Color else defaults[key]
+	add_child(cm)
+	# Lueurs chaudes (lanternes, fenêtres, bougies) : un seul nœud additif dessiné une fois.
+	var glows := GlowLayer.new()
+	glows.name = "Glows"
+	glows.glows = _glows
+	glows.strength = Balance.get_float("world_builder", "glow_strength", 1.0)
+	glows.mine = layout.floor_index < 0
+	glows.material = WorldProp.glow_material()
+	glows.z_index = 45
+	glows.z_as_relative = false
+	add_child(glows)
+	_build_dust()
+
+
+## Poussière chaude en suspension dans les rues (une seule couche de particules GPU).
+func _build_dust() -> void:
+	var amount := int(Balance.get_value("world_builder", "dust_amount", 90))
+	if amount <= 0:
+		return
+	var area := Rect2()
+	var first := true
+	for r: FloorLayout.Room in layout.rooms:
+		if layout.floor_index == 0 and not r.outdoor:
+			continue
+		var rr := Rect2(Vector2(r.rect.position) * TS, Vector2(r.rect.size) * TS)
+		area = rr if first else area.merge(rr)
+		first = false
+	if first:
+		return
+	var p := GPUParticles2D.new()
+	p.name = "Dust"
+	p.amount = amount if layout.floor_index == 0 else amount / 2
+	p.lifetime = 9.0
+	p.preprocess = 9.0
+	p.texture = TEX_DUST
+	p.z_index = 46
+	p.z_as_relative = false
+	p.position = area.get_center()
+	p.visibility_rect = Rect2(-area.size * 0.5 - Vector2(64, 64), area.size + Vector2(128, 128))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = Vector3(area.size.x * 0.5, area.size.y * 0.5, 0.0)
+	pm.direction = Vector3(1.0, -0.15, 0.0)
+	pm.spread = 25.0
+	pm.initial_velocity_min = 6.0
+	pm.initial_velocity_max = 18.0
+	pm.gravity = Vector3.ZERO
+	pm.scale_min = 0.25
+	pm.scale_max = 0.9
+	var grad := Gradient.new()
+	var c := Color(1.0, 0.82, 0.58) if layout.floor_index >= 0 else Color(0.7, 0.8, 1.0)
+	grad.set_color(0, Color(c, 0.0))
+	grad.set_color(1, Color(c, 0.0))
+	grad.add_point(0.3, Color(c, 0.32))
+	grad.add_point(0.7, Color(c, 0.22))
+	var gt := GradientTexture1D.new()
+	gt.gradient = grad
+	pm.color_ramp = gt
+	p.process_material = pm
+	add_child(p)
+
+
+## Lueurs additives précalculées (sprite radial de l'atlas), dessinées une seule fois.
+class GlowLayer extends Node2D:
+	var glows: Array = []
+	var strength: float = 1.0
+	var mine: bool = false
+
+	func _draw() -> void:
+		if not WorldProp.has_piece("glow"):
+			return
+		var atlas := WorldProp.ATLAS
+		var reg := WorldProp.piece_region("glow")
+		var warm := Color(1.0, 0.6, 0.26) if not mine else Color(1.0, 0.5, 0.16)
+		for g: Array in glows:
+			var p: Vector2 = g[0]
+			var rad: float = g[1]
+			var k: float = float(g[2]) * strength
+			var a := 0.42 if not mine else 0.6
+			draw_texture_rect_region(atlas, Rect2(p - Vector2(rad, rad), Vector2(rad, rad) * 2.0), reg, Color(warm, a * k))
+			draw_texture_rect_region(atlas, Rect2(p - Vector2(rad, rad) * 0.4, Vector2(rad, rad) * 0.8), reg, Color(1.0, 0.85, 0.6, 0.35 * k))
