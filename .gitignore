@@ -50,3 +50,4 @@ desktop.ini
 # Cache Python (scripts Blender)
 __pycache__/
 *.pyc
+*.blend1
