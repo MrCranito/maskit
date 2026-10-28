@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="TurretData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/turret_data.gd" id="1_turret"]
+
+[resource]
+script = ExtResource("1_turret")
+id = &"mall_burst"
+display_name = "Mitrailleuse de surveillance"
+kind = &"burst"
+biomes = Array[StringName]([&"mall"])
+sprite_id = "mall_burst"
+max_hp = 55.0
+body_radius = 17.0
+range = 430.0
+cone_deg = 120.0
+turn_speed_deg = 120.0
+scan_speed_deg = 30.0
+alert_neighbors_radius = 320.0
+lock_time = 0.65
+cooldown = 1.5
+burst_count = 5
+burst_interval = 0.09
+pellets = 1
+spread_deg = 6.0
+damage = 5.0
+projectile_speed = 560.0
+projectile_style = &"bullet"
+track_while_firing = true
+projectile_scale = 1.0
+shot_sfx = &"gun_shot_alt"
+destroy_sfx = &"explosion"
+laser_color = Color(1, 0.16, 0.16, 1)
+muzzle_flash_scale = 0.9
+flash_color = Color(1, 0.78, 0.35, 1)
+min_difficulty = 0
+spawn_weight = 3.0
+debris_colors = Array[Color]([Color(0.85, 0.83, 0.78, 1), Color(0.23, 0.23, 0.27, 1), Color(0.91, 0.72, 0.19, 1)])

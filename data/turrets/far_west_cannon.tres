@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="TurretData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/turret_data.gd" id="1_turret"]
+
+[resource]
+script = ExtResource("1_turret")
+id = &"far_west_cannon"
+display_name = "Canon de rempart"
+kind = &"cannon"
+biomes = Array[StringName]([&"far_west"])
+sprite_id = "far_west_cannon"
+max_hp = 110.0
+body_radius = 21.0
+range = 520.0
+cone_deg = 100.0
+turn_speed_deg = 55.0
+scan_speed_deg = 18.0
+alert_neighbors_radius = 420.0
+lock_time = 1.0
+cooldown = 2.8
+burst_count = 1
+burst_interval = 0.1
+pellets = 1
+spread_deg = 0.0
+damage = 22.0
+projectile_speed = 300.0
+projectile_style = &""
+track_while_firing = false
+projectile_scale = 2.1
+shot_sfx = &"shotgun_blast"
+destroy_sfx = &"explosion"
+laser_color = Color(1, 0.22, 0.12, 1)
+muzzle_flash_scale = 1.7
+flash_color = Color(1, 0.72, 0.3, 1)
+min_difficulty = 1
+spawn_weight = 2.0
+debris_colors = Array[Color]([Color(0.43, 0.27, 0.19, 1), Color(0.23, 0.23, 0.28, 1), Color(0.82, 0.63, 0.25, 1)])
