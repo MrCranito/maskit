@@ -15,6 +15,8 @@ var dir_index: int = 0
 ## Tourne sur lui-même (sinon reste de face).
 var turning: bool = true
 var skin: SkinData = null
+## Hauteur de la planche rapportée à la boîte (< 0 : balance.cfg [menu] preview_height_ratio).
+var height_ratio: float = -1.0
 var _use_current: bool = true
 var _timer: Timer = null
 var _feet: Vector2 = Vector2(80, 131)
@@ -82,7 +84,8 @@ func _apply_skin() -> void:
 func _layout() -> void:
 	var feet_pos := Vector2(size.x * 0.5, size.y * 0.88)
 	if sprite != null:
-		var sc: float = size.y * Balance.get_float("menu", "preview_height_ratio", 0.95) / _frame_size.y
+		var hr: float = height_ratio if height_ratio > 0.0 else Balance.get_float("menu", "preview_height_ratio", 0.95)
+		var sc: float = size.y * hr / _frame_size.y
 		sprite.scale = Vector2(sc, sc)
 		sprite.position = feet_pos
 	var gw: float = minf(size.x * 0.95, size.y * 1.1)

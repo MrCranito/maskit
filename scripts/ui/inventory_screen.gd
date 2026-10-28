@@ -381,7 +381,7 @@ func _refresh_detail() -> void:
 	_detail_name.label_settings.font_color = LootDB.rarity_color(it.rarity).lightened(0.15)
 	var rc := LootDB.rarity_color(it.rarity)
 	var wd: WeaponData = WeaponCatalog.get_weapon(it.weapon_id) if it.is_weapon() else null
-	_detail_meta.text = ("Arme · %s" % wd.get_category_name()) if wd != null else LootDB.type_name(it.type)
+	_detail_meta.text = (("Équipement" if wd.is_gadget() else "Arme · %s" % wd.get_category_name())) if wd != null else LootDB.type_name(it.type)
 	_detail_rarity_label.text = LootDB.rarity_name(it.rarity).to_upper()
 	var rst := StyleBoxFlat.new()
 	rst.bg_color = rc
@@ -424,6 +424,8 @@ func _draw_detail_tile() -> void:
 
 ## Lignes de fiche d'une arme : dégâts, cadence, chargeur, DPS (+ explosion, perforation).
 static func weapon_facts(w: WeaponData) -> Array:
+	if w.is_gadget():
+		return gadget_facts(w)
 	var dmg := String.num(w.damage, 0) + ("  ×%d" % w.projectile_count if w.projectile_count > 1 else "")
 	var rows: Array = [
 		["Dégâts", dmg],
@@ -438,6 +440,24 @@ static func weapon_facts(w: WeaponData) -> Array:
 	return rows
 
 
+## Fiche d'un équipement : charges, effet, portée, délai, durée.
+static func gadget_facts(w: WeaponData) -> Array:
+	var rows: Array = [["Charges", "×%d" % w.charges]]
+	if w.is_explosive():
+		rows.append(["Explosion", "%d (rayon %d)" % [int(w.explosion_damage), int(w.explosion_radius)]])
+	elif w.effect_radius > 0.0:
+		rows.append(["Rayon", "%d" % int(w.effect_radius)])
+	if w.damage > 0.0 and w.fire_rate > 0.0 and not w.is_explosive():
+		rows.append(["Tir", "%d × %s/s" % [int(w.damage), String.num(w.fire_rate, 1)]])
+	if w.throw_range > 0.0:
+		rows.append(["Portée", "%d" % int(w.throw_range)])
+	if w.fuse_time > 0.0:
+		rows.append(["Délai", "%s s" % String.num(w.fuse_time, 1)])
+	if w.effect_duration > 0.0 and w.gadget_kind != WeaponData.GADGET_MINE:
+		rows.append(["Durée", "%s s" % String.num(w.effect_duration, 0)])
+	return rows
+
+
 ## Équipe l'arme sélectionnée dans l'emplacement courant du joueur : l'objet quitte le sac,
 ## l'arme remplacée y revient. Sac plein (l'arme remplacée ne rentrerait pas) : message, rien.
 ## Renvoie true si l'échange a eu lieu.
@@ -447,27 +467,35 @@ func _equip_selected() -> bool:
 	if it == null or not it.is_weapon() or p == null or not is_instance_valid(p):
 		return false
 	var w := WeaponCatalog.get_weapon(it.weapon_id)
-	if w == null or not p.has_method("equip_into_current_slot"):
-		_flash_message("Impossible d'équiper cette arme pour l'instant.")
+	if w == null:
 		return false
-	var current: WeaponData = p.get("weapon") as WeaponData
+	# Équipement → emplacement d'équipement ; arme → emplacement d'arme courant.
+	var method: StringName = &"equip_gadget" if w.is_gadget() else &"equip_into_current_slot"
+	if not p.has_method(method):
+		_flash_message("Impossible d'équiper cet objet pour l'instant.")
+		return false
+	var current: WeaponData = null
+	if w.is_gadget():
+		current = p.call(&"get_gadget") as WeaponData if p.has_method(&"get_gadget") else null
+	else:
+		current = p.get("weapon") as WeaponData
 	var slot_idx := selected
 	var removed := inventory.remove_at(slot_idx, 1)
 	if removed.is_empty():
 		return false
-	# Vérifie la place pour l'arme remplacée AVANT l'échange (le sac a libéré une case).
+	# Vérifie la place pour l'objet remplacé AVANT l'échange (le sac a libéré une case).
 	var back_item: ItemData = null
-	var slot_empty := _current_slot_empty(p)
+	var slot_empty := false if w.is_gadget() else _current_slot_empty(p)
 	if current != null and not slot_empty:
 		back_item = LootDB.weapon_item(current)
 		if back_item != null and not inventory.can_add(back_item, 1):
 			# Remet l'objet exactement dans sa case (pas de nouvelle vérification de poids).
 			inventory.slots[slot_idx] = removed
 			inventory.changed.emit()
-			_flash_message("Sac plein : libère de la place pour ranger l'arme actuelle.")
+			_flash_message("Sac plein : libère de la place pour ranger l'objet actuel.")
 			_play(&"error")
 			return false
-	var replaced: Variant = p.call("equip_into_current_slot", w)
+	var replaced: Variant = p.call(method, w)
 	if replaced is WeaponData:
 		var bi := LootDB.weapon_item(replaced as WeaponData)
 		if bi != null:

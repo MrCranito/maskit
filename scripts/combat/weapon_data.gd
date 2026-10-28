@@ -17,23 +17,41 @@ const RARITY_COLORS: Array[Color] = [
 ]
 const RARITY_NAMES: Array[String] = ["Commun", "Peu commun", "Rare", "Épique", "Légendaire"]
 
-## Catégories d'armes (champ `category`).
+## Catégories (champ `category`) — arsenal de la planche docs/reference/arsenal.jpg.
 const CAT_PISTOL := &"pistol"
-const CAT_REVOLVER := &"revolver"
 const CAT_SMG := &"smg"
-const CAT_SHOTGUN := &"shotgun"
 const CAT_RIFLE := &"rifle"
 const CAT_SNIPER := &"sniper"
-const CAT_LMG := &"lmg"
 const CAT_ROCKET := &"rocket_launcher"
+## « Autres » : grenades, mine, C4, drone (emplacement d'équipement, voir `slot`).
+const CAT_GADGET := &"gadget"
+## Anciennes catégories (plus utilisées par le catalogue, gardées pour compatibilité).
+const CAT_REVOLVER := &"revolver"
+const CAT_SHOTGUN := &"shotgun"
+const CAT_LMG := &"lmg"
 const CAT_GRENADE := &"grenade_launcher"
-const CATEGORIES: Array[StringName] = [CAT_PISTOL, CAT_REVOLVER, CAT_SMG, CAT_SHOTGUN, CAT_RIFLE,
-	CAT_SNIPER, CAT_LMG, CAT_ROCKET, CAT_GRENADE]
+const CATEGORIES: Array[StringName] = [CAT_PISTOL, CAT_SMG, CAT_RIFLE, CAT_SNIPER, CAT_ROCKET, CAT_GADGET]
 const CATEGORY_NAMES: Dictionary = {
-	CAT_PISTOL: "Pistolet", CAT_REVOLVER: "Revolver", CAT_SMG: "Mitraillette",
-	CAT_SHOTGUN: "Fusil à pompe", CAT_RIFLE: "Fusil d'assaut", CAT_SNIPER: "Sniper",
-	CAT_LMG: "Mitrailleuse", CAT_ROCKET: "Bazooka", CAT_GRENADE: "Lance-grenades",
+	CAT_PISTOL: "Pistolet", CAT_SMG: "Mitraillette", CAT_RIFLE: "Fusil d'assaut",
+	CAT_SNIPER: "Fusil de sniper", CAT_ROCKET: "Lance-roquettes", CAT_GADGET: "Équipement",
+	CAT_REVOLVER: "Revolver", CAT_SHOTGUN: "Fusil à pompe", CAT_LMG: "Mitrailleuse",
+	CAT_GRENADE: "Lance-grenades",
 }
+## Titres de section (écran d'arsenal), dans l'ordre de CATEGORIES.
+const CATEGORY_TITLES: Dictionary = {
+	CAT_PISTOL: "Pistolets", CAT_SMG: "Mitraillettes", CAT_RIFLE: "Fusils d'assaut",
+	CAT_SNIPER: "Fusils de sniper", CAT_ROCKET: "Lance-roquettes", CAT_GADGET: "Autres",
+}
+
+## Emplacement : arme (3 emplacements) ou équipement (1 emplacement).
+const SLOT_WEAPON := &"weapon"
+const SLOT_GADGET := &"gadget"
+## Types d'équipement (champ `gadget_kind`).
+const GADGET_FRAG := &"frag"
+const GADGET_SMOKE := &"smoke"
+const GADGET_MINE := &"mine"
+const GADGET_C4 := &"c4"
+const GADGET_DRONE := &"drone"
 
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -43,6 +61,23 @@ const CATEGORY_NAMES: Dictionary = {
 ## Catégorie (CAT_*) : pilote le sprite par défaut, les animations et le comportement.
 @export var category: StringName = CAT_PISTOL
 @export_range(0, 4) var rarity: int = Rarity.COMMUN
+
+## SLOT_WEAPON ou SLOT_GADGET.
+@export var slot: StringName = SLOT_WEAPON
+
+@export_group("Équipement")
+## Type d'équipement (GADGET_*) si slot = gadget.
+@export var gadget_kind: StringName = &""
+## Utilisations par raid.
+@export var charges: int = 0
+## Distance de lancer / de pose (px).
+@export var throw_range: float = 0.0
+## Délai avant effet (s) : mèche de grenade, armement de mine.
+@export var fuse_time: float = 0.0
+## Rayon d'effet (fumée, détection de mine, rayon d'action du drone) en px.
+@export var effect_radius: float = 0.0
+## Durée de l'effet (fumée, drone) en s.
+@export var effect_duration: float = 0.0
 
 @export_group("Tir")
 @export var damage: float = 10.0
@@ -119,6 +154,10 @@ func get_category_name() -> String:
 ## Délai entre deux tirs, en secondes.
 func get_fire_interval() -> float:
 	return 1.0 / maxf(fire_rate, 0.01)
+
+
+func is_gadget() -> bool:
+	return slot == SLOT_GADGET
 
 
 func is_explosive() -> bool:

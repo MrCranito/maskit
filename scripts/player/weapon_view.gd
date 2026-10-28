@@ -33,6 +33,8 @@ const DEFAULT_PROFILES: Dictionary = {
 		"zoom_kick": 0.0, "vibrate_px": 2.2, "smoke": 0.0, "shell_delay": 0.0, "sfx": "rifle_shot", "mag_drop": true},
 	&"rocket_launcher": {"rot_deg": 10.0, "recover": 0.45, "body_px": 9.0, "flash": "backblast", "flash_frames": 2,
 		"zoom_kick": 0.04, "vibrate_px": 0.0, "smoke": 1.6, "shell_delay": -1.0, "sfx": "gun_shot_alt", "mag_drop": false},
+	&"gadget": {"rot_deg": 0.0, "recover": 0.2, "body_px": -3.0, "flash": "none", "flash_frames": 1,
+		"zoom_kick": 0.0, "vibrate_px": 0.0, "smoke": 0.0, "shell_delay": -1.0, "sfx": "blade_swing", "mag_drop": false},
 	&"grenade_launcher": {"rot_deg": 14.0, "recover": 0.3, "body_px": 4.0, "flash": "puff", "flash_frames": 2,
 		"zoom_kick": 0.015, "vibrate_px": 0.0, "smoke": 1.0, "shell_delay": -1.0, "sfx": "gun_shot_alt", "mag_drop": false},
 }
@@ -85,7 +87,7 @@ func _ready() -> void:
 ## Profil de ressenti d'une catégorie ([player_fx] cat_<category>, complété par le défaut).
 static func profile_for(category: StringName) -> Dictionary:
 	var base: Dictionary = (DEFAULT_PROFILES.get(category, DEFAULT_PROFILES[&"pistol"]) as Dictionary).duplicate()
-	var cfg: Variant = Balance.get_value("player_fx", "cat_" + String(category), null)
+	var cfg: Variant = Balance.get_value("player_fx", "cat_" + String(category), {})
 	if cfg is Dictionary:
 		base.merge(cfg as Dictionary, true)
 	return base
@@ -269,6 +271,8 @@ func _draw_flash() -> void:
 	var m: Vector2 = muzzle_local
 	var s: float = _flash_scale
 	match _flash_shape:
+		"none":
+			return
 		"cone":
 			c.draw_colored_polygon(PackedVector2Array([m + Vector2(0, -4) * s, m + Vector2(26, -13) * s,
 				m + Vector2(34, 0) * s, m + Vector2(26, 13) * s, m + Vector2(0, 4) * s]), Color(COL_FLASH_OUT, 0.75))

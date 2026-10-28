@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"wpn_smg_mp5"
+display_name = "MP5"
+description = "La mitraillette équilibrée par excellence."
+tint = Color(1, 1, 1, 1)
+rarity = 0
+type = &"weapon"
+stack_max = 1
+value = 70
+weight = 2.2
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0
+weapon_id = &"smg_mp5"

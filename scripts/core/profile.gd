@@ -15,8 +15,11 @@ const SAVE_KEY := "profile"
 
 ## Armes en réserve : [{ "uid": int, "id": String }]
 var weapons: Array[Dictionary] = []
-## Arsenal de départ choisi : uids (références dans `weapons`).
+## Arsenal de départ choisi : uids (références dans `weapons`) : jusqu'à `loadout_slots()`
+## armes (slot weapon) + 1 équipement (slot gadget : grenade, mine, C4, drone).
 var loadout: Array[int] = []
+## Équipement emporté dans le raid en cours (null = aucun), fixé par start_raid().
+var raid_gadget: WeaponData = null
 ## Objets extraits (hors armes) : id → quantité.
 var items: Dictionary = {}
 var gems: int = 0
@@ -91,24 +94,49 @@ static func loadout_slots() -> int:
 	return int(Balance.get_value("arsenal", "loadout_slots", 3))
 
 
-## Fixe l'arsenal de départ (uids inconnus ignorés, tronqué au nombre d'emplacements).
+## Fixe l'arsenal de départ : uids inconnus ignorés, au plus loadout_slots() armes et
+## gadget_slots() équipement (les suivants sont ignorés).
 func set_loadout(uids: Array[int]) -> void:
 	loadout.clear()
+	var nw := 0
+	var ng := 0
 	for u: int in uids:
-		if loadout.size() >= loadout_slots():
-			break
-		if not weapon_id_of(u).is_empty() and not loadout.has(u):
-			loadout.append(u)
+		var w := get_weapon_data(u)
+		if w == null or loadout.has(u):
+			continue
+		if w.is_gadget():
+			if ng >= gadget_slots():
+				continue
+			ng += 1
+		else:
+			if nw >= loadout_slots():
+				continue
+			nw += 1
+		loadout.append(u)
 	save()
 
 
+static func gadget_slots() -> int:
+	return int(Balance.get_value("arsenal", "gadget_slots", 1))
+
+
+## Armes (hors équipement) de l'arsenal de départ, dans l'ordre.
 func get_loadout_weapons() -> Array[WeaponData]:
 	var out: Array[WeaponData] = []
 	for u: int in loadout:
 		var w := get_weapon_data(u)
-		if w != null:
+		if w != null and not w.is_gadget():
 			out.append(w)
 	return out
+
+
+## Équipement de l'arsenal de départ (null si aucun).
+func get_loadout_gadget() -> WeaponData:
+	for u: int in loadout:
+		var w := get_weapon_data(u)
+		if w != null and w.is_gadget():
+			return w
+	return null
 
 
 func can_start_raid() -> bool:
@@ -117,8 +145,11 @@ func can_start_raid() -> bool:
 
 ## Offre un pistolet de départ si la réserve ne contient aucune arme. Renvoie true si offert.
 func ensure_starter() -> bool:
-	if not weapons.is_empty() or raid_in_progress:
+	if raid_in_progress:
 		return false
+	for e: Dictionary in get_stash_weapons():
+		if not (e["data"] as WeaponData).is_gadget():
+			return false
 	var uid := add_weapon(WeaponCatalog.STARTER_ID)
 	if uid > 0 and loadout.is_empty():
 		loadout.append(uid)
@@ -130,16 +161,21 @@ func ensure_starter() -> bool:
 ## Lance le raid : retire l'arsenal de départ de la réserve et le renvoie (ordre des emplacements).
 ## Arsenal vide → l'arme la mieux classée de la réserve est prise d'office.
 func start_raid() -> Array[WeaponData]:
-	if loadout.is_empty():
-		var stash := get_stash_weapons()
-		if not stash.is_empty():
-			loadout.append(int(stash[0]["uid"]))
+	if get_loadout_weapons().is_empty():
+		for e: Dictionary in get_stash_weapons():
+			if not (e["data"] as WeaponData).is_gadget():
+				loadout.append(int(e["uid"]))
+				break
 	var out: Array[WeaponData] = []
+	raid_gadget = null
 	raid_weapon_ids.clear()
 	for u: int in loadout.duplicate():
 		var w := get_weapon_data(u)
 		if w != null:
-			out.append(w)
+			if w.is_gadget():
+				raid_gadget = w
+			else:
+				out.append(w)
 			raid_weapon_ids.append(w.id)
 		remove_weapon(u)
 	loadout.clear()

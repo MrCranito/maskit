@@ -11,9 +11,22 @@ const PATTERNS := {
 }
 
 
+## Forçage (tests) : -1 = balance.cfg, 0 = désactivé, 1 = activé.
+static var enabled_override: int = -1
+
+
+## Skins d'armes activés ? (balance.cfg [shop] weapon_skins_enabled ; désactivés pour l'instant :
+## « on ajoutera les skins d'armes plus tard »).
+static func is_enabled() -> bool:
+	if enabled_override >= 0:
+		return enabled_override == 1
+	return bool(Balance.get_value("shop", "weapon_skins_enabled", false))
+
+
 ## Applique `skin` à `item`. skin null = apparence d'origine (matériau retiré).
+## Skins d'armes désactivés : ne fait rien.
 static func apply(item: CanvasItem, skin: SkinData) -> void:
-	if item == null:
+	if item == null or not is_enabled():
 		return
 	if skin == null or skin.kind != SkinData.KIND_WEAPON:
 		item.material = null

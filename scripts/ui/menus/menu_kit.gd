@@ -339,12 +339,24 @@ const GOOD := Color(0.45, 0.9, 0.5)
 const BAD := Color(1.0, 0.45, 0.4)
 
 
+## Raretés affichées (planches de référence) : Commun gris, Rare bleu, Épique violet,
+## Légendaire or. « Peu commun » (index 1) n'est plus affiché : il apparaît comme Rare.
+const RARITY_UI_COLORS: Array[Color] = [
+	Color(0.56, 0.59, 0.64),  # Commun
+	Color(0.2, 0.5, 0.96),    # (Peu commun → Rare)
+	Color(0.2, 0.5, 0.96),    # Rare
+	Color(0.6, 0.27, 0.96),   # Épique
+	Color(0.96, 0.72, 0.18),  # Légendaire (or)
+]
+const RARITY_UI_NAMES: Array[String] = ["Commun", "Rare", "Rare", "Épique", "Légendaire"]
+
+
 static func rarity_color(r: int) -> Color:
-	return WeaponData.RARITY_COLORS[clampi(r, 0, WeaponData.RARITY_COLORS.size() - 1)]
+	return RARITY_UI_COLORS[clampi(r, 0, RARITY_UI_COLORS.size() - 1)]
 
 
 static func rarity_name(r: int) -> String:
-	return WeaponData.RARITY_NAMES[clampi(r, 0, WeaponData.RARITY_NAMES.size() - 1)]
+	return RARITY_UI_NAMES[clampi(r, 0, RARITY_UI_NAMES.size() - 1)]
 
 
 ## Cadre de rareté : fond bleu nuit teinté, bordure à la couleur de rareté,
@@ -438,3 +450,52 @@ static func tighten(b: Button, h_margin: int = 14) -> void:
 			d.content_margin_left = h_margin
 			d.content_margin_right = h_margin
 			b.add_theme_stylebox_override(st, d)
+
+
+## Bandeau de rareté (bas des cartes d'arme et de skin) : fond à la couleur de rareté,
+## nom centré. `round_bottom` : arrondi bas (bandeau collé au bas d'une carte arrondie).
+static func rarity_band(r: int, font_size: int = 15, height: float = 28.0, round_bottom: int = 0) -> PanelContainer:
+	var c: Color = rarity_color(r)
+	var p := PanelContainer.new()
+	p.name = "RarityBand"
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.custom_minimum_size = Vector2(0, height)
+	var s := StyleBoxFlat.new()
+	s.bg_color = c.darkened(0.12) if r < 4 else c.darkened(0.05)
+	s.corner_radius_bottom_left = round_bottom
+	s.corner_radius_bottom_right = round_bottom
+	s.border_color = c.lightened(0.3)
+	s.border_width_top = 1
+	s.anti_aliasing = true
+	p.add_theme_stylebox_override("panel", s)
+	var l := label(rarity_name(r), font_size, TEXT if r != 4 else Color(0.16, 0.1, 0.02), nunito(900))
+	l.name = "Text"
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	p.add_child(l)
+	return p
+
+
+## Fond de carte façon planche : bleu nuit avec un halo radial à la couleur de rareté
+## (plus fort pour Épique et Légendaire).
+static func rarity_backdrop(r: int) -> TextureRect:
+	var c: Color = rarity_color(r)
+	var strength: float = [0.28, 0.42, 0.42, 0.55, 0.6][clampi(r, 0, 4)]
+	var g := Gradient.new()
+	g.set_color(0, Color(c, strength))
+	g.add_point(0.55, Color(c.darkened(0.5), strength * 0.45))
+	g.set_color(g.get_point_count() - 1, Color(0, 0, 0, 0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.42)
+	gt.fill_to = Vector2(1.15, 1.1)
+	gt.width = 64
+	gt.height = 64
+	var t := TextureRect.new()
+	t.texture = gt
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_SCALE
+	t.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t

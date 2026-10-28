@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"sniper_ax50"
+display_name = "AX-50"
+description = "Calibre .50 à verrou : coupe la meute en deux."
+family = "firearm"
+category = &"sniper"
+rarity = 2
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 125.0
+fire_rate = 0.7
+projectile_speed = 1900.0
+range = 1100.0
+projectile_lifetime = 0.579
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 0.0
+pierce = 2
+projectile_color = Color(0.7, 0.95, 1.0, 1)
+projectile_style = &"tracer"
+affixes = Array[StringName]([])
+magazine_size = 5
+reload_time = 2.8
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 14.0
+shake_px = 6.0
+move_speed_mult = 0.92
+muzzle_flash_scale = 1.5
+eject_shells = true
+sprite_id = &"sniper_ax50"
+value = 520

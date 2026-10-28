@@ -8,7 +8,10 @@ Produit, à partir des tableaux ci-dessous :
 
 Les valeurs d'équilibrage vivent dans les .tres générés (pas dans le code du jeu).
 Relancer après modification :  python3 tools/gen_weapons.py
-Le pistolet de départ (starter_pistol.tres) n'est jamais réécrit.
+Catalogue = la planche docs/reference/arsenal.jpg (18 armes + 5 équipements). Le script
+remplace tout : les .tres d'armes absents du tableau et leurs objets wpn_* sont supprimés.
+Le pistolet de départ (pistol_p9) n'a pas d'objet wpn_ (LootDB.weapon_item le crée au besoin).
+Javelin : guidage = affixe « homing » (champ `affixes`, interprété par le projectile/joueur).
 """
 from __future__ import annotations
 
@@ -21,116 +24,105 @@ WEAPON_DIR = os.path.join(ROOT, "data", "weapons")
 ITEM_DIR = os.path.join(ROOT, "data", "items")
 TABLE_DIR = os.path.join(ROOT, "data", "loot_tables")
 
-# sprite_id autorisés (liste FIGÉE du contrat, docs/CONVENTIONS.md).
-SPRITE_IDS = {
-    "starter_pistol", "pistol", "pistol_heavy", "revolver", "revolver_gold", "smg", "smg_compact",
-    "shotgun", "shotgun_double", "rifle", "rifle_tactical", "sniper", "sniper_heavy", "lmg",
-    "rocket_launcher", "grenade_launcher",
+# --- Catalogue = EXACTEMENT la planche docs/reference/arsenal.jpg (contrat « Refonte n°2 »).
+# sprite_id = id. Stats explicites par arme (pas de multiplicateur caché) : la rareté apporte un
+# gain net au sein d'une catégorie (DPS, chargeur, rechargement, précision).
+# Champs omis = valeurs par défaut de CATEGORY_DEFAULTS.
+CATEGORY_DEFAULTS = {
+    "pistol": dict(projectile_speed=950, range=560, inaccuracy_deg=2.0, automatic=False, recoil_px=4,
+                   shake_px=1.6, muzzle_flash_scale=0.8, projectile_style="bullet", color=(1.0, 0.82, 0.4), weight=1.0),
+    "smg": dict(projectile_speed=900, range=480, inaccuracy_deg=6.0, automatic=True, recoil_px=3, shake_px=1.2,
+                muzzle_flash_scale=0.7, projectile_style="bullet", color=(1.0, 0.86, 0.5), weight=2.2),
+    "rifle": dict(projectile_speed=1150, range=680, inaccuracy_deg=3.0, automatic=True, recoil_px=4.5, shake_px=1.8,
+                  muzzle_flash_scale=1.0, projectile_style="bullet", color=(1.0, 0.84, 0.45), weight=3.4),
+    "sniper": dict(projectile_speed=1900, range=1100, inaccuracy_deg=0.0, pierce=1, automatic=False, recoil_px=12,
+                   shake_px=5.0, muzzle_flash_scale=1.5, move_speed_mult=0.92, projectile_style="tracer",
+                   color=(0.7, 0.95, 1.0), weight=4.5),
+    "rocket_launcher": dict(projectile_speed=520, range=820, inaccuracy_deg=0.5, automatic=False, recoil_px=14,
+                            shake_px=9.0, muzzle_flash_scale=1.8, move_speed_mult=0.85, eject_shells=False,
+                            projectile_style="rocket", color=(1.0, 0.55, 0.2), weight=6.0),
+    "gadget": dict(projectile_speed=520, range=420, inaccuracy_deg=0.0, automatic=False, recoil_px=0, shake_px=0,
+                   muzzle_flash_scale=0.0, eject_shells=False, projectile_style="grenade", color=(0.6, 1.0, 0.4),
+                   weight=0.6, magazine_size=1, reload_time=0.0, fire_rate=1.0, damage=0.0),
 }
 
-# --- Gain par rareté (0 Commun … 4 Légendaire) : net mais pas absurde ----------------
-DAMAGE_MULT = [1.00, 1.14, 1.30, 1.48, 1.70]
-EXPLOSION_MULT = [1.00, 1.12, 1.26, 1.42, 1.62]
-FIRE_RATE_MULT = [1.00, 1.04, 1.08, 1.12, 1.16]
-MAG_MULT = [1.00, 1.10, 1.20, 1.30, 1.45]
-RELOAD_MULT = [1.00, 0.95, 0.90, 0.85, 0.80]
-INACCURACY_MULT = [1.00, 0.90, 0.80, 0.70, 0.60]
-RANGE_MULT = [1.00, 1.03, 1.06, 1.09, 1.12]
-VALUE_MULT = [1.0, 2.2, 5.0, 11.0, 24.0]
-
-# --- Base de chaque catégorie (arme Commune) ------------------------------------------
-# color : couleur du projectile ; weight : encombrement (kg) de l'objet dans le sac.
-CATEGORY_BASE = {
-    "pistol": dict(damage=13, fire_rate=3.4, projectile_speed=950, range=560, magazine_size=12, reload_time=1.0,
-                   inaccuracy_deg=2.0, automatic=False, recoil_px=4, shake_px=1.6, muzzle_flash_scale=0.8,
-                   projectile_style="bullet", color=(1.0, 0.82, 0.4), value=40, weight=1.0),
-    "revolver": dict(damage=22, fire_rate=2.0, projectile_speed=1050, range=620, magazine_size=6, reload_time=1.5,
-                     inaccuracy_deg=1.2, automatic=False, recoil_px=7, shake_px=3.0, muzzle_flash_scale=1.1,
-                     projectile_style="bullet", color=(1.0, 0.78, 0.35), value=55, weight=1.2),
-    "smg": dict(damage=8, fire_rate=10.0, projectile_speed=900, range=480, magazine_size=30, reload_time=1.6,
-                inaccuracy_deg=7.0, automatic=True, recoil_px=3, shake_px=1.2, muzzle_flash_scale=0.7,
-                projectile_style="bullet", color=(1.0, 0.86, 0.5), value=70, weight=2.2),
-    "shotgun": dict(damage=9, fire_rate=1.1, projectile_speed=820, range=340, magazine_size=6, reload_time=2.2,
-                    inaccuracy_deg=3.0, projectile_count=7, spread_degrees=26.0, automatic=False, recoil_px=10,
-                    shake_px=5.0, muzzle_flash_scale=1.4, projectile_style="pellet", color=(1.0, 0.7, 0.3),
-                    value=75, weight=3.2),
-    "rifle": dict(damage=14, fire_rate=6.5, projectile_speed=1150, range=680, magazine_size=30, reload_time=1.8,
-                  inaccuracy_deg=3.0, automatic=True, recoil_px=4.5, shake_px=1.8, muzzle_flash_scale=1.0,
-                  projectile_style="bullet", color=(1.0, 0.84, 0.45), value=90, weight=3.4),
-    "sniper": dict(damage=70, fire_rate=0.8, projectile_speed=1900, range=1100, magazine_size=5, reload_time=2.4,
-                   inaccuracy_deg=0.0, pierce=2, automatic=False, recoil_px=12, shake_px=5.0, muzzle_flash_scale=1.5,
-                   move_speed_mult=0.92, projectile_style="tracer", color=(0.7, 0.95, 1.0), value=110, weight=4.5),
-    "lmg": dict(damage=12, fire_rate=9.0, projectile_speed=1050, range=640, magazine_size=100, reload_time=3.6,
-                inaccuracy_deg=5.0, automatic=True, recoil_px=4, shake_px=2.2, muzzle_flash_scale=1.1,
-                move_speed_mult=0.85, projectile_style="bullet", color=(1.0, 0.75, 0.35), value=120, weight=7.0),
-    "rocket_launcher": dict(damage=30, fire_rate=0.55, projectile_speed=520, range=820, magazine_size=1,
-                            reload_time=2.6, inaccuracy_deg=0.5, automatic=False, recoil_px=14, shake_px=9.0,
-                            muzzle_flash_scale=1.8, move_speed_mult=0.85, eject_shells=False,
-                            explosion_radius=110, explosion_damage=90, projectile_style="rocket",
-                            color=(1.0, 0.55, 0.2), value=140, weight=6.0),
-    "grenade_launcher": dict(damage=10, fire_rate=1.0, projectile_speed=560, range=560, magazine_size=4,
-                             reload_time=2.6, inaccuracy_deg=1.5, automatic=False, recoil_px=9, shake_px=5.0,
-                             muzzle_flash_scale=1.3, move_speed_mult=0.92, eject_shells=False,
-                             explosion_radius=90, explosion_damage=55, projectile_style="grenade",
-                             color=(0.6, 1.0, 0.4), value=120, weight=4.5),
-}
-
-# --- Catalogue : (id, catégorie, rareté, nom, sprite_id, description, ajustements) ------
+# (id, catégorie, rareté, nom, description, stats)
 WEAPONS = [
     # Pistolets
-    ("pistol_9mm", "pistol", 0, "Pistolet 9 mm", "pistol", "Fiable, léger, sans surprise. Le compagnon de tous les débuts.", {}),
-    ("pistol_ranger", "pistol", 1, "Ranger compact", "pistol", "Détente sèche et chargeur allongé.", {}),
-    ("pistol_hammer", "pistol", 2, "Calibre .45 « Marteau »", "pistol_heavy", "Chaque balle pèse son poids. Recul franc.", {"damage": 1.25, "fire_rate": 0.8, "recoil_px": 1.5}),
-    ("pistol_viper", "pistol", 3, "Vipère", "pistol", "Tir en rafale rapide : on presse, elle crache.", {"automatic": True, "fire_rate": 1.6, "damage": 0.85}),
-    ("pistol_golden_eagle", "pistol", 4, "Aigle d'or", "pistol_heavy", "Pistolet lourd plaqué or. Perce une première cible.", {"damage": 1.35, "fire_rate": 0.92, "pierce": 1, "recoil_px": 1.6}),
-    # Revolvers
-    ("revolver_frontier", "revolver", 0, "Revolver de la frontière", "revolver", "Six coups, crosse usée. L'Ouest en a vu des milliers.", {}),
-    ("revolver_peacemaker", "revolver", 1, "Peacemaker", "revolver", "Le revolver qui a « pacifié » la frontière.", {}),
-    ("revolver_navy", "revolver", 2, "Colt Navy", "revolver", "Canon long, tir précis à bonne distance.", {"range": 1.15, "inaccuracy_deg": 0.5}),
-    ("revolver_judge", "revolver", 3, "Le Juge doré", "revolver_gold", "Revolver plaqué or. Chaque balle rend un verdict.", {"pierce": 1}),
-    ("revolver_sixth_sense", "revolver", 4, "Sixième Sens", "revolver_gold", "On dit qu'il vise tout seul. Balles perforantes.", {"pierce": 2, "fire_rate": 1.15}),
+    ("pistol_p9", "pistol", 0, "P9", "Petit pistolet de départ : léger, fiable, sans surprise.",
+     dict(damage=12, fire_rate=3.2, magazine_size=10, reload_time=1.0, value=20)),
+    ("pistol_glock18", "pistol", 2, "Glock 18", "Sélecteur en rafale : une pluie de 9 mm en automatique.",
+     dict(damage=11, fire_rate=9.0, magazine_size=19, reload_time=1.2, automatic=True, inaccuracy_deg=5.0, recoil_px=3, value=260)),
+    ("pistol_deagle", "pistol", 3, "Desert Eagle", "Gros calibre .50 : chaque balle compte, le recul aussi.",
+     dict(damage=46, fire_rate=2.0, magazine_size=7, reload_time=1.4, inaccuracy_deg=1.5, pierce=1, recoil_px=9,
+          shake_px=3.5, muzzle_flash_scale=1.3, projectile_speed=1100, value=620)),
+    ("pistol_p320", "pistol", 4, "P320", "Le pistolet des pros : précis, rapide, chargeur généreux.",
+     dict(damage=30, fire_rate=4.6, magazine_size=17, reload_time=0.9, inaccuracy_deg=0.8, pierce=1, range=620, value=1300)),
     # Mitraillettes
-    ("smg_pocket", "smg", 0, "Mitraillette de poche", "smg_compact", "Petite, bruyante, imprécise. Mais quel débit !", {}),
-    ("smg_wasp", "smg", 1, "Guêpe", "smg_compact", "Cadence folle, piqûres légères.", {"fire_rate": 1.15, "damage": 0.9}),
-    ("smg_tactical", "smg", 2, "Mitraillette tactique", "smg", "Crosse pliante et viseur reflex : plus stable.", {"inaccuracy_deg": 0.75}),
-    ("smg_hornet", "smg", 3, "Frelon", "smg", "Chargeur double et balles chemisées.", {"magazine_size": 1.4}),
-    # Fusils à pompe
-    ("shotgun_pump", "shotgun", 0, "Fusil à pompe", "shotgun", "Un coup, une porte qui saute. À bout portant.", {}),
-    ("shotgun_double", "shotgun", 1, "Double canon", "shotgun_double", "Deux cartouches, puis on recharge. Gros impact.", {"magazine_size_abs": 2, "fire_rate": 1.3, "projectile_count_abs": 8, "reload_time": 0.7}),
-    ("shotgun_riot", "shotgun", 2, "Anti-émeute", "shotgun", "Semi-automatique, chargeur tambour.", {"fire_rate": 1.3, "magazine_size": 1.35}),
-    ("shotgun_dragon", "shotgun", 3, "Souffle du dragon", "shotgun_double", "Cartouches incendiaires : un cône de braise.", {"projectile_count_abs": 9, "spread_degrees": 1.15, "color": (1.0, 0.45, 0.15), "affixes": ["burn"]}),
-    ("shotgun_reaper", "shotgun", 4, "Faucheuse", "shotgun", "Automatique. Ne laisse rien debout dans la pièce.", {"automatic": True, "fire_rate": 1.5, "magazine_size": 1.3}),
+    ("smg_mp5", "smg", 0, "MP5", "La mitraillette équilibrée par excellence.",
+     dict(damage=8, fire_rate=10.0, magazine_size=30, reload_time=1.6, value=70)),
+    ("smg_vector", "smg", 2, "Vector", "Cadence énorme : vide son chargeur en un clin d'œil.",
+     dict(damage=8, fire_rate=18.0, magazine_size=25, reload_time=1.4, inaccuracy_deg=6.5, recoil_px=2.5, value=300)),
+    ("smg_p90", "smg", 3, "P90", "Chargeur de 50 coups sur le dessus : on arrose longtemps.",
+     dict(damage=10.5, fire_rate=14.0, magazine_size=50, reload_time=1.9, inaccuracy_deg=4.5, value=650)),
+    ("smg_uzi", "smg", 4, "Uzi", "Légende compacte : cadence folle, balles perforantes.",
+     dict(damage=12.5, fire_rate=16.0, magazine_size=40, reload_time=1.2, inaccuracy_deg=4.0, pierce=1, value=1400)),
     # Fusils d'assaut
-    ("rifle_carbine", "rifle", 0, "Carabine", "rifle", "Fusil semi-automatique robuste et polyvalent.", {"automatic": False, "fire_rate": 0.6, "damage": 1.4}),
-    ("rifle_assault", "rifle", 1, "Fusil d'assaut", "rifle", "Le standard : rafales maîtrisées, bonne portée.", {}),
-    ("rifle_tactical", "rifle", 2, "Fusil tactique", "rifle_tactical", "Lunette holographique et rail : précis en rafale.", {"inaccuracy_deg": 0.7}),
-    ("rifle_vanguard", "rifle", 3, "Avant-garde", "rifle_tactical", "Munitions perforantes : traverse une cible.", {"pierce": 1}),
-    ("rifle_steel_storm", "rifle", 4, "Tempête d'acier", "rifle_tactical", "Cadence élevée, chargeur étendu, perforation.", {"pierce": 1, "fire_rate": 1.12, "magazine_size": 1.15}),
-    # Snipers
-    ("sniper_hunter", "sniper", 1, "Fusil de chasse à lunette", "sniper", "Verrou manuel, lunette x4. Un tir, un trophée.", {}),
-    ("sniper_marksman", "sniper", 2, "Tireur d'élite", "sniper", "Semi-automatique : enchaîne les tirs précis.", {"fire_rate": 1.4, "damage": 0.85, "magazine_size_abs": 8}),
-    ("sniper_golem_breaker", "sniper", 3, "Briseur de golems", "sniper_heavy", "Calibre .50. Traverse la pierre, et ce qu'il y a derrière.", {"damage": 1.3, "pierce": 1, "fire_rate": 0.8, "move_speed_mult": 0.9}),
-    ("sniper_falcon_eye", "sniper", 4, "Œil du faucon", "sniper_heavy", "Le dernier tir que l'on n'entend jamais.", {"damage": 1.25, "pierce": 2}),
-    # Mitrailleuses
-    ("lmg_saw", "lmg", 2, "Mitrailleuse légère", "lmg", "Bande de 100 coups. On s'installe et on arrose.", {}),
-    ("lmg_hacksaw", "lmg", 3, "Scie à métaux", "lmg", "Cadence infernale, le canon rougit.", {"fire_rate": 1.2}),
-    ("lmg_deluge", "lmg", 4, "Le Déluge", "lmg", "150 coups perforants. Il pleut du plomb.", {"magazine_size_abs": 150, "pierce": 1, "fire_rate": 1.08}),
-    # Bazookas
-    ("rocket_bazooka", "rocket_launcher", 2, "Bazooka", "rocket_launcher", "Une roquette, un trou dans le mur… et dans la meute.", {}),
-    ("rocket_infernal", "rocket_launcher", 3, "Tube infernal", "rocket_launcher", "Charge thermobarique : souffle plus large.", {"explosion_radius": 1.15, "affixes": ["burn"]}),
-    ("rocket_apocalypse", "rocket_launcher", 4, "Apocalypse", "rocket_launcher", "Barillet de deux roquettes. Fin de la discussion.", {"magazine_size_abs": 2, "explosion_radius": 1.1}),
-    # Lance-grenades
-    ("grenade_thumper", "grenade_launcher", 1, "Lance-grenades", "grenade_launcher", "Grenades à rebond qui explosent en fin de course.", {}),
-    ("grenade_mortar", "grenade_launcher", 2, "Mortier de poing", "grenade_launcher", "Six grenades à barillet.", {"magazine_size_abs": 6}),
-    ("grenade_fireworks", "grenade_launcher", 3, "Bouquet final", "grenade_launcher", "Tir rapide et explosions en gerbe colorée.", {"fire_rate": 1.35, "color": (1.0, 0.4, 0.85)}),
+    ("rifle_ak47", "rifle", 0, "AK-47", "Gros dégâts, gros recul : il faut le tenir.",
+     dict(damage=17, fire_rate=6.0, magazine_size=30, reload_time=2.0, inaccuracy_deg=4.5, recoil_px=6, shake_px=2.4, value=90)),
+    ("rifle_m4a1", "rifle", 2, "M4A1", "Précis et maniable : la rafale reste groupée.",
+     dict(damage=16, fire_rate=8.0, magazine_size=30, reload_time=1.6, inaccuracy_deg=1.5, recoil_px=3.5, range=720, value=420)),
+    ("rifle_scarh", "rifle", 3, "SCAR-H", "Calibre lourd 7,62 : traverse une première cible.",
+     dict(damage=26, fire_rate=6.0, magazine_size=20, reload_time=1.9, inaccuracy_deg=2.5, pierce=1, recoil_px=6.5,
+          shake_px=2.8, move_speed_mult=0.95, range=760, value=880)),
+    ("rifle_aug", "rifle", 4, "AUG", "Bullpup légendaire : cadence, précision et perforation.",
+     dict(damage=24, fire_rate=9.0, magazine_size=42, reload_time=1.5, inaccuracy_deg=1.2, pierce=1, range=780, value=1900)),
+    # Fusils de sniper
+    ("sniper_m24", "sniper", 0, "M24", "Fusil à verrou : un tir, un rechargement de culasse.",
+     dict(damage=75, fire_rate=0.75, magazine_size=5, reload_time=2.6, value=110)),
+    ("sniper_ax50", "sniper", 2, "AX-50", "Calibre .50 à verrou : coupe la meute en deux.",
+     dict(damage=125, fire_rate=0.7, magazine_size=5, reload_time=2.8, pierce=2, recoil_px=14, shake_px=6, value=520)),
+    ("sniper_m82", "sniper", 3, "Barrett M82", "Semi-automatique .50 : perforation massive, cadence soutenue.",
+     dict(damage=120, fire_rate=1.3, magazine_size=10, reload_time=2.6, pierce=3, recoil_px=13, shake_px=6.5,
+          move_speed_mult=0.88, value=1150)),
+    # Lance-roquettes
+    ("rocket_rpg7", "rocket_launcher", 2, "RPG-7", "Une roquette, une explosion. Rechargement après chaque tir.",
+     dict(damage=35, fire_rate=0.6, magazine_size=1, reload_time=2.4, explosion_radius=120, explosion_damage=110, value=600)),
+    ("rocket_m202", "rocket_launcher", 3, "M202", "Quatre tubes : quatre roquettes tirées coup sur coup.",
+     dict(damage=30, fire_rate=2.4, magazine_size=4, reload_time=3.4, explosion_radius=100, explosion_damage=80,
+          inaccuracy_deg=2.5, value=1300)),
+    ("rocket_javelin", "rocket_launcher", 4, "Javelin", "Missile guidé léger : file vers l'ennemi le plus proche du viseur.",
+     dict(damage=45, fire_rate=0.9, magazine_size=1, reload_time=2.0, explosion_radius=110, explosion_damage=150,
+          projectile_speed=600, range=1000, move_speed_mult=0.9, affixes=["homing"], value=2600)),
+    # Autres (équipement : emplacement gadget)
+    ("gadget_frag", "gadget", 0, "Grenade frag", "Lancée en cloche, explose après une courte mèche.",
+     dict(gadget_kind="frag", charges=3, throw_range=420, fuse_time=1.6, explosion_radius=120, explosion_damage=95,
+          effect_radius=120, projectile_style="grenade", value=60)),
+    ("gadget_smoke", "gadget", 2, "Grenade fumigène", "Un nuage épais qui aveugle ennemis et tourelles.",
+     dict(gadget_kind="smoke", charges=2, throw_range=440, fuse_time=0.8, effect_radius=170, effect_duration=8.0,
+          projectile_style="grenade", color=(0.85, 0.88, 0.95), value=280)),
+    ("gadget_mine", "gadget", 3, "Mine", "Posée au sol, s'arme puis explose au passage d'un ennemi.",
+     dict(gadget_kind="mine", charges=2, throw_range=60, fuse_time=1.2, effect_radius=70, explosion_radius=140,
+          explosion_damage=160, effect_duration=120.0, projectile_style="grenade", color=(1.0, 0.35, 0.25), value=640)),
+    ("gadget_c4", "gadget", 4, "C4", "Posé où tu veux, déclenché à distance : la pièce entière saute.",
+     dict(gadget_kind="c4", charges=1, throw_range=80, fuse_time=0.0, explosion_radius=210, explosion_damage=320,
+          effect_radius=210, projectile_style="grenade", color=(1.0, 0.25, 0.2), value=1500)),
+    ("gadget_drone", "gadget", 4, "Drone", "Allié volant qui te suit et mitraille l'ennemi le plus proche.",
+     dict(gadget_kind="drone", charges=1, throw_range=0, fuse_time=0.0, effect_radius=420, effect_duration=25.0,
+          damage=9, fire_rate=5.0, projectile_speed=900, projectile_style="bullet", color=(0.5, 0.9, 1.0),
+          weight=1.5, value=1600)),
 ]
+STARTER_ID = "pistol_p9"
 
 # --- Tables de butin : poids d'une arme selon sa rareté et le palier de la table -------
 TIER_WEIGHTS = {
-    "rich": [1.0, 0.7, 0.4, 0.15, 0.04],       # coffres, coffres-forts, armureries
+    "rich": [1.0, 0.7, 0.4, 0.15, 0.04],         # coffres, coffres-forts, armureries
     "medium": [0.25, 0.15, 0.08, 0.025, 0.006],  # caisses, chariots, cadavres, casiers
-    "enemy": [0.12, 0.06, 0.025, 0.006, 0.0012],  # sacoches d'ennemis (rare)
+    "enemy": [0.12, 0.06, 0.025, 0.006, 0.0012], # sacoches d'ennemis (rare)
 }
+# Équipement : plutôt caisses militaires / coffres (multiplicateur appliqué aux gadgets).
+GADGET_MULT = {"rich": 1.6, "medium": 0.5, "enemy": 0.6}
+MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "uw_locker", "uw_crate", "safe", "chest"}
 TABLE_TIERS = {
     # Far West
     "chest": ("rich", 1.0), "safe": ("rich", 1.2), "stagecoach": ("medium", 1.5),
@@ -160,54 +152,14 @@ def fmt_float(v: float) -> str:
 
 
 def build_stats(cat: str, rarity: int, adj: dict) -> dict:
-    b = dict(CATEGORY_BASE[cat])
-    st = {
-        "damage": b["damage"] * DAMAGE_MULT[rarity],
-        "fire_rate": b["fire_rate"] * FIRE_RATE_MULT[rarity],
-        "projectile_speed": b["projectile_speed"],
-        "range": b["range"] * RANGE_MULT[rarity],
-        "projectile_count": b.get("projectile_count", 1),
-        "spread_degrees": b.get("spread_degrees", 0.0),
-        "inaccuracy_deg": b["inaccuracy_deg"] * INACCURACY_MULT[rarity],
-        "pierce": b.get("pierce", 0),
-        "magazine_size": b["magazine_size"] * MAG_MULT[rarity],
-        "reload_time": b["reload_time"] * RELOAD_MULT[rarity],
-        "automatic": b["automatic"],
-        "explosion_radius": b.get("explosion_radius", 0.0) * (1.0 + 0.06 * rarity),
-        "explosion_damage": b.get("explosion_damage", 0.0) * EXPLOSION_MULT[rarity],
-        "recoil_px": b["recoil_px"],
-        "shake_px": b["shake_px"],
-        "move_speed_mult": b.get("move_speed_mult", 1.0),
-        "muzzle_flash_scale": b["muzzle_flash_scale"],
-        "eject_shells": b.get("eject_shells", True),
-        "projectile_style": b["projectile_style"],
-        "color": b["color"],
-        "affixes": [],
-    }
-    for k, v in adj.items():
-        if k.endswith("_abs"):
-            st[k[:-4]] = v
-        elif isinstance(v, bool) or isinstance(v, (tuple, list)) or k in ("color", "affixes"):
-            st[k] = v
-        elif k in ("pierce",):
-            st[k] = st[k] + v
-        elif k == "move_speed_mult":
-            st[k] = v
-        else:
-            st[k] = st[k] * v
-    # Le chargeur d'un fusil à pompe double canon ne grossit pas avec la rareté (fixé par _abs).
-    st["magazine_size"] = max(1, int(round(st["magazine_size"])))
-    st["projectile_count"] = max(1, int(round(st["projectile_count"])))
-    st["pierce"] = int(st["pierce"])
-    st["damage"] = round(st["damage"], 1)
-    st["explosion_damage"] = round(st["explosion_damage"], 1)
-    st["explosion_radius"] = round(st["explosion_radius"], 1)
-    st["fire_rate"] = round(st["fire_rate"], 2)
-    st["reload_time"] = round(st["reload_time"], 2)
-    st["range"] = round(st["range"])
-    st["projectile_lifetime"] = round(st["range"] / st["projectile_speed"], 3)
-    st["value"] = int(round(b["value"] * VALUE_MULT[rarity] / 5.0) * 5)
-    st["weight"] = b["weight"]
+    st = {"projectile_count": 1, "spread_degrees": 0.0, "pierce": 0, "explosion_radius": 0.0,
+          "explosion_damage": 0.0, "move_speed_mult": 1.0, "eject_shells": True, "affixes": [],
+          "gadget_kind": "", "charges": 0, "throw_range": 0.0, "fuse_time": 0.0, "effect_radius": 0.0,
+          "effect_duration": 0.0}
+    st.update(CATEGORY_DEFAULTS[cat])
+    st.update(adj)
+    st["slot"] = "gadget" if cat == "gadget" else "weapon"
+    st["projectile_lifetime"] = round(float(st["range"]) / max(float(st["projectile_speed"]), 1.0), 3)
     return st
 
 
@@ -216,7 +168,7 @@ def color_str(c) -> str:
     return "Color(%s, %s, %s, 1)" % (fmt_float(r), fmt_float(g), fmt_float(b))
 
 
-def weapon_tres(wid, cat, rarity, name, sprite, desc, st) -> str:
+def weapon_tres(wid, cat, rarity, name, desc, st) -> str:
     aff = ", ".join('&"%s"' % a for a in st["affixes"])
     lines = [
         '[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]',
@@ -228,9 +180,16 @@ def weapon_tres(wid, cat, rarity, name, sprite, desc, st) -> str:
         'id = &"%s"' % wid,
         'display_name = "%s"' % name.replace('"', '\\"'),
         'description = "%s"' % desc.replace('"', '\\"'),
-        'family = "firearm"',
+        'family = "%s"' % ("gadget" if st["slot"] == "gadget" else "firearm"),
         'category = &"%s"' % cat,
         "rarity = %d" % rarity,
+        'slot = &"%s"' % st["slot"],
+        'gadget_kind = &"%s"' % st["gadget_kind"],
+        "charges = %d" % st["charges"],
+        "throw_range = %s" % fmt_float(st["throw_range"]),
+        "fuse_time = %s" % fmt_float(st["fuse_time"]),
+        "effect_radius = %s" % fmt_float(st["effect_radius"]),
+        "effect_duration = %s" % fmt_float(st["effect_duration"]),
         "damage = %s" % fmt_float(st["damage"]),
         "fire_rate = %s" % fmt_float(st["fire_rate"]),
         "projectile_speed = %s" % fmt_float(st["projectile_speed"]),
@@ -253,7 +212,7 @@ def weapon_tres(wid, cat, rarity, name, sprite, desc, st) -> str:
         "move_speed_mult = %s" % fmt_float(st["move_speed_mult"]),
         "muzzle_flash_scale = %s" % fmt_float(st["muzzle_flash_scale"]),
         "eject_shells = %s" % ("true" if st["eject_shells"] else "false"),
-        'sprite_id = &"%s"' % sprite,
+        'sprite_id = &"%s"' % wid,
         "value = %d" % st["value"],
         "",
     ]
@@ -306,8 +265,12 @@ def patch_table(path: str, kind: str) -> None:
             del entries[k]
     if kind in TABLE_TIERS:
         tier, mult = TABLE_TIERS[kind]
-        for (wid, _cat, rarity, *_rest) in WEAPONS:
+        for (wid, cat, rarity, *_rest) in WEAPONS:
+            if wid == STARTER_ID:
+                continue
             w = TIER_WEIGHTS[tier][rarity] * mult
+            if cat == "gadget":
+                w *= GADGET_MULT[tier] * (1.5 if kind in MILITARY_TABLES else 1.0)
             if w > 0.0:
                 entries["wpn_" + wid] = round(w, 4)
     body = ",\n".join('&"%s": %s' % (k, fmt_float(entries[k]) if entries[k] >= 0.001 else repr(entries[k]))
@@ -317,35 +280,44 @@ def patch_table(path: str, kind: str) -> None:
         f.write(text)
 
 
+OLD_WEAPON_DIR_KEEP = set()
+
+
 def main() -> int:
-    ids = set()
-    errors = 0
-    for (wid, cat, rarity, name, sprite, desc, adj) in WEAPONS:
-        if wid in ids or wid == "starter_pistol":
-            print("! id en double ou réservé :", wid)
-            errors += 1
-        ids.add(wid)
-        if sprite not in SPRITE_IDS:
-            print("! sprite_id hors liste figée :", wid, sprite)
-            errors += 1
-        if cat not in CATEGORY_BASE:
-            print("! catégorie inconnue :", wid, cat)
-            errors += 1
-    if errors:
+    ids = [w[0] for w in WEAPONS]
+    if len(set(ids)) != len(ids) or STARTER_ID not in ids:
+        print("! ids en double ou arme de départ absente")
         return 1
-    for (wid, cat, rarity, name, sprite, desc, adj) in WEAPONS:
+    for (wid, cat, *_r) in WEAPONS:
+        if cat not in CATEGORY_DEFAULTS:
+            print("! catégorie inconnue :", wid, cat)
+            return 1
+    # Catalogue remplacé en entier : anciennes armes et anciens objets wpn_* supprimés.
+    for f in os.listdir(WEAPON_DIR):
+        if f.endswith(".tres") and f[:-5] not in ids:
+            os.remove(os.path.join(WEAPON_DIR, f))
+            print("  - supprimé data/weapons/" + f)
+    for f in os.listdir(ITEM_DIR):
+        if f.startswith("wpn_") and f.endswith(".tres") and f[4:-5] not in ids:
+            os.remove(os.path.join(ITEM_DIR, f))
+    for (wid, cat, rarity, name, desc, adj) in WEAPONS:
         st = build_stats(cat, rarity, adj)
         with open(os.path.join(WEAPON_DIR, wid + ".tres"), "w", encoding="utf-8") as f:
-            f.write(weapon_tres(wid, cat, rarity, name, sprite, desc, st))
-        with open(os.path.join(ITEM_DIR, "wpn_" + wid + ".tres"), "w", encoding="utf-8") as f:
-            f.write(item_tres(wid, name, desc, rarity, st))
+            f.write(weapon_tres(wid, cat, rarity, name, desc, st))
+        item_path = os.path.join(ITEM_DIR, "wpn_" + wid + ".tres")
+        if wid == STARTER_ID:
+            if os.path.exists(item_path):
+                os.remove(item_path)
+        else:
+            with open(item_path, "w", encoding="utf-8") as f:
+                f.write(item_tres(wid, name, desc, rarity, st))
         dps = (st["damage"] * st["projectile_count"] + st["explosion_damage"]) * st["fire_rate"]
-        print("%-22s %-17s %d  dmg %5.1f x%d  cad %5.2f  mag %3d  dps %6.1f  %5d $" % (
-            wid, cat, rarity, st["damage"], st["projectile_count"], st["fire_rate"], st["magazine_size"], dps, st["value"]))
+        print("%-16s %-16s %d  dmg %5.1f  cad %5.2f  mag %3d  dps %6.1f  %5d $" % (
+            wid, cat, rarity, st["damage"], st["fire_rate"], st["magazine_size"], dps, st["value"]))
     for f in sorted(os.listdir(TABLE_DIR)):
         if f.endswith(".tres"):
             patch_table(os.path.join(TABLE_DIR, f), f[:-5])
-    print("%d armes générées." % len(WEAPONS))
+    print("%d entrées générées." % len(WEAPONS))
     return 0
 
 

@@ -4,7 +4,7 @@ extends RefCounted
 
 const DIR := "res://data/weapons/"
 ## Arme offerte quand l'arsenal est vide (perdue à la mort comme les autres).
-const STARTER_ID: StringName = &"starter_pistol"
+const STARTER_ID: StringName = &"pistol_p9"
 ## Icônes d'inventaire par catégorie (repli si WeaponData.icon est vide).
 const ICON_DIR := "res://assets/ui/weapons/"
 

@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rifle_scarh"
+display_name = "SCAR-H"
+description = "Calibre lourd 7,62 : traverse une première cible."
+family = "firearm"
+category = &"rifle"
+rarity = 3
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 26.0
+fire_rate = 6.0
+projectile_speed = 1150.0
+range = 760.0
+projectile_lifetime = 0.661
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 2.5
+pierce = 1
+projectile_color = Color(1.0, 0.84, 0.45, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 20
+reload_time = 1.9
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 6.5
+shake_px = 2.8
+move_speed_mult = 0.95
+muzzle_flash_scale = 1.0
+eject_shells = true
+sprite_id = &"rifle_scarh"
+value = 880

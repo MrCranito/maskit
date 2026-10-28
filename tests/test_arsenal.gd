@@ -4,11 +4,21 @@ extends GutTest
 ## Les tests de profil utilisent l'autoload Profile après avoir mis de côté son contenu,
 ## SaveManager.data et le fichier de sauvegarde, restaurés à l'identique après chaque test.
 
-## Armes historiques encore lues par le joueur (repli), hors catalogue Exfil Rush.
-const LEGACY_IDS: Array[StringName] = [&"starter_revolver", &"starter_bow"]
-const SPRITE_IDS: Array[String] = ["starter_pistol", "pistol", "pistol_heavy", "revolver", "revolver_gold",
-	"smg", "smg_compact", "shotgun", "shotgun_double", "rifle", "rifle_tactical", "sniper", "sniper_heavy",
-	"lmg", "rocket_launcher", "grenade_launcher"]
+## Catalogue exact de la planche docs/reference/arsenal.jpg : id → [nom, catégorie, rareté].
+const PLANCHE := {
+	&"pistol_p9": ["P9", &"pistol", 0], &"pistol_glock18": ["Glock 18", &"pistol", 2],
+	&"pistol_deagle": ["Desert Eagle", &"pistol", 3], &"pistol_p320": ["P320", &"pistol", 4],
+	&"smg_mp5": ["MP5", &"smg", 0], &"smg_vector": ["Vector", &"smg", 2],
+	&"smg_p90": ["P90", &"smg", 3], &"smg_uzi": ["Uzi", &"smg", 4],
+	&"rifle_ak47": ["AK-47", &"rifle", 0], &"rifle_m4a1": ["M4A1", &"rifle", 2],
+	&"rifle_scarh": ["SCAR-H", &"rifle", 3], &"rifle_aug": ["AUG", &"rifle", 4],
+	&"sniper_m24": ["M24", &"sniper", 0], &"sniper_ax50": ["AX-50", &"sniper", 2],
+	&"sniper_m82": ["Barrett M82", &"sniper", 3],
+	&"rocket_rpg7": ["RPG-7", &"rocket_launcher", 2], &"rocket_m202": ["M202", &"rocket_launcher", 3],
+	&"rocket_javelin": ["Javelin", &"rocket_launcher", 4],
+	&"gadget_frag": ["Grenade frag", &"gadget", 0], &"gadget_smoke": ["Grenade fumigène", &"gadget", 2],
+	&"gadget_mine": ["Mine", &"gadget", 3], &"gadget_c4": ["C4", &"gadget", 4], &"gadget_drone": ["Drone", &"gadget", 4],
+}
 const BIOME_TABLES := {
 	"far_west": "res://data/worlds/world_01_far_west.tres",
 	"space_station": "res://data/worlds/world_02_space_station.tres",
@@ -47,39 +57,58 @@ func _new_profile() -> Node:
 	return Profile
 
 
+# --- Catalogue ---------------------------------------------------------------------------
+
 func _catalog() -> Array[WeaponData]:
-	var out: Array[WeaponData] = []
-	for w: WeaponData in WeaponCatalog.all():
-		if not LEGACY_IDS.has(w.id):
-			out.append(w)
-	return out
+	return WeaponCatalog.all()
 
 
-# --- Catalogue -------------------------------------------------------------------------
-
-func test_catalogue_au_moins_32_armes_et_9_categories() -> void:
+func test_catalogue_exact_de_la_planche() -> void:
 	WeaponCatalog.reload()
 	var all := _catalog()
-	assert_gte(all.size(), 32, "au moins 32 armes")
+	assert_eq(all.size(), 23, "18 armes + 5 équipements")
+	for id: StringName in PLANCHE:
+		var w := WeaponCatalog.get_weapon(id)
+		assert_not_null(w, "arme %s" % id)
+		if w == null:
+			continue
+		var row: Array = PLANCHE[id]
+		assert_eq(w.display_name, String(row[0]), "%s : nom" % id)
+		assert_eq(w.category, row[1], "%s : catégorie" % id)
+		assert_eq(w.rarity, int(row[2]), "%s : rareté" % id)
+		assert_eq(w.sprite_id, id, "%s : sprite_id = id" % id)
 	var cats := {}
-	var rar_by_cat := {}
 	for w: WeaponData in all:
 		cats[w.category] = true
-		if not rar_by_cat.has(w.category):
-			rar_by_cat[w.category] = {}
-		rar_by_cat[w.category][w.rarity] = true
+	assert_eq(cats.size(), 6, "6 catégories")
 	for c: StringName in WeaponData.CATEGORIES:
-		assert_true(cats.has(c), "catégorie %s présente" % c)
-		assert_gte((rar_by_cat.get(c, {}) as Dictionary).size(), 3, "%s : plusieurs raretés" % c)
-	assert_not_null(WeaponCatalog.get_starter(), "pistolet de départ présent")
+		assert_true(cats.has(c), "catégorie %s" % c)
+	assert_eq(WeaponCatalog.STARTER_ID, &"pistol_p9")
+	assert_not_null(WeaponCatalog.get_starter())
+
+
+func test_equipements_dans_l_emplacement_gadget() -> void:
+	var kinds := {&"gadget_frag": [&"frag", 3], &"gadget_smoke": [&"smoke", 2], &"gadget_mine": [&"mine", 2],
+		&"gadget_c4": [&"c4", 1], &"gadget_drone": [&"drone", 1]}
+	for w: WeaponData in _catalog():
+		assert_eq(w.is_gadget(), w.category == WeaponData.CAT_GADGET, "%s : slot cohérent" % w.id)
+		if not w.is_gadget():
+			continue
+		assert_eq(w.slot, WeaponData.SLOT_GADGET)
+		assert_eq(w.gadget_kind, kinds[w.id][0], "%s : gadget_kind" % w.id)
+		assert_eq(w.charges, int(kinds[w.id][1]), "%s : charges" % w.id)
+		match w.gadget_kind:
+			WeaponData.GADGET_FRAG, WeaponData.GADGET_C4, WeaponData.GADGET_MINE:
+				assert_true(w.is_explosive(), "%s : explose" % w.id)
+			WeaponData.GADGET_SMOKE, WeaponData.GADGET_DRONE:
+				assert_gt(w.effect_duration, 0.0, "%s : durée" % w.id)
+				assert_gt(w.effect_radius, 0.0, "%s : rayon" % w.id)
 
 
 func test_chaque_arme_est_coherente() -> void:
 	for w: WeaponData in _catalog():
-		assert_false(w.display_name.is_empty(), "%s : nom" % w.id)
-		assert_true(SPRITE_IDS.has(String(w.sprite_id)), "%s : sprite_id %s dans la liste figée" % [w.id, w.sprite_id])
-		assert_true(WeaponData.CATEGORIES.has(w.category), "%s : catégorie connue" % w.id)
-		assert_between(w.rarity, 0, 4)
+		if w.is_gadget():
+			continue
 		assert_gt(w.damage, 0.0)
 		assert_gt(w.fire_rate, 0.0)
 		assert_gte(w.magazine_size, 1, "%s : chargeur" % w.id)
@@ -88,30 +117,25 @@ func test_chaque_arme_est_coherente() -> void:
 			WeaponData.CAT_SNIPER:
 				assert_eq(w.projectile_style, &"tracer")
 				assert_gte(w.pierce, 1, "%s : sniper perforant" % w.id)
-				assert_lte(w.fire_rate, 1.5)
-			WeaponData.CAT_SHOTGUN:
-				assert_gt(w.projectile_count, 1, "%s : plombs" % w.id)
-				assert_gt(w.spread_degrees, 0.0)
 			WeaponData.CAT_SMG:
 				assert_true(w.automatic, "%s : automatique" % w.id)
-			WeaponData.CAT_LMG:
-				assert_gte(w.magazine_size, 100)
-				assert_almost_eq(w.move_speed_mult, 0.85, 0.001)
 			WeaponData.CAT_ROCKET:
 				assert_eq(w.projectile_style, &"rocket")
 				assert_true(w.is_explosive())
-				assert_lte(w.magazine_size, 2)
 				assert_false(w.eject_shells)
-			WeaponData.CAT_GRENADE:
-				assert_eq(w.projectile_style, &"grenade")
-				assert_true(w.is_explosive())
+	assert_eq(WeaponCatalog.get_weapon(&"rocket_rpg7").magazine_size, 1, "RPG-7 : 1 roquette")
+	assert_eq(WeaponCatalog.get_weapon(&"rocket_m202").magazine_size, 4, "M202 : 4 roquettes")
+	assert_true(WeaponCatalog.get_weapon(&"rocket_javelin").affixes.has(&"homing"), "Javelin guidé")
+	assert_true(WeaponCatalog.get_weapon(&"pistol_glock18").automatic, "Glock 18 automatique")
+	assert_gt(WeaponCatalog.get_weapon(&"smg_vector").fire_rate, WeaponCatalog.get_weapon(&"smg_mp5").fire_rate * 1.5)
+	assert_gt(WeaponCatalog.get_weapon(&"smg_p90").magazine_size, WeaponCatalog.get_weapon(&"smg_mp5").magazine_size)
 
 
 func test_rarete_plus_haute_plus_forte() -> void:
-	# Dans chaque catégorie, le DPS du meilleur modèle dépasse celui du moins rare.
+	# Dans chaque catégorie d'armes, le DPS croît avec la rareté (gain net, pas absurde).
 	var by_cat := {}
 	for w: WeaponData in _catalog():
-		if w.id == WeaponCatalog.STARTER_ID:
+		if w.is_gadget():
 			continue
 		if not by_cat.has(w.category):
 			by_cat[w.category] = []
@@ -121,16 +145,16 @@ func test_rarete_plus_haute_plus_forte() -> void:
 		list.sort_custom(func(a: WeaponData, b: WeaponData) -> bool: return a.rarity < b.rarity)
 		var lo: WeaponData = list[0]
 		var hi: WeaponData = list[list.size() - 1]
-		if hi.rarity > lo.rarity:
-			assert_gt(hi.get_dps(), lo.get_dps(), "%s : %s > %s" % [c, hi.id, lo.id])
-			assert_lt(hi.get_dps(), lo.get_dps() * 4.0, "%s : gain pas absurde" % c)
+		assert_gt(hi.get_dps(), lo.get_dps(), "%s : %s > %s" % [c, hi.id, lo.id])
+		assert_lt(hi.get_dps(), lo.get_dps() * 4.0, "%s : gain pas absurde" % c)
 
 
 func test_chaque_arme_a_son_objet() -> void:
 	for w: WeaponData in _catalog():
-		if w.id == WeaponCatalog.STARTER_ID:
-			continue
 		var it := LootDB.get_item(StringName("wpn_" + String(w.id)))
+		if w.id == WeaponCatalog.STARTER_ID:
+			assert_null(it, "pas d'objet pour le pistolet de départ")
+			continue
 		assert_not_null(it, "objet wpn_%s" % w.id)
 		if it == null:
 			continue
@@ -139,7 +163,10 @@ func test_chaque_arme_a_son_objet() -> void:
 		assert_eq(it.rarity, w.rarity, "%s : rareté de l'arme" % it.id)
 		assert_eq(it.stack_max, 1)
 		assert_null(it.icon, "%s : icône vide (UI → WeaponCatalog.icon_for)" % it.id)
-		assert_gt(it.weight, 0.0)
+	# Aucun objet wpn_ orphelin (ancien catalogue).
+	for it2: ItemData in LootDB.all_items():
+		if String(it2.id).begins_with("wpn_"):
+			assert_true(WeaponCatalog.has_weapon(it2.weapon_id), "%s : arme du catalogue" % it2.id)
 
 
 func test_aucun_objet_arme_sans_weapon_id_ni_masque() -> void:
@@ -191,31 +218,34 @@ func test_chaque_biome_peut_donner_des_armes() -> void:
 func test_coffre_plus_genereux_que_ennemi() -> void:
 	var chest := LootDB.get_table(&"chest")
 	var enemy := LootDB.get_table(&"enemy")
-	assert_gt(float(chest.entries.get(&"wpn_pistol_9mm", 0.0)), float(enemy.entries.get(&"wpn_pistol_9mm", 0.0)))
+	assert_gt(float(chest.entries.get(&"wpn_smg_mp5", 0.0)), float(enemy.entries.get(&"wpn_smg_mp5", 0.0)))
 	# Les hautes raretés pèsent moins que les communes.
-	assert_lt(float(chest.entries[&"wpn_rifle_steel_storm"]), float(chest.entries[&"wpn_pistol_9mm"]))
+	assert_lt(float(chest.entries[&"wpn_rifle_aug"]), float(chest.entries[&"wpn_rifle_ak47"]))
+	# Équipement : plus présent dans les caisses militaires que chez les ennemis.
+	assert_gt(float(LootDB.get_table(&"crate").entries.get(&"wpn_gadget_frag", 0.0)), float(enemy.entries.get(&"wpn_gadget_frag", 0.0)))
 
 
 # --- Profil ----------------------------------------------------------------------------
 
 func test_start_raid_retire_l_arsenal_de_la_reserve() -> void:
 	var p := _new_profile()
-	var a: int = p.call("add_weapon", &"pistol_9mm")
-	var b: int = p.call("add_weapon", &"shotgun_pump")
-	var c: int = p.call("add_weapon", &"sniper_hunter")
+	var a: int = p.call("add_weapon", &"smg_mp5")
+	var b: int = p.call("add_weapon", &"rifle_m4a1")
+	var c: int = p.call("add_weapon", &"sniper_m24")
 	var lo: Array[int] = [a, b]
 	p.call("set_loadout", lo)
 	var taken: Array[WeaponData] = p.call("start_raid")
 	assert_eq(taken.size(), 2)
-	assert_eq(taken[0].id, &"pistol_9mm")
+	assert_eq(taken[0].id, &"smg_mp5")
+	assert_null(p.get("raid_gadget"), "aucun équipement emporté")
 	assert_eq((p.get("weapons") as Array).size(), 1, "seul le sniper reste en réserve")
-	assert_eq(p.call("weapon_id_of", c), &"sniper_hunter")
+	assert_eq(p.call("weapon_id_of", c), &"sniper_m24")
 	assert_true(bool(p.get("raid_in_progress")))
 
 
 func test_mort_ne_rend_rien_et_redonne_le_pistolet() -> void:
 	var p := _new_profile()
-	var a: int = p.call("add_weapon", &"rifle_assault")
+	var a: int = p.call("add_weapon", &"rifle_ak47")
 	var lo: Array[int] = [a]
 	p.call("set_loadout", lo)
 	p.call("start_raid")
@@ -231,8 +261,8 @@ func test_mort_ne_rend_rien_et_redonne_le_pistolet() -> void:
 
 func test_mort_sans_pistolet_si_reserve_non_vide() -> void:
 	var p := _new_profile()
-	var a: int = p.call("add_weapon", &"rifle_assault")
-	p.call("add_weapon", &"smg_pocket")
+	var a: int = p.call("add_weapon", &"rifle_ak47")
+	p.call("add_weapon", &"smg_vector")
 	var lo: Array[int] = [a]
 	p.call("set_loadout", lo)
 	p.call("start_raid")
@@ -243,23 +273,24 @@ func test_mort_sans_pistolet_si_reserve_non_vide() -> void:
 
 func test_extraction_rend_armes_tenues_sac_et_objets() -> void:
 	var p := _new_profile()
-	var a: int = p.call("add_weapon", &"pistol_9mm")
+	var a: int = p.call("add_weapon", &"smg_mp5")
 	var lo: Array[int] = [a]
 	p.call("set_loadout", lo)
 	p.call("start_raid")
 	var bag := Inventory.new(6, 4, 999.0)
-	bag.add_item(LootDB.get_item(&"wpn_shotgun_pump"), 1)
+	bag.add_item(LootDB.get_item(&"wpn_rifle_m4a1"), 1)
 	bag.add_item(LootDB.get_item(&"gold_nugget"), 3)
-	var carried: Array[StringName] = [&"pistol_9mm", &"rifle_assault"]
+	var carried: Array[StringName] = [&"smg_mp5", &"rifle_ak47"]
 	var res: Dictionary = p.call("finish_extraction", carried, bag)
 	var ids: Array = []
 	for e: Dictionary in p.get("weapons"):
 		ids.append(str(e["id"]))
 	ids.sort()
-	assert_eq(ids, ["pistol_9mm", "rifle_assault", "shotgun_pump"], "armes tenues + arme du sac")
+	ids.sort()
+	assert_eq(ids, ["rifle_ak47", "rifle_m4a1", "smg_mp5"], "armes tenues + arme du sac")
 	assert_eq(int((p.get("items") as Dictionary).get("gold_nugget", 0)), 3, "objets en réserve")
 	assert_eq((res["weapons"] as Array).size(), 3)
-	var expected_value := LootDB.get_item(&"wpn_shotgun_pump").value + LootDB.get_item(&"gold_nugget").value * 3
+	var expected_value := LootDB.get_item(&"wpn_rifle_m4a1").value + LootDB.get_item(&"gold_nugget").value * 3
 	assert_eq(int(res["value"]), expected_value)
 	assert_eq(int(res["gems"]), Profile.extraction_gems(expected_value))
 	assert_false(bool(p.get("raid_in_progress")))
@@ -273,8 +304,8 @@ func test_gemmes_plafonnees() -> void:
 
 func test_pas_de_duplication_si_raid_en_cours_au_chargement() -> void:
 	var p := _new_profile()
-	var a: int = p.call("add_weapon", &"lmg_saw")
-	p.call("add_weapon", &"smg_pocket")
+	var a: int = p.call("add_weapon", &"sniper_m82")
+	p.call("add_weapon", &"smg_vector")
 	var lo: Array[int] = [a]
 	p.call("set_loadout", lo)
 	p.call("start_raid")
@@ -288,14 +319,14 @@ func test_pas_de_duplication_si_raid_en_cours_au_chargement() -> void:
 	var ids: Array = []
 	for e: Dictionary in p2.get("weapons"):
 		ids.append(str(e["id"]))
-	assert_eq(ids, ["smg_pocket"], "l'arme emportée n'est pas revenue")
+	assert_eq(ids, ["smg_vector"], "l'arme emportée n'est pas revenue")
 	assert_false(bool(p2.get("raid_in_progress")))
 
 
 # --- Fin de raid -------------------------------------------------------------------------
 
 func test_ecran_de_fin_extraction_et_mort() -> void:
-	var ok := RaidEndScreen.create(true, {"weapons": [&"rifle_assault"], "items": {&"gold_nugget": 2}, "value": 40, "gems": 3})
+	var ok := RaidEndScreen.create(true, {"weapons": [&"rifle_ak47"], "items": {&"gold_nugget": 2}, "value": 40, "gems": 3})
 	add_child_autofree(ok)
 	await wait_frames(1)
 	assert_eq(ok.get_title_text(), "Extraction réussie")
@@ -303,10 +334,54 @@ func test_ecran_de_fin_extraction_et_mort() -> void:
 	ok.queue_free()
 	await wait_frames(1)
 	assert_false(get_tree().paused, "pause levée à la fermeture")
-	var dead := RaidEndScreen.create(false, {"lost_weapons": [&"pistol_9mm"], "starter_given": true})
+	var dead := RaidEndScreen.create(false, {"lost_weapons": [&"smg_mp5", &"gadget_c4"], "starter_given": true})
 	add_child_autofree(dead)
 	await wait_frames(1)
 	assert_eq(dead.get_title_text(), "Tu es mort")
 	dead.queue_free()
 	await wait_frames(1)
 	get_tree().paused = false
+
+
+func test_arsenal_3_armes_plus_1_equipement() -> void:
+	var p := _new_profile()
+	var uids: Array[int] = []
+	for id: StringName in [&"smg_mp5", &"gadget_frag", &"rifle_ak47", &"sniper_m24", &"pistol_deagle", &"gadget_c4"]:
+		uids.append(int(p.call("add_weapon", id)))
+	p.call("set_loadout", uids)
+	var lw: Array[WeaponData] = p.call("get_loadout_weapons")
+	assert_eq(lw.size(), 3, "3 armes max")
+	var g: WeaponData = p.call("get_loadout_gadget")
+	assert_not_null(g)
+	assert_eq(g.id, &"gadget_frag", "1 équipement (le premier)")
+	var taken: Array[WeaponData] = p.call("start_raid")
+	assert_eq(taken.size(), 3)
+	for w: WeaponData in taken:
+		assert_false(w.is_gadget(), "les armes de raid ne contiennent pas l'équipement")
+	assert_eq((p.get("raid_gadget") as WeaponData).id, &"gadget_frag", "raid_gadget fixé")
+	# Mort : équipement perdu aussi ; il reste pistol_deagle + gadget_c4 en réserve.
+	var res: Dictionary = p.call("finish_death")
+	assert_true((res["lost_weapons"] as Array).has(&"gadget_frag"), "équipement perdu")
+	assert_false(bool(res["starter_given"]), "il reste une arme en réserve")
+
+
+func test_pistolet_redonne_si_seulement_des_equipements() -> void:
+	var p := _new_profile()
+	var a: int = p.call("add_weapon", &"rifle_ak47")
+	p.call("add_weapon", &"gadget_smoke")
+	var lo: Array[int] = [a]
+	p.call("set_loadout", lo)
+	p.call("start_raid")
+	var res: Dictionary = p.call("finish_death")
+	assert_true(bool(res["starter_given"]), "plus aucune ARME → P9 offert")
+	var ids: Array = []
+	for e: Dictionary in p.get("weapons"):
+		ids.append(str(e["id"]))
+	assert_true(ids.has("pistol_p9"))
+	assert_true(ids.has("gadget_smoke"))
+
+
+func test_ecran_de_fin_separe_les_equipements() -> void:
+	var split := RaidEndScreen.split_gadgets([&"smg_mp5", &"gadget_drone"])
+	assert_eq(split[0], [&"smg_mp5"])
+	assert_eq(split[1], [&"gadget_drone"])

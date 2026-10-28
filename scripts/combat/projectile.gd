@@ -51,6 +51,9 @@ var _age: float = 0.0
 var _trail_left: float = 0.0
 var _body: Node2D = null
 var _shape: CollisionShape2D = null
+## Guidage (Javelin) : cible et vitesse de rotation max (rad/s).
+var _homing_target: Node2D = null
+var _homing_rate: float = 0.0
 
 # Réglages ([projectile_fx]) partagés par toutes les instances (lus une fois).
 static var _cfg_loaded: bool = false
@@ -117,6 +120,8 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node, height: 
 	source = from
 	_age = 0.0
 	_trail_left = 0.0
+	_homing_target = null
+	_homing_rate = 0.0
 	_hit_ids.clear()
 	z = 0.0
 	vz = 0.0
@@ -134,6 +139,20 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node, height: 
 	# Un seul redessin par tir (couleur, style, décalage de hauteur fonction de l'angle).
 	queue_redraw()
 	_body.queue_redraw()
+
+
+## Guidage léger vers `target` (rotation bornée à `rate` rad/s).
+func set_homing(target: Node2D, rate: float) -> void:
+	_homing_target = target
+	_homing_rate = rate
+
+
+## Logique pure : nouvelle direction, tournée vers `want` d'au plus `max_angle` radians.
+static func steer(dir: Vector2, want: Vector2, max_angle: float) -> Vector2:
+	if want == Vector2.ZERO:
+		return dir
+	var diff: float = dir.angle_to(want)
+	return dir.rotated(clampf(diff, -max_angle, max_angle))
 
 
 func is_explosive() -> bool:
@@ -162,6 +181,15 @@ func _physics_process(delta: float) -> void:
 	if lifetime_left <= 0.0:
 		_end_of_range()
 		return
+	if _homing_rate > 0.0 and is_instance_valid(_homing_target):
+		if _homing_target.has_method("is_alive") and not bool(_homing_target.call("is_alive")):
+			_homing_target = null
+		else:
+			direction = steer(direction, _homing_target.global_position - global_position, _homing_rate * delta)
+			if absf(angle_difference(rotation, direction.angle())) > 0.05:
+				rotation = direction.angle()
+				_place_body()
+				queue_redraw()
 	if style == STYLE_ROCKET:
 		var k: float = clampf(_age / maxf(_rocket_accel_time, 0.01), 0.0, 1.0)
 		speed = lerpf(_max_speed * _rocket_start_mult, _max_speed, k * k)

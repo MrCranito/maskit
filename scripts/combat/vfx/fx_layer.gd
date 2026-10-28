@@ -30,6 +30,8 @@ var _size_end: PackedFloat32Array = PackedFloat32Array()
 var _rot: PackedFloat32Array = PackedFloat32Array()
 var _spin: PackedFloat32Array = PackedFloat32Array()
 var _col: PackedColorArray = PackedColorArray()
+## Multiplicateur de gravité par particule (gravité faible : dérive des douilles/débris).
+var _grav: PackedFloat32Array = PackedFloat32Array()
 var _text: PackedStringArray = PackedStringArray()
 var _cursor: int = 0
 var _alive: int = 0
@@ -52,6 +54,8 @@ func setup(cap: int) -> void:
 	_rot.resize(capacity)
 	_spin.resize(capacity)
 	_col.resize(capacity)
+	_grav.resize(capacity)
+	_grav.fill(1.0)
 	_text.resize(capacity)
 	_cursor = 0
 	_alive = 0
@@ -84,6 +88,7 @@ func emit(kind: int, pos: Vector2, vel: Vector2, life: float, size: float, size_
 	_rot[i] = rot
 	_spin[i] = spin
 	_col[i] = color
+	_grav[i] = 1.0
 	if not is_processing():
 		set_process(true)
 	return i
@@ -104,6 +109,12 @@ func refresh_text(i: int, text: String, life: float, size: float) -> bool:
 	_size[i] = size
 	_size_end[i] = size
 	return true
+
+
+## Gravité faible pour la particule `i` (× gravité, et frottement au sol réduit).
+func set_gravity(i: int, mult: float) -> void:
+	if i >= 0 and i < capacity:
+		_grav[i] = mult
 
 
 ## Vide la couche (changement d'étage, tests).
@@ -134,8 +145,12 @@ func _process(delta: float) -> void:
 		var drag: float = DRAG[k]
 		if drag > 0.0:
 			v *= exp(-drag * delta)
+		var gm: float = _grav[i]
+		if gm < 1.0:
+			drag *= gm
+			v = _vel[i] * exp(-drag * delta)
 		if k == Kind.SHELL or k == Kind.DEBRIS or k == Kind.DROPLET:
-			var vz: float = _vz[i] - gravity * delta
+			var vz: float = _vz[i] - gravity * gm * delta
 			var z: float = _z[i] + vz * delta
 			if z <= 0.0:
 				z = 0.0
@@ -145,8 +160,8 @@ func _process(delta: float) -> void:
 					_spin[i] *= 0.5
 				else:
 					vz = 0.0
-					v *= exp(-10.0 * delta)
-					_spin[i] *= exp(-10.0 * delta)
+					v *= exp(-10.0 * gm * delta)
+					_spin[i] *= exp(-10.0 * gm * delta)
 			_z[i] = z
 			_vz[i] = vz
 		_vel[i] = v

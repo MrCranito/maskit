@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"pistol_glock18"
+display_name = "Glock 18"
+description = "Sélecteur en rafale : une pluie de 9 mm en automatique."
+family = "firearm"
+category = &"pistol"
+rarity = 2
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 11.0
+fire_rate = 9.0
+projectile_speed = 950.0
+range = 560.0
+projectile_lifetime = 0.589
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 5.0
+pierce = 0
+projectile_color = Color(1.0, 0.82, 0.4, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 19
+reload_time = 1.2
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 3.0
+shake_px = 1.6
+move_speed_mult = 1.0
+muzzle_flash_scale = 0.8
+eject_shells = true
+sprite_id = &"pistol_glock18"
+value = 260

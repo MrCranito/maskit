@@ -12,6 +12,8 @@ const DIFFICULTY_NAMES: Array[String] = ["Facile", "Normal", "Difficile", "Infer
 ## Armes emportées dans le raid en cours (ordre des emplacements), fixées par
 ## Profile.start_raid() au lancement. Vide = raid lancé directement (debug) : pistolet de départ.
 var raid_weapons: Array[WeaponData] = []
+## Équipement emporté (grenade, mine, C4, drone) ; null = aucun.
+var raid_gadget: WeaponData = null
 ## Difficulté du raid : 0 = Facile … 4 = Cauchemar.
 var difficulty: int = 1
 ## Monde du prochain raid (fixé par la carte choisie ; vide = Far West).
@@ -36,6 +38,7 @@ func _ready() -> void:
 func begin_raid() -> void:
 	raid_inventory = Inventory.from_balance()
 	raid_weapons = Profile.start_raid()
+	raid_gadget = Profile.raid_gadget
 
 
 ## Choisit la difficulté (bornée à 0..4) et la sauvegarde.

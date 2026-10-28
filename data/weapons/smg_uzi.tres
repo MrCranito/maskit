@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"smg_uzi"
+display_name = "Uzi"
+description = "Légende compacte : cadence folle, balles perforantes."
+family = "firearm"
+category = &"smg"
+rarity = 4
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 12.5
+fire_rate = 16.0
+projectile_speed = 900.0
+range = 480.0
+projectile_lifetime = 0.533
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 4.0
+pierce = 1
+projectile_color = Color(1.0, 0.86, 0.5, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 40
+reload_time = 1.2
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 3.0
+shake_px = 1.2
+move_speed_mult = 1.0
+muzzle_flash_scale = 0.7
+eject_shells = true
+sprite_id = &"smg_uzi"
+value = 1400

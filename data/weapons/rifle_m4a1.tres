@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rifle_m4a1"
+display_name = "M4A1"
+description = "Précis et maniable : la rafale reste groupée."
+family = "firearm"
+category = &"rifle"
+rarity = 2
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 16.0
+fire_rate = 8.0
+projectile_speed = 1150.0
+range = 720.0
+projectile_lifetime = 0.626
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 1.5
+pierce = 0
+projectile_color = Color(1.0, 0.84, 0.45, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 30
+reload_time = 1.6
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 3.5
+shake_px = 1.8
+move_speed_mult = 1.0
+muzzle_flash_scale = 1.0
+eject_shells = true
+sprite_id = &"rifle_m4a1"
+value = 420

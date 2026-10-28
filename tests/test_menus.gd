@@ -41,12 +41,13 @@ func after_each() -> void:
 	SaveManager.data = _saved_data
 	SaveManager.save()
 	ShopScreen.last_tab = &"character"
+	WeaponSkin.enabled_override = -1
 
 
-## Profil de test : quelques armes, gemmes données.
+## Profil de test : quelques armes (dont un doublon) et un équipement, gemmes données.
 func _test_profile(gems: int = 0) -> void:
 	Profile.from_dict({"gems": gems})
-	for id: StringName in [&"starter_pistol", &"starter_revolver", &"starter_bow"]:
+	for id: StringName in [&"pistol_p9", &"pistol_p9", &"smg_mp5", &"rifle_ak47", &"sniper_m24", &"gadget_frag", &"gadget_smoke"]:
 		if WeaponCatalog.has_weapon(id):
 			Profile.add_weapon(id)
 	Profile.loadout.clear()
@@ -57,6 +58,13 @@ func _cheapest_skin(kind: StringName) -> SkinData:
 	for s: SkinData in list:
 		if s.price_gems > 0:
 			return s
+	return null
+
+
+func _first_weapon_tile(a: ArsenalScreen, gadget: bool) -> WeaponTile:
+	for t: WeaponTile in a.tiles:
+		if not t.locked and t.weapon.is_gadget() == gadget:
+			return t
 	return null
 
 
@@ -173,7 +181,8 @@ func test_loadout_empty_disables_validate() -> void:
 	await wait_frames(2)
 	assert_true(a.loadout_mode)
 	assert_eq(a.slot_buttons.size(), Profile.loadout_slots(), "3 emplacements")
-	assert_eq(a.tiles.size(), Profile.weapons.size(), "Toute la réserve en grille")
+	assert_eq(a.tiles.size(), a.owned.size(), "Une carte par modèle possédé")
+	assert_not_null(a.gadget_slot_button, "Emplacement d'équipement")
 	assert_true(a.selected_uids.is_empty())
 	assert_true(a.validate_button.disabled, "Aucune arme : « Valider et partir » désactivé")
 	assert_false(a.validate_and_go())
@@ -189,37 +198,61 @@ func test_loadout_toggle_and_validate() -> void:
 	_test_profile()
 	var a := _loadout()
 	await wait_frames(2)
-	var uids: Array[int] = []
-	for e: Dictionary in Profile.get_stash_weapons():
-		uids.append(int(e["uid"]))
-	assert_gte(uids.size(), 2)
-	assert_true(a.toggle_weapon(uids[0]))
+	assert_eq(a.gadget_slot_button != null, true, "Emplacement d'équipement")
+	var weapons: Array[WeaponTile] = []
+	for t: WeaponTile in a.tiles:
+		assert_false(t.locked, "Arsenal de départ : seulement les armes possédées")
+		if not t.weapon.is_gadget():
+			weapons.append(t)
+	assert_gte(weapons.size(), 4)
+	assert_true(a.toggle_model(weapons[0].weapon))
 	assert_false(a.validate_button.disabled, "Une arme : bouton actif")
-	assert_eq(a.tiles.filter(func(t: WeaponTile) -> bool: return t.slot_index >= 0).size(), 1)
-	assert_true(a.toggle_weapon(uids[0]), "Retirer")
+	assert_eq(weapons[0].slot_index, 0)
+	assert_true(a.toggle_model(weapons[0].weapon), "Retirer")
 	assert_true(a.validate_button.disabled)
-	# Plus de 3 armes : refusé
-	for u: int in uids:
-		Profile.add_weapon(&"starter_pistol")
-	a.stash = Profile.get_stash_weapons()
-	var all: Array[int] = []
-	for e: Dictionary in a.stash:
-		all.append(int(e["uid"]))
 	for i: int in Profile.loadout_slots():
-		assert_true(a.toggle_weapon(all[i]))
-	assert_false(a.toggle_weapon(all[Profile.loadout_slots()]), "Emplacements pleins")
+		assert_true(a.toggle_model(weapons[i].weapon))
+	assert_false(a.toggle_model(weapons[Profile.loadout_slots()].weapon), "Emplacements d'armes pleins")
+	# Équipement : un seul, remplacé par le suivant
+	var gadgets: Array[WeaponTile] = []
+	for t: WeaponTile in a.tiles:
+		if t.weapon.is_gadget():
+			gadgets.append(t)
+	assert_eq(gadgets.size(), 2)
+	assert_true(a.toggle_model(gadgets[0].weapon), "Gadget en plus des 3 armes")
+	assert_true(a.toggle_model(gadgets[1].weapon), "Le gadget suivant remplace le premier")
+	assert_eq(a.selected_weapon_count(), Profile.loadout_slots())
+	assert_eq(a.selected_uids.size(), Profile.loadout_slots() + 1)
 	# Validation : arsenal enregistré, raid lancé côté profil
 	var n_before: int = Profile.weapons.size()
-	var picked: Array[int] = a.selected_uids.duplicate()
 	assert_true(a.validate_and_go())
 	assert_true(Profile.raid_in_progress, "GameState.begin_raid() appelé")
-	assert_eq(GameState.raid_weapons.size(), picked.size(), "Armes emportées")
-	assert_eq(Profile.weapons.size(), n_before - picked.size(), "Les armes quittent la réserve")
+	assert_eq(GameState.raid_weapons.size(), Profile.loadout_slots(), "Armes emportées")
+	assert_eq(GameState.raid_gadget, gadgets[1].weapon, "Équipement emporté")
+	assert_eq(Profile.weapons.size(), n_before - Profile.loadout_slots() - 1, "Les armes quittent la réserve")
+
+
+func test_loadout_duplicate_takes_one_copy() -> void:
+	_test_profile()
+	var a := _loadout()
+	await wait_frames(2)
+	var p9: WeaponTile = null
+	for t: WeaponTile in a.tiles:
+		if t.weapon.id == &"pistol_p9":
+			p9 = t
+	assert_not_null(p9)
+	assert_eq(p9.owned_count(), 2, "Une carte par modèle, quantité ×2")
+	assert_true(a.toggle_model(p9.weapon))
+	assert_eq(a.selected_uids.size(), 1, "Un seul exemplaire emporté")
 
 
 func test_loadout_restores_previous_choice() -> void:
 	_test_profile()
-	var first: int = int(Profile.get_stash_weapons()[0]["uid"])
+	var first: int = -1
+	for e: Dictionary in Profile.get_stash_weapons():
+		if not (e["data"] as WeaponData).is_gadget():
+			first = int(e["uid"])
+			break
 	Profile.set_loadout([first] as Array[int])
 	var a := _loadout()
 	await wait_frames(2)
@@ -227,33 +260,47 @@ func test_loadout_restores_previous_choice() -> void:
 	assert_false(a.validate_button.disabled)
 
 
-func test_arsenal_filter_sort_and_skin() -> void:
+func test_arsenal_catalog_sections() -> void:
 	_test_profile()
 	var a := (load("res://scenes/ui/menus/arsenal.tscn") as PackedScene).instantiate() as ArsenalScreen
 	add_child_autofree(a)
 	await wait_frames(2)
 	assert_false(a.loadout_mode)
 	assert_null(a.validate_button, "Consultation : pas de lancement de raid")
-	assert_eq(a.tiles.size(), Profile.weapons.size())
-	a.set_filter(WeaponData.CAT_PISTOL)
+	assert_eq(a.tiles.size(), WeaponCatalog.all().size(), "Catalogue complet : une carte par modèle")
+	for cat: StringName in WeaponData.CATEGORIES:
+		var has_model := WeaponCatalog.all().any(func(w: WeaponData) -> bool: return w.category == cat)
+		assert_eq(a.sections.has(cat), has_model, "Section %s" % cat)
+	var titles: Array[String] = []
+	for l: Node in a.find_children("*", "Label", true, false):
+		titles.append((l as Label).text)
+	assert_has(titles, "PISTOLETS")
+	assert_has(titles, "AUTRES")
+	var locked := 0
 	for t: WeaponTile in a.tiles:
-		assert_eq(t.weapon.category, WeaponData.CAT_PISTOL)
-	a.set_filter(&"all")
-	a.cycle_sort()
-	assert_eq(a.tiles.size(), Profile.weapons.size(), "Tri : même contenu")
-	# Skin possédé applicable → équipé par « Changer »
-	var any_skin: SkinData = null
-	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_WEAPON):
-		if s.weapon_category == SkinData.ANY_CATEGORY:
-			any_skin = s
-			break
-	assert_not_null(any_skin)
-	Profile.skins_owned.append(any_skin.id)
-	a.show_detail(a.tiles[0].uid, false)
-	a.cycle_skin()
-	assert_eq(Profile.get_weapon_skin(a.tiles[0].weapon.category), any_skin, "Skin équipé")
-	assert_true(a.tiles[0].icon_view.tex_rect.material is ShaderMaterial or not a.tiles[0].icon_view.has_texture(),
-		"Skin appliqué à l'aperçu")
+		assert_eq(t.locked, a.owned_count(t.weapon.id) == 0)
+		if t.locked:
+			locked += 1
+		assert_eq(t.owned_count(), a.owned_count(t.weapon.id))
+		assert_not_null(t.find_child("RarityBand", true, false), "Bandeau de rareté")
+	assert_gt(locked, 0, "Modèles non possédés grisés")
+	var p9: WeaponTile = null
+	for t: WeaponTile in a.tiles:
+		if t.weapon.id == &"pistol_p9":
+			p9 = t
+	assert_eq(p9.owned_count(), 2)
+	assert_true(p9._count.visible, "Quantité ×2 affichée")
+	a.show_weapon_detail(p9.weapon, false)
+	assert_eq(a.detail_weapon, p9.weapon)
+	assert_null(a.skin_button, "Skins d'armes désactivés : pas de bouton de skin")
+
+
+func test_rarity_names_on_ui() -> void:
+	assert_eq(MenuKit.rarity_name(0), "Commun")
+	assert_eq(MenuKit.rarity_name(1), "Rare", "Plus de « Peu commun » affiché")
+	assert_eq(MenuKit.rarity_name(2), "Rare")
+	assert_eq(MenuKit.rarity_name(3), "Épique")
+	assert_eq(MenuKit.rarity_name(4), "Légendaire")
 
 
 # --- Skins d'armes --------------------------------------------------------------------
@@ -276,7 +323,17 @@ func test_weapon_skins_data() -> void:
 	assert_true(has_any and has_cat, "Skins universels et par catégorie")
 
 
+func test_weapon_skin_disabled_by_default() -> void:
+	assert_false(bool(Balance.get_value("shop", "weapon_skins_enabled", true)), "Skins d'armes plus tard")
+	assert_false(WeaponSkin.is_enabled())
+	var spr := Sprite2D.new()
+	add_child_autofree(spr)
+	WeaponSkin.apply(spr, SkinData.all_of_kind(SkinData.KIND_WEAPON)[0])
+	assert_null(spr.material, "Désactivé : aucun effet")
+
+
 func test_weapon_skin_apply() -> void:
+	WeaponSkin.enabled_override = 1
 	var spr := Sprite2D.new()
 	add_child_autofree(spr)
 	var s := SkinData.all_of_kind(SkinData.KIND_WEAPON)[0]
@@ -287,6 +344,7 @@ func test_weapon_skin_apply() -> void:
 	assert_eq(int(m.get_shader_parameter(&"pattern")), WeaponSkin.pattern_index(s.pattern))
 	WeaponSkin.apply(spr, null)
 	assert_null(spr.material, "null = apparence d'origine")
+	WeaponSkin.enabled_override = -1
 
 
 # --- Boutique -------------------------------------------------------------------------
@@ -301,11 +359,14 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	assert_eq(s.tab_chips.size(), 3, "Personnages / Armes / Gemmes")
+	assert_eq(s.tabs, [&"character", &"gems"] as Array[StringName], "Onglet Armes masqué")
+	assert_false(s.tab_chips.has(&"weapon"))
 	assert_eq(s.current_tab, &"character")
-	assert_gte(s.cards.size(), 1, "Au moins la tenue d'origine")
-	s.show_tab(&"weapon")
-	assert_eq(s.cards.size(), SkinData.all_of_kind(SkinData.KIND_WEAPON).size())
+	assert_eq(s.cards.size(), s.character_skins().size(), "Une carte par skin (hors base)")
+	assert_true(s.action_buttons.has(s.base_skin.id if s.base_skin != null else &""), "Panneau du personnage de base")
+	for c: Control in s.cards:
+		assert_not_null(c.find_child("RarityBand", true, false), "Bandeau de rareté")
+		assert_not_null(c.find_child("Preview", true, false), "Personnage en pied")
 	s.show_tab(&"gems")
 	assert_eq(s.pack_buttons.size(), Store.packs().size())
 	assert_true(s.simulated_badge.visible, "Badge « Paiement simulé »")
@@ -316,12 +377,22 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	assert_true(notice, "Message « Purement cosmétique »")
 
 
+func test_shop_weapon_tab_when_enabled() -> void:
+	WeaponSkin.enabled_override = 1
+	var s := _shop()
+	await wait_frames(2)
+	assert_true(s.tab_chips.has(&"weapon"))
+	s.show_tab(&"weapon")
+	assert_eq(s.cards.size(), SkinData.all_of_kind(SkinData.KIND_WEAPON).size())
+	WeaponSkin.enabled_override = -1
+
+
 func test_shop_buy_without_gems() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	s.show_tab(&"weapon")
-	var skin := _cheapest_skin(SkinData.KIND_WEAPON)
+	var skin := _cheapest_skin(SkinData.KIND_CHARACTER)
+	assert_not_null(skin)
 	assert_eq(s.skin_state(skin), "buy")
 	var m := s.ask_buy(skin) as ConfirmPanel
 	await wait_frames(1)
@@ -333,11 +404,10 @@ func test_shop_buy_without_gems() -> void:
 
 
 func test_shop_buy_with_gems_and_equip() -> void:
-	var skin := _cheapest_skin(SkinData.KIND_WEAPON)
+	var skin := _cheapest_skin(SkinData.KIND_CHARACTER)
 	_test_profile(skin.price_gems + 5)
 	var s := _shop()
 	await wait_frames(2)
-	s.show_tab(&"weapon")
 	var m := s.ask_buy(skin) as ConfirmPanel
 	await wait_frames(1)
 	assert_string_contains(m.message, str(skin.price_gems))
@@ -345,12 +415,11 @@ func test_shop_buy_with_gems_and_equip() -> void:
 	assert_true(Profile.owns_skin(skin.id), "Acheté après confirmation")
 	assert_eq(Profile.gems, 5, "Gemmes débitées")
 	assert_eq(s.skin_state(skin), "equipped", "Équipé après l'achat")
-	assert_eq(Profile.get_weapon_skin(WeaponData.CAT_PISTOL if skin.weapon_category == SkinData.ANY_CATEGORY
-		else skin.weapon_category), skin)
+	assert_eq(Profile.skin_character, skin.id)
 	assert_true((s.action_buttons[skin.id] as Button).disabled, "« Équipé »")
-	# Déséquiper puis rééquiper via le bouton
-	Profile.equip_weapon_skin(&"", skin.weapon_category)
-	s.call("_refresh_states")
+	assert_eq(s.skin_state(s.base_skin), "equip", "Le personnage de base n'est plus porté")
+	# Revenir au personnage de base puis rééquiper
+	assert_true(s.equip(s.base_skin))
 	assert_eq(s.skin_state(skin), "equip")
 	assert_eq((s.action_buttons[skin.id] as Button).text, "Équiper")
 	assert_true(s.equip(skin))
@@ -361,13 +430,8 @@ func test_shop_character_default_equipped() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	assert_eq(s.skin_state(null), "equipped", "Tenue d'origine portée par défaut")
-	var c := _cheapest_skin(SkinData.KIND_CHARACTER)
-	if c != null:
-		Profile.add_gems(c.price_gems)
-		assert_true(s.buy(c))
-		assert_eq(Profile.skin_character, c.id)
-		assert_eq(s.skin_state(null), "equip")
+	assert_eq(s.skin_state(s.base_skin), "equipped", "Personnage de base porté par défaut")
+	assert_eq(s.skin_state(null), "equipped")
 
 
 func test_store_simulated_pack() -> void:

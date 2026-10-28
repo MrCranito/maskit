@@ -4,7 +4,7 @@ extends Node
 ## Les touches sont PHYSIQUES (position QWERTY) : physical KEY_A = « Q » en AZERTY.
 ## Armes : weapon_next = touche en haut à gauche (Q en QWERTY, A en AZERTY — le Q AZERTY
 ## sert déjà à aller à gauche) + molette vers le bas ; weapon_prev = molette vers le haut ;
-## weapon_1..3 = rangée de chiffres (1/&, 2/é, 3/") ; reload = R.
+## weapon_1..3 = rangée de chiffres (1/&, 2/é, 3/") ; reload = R ; gadget (équipement) = G.
 
 const ACTIONS := {
 	"move_up": [KEY_W, KEY_Z, KEY_UP],
@@ -14,6 +14,7 @@ const ACTIONS := {
 	"toggle_debug": [KEY_F3],
 	"interact": [KEY_E],
 	"reload": [KEY_R],
+	"gadget": [KEY_G],
 	"weapon_next": [KEY_Q],
 	"weapon_prev": [],
 	"weapon_1": [KEY_1, KEY_KP_1],

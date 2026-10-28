@@ -30,7 +30,7 @@ func test_empilement() -> void:
 
 func test_non_empilable_une_case_chacun() -> void:
 	var inv := Inventory.new(4, 2, 999.0)
-	var gun := _it(&"wpn_pistol_9mm")
+	var gun := _it(&"wpn_smg_mp5")
 	assert_eq(gun.stack_max, 1)
 	assert_eq(inv.add_item(gun, 3), 3)
 	assert_eq(inv.used_slots(), 3)
@@ -38,8 +38,8 @@ func test_non_empilable_une_case_chacun() -> void:
 
 func test_capacite_en_cases() -> void:
 	var inv := Inventory.new(2, 1, 999.0)
-	assert_eq(inv.add_item(_it(&"wpn_pistol_9mm"), 1), 1)
-	assert_eq(inv.add_item(_it(&"wpn_smg_pocket"), 1), 1)
+	assert_eq(inv.add_item(_it(&"wpn_smg_mp5"), 1), 1)
+	assert_eq(inv.add_item(_it(&"wpn_smg_vector"), 1), 1)
 	assert_false(inv.can_add(_it(&"gold_bar")))
 	assert_eq(inv.add_item(_it(&"gold_bar"), 1), 0, "plein")
 	assert_eq(inv.used_slots(), 2)
@@ -87,11 +87,11 @@ func test_signaux_changed() -> void:
 func test_tri_regroupe_et_ordonne() -> void:
 	var inv := Inventory.new(6, 2, 999.0)
 	inv.add_item(_it(&"silver_dollars"), 5)
-	inv.add_item(_it(&"wpn_rifle_steel_storm"), 1)
+	inv.add_item(_it(&"wpn_rifle_aug"), 1)
 	inv.add_item(_it(&"pocket_watch"), 1)
 	inv.slots[8] = {"item": _it(&"silver_dollars"), "count": 7}
 	inv.sort()
-	assert_eq((inv.get_slot(0)["item"] as ItemData).id, &"wpn_rifle_steel_storm", "Légendaire en premier")
+	assert_eq((inv.get_slot(0)["item"] as ItemData).id, &"wpn_rifle_aug", "Légendaire en premier")
 	assert_eq(inv.count_of(&"silver_dollars"), 12)
 	assert_eq(inv.used_slots(), 3, "piles regroupées")
 
@@ -130,7 +130,7 @@ func test_ecran_inventaire_pause_et_affichage() -> void:
 func test_fiche_arme_dans_le_detail() -> void:
 	var saved := GameState.raid_inventory
 	GameState.raid_inventory = Inventory.new()
-	GameState.raid_inventory.add_item(_it(&"wpn_shotgun_pump"), 1)
+	GameState.raid_inventory.add_item(_it(&"wpn_rifle_m4a1"), 1)
 	var screen := InventoryScreen.new()
 	add_child_autofree(screen)
 	await wait_frames(1)
@@ -163,27 +163,64 @@ func test_equiper_echange_avec_l_arme_courante() -> void:
 	var saved_inv := GameState.raid_inventory
 	var saved_player := GameState.player
 	var fp := FakePlayer.new()
-	fp.weapon = WeaponCatalog.get_weapon(&"pistol_9mm")
+	fp.weapon = WeaponCatalog.get_weapon(&"smg_mp5")
 	add_child_autofree(fp)
 	GameState.player = fp
 	GameState.raid_inventory = Inventory.new()
-	GameState.raid_inventory.add_item(_it(&"wpn_rifle_assault"), 1)
+	GameState.raid_inventory.add_item(_it(&"wpn_rifle_ak47"), 1)
 	var screen := InventoryScreen.new()
 	add_child_autofree(screen)
 	await wait_frames(1)
 	screen.open()
 	assert_true(screen._equip_selected(), "échange effectué")
-	assert_eq(fp.weapon.id, &"rifle_assault", "arme équipée")
-	assert_eq(GameState.raid_inventory.count_of(&"wpn_rifle_assault"), 0, "l'objet quitte le sac")
-	assert_eq(GameState.raid_inventory.count_of(&"wpn_pistol_9mm"), 1, "l'arme remplacée revient dans le sac")
+	assert_eq(fp.weapon.id, &"rifle_ak47", "arme équipée")
+	assert_eq(GameState.raid_inventory.count_of(&"wpn_rifle_ak47"), 0, "l'objet quitte le sac")
+	assert_eq(GameState.raid_inventory.count_of(&"wpn_smg_mp5"), 1, "l'arme remplacée revient dans le sac")
 	# Sac plein : l'arme remplacée ne rentre pas → rien ne se passe.
 	GameState.raid_inventory = Inventory.new(1, 1, 0.5)
-	GameState.raid_inventory.slots[0] = {"item": _it(&"wpn_lmg_saw"), "count": 1}
+	GameState.raid_inventory.slots[0] = {"item": _it(&"wpn_sniper_m82"), "count": 1}
 	screen.bind(GameState.raid_inventory)
 	screen.selected = 0
 	assert_false(screen._equip_selected(), "sac plein : refus")
-	assert_eq(fp.weapon.id, &"rifle_assault", "arme inchangée")
-	assert_eq(GameState.raid_inventory.count_of(&"wpn_lmg_saw"), 1, "objet resté dans le sac")
+	assert_eq(fp.weapon.id, &"rifle_ak47", "arme inchangée")
+	assert_eq(GameState.raid_inventory.count_of(&"wpn_sniper_m82"), 1, "objet resté dans le sac")
+	screen.close()
+	GameState.raid_inventory = saved_inv
+	GameState.player = saved_player
+
+
+class FakeGadgetPlayer extends Node2D:
+	var weapon: WeaponData = null
+	var gadget: WeaponData = null
+	func get_gadget() -> WeaponData:
+		return gadget
+	func get_gadget_charges() -> int:
+		return gadget.charges if gadget != null else 0
+	func equip_gadget(w: WeaponData) -> WeaponData:
+		var old := gadget
+		gadget = w
+		return old
+
+
+func test_equiper_un_equipement_va_dans_l_emplacement_gadget() -> void:
+	var saved_inv := GameState.raid_inventory
+	var saved_player := GameState.player
+	var fp := FakeGadgetPlayer.new()
+	fp.weapon = WeaponCatalog.get_weapon(&"smg_mp5")
+	fp.gadget = WeaponCatalog.get_weapon(&"gadget_frag")
+	add_child_autofree(fp)
+	GameState.player = fp
+	GameState.raid_inventory = Inventory.new()
+	GameState.raid_inventory.add_item(_it(&"wpn_gadget_c4"), 1)
+	var screen := InventoryScreen.new()
+	add_child_autofree(screen)
+	await wait_frames(1)
+	screen.open()
+	assert_true(screen._equip_btn.visible)
+	assert_true(screen._equip_selected())
+	assert_eq(fp.gadget.id, &"gadget_c4", "équipement remplacé")
+	assert_eq(fp.weapon.id, &"smg_mp5", "arme intacte")
+	assert_eq(GameState.raid_inventory.count_of(&"wpn_gadget_frag"), 1, "ancien équipement dans le sac")
 	screen.close()
 	GameState.raid_inventory = saved_inv
 	GameState.player = saved_player

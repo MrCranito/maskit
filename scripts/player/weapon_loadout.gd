@@ -12,6 +12,9 @@ var current: int = 0
 var cooldown: float = 0.0
 var reload_left: float = 0.0
 var reload_total: float = 0.0
+## Emplacement d'équipement (grenade, mine, C4, drone) et charges restantes.
+var gadget: WeaponData = null
+var gadget_charges: int = 0
 
 
 func _init(slot_count: int = 3) -> void:
@@ -36,8 +39,17 @@ static func magazine_of(w: WeaponData) -> int:
 ## Remplit les emplacements depuis `list` (null autorisé), chargeurs pleins, premier
 ## emplacement occupé sélectionné.
 func set_weapons(list: Array) -> void:
+	# Les équipements de la liste vont dans l'emplacement d'équipement.
+	var guns: Array[WeaponData] = []
+	for v: Variant in list:
+		var w := v as WeaponData
+		if w != null and w.is_gadget():
+			if gadget == null:
+				set_gadget(w)
+			continue
+		guns.append(w)
 	for i: int in slots.size():
-		var w: WeaponData = list[i] as WeaponData if i < list.size() else null
+		var w: WeaponData = guns[i] if i < guns.size() else null
 		slots[i] = w
 		ammo[i] = magazine_of(w)
 	current = 0
@@ -112,12 +124,41 @@ func replace_current(w: WeaponData) -> void:
 	ammo[current] = clampi(ammo[current], 0, mag) if mag > 0 else 0
 
 
+## Ids des armes tenues + de l'équipement s'il lui reste des charges (extraction).
 func carried_ids() -> Array[StringName]:
 	var out: Array[StringName] = []
 	for w: WeaponData in slots:
 		if w != null and not String(w.id).is_empty():
 			out.append(w.id)
+	if gadget != null and gadget_charges > 0 and not String(gadget.id).is_empty():
+		out.append(gadget.id)
 	return out
+
+
+# --- Équipement -----------------------------------------------------------------
+
+static func charges_of(w: WeaponData) -> int:
+	return maxi(w.charges, 1) if w != null else 0
+
+
+## Place `w` dans l'emplacement d'équipement (charges pleines) ; renvoie l'ancien.
+func set_gadget(w: WeaponData) -> WeaponData:
+	var old: WeaponData = gadget
+	gadget = w
+	gadget_charges = charges_of(w)
+	return old
+
+
+func has_gadget_charge() -> bool:
+	return gadget != null and gadget_charges > 0
+
+
+## Consomme une charge (false s'il n'y en a plus).
+func consume_gadget_charge() -> bool:
+	if not has_gadget_charge():
+		return false
+	gadget_charges -= 1
+	return true
 
 
 func get_ammo() -> int:

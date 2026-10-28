@@ -653,6 +653,12 @@ func get_carried_weapon_ids() -> Array[StringName]:
 	for w: WeaponData in WeaponHud.read_weapons(player):
 		if w != null:
 			out.append(w.id)
+	# Équipement : revient s'il reste des charges.
+	if player.has_method(&"get_gadget"):
+		var g := player.call(&"get_gadget") as WeaponData
+		var n := int(player.call(&"get_gadget_charges")) if player.has_method(&"get_gadget_charges") else 1
+		if g != null and n > 0:
+			out.append(g.id)
 	return out
 
 
@@ -662,6 +668,7 @@ func _end_raid_state() -> void:
 	if GameState.raid_inventory != null:
 		GameState.raid_inventory.clear()
 	GameState.raid_weapons.clear()
+	GameState.set("raid_gadget", null)
 	if is_instance_valid(player):
 		player.set_physics_process(false)
 

@@ -27,6 +27,8 @@ signal ammo_changed(ammo: int, magazine: int)
 ## Rechargement commencé / terminé (true = terminé normalement, false = annulé).
 signal reload_started
 signal reload_finished(completed: bool)
+## Équipement (grenade, mine, C4, drone) ou ses charges changés.
+signal gadget_changed
 
 const LAYER_PLAYER := 2
 const MASK_WORLD := 1
@@ -124,6 +126,22 @@ var _burst_shots: int = 0
 var _since_shot: float = 10.0
 var _pending_shell: float = -1.0
 var _pending_shells: int = 0
+## Salve de roquettes (M202) : tirs restants, délai, direction, arme.
+var _salvo_left: int = 0
+var _salvo_timer: float = 0.0
+var _salvo_dir: Vector2 = Vector2.RIGHT
+var _salvo_interval: float = 0.08
+var _salvo_consumes: bool = false
+## C4 posés en attente de détonation (2e appui).
+var _c4_placed: Array[GadgetDevice] = []
+var _active_drone: GadgetDrone = null
+## Gravité faible : sur une case de layout.low_gravity_cells (mis à jour toutes les 0,1 s).
+var in_low_gravity: bool = false
+var _lowg_check: float = 0.0
+var _lowg_accel_mult: float = 0.18
+var _lowg_decel_mult: float = 0.06
+var _lowg_sharpness_mult: float = 0.08
+var _lowg_recoil_push: float = 6.0
 
 @onready var camera: Camera2D = $Camera2D
 @onready var projectile_pool: ProjectilePool = $ProjectilePool
@@ -148,6 +166,8 @@ func _ready() -> void:
 		loadout.set_weapons([exported])
 	else:
 		loadout.set_weapons(initial_weapons())
+		if loadout.gadget == null and GameState.raid_gadget != null:
+			loadout.set_gadget(GameState.raid_gadget)
 	_on_weapon_changed(false)
 	_setup_camera()
 	EventBus.player_spawned.emit(self)
@@ -157,7 +177,7 @@ func _ready() -> void:
 static func initial_weapons() -> Array[WeaponData]:
 	var out: Array[WeaponData] = []
 	for w: WeaponData in GameState.raid_weapons:
-		if w != null:
+		if w != null and not w.is_gadget():
 			out.append(w)
 	if out.is_empty():
 		out.append(load_default_weapon())
@@ -202,6 +222,11 @@ func _load_balance() -> void:
 	_smoke_burst_shots = int(Balance.get_value("player_fx", "barrel_smoke_burst", 3))
 	_smoke_delay = Balance.get_float("player_fx", "barrel_smoke_delay", 0.12)
 	_shells_enabled = bool(Balance.get_value("player_fx", "shells", true))
+	_salvo_interval = Balance.get_float("player_fx", "salvo_interval", 0.08)
+	_lowg_accel_mult = Balance.get_float("low_gravity", "accel_mult", 0.18)
+	_lowg_decel_mult = Balance.get_float("low_gravity", "decel_mult", 0.06)
+	_lowg_sharpness_mult = Balance.get_float("low_gravity", "sharpness_mult", 0.08)
+	_lowg_recoil_push = Balance.get_float("low_gravity", "recoil_push", 6.0)
 
 
 func _setup_camera() -> void:
@@ -223,10 +248,14 @@ func _setup_camera() -> void:
 ## Remplace toutes les armes tenues (taille ≤ emplacements, null = emplacement vide).
 func set_weapons(list: Array[WeaponData]) -> void:
 	var was_reloading: bool = loadout.is_reloading()
+	var had_gadget: WeaponData = loadout.gadget
 	loadout.set_weapons(list)
 	if was_reloading:
 		reload_finished.emit(false)
+	_salvo_left = 0
 	_on_weapon_changed(false)
+	if loadout.gadget != had_gadget:
+		gadget_changed.emit()
 
 
 ## Armes tenues (taille = nombre d'emplacements, null = vide). Copie.
@@ -242,6 +271,7 @@ func switch_to(slot: int) -> void:
 	if was_reloading:
 		reload_finished.emit(false)
 	_pending_shells = 0
+	_salvo_left = 0
 	_play_sfx(&"weapon_switch")
 	_on_weapon_changed(true)
 
@@ -256,6 +286,9 @@ func next_weapon(step: int = 1) -> void:
 ## Équipe `w` dans l'emplacement courant ; renvoie l'arme remplacée (ou null) — l'appelant
 ## la remet dans le sac.
 func equip_into_current_slot(w: WeaponData) -> WeaponData:
+	if w != null and w.is_gadget():
+		# Équipement : va dans l'emplacement d'équipement, renvoie l'ancien.
+		return equip_gadget(w)
 	var was_reloading: bool = loadout.is_reloading()
 	var old: WeaponData = loadout.equip_into_current(w)
 	if was_reloading:
@@ -265,9 +298,98 @@ func equip_into_current_slot(w: WeaponData) -> WeaponData:
 	return old
 
 
-## Ids des armes tenues (extraction).
+## Ids des armes tenues + équipement s'il reste des charges (extraction).
 func get_carried_weapon_ids() -> Array[StringName]:
 	return loadout.carried_ids()
+
+
+# =============================================================================
+# Équipement (contrat « Refonte n°2 »)
+# =============================================================================
+
+func get_gadget() -> WeaponData:
+	return loadout.gadget
+
+
+func get_gadget_charges() -> int:
+	return loadout.gadget_charges if loadout.gadget != null else 0
+
+
+## Place `w` dans l'emplacement d'équipement (charges pleines) ; renvoie l'ancien.
+func set_gadget(w: WeaponData) -> WeaponData:
+	var old: WeaponData = loadout.set_gadget(w)
+	gadget_changed.emit()
+	return old
+
+
+## Équipe `w` dans l'emplacement d'équipement (inventaire) ; renvoie l'équipement
+## remplacé (ou null) — l'appelant le remet dans le sac.
+func equip_gadget(w: WeaponData) -> WeaponData:
+	var old: WeaponData = set_gadget(w)
+	_play_sfx(&"item_equip")
+	return old
+
+
+## C4 posés non encore déclenchés.
+func get_placed_c4_count() -> int:
+	var n: int = 0
+	for d: GadgetDevice in _c4_placed:
+		if is_instance_valid(d) and not d.detonated:
+			n += 1
+	return n
+
+
+## Utilise l'équipement dans `dir` (ZERO = visée, sinon direction de déplacement).
+## C4 : si des charges sont posées, l'appui suivant les fait exploser.
+## Renvoie true si quelque chose s'est produit.
+func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
+	var g: WeaponData = loadout.gadget
+	if g == null or not _alive or _hidden:
+		return false
+	var kind: StringName = g.gadget_kind
+	if kind == WeaponData.GADGET_C4 and get_placed_c4_count() > 0:
+		for d: GadgetDevice in _c4_placed:
+			if is_instance_valid(d):
+				d.detonate()
+		_c4_placed.clear()
+		_play_sfx(&"click")
+		gadget_changed.emit()
+		return true
+	if not loadout.consume_gadget_charge():
+		_play_sfx(&"dry_fire")
+		return false
+	var d0: Vector2 = gadget_direction(dir, aim_direction, velocity, _aiming)
+	var parent: Node = projectile_pool.get_world_parent() if projectile_pool != null else get_parent()
+	if kind == WeaponData.GADGET_DRONE:
+		if is_instance_valid(_active_drone):
+			_active_drone.leaving = true
+		_active_drone = GadgetDrone.spawn(parent, self, g)
+	else:
+		var hand_h: float = visual.hand_height if visual != null else 24.0
+		var place: bool = kind == WeaponData.GADGET_MINE or kind == WeaponData.GADGET_C4
+		var dist: float = Balance.get_float("gadgets", "place_distance", 40.0) if place \
+			else maxf(g.throw_range, 60.0)
+		var target: Vector2 = global_position + d0 * dist
+		var dev := GadgetDevice.throw_device(parent, g, global_position + d0 * 12.0, 0.0 if place else hand_h,
+			target, self, in_low_gravity)
+		if kind == WeaponData.GADGET_C4:
+			_c4_placed.append(dev)
+	if visual != null:
+		visual.on_throw(d0, g)
+	_fire_noise = maxf(_fire_noise, 0.4)
+	_play_sfx(&"blade_swing")
+	gadget_changed.emit()
+	return true
+
+
+## Logique pure : direction d'un lancer — `dir` si fournie, sinon la visée si on vise,
+## sinon la direction de déplacement, sinon la visée.
+static func gadget_direction(dir: Vector2, aim: Vector2, vel: Vector2, aiming: bool) -> Vector2:
+	if dir != Vector2.ZERO:
+		return dir.normalized()
+	if not aiming and vel.length_squared() > 25.0:
+		return vel.normalized()
+	return aim.normalized() if aim != Vector2.ZERO else Vector2.RIGHT
 
 
 ## Munitions dans le chargeur courant (-1 = illimité).
@@ -357,8 +479,19 @@ func _physics_process(delta: float) -> void:
 		_update_camera(delta)
 		return
 
-	velocity = step_velocity(velocity, input_dir, get_effective_speed(), acceleration, deceleration,
-		accel_sharpness, turn_boost, delta)
+	_lowg_check -= delta
+	if _lowg_check <= 0.0:
+		_lowg_check = 0.1
+		in_low_gravity = LowGravity.is_at(get_tree(), global_position)
+	var acc: float = acceleration
+	var dec: float = deceleration
+	var sharp: float = accel_sharpness
+	if in_low_gravity:
+		# Inertie : on glisse, on met longtemps à s'arrêter ou à tourner.
+		acc *= _lowg_accel_mult
+		dec *= _lowg_decel_mult
+		sharp *= _lowg_sharpness_mult
+	velocity = step_velocity(velocity, input_dir, get_effective_speed(), acc, dec, sharp, turn_boost, delta)
 	move_and_slide()
 	_is_moving = velocity.length_squared() > 25.0 and input_dir != Vector2.ZERO
 
@@ -368,6 +501,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _tick_weapon(delta: float) -> void:
+	_tick_salvo(delta)
 	if loadout.tick(delta):
 		_was_reloading = false
 		ammo_changed.emit(get_ammo(), get_magazine_size())
@@ -457,7 +591,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if not _alive:
 		return
-	if event.is_action_pressed("reload"):
+	if event.is_action_pressed("gadget"):
+		use_gadget(Vector2.ZERO)
+	elif event.is_action_pressed("reload"):
 		reload()
 	elif event.is_action_pressed("weapon_next"):
 		next_weapon(1)
@@ -585,13 +721,115 @@ func fire(dir: Vector2) -> void:
 	var height: float = maxf(global_position.y - muzzle.y, 0.0)
 	var origin: Vector2 = Vector2(muzzle.x, muzzle.y + height)
 	var count: int = maxi(w.projectile_count, 1)
+	var homing: Node2D = find_homing_target(d0) if weapon_homing(w) > 0.0 else null
+	if is_salvo_weapon(w):
+		# Salve (M202) : une roquette maintenant, les suivantes (prises dans le chargeur)
+		# à `salvo_interval` ; la cadence repart après la salve.
+		var extra: int = int(Balance.get_value("player_fx", "salvo_size", 4)) - 1
+		_salvo_left = mini(extra, maxi(get_ammo(), 0)) if get_ammo() >= 0 else extra
+		_salvo_consumes = true
+		_salvo_timer = _salvo_interval
+		_salvo_dir = d0
+		loadout.cooldown += _salvo_interval * float(_salvo_left)
+	elif count > 1 and w.projectile_style == &"rocket":
+		# Plusieurs roquettes par tir : partent en salve rapide plutôt qu'ensemble.
+		_salvo_left = count - 1
+		_salvo_consumes = false
+		_salvo_timer = _salvo_interval
+		_salvo_dir = d0
+		count = 1
 	for i: int in count:
-		projectile_pool.spawn(origin, spread_direction(d0, i, count, w.spread_degrees, w.inaccuracy_deg),
-			w, self, height)
+		var p: Projectile = projectile_pool.spawn(origin,
+			spread_direction(d0, i, count, w.spread_degrees, w.inaccuracy_deg), w, self, height)
+		if p != null and homing != null:
+			p.set_homing(homing, weapon_homing(w))
 	_on_fired_feel(w, d0)
+	if in_low_gravity:
+		# Recul : pousse légèrement le joueur vers l'arrière.
+		velocity -= d0 * _lowg_recoil_push * maxf(w.recoil_px, 1.0) * float(maxi(w.projectile_count, 1))
 	fired.emit(d0)
 	ammo_changed.emit(get_ammo(), get_magazine_size())
 	if loadout.needs_reload():
+		reload()
+
+
+## Force de guidage d'une arme (0 = aucun) : champ `homing` s'il existe, sinon le
+## Javelin est guidé par défaut ([player_fx] javelin_homing).
+static func weapon_homing(w: WeaponData) -> float:
+	if w == null:
+		return 0.0
+	var h: Variant = w.get("homing")
+	if h != null and float(h) > 0.0:
+		return float(h)
+	if w.affixes.has(&"homing") or String(w.id) == "rocket_javelin":
+		return Balance.get_float("player_fx", "javelin_homing", 3.0)
+	return 0.0
+
+
+## Arme à salve (M202) : une pression tire jusqu'à [player_fx] salvo_size projectiles du
+## chargeur à salvo_interval. Affixe `salvo`, ou id rocket_m202.
+static func is_salvo_weapon(w: WeaponData) -> bool:
+	return w != null and (w.affixes.has(&"salvo") or String(w.id) == "rocket_m202")
+
+
+## Ennemi visible le plus proche de l'axe de visée (cône [player_fx] homing_cone_deg,
+## portée de l'arme). Un parcours du groupe par tir.
+func find_homing_target(dir: Vector2) -> Node2D:
+	var w: WeaponData = weapon
+	var max_d: float = w.range if w != null else 800.0
+	var cos_lim: float = cos(deg_to_rad(Balance.get_float("player_fx", "homing_cone_deg", 35.0)))
+	var best: Node2D = null
+	var best_score: float = -INF
+	for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var n := e as Node2D
+		if n == null or not n.is_visible_in_tree():
+			continue
+		if n.has_method("is_alive") and not bool(n.call("is_alive")):
+			continue
+		var to: Vector2 = n.global_position - global_position
+		var d: float = to.length()
+		if d < 1.0 or d > max_d:
+			continue
+		var c: float = dir.dot(to / d)
+		if c < cos_lim:
+			continue
+		var score: float = c * 2.0 - d / max_d
+		if score > best_score:
+			best_score = score
+			best = n
+	return best
+
+
+func _tick_salvo(delta: float) -> void:
+	if _salvo_left <= 0:
+		return
+	_salvo_timer -= delta
+	if _salvo_timer > 0.0:
+		return
+	var w: WeaponData = weapon
+	if w == null or not _alive or _hidden:
+		_salvo_left = 0
+		return
+	_salvo_timer = _salvo_interval
+	if _salvo_consumes:
+		if not loadout.has_ammo() or loadout.is_reloading():
+			_salvo_left = 0
+			return
+		if loadout.get_ammo() > 0:
+			loadout.ammo[loadout.current] -= 1
+		ammo_changed.emit(get_ammo(), get_magazine_size())
+	var i: int = maxi(w.projectile_count, 1) - _salvo_left
+	_salvo_left -= 1
+	var muzzle: Vector2 = get_muzzle_position(_salvo_dir)
+	var height: float = maxf(global_position.y - muzzle.y, 0.0)
+	var dir: Vector2 = spread_direction(_salvo_dir, i, maxi(w.projectile_count, 1), w.spread_degrees, w.inaccuracy_deg)
+	projectile_pool.spawn(Vector2(muzzle.x, muzzle.y + height), dir, w, self, height)
+	if visual != null:
+		visual.on_fired(_salvo_dir)
+	_play_sfx(StringName(String(visual.weapon_view.profile.get("sfx", "gun_shot_alt"))) if visual != null else &"gun_shot_alt")
+	add_shake(w.shake_px * 0.6, camera_shake_duration)
+	_fire_noise = 1.0
+	if _salvo_consumes and _salvo_left <= 0 and loadout.needs_reload():
 		reload()
 
 
@@ -650,7 +888,7 @@ func _eject_shell() -> void:
 	var hand: Vector2 = visual.hand_position()
 	var ground := global_position + Vector2(hand.x, hand.y + visual.hand_height)
 	var big: bool = w.category == WeaponData.CAT_SHOTGUN
-	fx.shell(ground, visual.hand_height, aim_direction, big)
+	fx.shell(ground, visual.hand_height, aim_direction, big, in_low_gravity)
 
 
 func _emit_barrel_smoke(strength: float) -> void:
@@ -848,6 +1086,8 @@ func get_debug_info() -> Dictionary:
 		"ammo": "%d/%d%s" % [get_ammo(), get_magazine_size(), " (recharge)" if is_reloading() else ""],
 		"sprite": "planche" if visual != null and visual.uses_sheets else "repli",
 		"pool_active": projectile_pool.get_active_count() if projectile_pool != null else 0,
+		"gadget": ("%s x%d" % [loadout.gadget.display_name, get_gadget_charges()]) if loadout.gadget != null else "-",
+		"low_gravity": in_low_gravity,
 	}
 
 

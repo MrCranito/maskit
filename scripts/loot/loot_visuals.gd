@@ -104,7 +104,8 @@ static func draw_weapon(ci: CanvasItem, rect: Rect2, w: WeaponData, color: Color
 		var sz := ts * k
 		ci.draw_texture_rect(tex, Rect2(rect.position + (rect.size - sz) * 0.5, sz), false, color)
 	else:
-		draw_weapon_glyph(ci, rect, w.category, color.lerp(w.get_rarity_color().lightened(0.55), 0.35))
+		var key: StringName = w.gadget_kind if w.is_gadget() and GLYPHS.has(w.gadget_kind) else w.category
+		draw_weapon_glyph(ci, rect, key, color.lerp(w.get_rarity_color().lightened(0.55), 0.35))
 
 
 ## Silhouettes de profil (canon vers la droite) dans une boîte 100 × 50.
@@ -118,6 +119,13 @@ const GLYPHS := {
 	&"sniper": [["p", [2, 15, 26, 14, 26, 26, 2, 33]], ["r", 26, 14, 58, 25], ["r", 56, 17, 99, 20], ["r", 30, 5, 56, 11], ["r", 36, 11, 40, 14], ["r", 48, 11, 52, 14], ["p", [70, 20, 72, 20, 64, 40, 62, 40]]],
 	&"lmg": [["p", [2, 14, 20, 14, 20, 28, 4, 32]], ["r", 20, 12, 70, 28], ["r", 70, 16, 97, 21], ["r", 34, 28, 52, 43], ["r", 40, 6, 58, 12]],
 	&"rocket_launcher": [["r", 6, 14, 86, 28], ["p", [86, 12, 98, 16, 98, 26, 86, 30]], ["r", 2, 12, 8, 30], ["r", 40, 28, 48, 42], ["r", 52, 6, 62, 14]],
+	# Équipement (clé = gadget_kind), dessiné au centre de la boîte.
+	&"frag": [["c", 50, 30, 15], ["r", 44, 8, 56, 16], ["p", [56, 10, 66, 6, 68, 10, 58, 14]], ["c", 66, 4, 3]],
+	&"smoke": [["r", 38, 12, 62, 46], ["r", 42, 6, 58, 12], ["p", [58, 8, 68, 4, 70, 8, 60, 12]], ["c", 30, 14, 6], ["c", 22, 8, 4]],
+	&"mine": [["p", [24, 38, 76, 38, 70, 26, 30, 26]], ["r", 44, 18, 56, 26], ["c", 50, 17, 4]],
+	&"c4": [["r", 26, 16, 74, 42], ["r", 30, 12, 46, 16], ["r", 54, 12, 70, 16], ["r", 40, 24, 60, 34]],
+	&"drone": [["r", 40, 22, 60, 34], ["r", 22, 26, 78, 29], ["c", 22, 22, 9], ["c", 78, 22, 9], ["r", 47, 34, 53, 40]],
+	&"gadget": [["c", 50, 30, 15], ["r", 44, 8, 56, 16]],
 	&"grenade_launcher": [["p", [2, 18, 22, 15, 22, 28, 4, 34]], ["r", 22, 14, 52, 28], ["c", 40, 26, 11], ["r", 50, 12, 88, 26], ["r", 56, 28, 64, 42]],
 }
 

@@ -44,6 +44,11 @@ var _svg_tex: Array[Texture2D] = []
 var _weapon_pivot: Node2D = null
 var _hp_bar: Node2D = null
 var _reload_ring: Node2D = null
+## Équipement montré dans la main libre pendant un lancer / une pose.
+var _gadget_hand: Node2D = null
+var _gadget_hand_left: float = 0.0
+var _gadget_tex: Texture2D = null
+var _gadget_kind: StringName = &""
 var _flash_mat: ShaderMaterial = null
 var _skin_mat: Material = null
 
@@ -292,6 +297,40 @@ func on_fired(_dir: Vector2) -> void:
 	_body_kick_px = float(weapon_view.profile.get("body_px", 1.0))
 
 
+## Lancer / pose d'équipement : élan du corps + l'objet apparaît dans la main libre.
+func on_throw(_dir: Vector2, g: WeaponData = null) -> void:
+	_body_kick = 1.0
+	_body_kick_px = -3.0
+	_sq_v -= 2.0
+	if g == null:
+		return
+	if _gadget_hand == null:
+		_gadget_hand = Node2D.new()
+		_gadget_hand.name = "GadgetHand"
+		_gadget_hand.z_index = 2
+		_gadget_hand.draw.connect(_draw_gadget_hand)
+		_root.add_child(_gadget_hand)
+	if g.gadget_kind != _gadget_kind:
+		_gadget_kind = g.gadget_kind
+		var p: String = WeaponView.WEAPON_SPRITE_DIR + String(g.id) + ".png"
+		_gadget_tex = load(p) as Texture2D if ResourceLoader.exists(p) else null
+		_gadget_hand.queue_redraw()
+	var aim: Vector2 = player.aim_direction
+	_gadget_hand.position = Player.hand_offset(-aim, hand_height + 6.0, hand_radius)
+	_gadget_hand.visible = true
+	_gadget_hand_left = 0.3
+
+
+func _draw_gadget_hand() -> void:
+	if _gadget_tex != null:
+		var sz := Vector2(_gadget_tex.get_size())
+		var sc: float = 16.0 / maxf(sz.y, 1.0)
+		_gadget_hand.draw_set_transform(Vector2.ZERO, 0.0, Vector2(sc, sc))
+		_gadget_hand.draw_texture(_gadget_tex, -sz * 0.5)
+		return
+	GadgetDevice.draw_gadget_shape(_gadget_hand, _gadget_kind)
+
+
 func on_hit() -> void:
 	_flash_left = _hit_flash_time
 	_hit_t = 1.0
@@ -382,6 +421,10 @@ func _process(delta: float) -> void:
 	_shadow.scale = Vector2(1.0 + _sq * 0.5 - bob * 0.01, 1.0)
 
 	weapon_view.animate(delta)
+	if _gadget_hand_left > 0.0:
+		_gadget_hand_left -= delta
+		if _gadget_hand_left <= 0.0:
+			_gadget_hand.visible = false
 
 	if moving and _turn_dust:
 		_check_turn(delta, vel, ratio)

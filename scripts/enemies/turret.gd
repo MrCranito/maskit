@@ -608,6 +608,9 @@ func update_perception() -> bool:
 		return false
 	if not has_line_of_sight_to(ppos):
 		return false
+	# Fumée (SmokeField) : la tourelle ne voit pas à travers.
+	if SmokeField.blocks_line(global_position, ppos):
+		return false
 	can_see_player = true
 	target_position = ppos
 	return true

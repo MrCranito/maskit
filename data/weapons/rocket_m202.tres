@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rocket_m202"
+display_name = "M202"
+description = "Quatre tubes : quatre roquettes tirées coup sur coup."
+family = "firearm"
+category = &"rocket_launcher"
+rarity = 3
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 30.0
+fire_rate = 2.4
+projectile_speed = 520.0
+range = 820.0
+projectile_lifetime = 1.577
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 2.5
+pierce = 0
+projectile_color = Color(1.0, 0.55, 0.2, 1)
+projectile_style = &"rocket"
+affixes = Array[StringName]([])
+magazine_size = 4
+reload_time = 3.4
+automatic = false
+explosion_radius = 100.0
+explosion_damage = 80.0
+recoil_px = 14.0
+shake_px = 9.0
+move_speed_mult = 0.85
+muzzle_flash_scale = 1.8
+eject_shells = false
+sprite_id = &"rocket_m202"
+value = 1300

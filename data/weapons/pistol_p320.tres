@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"pistol_p320"
+display_name = "P320"
+description = "Le pistolet des pros : précis, rapide, chargeur généreux."
+family = "firearm"
+category = &"pistol"
+rarity = 4
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 30.0
+fire_rate = 4.6
+projectile_speed = 950.0
+range = 620.0
+projectile_lifetime = 0.653
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 0.8
+pierce = 1
+projectile_color = Color(1.0, 0.82, 0.4, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 17
+reload_time = 0.9
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 4.0
+shake_px = 1.6
+move_speed_mult = 1.0
+muzzle_flash_scale = 0.8
+eject_shells = true
+sprite_id = &"pistol_p320"
+value = 1300

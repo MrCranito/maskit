@@ -108,9 +108,13 @@ func _build() -> void:
 
 
 func _build_success(root: VBoxContainer) -> void:
-	var weapons: Array = summary.get("weapons", [])
+	var split := split_gadgets(summary.get("weapons", []))
+	var weapons: Array = split[0]
 	root.add_child(_section("Armes récupérées (%d)" % weapons.size()))
 	root.add_child(_weapon_grid(weapons, false))
+	if not (split[1] as Array).is_empty():
+		root.add_child(_section("Équipement récupéré"))
+		root.add_child(_weapon_grid(split[1], false))
 
 	var items: Dictionary = summary.get("items", {})
 	var n_items := 0
@@ -128,9 +132,13 @@ func _build_success(root: VBoxContainer) -> void:
 
 
 func _build_death(root: VBoxContainer) -> void:
-	var lost: Array = summary.get("lost_weapons", [])
+	var split := split_gadgets(summary.get("lost_weapons", []))
+	var lost: Array = split[0]
 	root.add_child(_section("Armes perdues (%d)" % lost.size()))
 	root.add_child(_weapon_grid(lost, true))
+	if not (split[1] as Array).is_empty():
+		root.add_child(_section("Équipement perdu"))
+		root.add_child(_weapon_grid(split[1], true))
 	var n := int(summary.get("lost_items", 0))
 	var v := int(summary.get("lost_value", 0))
 	var loot := InventoryStyle.label(
@@ -151,6 +159,19 @@ func _build_death(root: VBoxContainer) -> void:
 		gl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		gift.add_child(gl)
 		root.add_child(gift)
+
+
+## Sépare une liste d'ids en [armes, équipements].
+static func split_gadgets(ids: Array) -> Array:
+	var weapons: Array = []
+	var gadgets: Array = []
+	for id: Variant in ids:
+		var w := WeaponCatalog.get_weapon(StringName(str(id)))
+		if w != null and w.is_gadget():
+			gadgets.append(id)
+		else:
+			weapons.append(id)
+	return [weapons, gadgets]
 
 
 func _section(text: String) -> Label:
@@ -200,7 +221,8 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	nm.custom_minimum_size = Vector2(170, 0)
 	v.add_child(nm)
-	v.add_child(InventoryStyle.label("%s · %s" % [w.get_category_name(), w.get_rarity_name()], 12, InventoryStyle.TEXT_SECONDARY, 700))
+	var cat := ("Équipement ×%d" % w.charges) if w.is_gadget() else w.get_category_name()
+	v.add_child(InventoryStyle.label("%s · %s" % [cat, w.get_rarity_name()], 12, InventoryStyle.TEXT_SECONDARY, 700))
 	return card
 
 

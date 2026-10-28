@@ -44,6 +44,13 @@ func _build() -> void:
 		_create_one()
 
 
+## Parent monde des objets lancés (même conteneur que les projectiles).
+func get_world_parent() -> Node:
+	if not is_instance_valid(_container):
+		_build()
+	return _container if is_instance_valid(_container) else _get_world_parent()
+
+
 func _get_world_parent() -> Node:
 	if not world_parent_path.is_empty() and has_node(world_parent_path):
 		return get_node(world_parent_path)

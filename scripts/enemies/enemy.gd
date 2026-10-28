@@ -517,7 +517,9 @@ func update_perception(dt: float = 0.0) -> bool:
 	var gain := 0.0
 	var stimulus := false
 	# Vue.
-	if not hidden and _last_los_clear and dist <= sight_r and (combat or is_in_vision_cone(ppos)):
+	# Fumée (SmokeField) : bloque la vue, pas l'ouïe.
+	if not hidden and _last_los_clear and dist <= sight_r and (combat or is_in_vision_cone(ppos)) \
+			and not SmokeField.blocks_line(global_position, ppos):
 		can_see_player = true
 		last_seen_position = ppos
 		has_last_seen = true

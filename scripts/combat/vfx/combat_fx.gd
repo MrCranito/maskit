@@ -37,6 +37,7 @@ var explosion_zoom_kick: float = 0.06
 var explosion_noise_radius: float = 900.0
 var explosion_min_frac: float = 0.25
 var explosion_self_mult: float = 0.25
+var low_gravity_fx_mult: float = 0.15
 var _last_impact_msec: int = 0
 ## Cumul des dégâts par cible sur une courte fenêtre (plombs d'une même salve) :
 ## instance_id → [index de particule, total, msec].
@@ -106,6 +107,7 @@ func _load_balance() -> void:
 	explosion_noise_radius = Balance.get_float("projectile_fx", "explosion_noise_radius", 900.0)
 	explosion_min_frac = Balance.get_float("projectile_fx", "explosion_min_damage_frac", 0.25)
 	explosion_self_mult = Balance.get_float("projectile_fx", "explosion_self_damage_mult", 0.25)
+	low_gravity_fx_mult = Balance.get_float("low_gravity", "fx_gravity_mult", 0.15)
 
 
 ## Effets réduits (économie d'énergie ou réglage forcé).
@@ -187,15 +189,19 @@ func muzzle_smoke(pos: Vector2, dir: Vector2, strength: float = 1.0) -> void:
 
 
 ## Douille éjectée depuis `pos` (hauteur `z` au-dessus du sol), perpendiculaire à `dir`.
-func shell(ground_pos: Vector2, z: float, dir: Vector2, big: bool) -> void:
+## `low_g` : gravité faible (la douille dérive longtemps).
+func shell(ground_pos: Vector2, z: float, dir: Vector2, big: bool, low_g: bool = false) -> void:
 	var side: Vector2 = Vector2(-dir.y, dir.x)
 	if side.y > 0.0:
 		side = -side  # éjection vers le haut de l'écran (lisible), puis retombe
 	var v: Vector2 = (side * randf_range(70.0, 120.0) - dir * randf_range(10.0, 40.0))
 	var col: Color = Color(0.9, 0.22, 0.15) if big else Color(1.0, 0.8, 0.3)
 	# Couche « air » : la douille part de la main, devant le corps.
-	air.emit(FxLayer.Kind.SHELL, ground_pos, v, randf_range(1.1, 1.6), 6.5 if big else 4.5, 0.0, col,
+	var life: float = randf_range(1.1, 1.6) * (2.0 if low_g else 1.0)
+	var i: int = air.emit(FxLayer.Kind.SHELL, ground_pos, v, life, 6.5 if big else 4.5, 0.0, col,
 		z, randf_range(140.0, 230.0), randf_range(0.0, TAU), randf_range(-24.0, 24.0))
+	if low_g:
+		air.set_gravity(i, low_gravity_fx_mult)
 
 
 ## Chargeur qui tombe au rechargement.
@@ -245,11 +251,14 @@ func explode(pos: Vector2, radius: float, damage: float, source: Node) -> void:
 		var v: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(20.0, 70.0) + Vector2(0.0, -20.0)
 		air.emit(FxLayer.Kind.SMOKE, pos + v * 0.3, v, randf_range(0.9, 1.5), 8.0 * r / 90.0, 22.0 * r / 90.0,
 			Color(0.55, 0.5, 0.5, 0.32))
+	var low_g: bool = LowGravity.is_at(get_tree(), pos)
 	for i: int in count(explosion_debris, 3):
 		var v: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(80.0, 260.0)
-		ground.emit(FxLayer.Kind.DEBRIS, pos, v, randf_range(0.8, 1.3), randf_range(2.5, 4.5), 0.0,
+		var di: int = ground.emit(FxLayer.Kind.DEBRIS, pos, v, randf_range(0.8, 1.3), randf_range(2.5, 4.5), 0.0,
 			Color(0.36, 0.27, 0.2).lerp(Color(0.6, 0.48, 0.32), randf()), 6.0, randf_range(150.0, 320.0),
 			randf() * TAU, randf_range(-14.0, 14.0))
+		if low_g:
+			ground.set_gravity(di, low_gravity_fx_mult)
 	for i: int in count(explosion_sparks, 4):
 		var v: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(200.0, 480.0)
 		air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.18, 0.35), 2.0, 1.0, Color(1.0, 0.85, 0.45))
