@@ -1,7 +1,7 @@
 class_name MenuKit
 extends RefCounted
-## Boîte à outils des menus (charte de la planche de référence) :
-## polices Rye / Nunito, panneaux bleu nuit aux coins arrondis, gros boutons tactiles
+## Boîte à outils des menus d'Exfil Rush :
+## police Nunito (titres en Black, texte en Bold), panneaux bleu nuit aux coins arrondis, gros boutons tactiles
 ## (retour de pression, survol PC, focus manette/clavier), transitions en fondu,
 ## marges de sécurité (encoche), réglages joueur (volumes, vibrations).
 ## Aucun _process : toutes les animations passent par des Tween.
@@ -20,8 +20,10 @@ const RED := Color(0.78, 0.13, 0.17)
 const RED_DARK := Color(0.42, 0.05, 0.09)
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
-const MASK_SELECT_SCENE := "res://scenes/ui/menus/mask_select.tscn"
 const MAP_SELECT_SCENE := "res://scenes/ui/menus/map_select.tscn"
+const LOADOUT_SCENE := "res://scenes/ui/menus/loadout.tscn"
+const ARSENAL_SCENE := "res://scenes/ui/menus/arsenal.tscn"
+const SHOP_SCENE := "res://scenes/ui/menus/shop.tscn"
 const RAID_SCENE := "res://scenes/dungeon/raid.tscn"
 
 enum Style { PRIMARY, SECONDARY, GHOST }
@@ -57,9 +59,9 @@ static func label(text: String, size: int, color: Color = TEXT, font: Font = nul
 	return l
 
 
-## Titre western (Rye) avec ombre portée.
+## Titre (Nunito Black, contour sombre) avec ombre portée.
 static func title(text: String, size: int, color: Color = TEXT) -> Label:
-	var l := label(text, size, color, RYE, maxi(4, size / 10))
+	var l := label(text, size, color, nunito(1000), maxi(4, size / 9))
 	l.add_theme_color_override("font_shadow_color", Color(0.05, 0.02, 0.08, 0.7))
 	l.add_theme_constant_override("shadow_offset_x", 0)
 	l.add_theme_constant_override("shadow_offset_y", maxi(2, size / 16))
@@ -325,3 +327,111 @@ static func go_to(owner: Node, scene_path: String, duration: float = -1.0) -> vo
 	tw.tween_callback(func() -> void:
 		tree.paused = false
 		tree.change_scene_to_file(scene_path))
+
+
+# --- Éléments partagés (arsenal, boutique, cartes) --------------------------------
+
+const GEM := Color(0.36, 0.9, 1.0)
+const GOOD := Color(0.45, 0.9, 0.5)
+const BAD := Color(1.0, 0.45, 0.4)
+
+
+static func rarity_color(r: int) -> Color:
+	return WeaponData.RARITY_COLORS[clampi(r, 0, WeaponData.RARITY_COLORS.size() - 1)]
+
+
+static func rarity_name(r: int) -> String:
+	return WeaponData.RARITY_NAMES[clampi(r, 0, WeaponData.RARITY_NAMES.size() - 1)]
+
+
+## Cadre de rareté : fond bleu nuit teinté, bordure à la couleur de rareté,
+## lueur pour Épique et Légendaire.
+static func rarity_style(r: int, selected: bool = false, radius: int = 14) -> StyleBoxFlat:
+	var c: Color = rarity_color(r)
+	var s := panel_style(Color(0.1, 0.13, 0.23, 0.96).lerp(c.darkened(0.5), 0.16), Color(c, 0.95 if selected else 0.7),
+		radius, 3 if selected else 2, 8)
+	s.shadow_offset = Vector2.ZERO
+	if r >= 3 or selected:
+		s.shadow_color = Color(c, 0.5 if selected else 0.3)
+		s.shadow_size = 12 if selected else 6
+	else:
+		s.shadow_color = Color(0, 0, 0.05, 0.3)
+		s.shadow_size = 4
+	return s
+
+
+## Bouton « retour » (≥ 64 px de haut).
+static func back_button(text: String = "Retour") -> Button:
+	return button("‹  " + text, Style.GHOST, 22, Vector2(150, 64))
+
+
+## Puce de filtre (bouton bascule) ; `accent` = couleur une fois activée.
+static func chip(text: String, accent: Color = GOLD, group: ButtonGroup = null) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.toggle_mode = true
+	b.button_group = group
+	b.focus_mode = Control.FOCUS_ALL
+	b.custom_minimum_size = Vector2(0, 52)
+	b.add_theme_font_override("font", nunito(900))
+	b.add_theme_font_size_override("font_size", 18)
+	var off := panel_style(Color(NIGHT, 0.75), Color(1, 1, 1, 0.18), 26, 1, 0)
+	off.content_margin_left = 18
+	off.content_margin_right = 18
+	off.shadow_size = 0
+	var hov := off.duplicate() as StyleBoxFlat
+	hov.bg_color = Color(0.14, 0.18, 0.3, 0.9)
+	var on := off.duplicate() as StyleBoxFlat
+	on.bg_color = accent.darkened(0.35)
+	on.border_color = accent.lightened(0.35)
+	on.set_border_width_all(2)
+	var focus := StyleBoxFlat.new()
+	focus.draw_center = false
+	focus.border_color = GOLD
+	focus.set_border_width_all(2)
+	focus.set_corner_radius_all(28)
+	focus.set_expand_margin_all(3)
+	b.add_theme_stylebox_override("normal", off)
+	b.add_theme_stylebox_override("hover", hov)
+	b.add_theme_stylebox_override("pressed", on)
+	b.add_theme_stylebox_override("hover_pressed", on)
+	b.add_theme_stylebox_override("focus", focus)
+	b.add_theme_color_override("font_color", TEXT_DIM)
+	b.add_theme_color_override("font_hover_color", TEXT)
+	for c: String in ["font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		b.add_theme_color_override(c, TEXT)
+	add_feedback(b, 1.03)
+	return b
+
+
+## Pastille arrondie avec texte (badge).
+static func pill(txt: String, bg: Color, font_size: int = 14, fg: Color = TEXT, border: Color = Color(0, 0, 0, 0)) -> PanelContainer:
+	var p := PanelContainer.new()
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.set_corner_radius_all(10)
+	s.content_margin_left = 9
+	s.content_margin_right = 9
+	s.content_margin_top = 2
+	s.content_margin_bottom = 3
+	if border.a > 0.0:
+		s.border_color = border
+		s.set_border_width_all(1)
+	s.anti_aliasing = true
+	p.add_theme_stylebox_override("panel", s)
+	var l := label(txt, font_size, fg, nunito(900))
+	l.name = "Text"
+	p.add_child(l)
+	return p
+
+
+## Restyle d'un bouton existant (marges horizontales réduites : petits boutons).
+static func tighten(b: Button, h_margin: int = 14) -> void:
+	for st: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
+		var sb := b.get_theme_stylebox(st)
+		if sb is StyleBoxFlat:
+			var d := (sb as StyleBoxFlat).duplicate() as StyleBoxFlat
+			d.content_margin_left = h_margin
+			d.content_margin_right = h_margin
+			b.add_theme_stylebox_override(st, d)

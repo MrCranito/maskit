@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_tiger"
+display_name = "Tigre"
+description = "Rayures orange et noires pour le fusil à pompe."
+kind = &"weapon"
+rarity = 3
+price_gems = 300
+weapon_category = &"shotgun"
+color_primary = Color(0.98, 0.55, 0.12, 1)
+color_secondary = Color(0.1, 0.07, 0.05, 1)
+color_accent = Color(1, 0.8, 0.4, 1)
+pattern = &"stripes"
+glow = 0.0

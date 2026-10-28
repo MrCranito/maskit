@@ -1,7 +1,8 @@
 class_name PauseMenu
 extends Control
 ## Pause en jeu : bouton pause rond (en haut à droite, à gauche de l'emplacement du
-## futur bouton sac) + menu Reprendre / Options / Quitter vers le menu.
+## bouton sac) + menu Reprendre / Options / Abandonner le raid (avec confirmation :
+## l'arsenal emporté et le butin sont perdus → abandon_raid() de la scène de raid).
 ## Met l'arbre en pause (get_tree().paused) ; ce nœud tourne en PROCESS_MODE_ALWAYS.
 ## Touche Échap / Start (action « ui_cancel » ou « pause ») : ouvre / ferme.
 ##
@@ -18,6 +19,7 @@ var overlay: Control = null
 var resume_button: Button = null
 var options_button: Button = null
 var quit_button: Button = null
+var abandon_button: Button = null
 var is_open: bool = false
 var _modal: ModalPanel = null
 var _panel: Control = null
@@ -114,21 +116,24 @@ func _build_overlay() -> void:
 	var t := MenuKit.title("Pause", 52)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(t)
-	var mask: MaskData = GameState.get_selected_mask()
-	var info := MenuKit.label("%s · %s" % [mask.display_name if mask != null else "-",
+	var card: MapCard = GameState.current_map as MapCard
+	var info := MenuKit.label("%s  ·  %s" % [card.display_name if card != null else "Raid",
 		GameState.difficulty_name(GameState.difficulty)], 18, MenuKit.TEXT_DIM, MenuKit.nunito(700))
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(info)
 	var w := Vector2(Balance.get_float("menu", "main_button_width", 340.0), 74)
 	resume_button = MenuKit.button("Reprendre", MenuKit.Style.PRIMARY, 30, w)
 	options_button = MenuKit.button("Options", MenuKit.Style.SECONDARY, 26, w)
-	quit_button = MenuKit.button("Quitter vers le menu", MenuKit.Style.GHOST, 22, w - Vector2(0, 10))
-	for b: Button in [resume_button, options_button, quit_button]:
+	abandon_button = MenuKit.button("Abandonner le raid", MenuKit.Style.GHOST, 22, w - Vector2(0, 10))
+	abandon_button.add_theme_color_override("font_color", Color(1.0, 0.66, 0.6))
+	abandon_button.add_theme_color_override("font_hover_color", Color(1.0, 0.75, 0.7))
+	quit_button = abandon_button  # compatibilité
+	for b: Button in [resume_button, options_button, abandon_button]:
 		col.add_child(b)
 	resume_button.pressed.connect(close)
 	options_button.pressed.connect(open_options)
-	quit_button.pressed.connect(quit_to_menu)
-	var warn := MenuKit.label("Quitter abandonne le butin du raid.", 15, Color(1.0, 0.6, 0.5, 0.85), MenuKit.nunito(700))
+	abandon_button.pressed.connect(ask_abandon)
+	var warn := MenuKit.label("Abandonner = mort : arsenal et butin perdus.", 15, Color(1.0, 0.6, 0.5, 0.85), MenuKit.nunito(700))
 	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	col.add_child(warn)
 
@@ -183,6 +188,35 @@ func open_options() -> ModalPanel:
 		if is_instance_valid(options_button):
 			options_button.grab_focus())
 	return _modal
+
+
+## Confirmation avant d'abandonner (voir abandon()).
+func ask_abandon() -> ConfirmPanel:
+	MenuKit.sfx(&"click")
+	var m := ConfirmPanel.new("Abandonner le raid ?",
+		"Tu perdras ton arsenal et ton butin.\nLes armes emportées ne reviendront pas.",
+		"Abandonner", true)
+	m.confirmed.connect(abandon)
+	m.closed.connect(func() -> void:
+		if is_instance_valid(abandon_button) and is_open:
+			abandon_button.grab_focus())
+	_modal = m
+	overlay.add_child(m)
+	return m
+
+
+## Abandon confirmé : la scène de raid gère la mort (abandon_raid : écran de mort, Profile,
+## retour au menu). Sans raid (tests, scène de debug) : retour direct au menu.
+func abandon() -> void:
+	var scene: Node = get_tree().current_scene
+	get_tree().paused = false
+	is_open = false
+	overlay.visible = false
+	paused_changed.emit(false)
+	if scene != null and scene.has_method("abandon_raid"):
+		scene.call("abandon_raid")
+	else:
+		quit_to_menu()
 
 
 func quit_to_menu() -> void:

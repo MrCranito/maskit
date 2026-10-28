@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_gold"
+display_name = "Doré"
+description = "Or massif poli. Légendaire, et parfaitement inutile."
+kind = &"weapon"
+rarity = 4
+price_gems = 600
+weapon_category = &"any"
+color_primary = Color(1, 0.8, 0.3, 1)
+color_secondary = Color(0.55, 0.33, 0.08, 1)
+color_accent = Color(1, 0.95, 0.7, 1)
+pattern = &"gold"
+glow = 0.6

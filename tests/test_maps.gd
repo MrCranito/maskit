@@ -13,7 +13,7 @@ var _saved := {}
 func before_each() -> void:
 	_saved = {
 		"map": GameState.current_map, "world": GameState.world_path, "diff": GameState.difficulty,
-		"seed": GameState.run_seed, "time": GameState.debug_time_override, "mask": GameState.selected_mask_id,
+		"seed": GameState.run_seed, "time": GameState.debug_time_override,
 	}
 	GameState.debug_time_override = 0
 	LootRoller.reset_map_bonus()
@@ -25,10 +25,9 @@ func after_each() -> void:
 	GameState.difficulty = _saved["diff"]
 	GameState.run_seed = _saved["seed"]
 	GameState.debug_time_override = _saved["time"]
-	GameState.selected_mask_id = _saved["mask"]
 	LootRoller.reset_map_bonus()
 	MapSelect.last_selected_id = &""
-	MapSelect.last_tab = &""
+	MapSelect.last_filter = &"all"
 
 
 static func _ids(entries: Array[Dictionary]) -> Array[String]:
@@ -328,8 +327,8 @@ func test_raid_applies_map_modifiers() -> void:
 		assert_true(d.has_meta(&"map_modified"))
 		assert_almost_eq(float(e.get("max_hp")), orig.max_hp * 3.0, 0.01, "PV ennemis ×3")
 	assert_eq(int(raid.fog.get("view_radius")), maxi(3, roundi(Balance.get_float("fog", "view_radius", 10.0) * 0.5)))
-	assert_almost_eq(float(raid.player.get("max_hp")) / maxf(GameState.get_selected_mask().max_hp_mult, 0.05),
-		Balance.get_float("player", "max_hp", 100.0) * 1.5, 0.5, "PV joueur ×1,5")
+	assert_almost_eq(float(raid.player.get("max_hp")), Balance.get_float("player", "max_hp", 100.0) * 1.5, 0.5,
+		"PV joueur ×1,5")
 	assert_not_null(raid.find_child("MapTitleRow", true, false), "Badge de difficulté dans le bandeau")
 
 
@@ -347,39 +346,69 @@ func test_raid_without_map_is_unchanged() -> void:
 
 # --- Écran de sélection ---------------------------------------------------------------
 
+func _map_select() -> MapSelect:
+	var ms := (load("res://scenes/ui/menus/map_select.tscn") as PackedScene).instantiate() as MapSelect
+	ms.next_scene = ""
+	add_child_autofree(ms)
+	return ms
+
+
 func test_map_select_screen() -> void:
 	GameState.debug_time_override = T0
-	var ms := (load("res://scenes/ui/menus/map_select.tscn") as PackedScene).instantiate() as MapSelect
-	ms.raid_scene = ""
-	add_child_autofree(ms)
+	MapSelect.last_filter = &"all"
+	MapSelect.last_selected_id = &""
+	var ms := _map_select()
 	await wait_frames(3)
-	assert_eq(ms.tab_buttons.size(), 4, "4 onglets")
-	assert_eq(ms.current_tab, &"event", "Événements par défaut")
-	assert_false(ms.tiles.is_empty())
-	assert_eq(ms.tiles[0].mode, MapTile.Mode.FEATURED, "Événement mis en avant")
-	assert_string_contains(ms.tiles[0].time_label.text, "01:18:45", "Compte à rebours")
+	assert_eq(ms.filter_chips.size(), 5, "Puces : Toutes + 4 catégories")
+	assert_eq(ms.current_filter, &"all", "Toutes les cartes par défaut")
+	var available: int = MapRotation.available_cards(T0).size()
+	assert_eq(ms.tiles.size(), available + 1, "Toutes les cartes visibles d'un coup + prochain événement")
+	assert_eq(ms.tiles[0].mode, MapTile.Mode.FEATURED, "Événement en cours mis en avant")
+	assert_eq(ms.tiles[0].card.category, MapCard.CATEGORY_EVENT)
+	assert_string_contains(ms.tiles[0].time_label.text, "01:18:45", "Minuteur")
+	assert_true(ms.tiles[0].selected, "Événement jouable sélectionné par défaut")
 	assert_not_null(ms.tick_timer)
 	assert_eq(ms.tick_timer.wait_time, 1.0, "Rafraîchi 1×/s")
-	assert_true(ms.tiles[ms.tiles.size() - 1].upcoming, "Prochain événement affiché")
-	ms.show_tab(&"permanent")
+	var upcoming := ms.tiles.filter(func(t: MapTile) -> bool: return t.upcoming)
+	assert_eq(upcoming.size(), 1, "Prochain événement affiché")
+	for t: MapTile in ms.tiles:
+		assert_gte(t.custom_minimum_size.y, 64.0, "Vignette tactile")
+	ms.set_filter(&"permanent")
 	assert_eq(ms.tiles.size(), MapCard.by_category(&"permanent").size())
+	ms.set_filter(&"weekly")
+	for t: MapTile in ms.tiles:
+		assert_eq(t.card.category, MapCard.CATEGORY_WEEKLY)
+	ms.set_filter(&"permanent")
 	var dust: MapTile = null
 	for t: MapTile in ms.tiles:
 		if t.card.id == &"perm_dust_creek":
 			dust = t
 	ms.select_entry(dust.entry)
+	assert_true(dust.selected)
+	assert_eq(ms.launch_button.text, "Choisir mon arsenal")
 	assert_false(ms.launch_button.disabled)
-	assert_true(ms.launch_selected(), "Partir en raid")
+	assert_true(ms.launch_selected(), "Ouvre l'arsenal de départ")
+	assert_eq(ms.next_scene if ms.next_scene != "" else MenuKit.LOADOUT_SCENE, MenuKit.LOADOUT_SCENE)
 	assert_eq(GameState.current_map, dust.card)
 	assert_eq(GameState.world_path, dust.card.world_path)
 	assert_eq(GameState.difficulty, dust.card.difficulty)
+	assert_false(Profile.raid_in_progress, "Le raid n'est pas lancé par l'écran des cartes")
+	var src := FileAccess.get_file_as_string("res://scripts/ui/menus/map_select.gd")
+	assert_string_contains(src, "var next_scene: String = MenuKit.LOADOUT_SCENE")
+
+
+func test_map_select_keeps_selection() -> void:
+	GameState.debug_time_override = T0
+	MapSelect.last_filter = &"all"
+	MapSelect.last_selected_id = &"perm_dust_creek"
+	var ms := _map_select()
+	await wait_frames(2)
+	assert_eq((ms.selected_entry["card"] as MapCard).id, &"perm_dust_creek", "Sélection conservée au retour")
 
 
 func test_map_select_upcoming_and_missing_world_not_launchable() -> void:
 	GameState.debug_time_override = T0
-	var ms := (load("res://scenes/ui/menus/map_select.tscn") as PackedScene).instantiate() as MapSelect
-	ms.raid_scene = ""
-	add_child_autofree(ms)
+	var ms := _map_select()
 	await wait_frames(2)
 	ms.select_entry(ms.next_event)
 	assert_true(ms.launch_button.disabled, "Prochain événement : pas encore jouable")
@@ -389,9 +418,16 @@ func test_map_select_upcoming_and_missing_world_not_launchable() -> void:
 	ghost.world_path = "res://data/worlds/world_99_absent.tres"
 	ms.select_entry({"card": ghost, "category": &"permanent", "starts_at": 0, "ends_at": 0})
 	assert_true(ms.launch_button.disabled)
-	assert_eq(ms.launch_button.text, "Bientôt")
 	var tile := MapTile.new({"card": ghost, "category": &"permanent", "starts_at": 0, "ends_at": 0})
 	add_child_autofree(tile)
 	await wait_frames(1)
 	assert_false(tile.is_playable())
-	assert_lt(tile.modulate.r, 1.0, "Tuile grisée")
+	var frame := tile.get_child(0) as Control
+	assert_lt(frame.modulate.r, 1.0, "Vignette grisée")
+
+
+func test_difficulty_badge_for_raid_banner() -> void:
+	var b := MapTile.difficulty_badge(3, true)
+	autofree(b)
+	assert_eq(b.name, &"DifficultyBadge")
+	assert_eq((b.find_child("Name", true, false) as Label).text, "Infernal")
