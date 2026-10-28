@@ -1,6 +1,6 @@
-# Les Royaumes des Masques : Extraction
+# Exfil Rush
 
-Rogue-lite d'extraction en vue de dessus (style Archero), Godot 4.7.2, GDScript typé, PC + mobile.
+« Tire. Pille. Tire-toi. » Extraction shooter rogue-lite en vue de dessus (style Archero), Godot 4.7.2, GDScript typé, PC + mobile.
 Ce fichier est la référence du projet : relis-le avant chaque phase.
 
 ## Règles de travail (Claude Code)
@@ -20,26 +20,24 @@ Ce fichier est la référence du projet : relis-le avant chaque phase.
 Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaumes des masques » de l'image de référence fait foi. La partie « Les royaumes assemblés » (matériaux, royaumes de bois/métal, etc.) n'est PAS utilisée.
 - Style : fantasy stylisée, rendu peint semi-réaliste, personnages aux proportions héroïques légèrement exagérées, contours nets, très lisible sur mobile.
 - Décor : cours et remparts de château en pierre ocre, tours, grandes bannières rouges à emblème blanc, ciel de coucher de soleil (orange, rose, violet), lumière chaude rasante, ombres bleu nuit.
-- Héros de référence : masque blanc type kitsune avec marques rouges et yeux rouges lumineux, cornes/plumes rouges, écharpe rouge, armure sombre aux liserés rouges et cuir, lame courbe.
-- Chaque masque a une couleur d'aura qui teinte le personnage et ses effets :
-  - Colosse : casque massif or et pierre, yeux bleu clair → palette or/bronze.
-  - Spectre : masque argent anguleux, éclairs et lueur cyan → palette argent/cyan.
-  - Alchimiste : masque de flammes orange et rouge → palette feu.
-  - Marionnettiste : masque d'os blanc avec fils et cordes → palette violette (la variante violette de la planche).
-- Effets de combat : traînées d'attaque lumineuses et arcs de lame (rouge pour le héros), ennemis massifs type golem de pierre.
+- Héros : personnage simple de shooter d'extraction, sans masque (visage visible, gilet tactique, sac à dos), qui tient une arme à feu. Son apparence ne change que par les skins cosmétiques.
+- Effets de combat : éclairs de bouche, douilles, traçantes, explosions, impacts ; ennemis massifs type golem de pierre.
 - Interface : panneaux bleu nuit (#121a2e environ) aux coins arrondis, bordures fines claires, titres blancs en gras, texte secondaire gris clair.
 - Placeholders au début (formes dessinées en code dans cette palette), organisés pour être remplacés facilement.
 - Codes couleur de rareté partout : Commun gris, Peu commun vert, Rare bleu, Épique violet, Légendaire orange (lueur pour Épique et Légendaire).
 
-## Masques (classes)
-- Colosse : attaques lentes, gros dégâts, grande résistance.
-- Spectre : déplacements rapides, esquives, attaques surprises.
-- Alchimiste : explosions, zones de dégâts, effets élémentaires.
-- Marionnettiste : invocations alliées.
-Chaque masque = une ressource MaskData (stats, pouvoir actif, passif, armes autorisées).
+## Arsenal (remplace les anciens masques — supprimés)
+- Armes à feu par catégorie : pistolet, revolver, mitraillette, fusil à pompe, fusil d'assaut, sniper, mitrailleuse, bazooka, lance-grenades. Chaque modèle a une rareté fixe (Commun → Légendaire).
+- Réserve permanente d'armes (autoload Profile). Avant chaque raid : validation de l'arsenal de départ (1 à 3 armes).
+- Mort : l'arsenal emporté et le butin sont perdus, retour au menu. Si la réserve est vide, un petit pistolet est offert.
+- Extraction réussie : armes tenues + armes et objets du sac rejoignent la réserve, + quelques gemmes.
+
+## Monétisation
+- Uniquement cosmétique : skins de personnage et d'armes, payés en gemmes. Aucun avantage en jeu.
+- Gemmes : packs (paiement simulé tant que les comptes stores ne sont pas configurés) + quelques gemmes par extraction.
 
 ## Mondes et biomes
-Chaque monde a son propre biome (décor, palette, ennemis, boss, tables de loot, armes propres). Les personnages et masques gardent la direction artistique de la planche ; le biome change le décor.
+Chaque monde a son propre biome (décor, palette, ennemis, boss, tables de loot, armes propres). Les personnages gardent la direction artistique du projet ; le biome change le décor.
 - **Monde 1 — Far West** : ville fantôme au coucher du soleil (bois délavé, adobe, sable ocre, ciel orange-rose-violet, ombres bleu nuit). Bâtiments : saloon (étage), banque (coffre-fort = salle de super-loot), bureau du shérif (cellules), magasin général, hôtel (étage), écurie, église, entrée de mine (sous-sol). Ennemis : hors-la-loi masqués (bandit au couteau, pistolero, brute au fusil, colosse de grès). Conteneurs : caisses, tonneaux, chariots, diligences, coffres, placards, armoires, cadavres.
 - Mondes suivants : biomes à définir.
 
@@ -47,12 +45,12 @@ Chaque monde a son propre biome (décor, palette, ennemis, boss, tables de loot,
 PAS de monde ouvert. Une carte = des bâtiments dans lesquels le joueur entre, reliés par des rues et ruelles qui servent de couloirs. Salles ouvertes (rues, places) et fermées (intérieurs derrière des portes). Les portes bloquent mouvement et vision tant qu'elles sont fermées. Le toit d'un bâtiment masque son intérieur et s'efface quand le joueur entre. Étages : étage supérieur (saloon, hôtel) et sous-sol (mine), reliés par des escaliers.
 
 ## Boucle de jeu
-1. Hub : choix du masque, de l'équipement, du niveau de donjon (Facile → Cauchemar). Difficulté = ennemis plus forts + loot plus rare.
+1. Hub : choix de la carte (difficulté propre à la carte), puis validation de l'arsenal de départ. Difficulté = ennemis plus forts + loot plus rare.
 2. Raid : exploration, combat, fouille, inventaire de raid limité (grille ou poids).
 3. Extraction : points d'extraction par étage, canalisation de quelques secondes pendant laquelle les ennemis attaquent.
    - Réussite : butin transféré dans la réserve permanente.
-   - Mort : butin du raid perdu, sauf emplacement sécurisé limité.
-4. Retour au hub : vente, amélioration, nouveau raid.
+   - Mort : arsenal emporté et butin du raid perdus.
+4. Retour au hub : arsenal, boutique, nouveau raid.
 
 ## Vue et exploration
 - Jeu uniquement en paysage. Caméra de dessus qui suit le joueur et anticipe la visée. Mobile : deux joysticks (gauche = déplacement, droit = viser et tirer). PC : ZQSD/WASD + souris pour viser, clic gauche pour tirer. Pas de tir automatique.
@@ -67,9 +65,10 @@ PAS de monde ouvert. Une carte = des bâtiments dans lesquels le joueur entre, r
 - Clefs spéciales : drop uniquement sur ennemis, taux très bas (0,5 % à 2 %, configurable). Chaque clef ouvre une zone de super-loot précise (porte scellée visible). Taux Épique/Légendaire fortement augmentés, gardes d'élite. Les clefs peuvent être extraites et gardées.
 
 ## Armes
-Familles : épées, haches, marteaux, lances, dagues, arcs, arbalètes, armes à feu mécaniques, bâtons, grimoires, armes d'invocation, armes vivantes évolutives.
-Chaque arme (WeaponData .tres) : rareté, dégâts, cadence, portée, pattern d'attaque/projectile, affixes aléatoires (brûlure, gel, ricochet, multi-tir, vol de vie, onde de choc…).
-Armes de boss avec effets uniques. Objectif : au moins 30 armes au départ, ajoutables sans toucher au code.
+Chaque arme (WeaponData, data/weapons/*.tres) : catégorie, rareté, dégâts, cadence, chargeur, rechargement, portée, dispersion, perforation, explosion, ressenti (recul, secousse). Ajoutables sans toucher au code. Objectif : au moins 30 armes.
+
+## Tourelles
+Tourelles immobiles fixées à certains murs (cône de tir, télégraphe avant la rafale, destructibles), dans tous les biomes.
 
 ## Ennemis et IA
 - Zone de détection (Area2D cercle ou cône) + raycast de ligne de vue (murs bloquants).
@@ -81,12 +80,12 @@ Armes de boss avec effets uniques. Objectif : au moins 30 armes au départ, ajou
 ## Architecture
 /scenes (player, enemies, rooms, ui, hub)
 /scripts (core, combat, ai, loot, dungeon, inventory, save)
-/data (weapons, enemies, loot_tables, masks, containers, keys, balance.cfg)
+/data (weapons, enemies, turrets, loot_tables, skins, items, maps, worlds, balance.cfg)
 /assets (sprites, sfx, music, shaders)
 /tests
 /addons (gut)
-- Autoloads : GameState, SaveManager, LootManager, EventBus. Systèmes découplés par signaux.
-- Sauvegarde locale JSON (réserve, masques, progression).
+- Autoloads : GameState, SaveManager, Profile, LootManager, EventBus. Systèmes découplés par signaux.
+- Sauvegarde locale JSON (réserve d'armes, objets, gemmes, skins, progression).
 - Mobile : pooling projectiles/effets, cible 60 fps.
 
 ## GitHub
@@ -100,7 +99,7 @@ Armes de boss avec effets uniques. Objectif : au moins 30 armes au départ, ajou
 4. Loot : conteneurs, tables, raretés, inventaire de raid.
 5. Clefs spéciales et zones de super-loot.
 6. Extraction, mort, réserve, hub, difficultés.
-7. Masques et pouvoirs.
+7. Arsenal de départ, boutique cosmétique (fait, refonte Exfil Rush).
 8. Catalogue d'armes, affixes, armes de boss.
 9. Royaumes, boss, équilibrage.
 10. UI mobile, polish, sons, CI d'export.
