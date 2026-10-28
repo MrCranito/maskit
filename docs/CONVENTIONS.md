@@ -232,3 +232,62 @@ Icône d'inventaire : `assets/ui/weapons/<sprite_id>.png` (vue de profil, fond t
 - Tourelles : `Turret`, `TurretData` (data/turrets, 3 familles × 4 biomes), `TurretPlacer` (évite portes, escaliers, extraction, spawn, murs décorés `FloorLayout.wall_decor_cells`).
 - Décor : `scripts/dungeon/gen/furnisher.gd` (moteur commun) + gabarits par biome (`gen/fw_templates.gd`, `biomes/*/*_templates.gd`). FloorLayout : `Spawn.offset/size/flip/rot`, `decor_spawns`, `wall_decor_cells`, `partition_cells`.
 - Debug (F3 activé) : F5 extraction instantanée, F6 mort instantanée.
+
+## Refonte n°2 « planches de référence » (CONTRAT) — personnages, arsenal, cartes
+Références (à regarder avec Read) : `docs/reference/personnages_skins.jpg`, `docs/reference/arsenal.jpg`, `docs/reference/cartes.png`.
+
+### Arsenal = EXACTEMENT la planche arsenal.jpg (skins d'armes : plus tard, onglet masqué)
+Catégories (`WeaponData.CATEGORIES`) : pistol, smg, rifle, sniper, rocket_launcher, gadget (« Autres »).
+Les anciennes catégories revolver/shotgun/lmg/grenade_launcher et leurs armes disparaissent du catalogue.
+| id | Nom affiché | Catégorie | Rareté |
+|---|---|---|---|
+| pistol_p9 | P9 | pistol | 0 Commun (= arme de départ, `WeaponCatalog.STARTER_ID`) |
+| pistol_glock18 | Glock 18 | pistol | 2 Rare |
+| pistol_deagle | Desert Eagle | pistol | 3 Épique |
+| pistol_p320 | P320 | pistol | 4 Légendaire |
+| smg_mp5 | MP5 | smg | 0 |
+| smg_vector | Vector | smg | 2 |
+| smg_p90 | P90 | smg | 3 |
+| smg_uzi | Uzi | smg | 4 |
+| rifle_ak47 | AK-47 | rifle | 0 |
+| rifle_m4a1 | M4A1 | rifle | 2 |
+| rifle_scarh | SCAR-H | rifle | 3 |
+| rifle_aug | AUG | rifle | 4 |
+| sniper_m24 | M24 | sniper | 0 |
+| sniper_ax50 | AX-50 | sniper | 2 |
+| sniper_m82 | Barrett M82 | sniper | 3 |
+| rocket_rpg7 | RPG-7 | rocket_launcher | 2 |
+| rocket_m202 | M202 | rocket_launcher | 3 |
+| rocket_javelin | Javelin | rocket_launcher | 4 |
+| gadget_frag | Grenade frag | gadget (kind frag) | 0 |
+| gadget_smoke | Grenade fumigène | gadget (kind smoke) | 2 |
+| gadget_mine | Mine | gadget (kind mine) | 3 |
+| gadget_c4 | C4 | gadget (kind c4) | 4 |
+| gadget_drone | Drone | gadget (kind drone) | 4 |
+- `sprite_id` = `id` (un sprite tenu + une icône par arme : `assets/sprites/weapons/<id>.png/.json`, `assets/ui/weapons/<id>.png`).
+  Gadgets : sprite tenu = l'objet en main (grenade, mine, pain de C4, télécommande/drone), + sprite au sol/en vol `assets/sprites/weapons/<id>_world.png`.
+- Équipement (`slot = gadget`) : 1 emplacement en plus des 3 armes (`[arsenal] gadget_slots`). Champs : gadget_kind, charges, throw_range, fuse_time, effect_radius, effect_duration (+ explosion_radius/damage).
+  `Profile.get_loadout_gadget()`, `Profile.raid_gadget`, `GameState.raid_gadget`. Perdu à la mort ; à l'extraction il revient s'il reste des charges (le joueur l'inclut dans get_carried_weapon_ids()).
+- Joueur : `get_gadget() -> WeaponData`, `get_gadget_charges() -> int`, `use_gadget(dir: Vector2)`, signal `gadget_changed`. Entrée `gadget` (G ; mobile : bouton dédié du HUD). Comportements :
+  frag = lancer en arc, explose après fuse_time ; smoke = nuage qui bloque la vue des ennemis et tourelles (groupe `smoke_clouds`, API statique `SmokeField.blocks_line(a, b) -> bool`) pendant effect_duration ;
+  mine = posée au sol, s'arme après fuse_time, explose au passage d'un ennemi (effect_radius) ; c4 = posé, 2e appui = détonation à distance ; drone = allié volant qui suit le joueur et tire sur l'ennemi le plus proche pendant effect_duration.
+- Raretés de la planche : Commun / Rare / Épique / Légendaire (index 0, 2, 3, 4 ; « Peu commun » n'est plus utilisé dans le catalogue).
+
+### Personnages = la planche personnages_skins.jpg
+Personnage de base : « Soldat standard » (Commun) : casque tactique noir avec casque audio, lunettes de protection, cagoule/col, gilet porte-plaques, genouillères, rangers, fusil tenu à deux mains ; chibi (grosse tête casquée).
+Skins (`data/skins/char_<id>.tres`, rareté = bandeau de la planche) :
+| id | Nom | Rareté | Prix |
+|---|---|---|---|
+| char_default | Soldat standard | 0 Commun | 0 |
+| char_gign | GIGN | 2 Rare | 250 |
+| char_fantome | Fantôme (cagoule tête de mort) | 2 Rare | 250 |
+| char_sas | SAS | 3 Épique | 500 |
+| char_desert | Desert | 3 Épique | 500 |
+| char_forest | Forest (tenue ghillie) | 3 Épique | 500 |
+| char_spetsnaz | Spetsnaz (armure de samouraï rouge, casque à cornes dorées) | 4 Légendaire | 1000 |
+| char_cyber | Cyber (néon violet/cyan) | 4 Légendaire | 1000 |
+| char_scorpion | Scorpion (noir et or) | 4 Légendaire | 1000 |
+Les anciens skins (recrue, désert, nuit, néon, légende dorée) sont supprimés.
+
+### Cartes = la planche cartes.png (agent Décor)
+Far West : ville dispersée dans le désert, rochers, train à l'arrêt (obstacle), éolienne, château d'eau. Station : croix de modules + centre de contrôle circulaire, planète en fond, zones de gravité faible (`FloorLayout.low_gravity_cells`, inertie gérée par le joueur). Mall : bâtiment rectangulaire, atrium à fontaine, escalators, parking à l'entrée.
