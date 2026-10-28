@@ -42,11 +42,12 @@ static func create(p_kind: StringName, pos: Vector2) -> HidingSpot:
 
 
 static func get_texture(k: StringName) -> Texture2D:
-	if _tex_cache.has(k):
-		return _tex_cache[k]
-	var path := SPRITES_DIR + "hide_" + String(k) + ".svg"
+	var key := "%s_%s" % [BiomeAssets.containers_dir, k]
+	if _tex_cache.has(key):
+		return _tex_cache[key]
+	var path := BiomeAssets.find_sprite("hide_" + String(k), SPRITES_DIR)
 	var tex: Texture2D = load(path) as Texture2D if ResourceLoader.exists(path) else null
-	_tex_cache[k] = tex
+	_tex_cache[key] = tex
 	return tex
 
 

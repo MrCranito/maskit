@@ -13,6 +13,8 @@ const DIFFICULTY_NAMES: Array[String] = ["Facile", "Normal", "Difficile", "Infer
 var selected_mask_id: StringName = &"kitsune"
 ## Difficulté du raid : 0 = Facile … 4 = Cauchemar.
 var difficulty: int = 1
+## Monde du prochain raid (fixé par la carte choisie ; vide = Far West).
+var world_path: String = ""
 
 
 func _ready() -> void:

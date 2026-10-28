@@ -181,11 +181,12 @@ func _ready() -> void:
 ## effets (utilisable pour faire « revivre » le visuel après play_death).
 func setup(new_kind: StringName) -> void:
 	_build()
-	if not KINDS.has(new_kind):
+	var extra: Dictionary = BiomeRegistry.extra_enemy_kinds()
+	if not KINDS.has(new_kind) and not extra.has(new_kind):
 		push_warning("EnemyVisual : kind inconnu « %s », repli sur %s" % [new_kind, DEFAULT_KIND])
 		new_kind = DEFAULT_KIND
 	kind = new_kind
-	_data = KINDS[kind]
+	_data = KINDS[kind] if KINDS.has(kind) else extra[kind]
 	var tex: Texture2D = load(_data["path"]) as Texture2D
 	_sprite.texture = tex
 	var svg_size: Vector2 = _data["svg_size"]

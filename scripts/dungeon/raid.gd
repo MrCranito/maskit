@@ -122,16 +122,29 @@ func _ready() -> void:
 # --- Chargement des modules ----------------------------------------------------
 
 func _load_world() -> void:
-	if ResourceLoader.exists(WORLD_PATH):
+	# Monde de la carte choisie (GameState.world_path), repli Far West.
+	var path: String = GameState.world_path if GameState.world_path != "" else WORLD_PATH
+	if ResourceLoader.exists(path):
+		world = load(path) as Resource
+	elif ResourceLoader.exists(WORLD_PATH):
+		push_warning("Raid: monde introuvable (%s), repli Far West." % path)
 		world = load(WORLD_PATH) as Resource
 	if world == null:
 		push_warning("Raid: monde introuvable (%s), valeurs par défaut." % WORLD_PATH)
+	BiomeAssets.set_world(world)
+
+
+## Chemin d'un module du monde (generator_path / builder_path), repli Far West.
+func _world_module_path(key: StringName, fallback: String) -> String:
+	var v: Variant = world.get(key) if world != null else null
+	var p: String = String(v) if v != null else ""
+	return p if p != "" and ResourceLoader.exists(p) else fallback
 
 
 ## Génère tous les étages du run, ou la carte d'exemple si le générateur manque.
 func _generate_floors() -> void:
 	floors.clear()
-	var gen: Script = _load_script(GENERATOR_PATH)
+	var gen: Script = _load_script(_world_module_path(&"generator_path", GENERATOR_PATH))
 	if gen != null and world != null:
 		var result: Variant = _call_module(gen, &"generate_run", [run_seed, world, difficulty])
 		if result is Array:
@@ -149,7 +162,7 @@ func _generate_floors() -> void:
 
 
 func _load_module_scripts() -> void:
-	_builder_script = _load_script(WORLD_BUILDER_PATH)
+	_builder_script = _load_script(_world_module_path(&"builder_path", WORLD_BUILDER_PATH))
 	_fog_script = _load_script(FOG_PATH)
 
 
@@ -596,6 +609,18 @@ func _on_debug_toggled(_enabled: bool) -> void:
 
 # --- UI -------------------------------------------------------------------------
 
+## Nom d'étage propre au monde (WorldData.floor_names), sinon nom générique.
+func world_floor_name(index: int) -> String:
+	var names: Variant = world.get("floor_names") if world != null else null
+	if names is Dictionary:
+		var d: Dictionary = names
+		if d.has(index):
+			return String(d[index])
+		if d.has(str(index)):
+			return String(d[str(index)])
+	return floor_display_name(index)
+
+
 static func floor_display_name(index: int) -> String:
 	match index:
 		0:
@@ -616,7 +641,7 @@ func get_world_display_name() -> String:
 
 
 func get_banner_text() -> String:
-	return "%s — %s" % [get_world_display_name(), floor_display_name(current_floor)]
+	return "%s — %s" % [get_world_display_name(), world_floor_name(current_floor)]
 
 
 func get_current_room_name() -> String:
@@ -821,7 +846,7 @@ func _draw_debug_rooms(canvas: Node2D) -> void:
 		canvas.draw_string(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, col)
 	for st: FloorLayout.Stairs in layout.stairs:
 		var p := FloorLayout.cell_to_world(st.cell)
-		var txt := "→ %s%s" % [floor_display_name(st.target_floor), "" if floors.has(st.target_floor) else " (absent)"]
+		var txt := "→ %s%s" % [world_floor_name(st.target_floor), "" if floors.has(st.target_floor) else " (absent)"]
 		canvas.draw_string_outline(font, p + Vector2(-40, -36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 5, Color(0.07, 0.1, 0.18))
 		canvas.draw_string(font, p + Vector2(-40, -36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.6, 0.9, 1.0))
 

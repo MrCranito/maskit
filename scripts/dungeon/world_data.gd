@@ -31,6 +31,21 @@ extends Resource
 ## Ennemi de boss du monde (salle boss du sous-sol).
 @export var boss_kind: StringName = &""
 
+@export_group("Modules du biome")
+## Générateur : script avec `static func generate_run(seed, world, difficulty) -> Array[FloorLayout]`.
+@export var generator_path: String = "res://scripts/dungeon/dungeon_generator.gd"
+## Constructeur de décor : script avec `static func build(layout, world) -> Node2D`
+## (même API que WorldBuilder : get_doors, get_stairs_areas, signal stairs_entered,
+## get_room_at_world, set_stairs_cooldown).
+@export var builder_path: String = "res://scripts/dungeon/world_builder.gd"
+## Dossier des sprites de conteneurs et cachettes (<kind>.svg|png, <kind>_open.*, hide_<kind>.*).
+@export var containers_dir: String = "res://assets/sprites/far_west/containers/"
+## Noms d'étage affichés : floor_index (int) → String (ex. {0: "Rez-de-chaussée"}).
+@export var floor_names: Dictionary = {}
+## Musique d'exploration / de combat (noms AudioManager).
+@export var music_explore: StringName = &"western_explore"
+@export var music_combat: StringName = &"western_combat"
+
 
 ## Poids des ennemis pour un type de salle (repli sur « combat »).
 func get_roster(room_type: StringName) -> Dictionary:

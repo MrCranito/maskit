@@ -136,3 +136,26 @@ Sol 0 · décors au sol 1 · personnages/ennemis/murs triés en Y (y_sort) 10 ·
 - Cachettes (`scripts/loot/hiding_spot.gd`, groupe `hiding_spots`) : tonneau, armoire, botte de foin… ; entrer/sortir par l'interaction.
 - Interaction : bouton tactile « action » (à droite, au-dessus du stick de visée) + touche E. Signal `EventBus.interact_target_changed(target: Node)` ; les cibles ont `get_interact_label() -> String` et `interact(player)`.
 - Inventaire de raid : `GameState.raid_inventory` (`Inventory`, RefCounted) ; écran d'inventaire (bouton sac en haut à droite / touche I / Tab).
+
+## Cartes et biomes (après le retour de test)
+### Cartes (sélection au clic sur « Jouer »)
+- `scripts/maps/map_card.gd` (`MapCard`, Resource) + `data/maps/*.tres` : id, nom, monde (`world_path`), catégorie (`permanent`, `weekly`, `monthly`, `event`), difficulté (0..4, propre à la carte), modificateurs (propriétés différentes par carte).
+- `scripts/maps/map_rotation.gd` (`MapRotation`) : cartes disponibles à un instant donné, calculées de façon déterministe depuis l'heure UTC (mêmes cartes pour tous les joueurs, sans serveur). Événements : 2 h.
+- Au lancement d'un raid : `GameState.world_path`, `GameState.difficulty`, `GameState.current_map` (la MapCard) sont fixés par l'écran de sélection de carte. La difficulté n'est plus choisie avec le masque.
+
+### Biomes (un monde = un biome)
+| Biome | Monde | Dossiers |
+|---|---|---|
+| Far West | `data/worlds/world_01_far_west.tres` | `scripts/dungeon/` (générateur, WorldBuilder), `assets/sprites/far_west/` |
+| Station spatiale | `data/worlds/world_02_space_station.tres` | `scripts/biomes/space_station/`, `assets/sprites/space_station/`, `art/blender/space_station/` |
+| Centre commercial abandonné | `data/worlds/world_03_mall.tres` | `scripts/biomes/mall/`, `assets/sprites/mall/`, `art/blender/mall/` |
+| Station sous-marine | `data/worlds/world_04_underwater.tres` | `scripts/biomes/underwater/`, `assets/sprites/underwater/`, `art/blender/underwater/` |
+
+Chaque biome fournit, à ces chemins :
+- **Monde** (`WorldData`) avec `generator_path`, `builder_path`, `containers_dir`, `floor_names`, `enemy_roster`, `container_kinds`, `prop_kinds`, `palette`, `music_explore/combat`.
+- **Générateur** : `static func generate_run(seed: int, world: WorldData, difficulty: int) -> Array[FloorLayout]` (format `FloorLayout`, avec `hiding_spot_spawns`, déterministe, connectivité garantie, salles super_loot verrouillées par clef). Mêmes règles que le générateur Far West (tests de connectivité, perf < 50 ms/étage).
+- **Constructeur de décor** : `static func build(layout: FloorLayout, world: Resource) -> Node2D` ayant la même API que `WorldBuilder` : `get_doors() -> Array[DoorNode]`, `get_stairs_areas() -> Array[Area2D]` (meta `stairs`), `signal stairs_entered(stairs)`, `get_room_at_world(pos)`, `set_stairs_cooldown(sec)`. Murs sur la couche world (bit 1), z_index du contrat. Portes : instances de `DoorNode` (sous-classe autorisée dans le dossier du biome pour un autre dessin : surcharger `_draw`), groupe `doors`.
+- **Ennemis** : `scripts/biomes/<biome>/enemy_kinds.gd` avec `const KINDS := {kind: {...}}` au format de `EnemyVisual.KINDS` (path vers PNG rendu sous Blender, svg_size = taille du PNG, feet, scale, head, shadow, eyes, eye_r, debris, aura) — chargé automatiquement par `BiomeRegistry`. `data/enemies/<kind>.tres` (EnemyData complet, discrétion comprise).
+- **Conteneurs et cachettes** : sprites dans `containers_dir` (`<kind>.png`, `<kind>_open.png`, `hide_<kind>.png`), tables `data/loot_tables/<kind>.tres`, objets propres au biome `data/items/<id>.tres` (préfixe du biome dans l'id). Les cachettes doivent avoir un `kind` présent dans `containers_dir`.
+- Le raid charge tout dynamiquement (`GameState.world_path`) ; `BiomeAssets.set_world(world)` est appelé avant la construction.
+- Style : même pipeline Blender que le héros (`art/blender/rdm_common.py` : caméra orthographique 3/4 à 48°, matériaux toon, contour Freestyle), même échelle (héros ≈ 64 unités monde), règles de performance de la « Refonte » (atlas, peu de nœuds, pas de redessin par frame, aucune lumière dynamique).

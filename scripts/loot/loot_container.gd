@@ -79,10 +79,10 @@ static func is_known_kind(k: StringName) -> bool:
 
 
 static func get_texture(k: StringName, open: bool) -> Texture2D:
-	var key := "%s_%s" % [k, open]
+	var key := "%s_%s_%s" % [BiomeAssets.containers_dir, k, open]
 	if _tex_cache.has(key):
 		return _tex_cache[key]
-	var path := SPRITES_DIR + String(k) + ("_open" if open else "") + ".svg"
+	var path := BiomeAssets.find_sprite(String(k) + ("_open" if open else ""), SPRITES_DIR)
 	var tex: Texture2D = load(path) as Texture2D if ResourceLoader.exists(path) else null
 	_tex_cache[key] = tex
 	return tex
