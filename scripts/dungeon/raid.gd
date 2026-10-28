@@ -98,7 +98,7 @@ var _fade_rect: ColorRect = null
 
 func _ready() -> void:
 	run_seed = GameState.run_seed
-	difficulty = int(Balance.get_value("raid", "default_difficulty", 1))
+	difficulty = GameState.difficulty
 	_load_world()
 	_generate_floors()
 	_load_module_scripts()
@@ -666,6 +666,7 @@ func _build_ui() -> void:
 		push_warning("Raid: overlay debug introuvable (%s)." % DEBUG_OVERLAY_SCENE_PATH)
 
 	_setup_loot_ui()
+	PauseMenu.attach(ui_layer)
 
 	# Fondu au noir (changement d'étage), au-dessus de tout.
 	var fade_layer := CanvasLayer.new()

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MaskData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/mask_data.gd" id="1_mask"]
+[ext_resource type="Texture2D" path="res://assets/ui/masks/spectre.png" id="2_portrait"]
+
+[resource]
+script = ExtResource("1_mask")
+id = &"spectre"
+display_name = "Spectre"
+tagline = "Rapide comme l'éclair"
+description = "Masque d'argent parcouru d'éclairs. Le Spectre se faufile partout et frappe par surprise, mais ne supporte pas les coups."
+aura_color = Color(0.35, 0.9, 1.0, 1)
+aura_tint_strength = 0.3
+aura_glow_alpha = 0.4
+portrait = ExtResource("2_portrait")
+max_hp_mult = 0.72
+speed_mult = 1.3
+damage_mult = 1.0
+fire_rate_mult = 1.1
+power_id = &"phase_step"
+power_name = "Pas spectral"

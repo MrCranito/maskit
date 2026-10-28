@@ -105,8 +105,64 @@ func _ready() -> void:
 		weapon = load_default_weapon()
 	hp = max_hp
 	_build_visual()
+	apply_mask(GameState.get_selected_mask() if GameState.has_method("get_selected_mask") else null)
 	_setup_camera()
 	EventBus.player_spawned.emit(self)
+
+
+# --- Masque (choisi au menu) -------------------------------------------------
+
+## Masque porté (null = aucun). Voir apply_mask().
+var mask: MaskData = null
+var _mask_base: Dictionary = {}
+var _aura_glow: Node2D = null
+
+
+## Applique un masque : multiplicateurs de PV / vitesse (base balance.cfg) et de
+## dégâts / cadence (copie de l'arme, la ressource partagée n'est pas modifiée),
+## légère teinte d'aura sur le héros + lueur au sol. Rappelable (pas de cumul) ;
+## null retire le masque. Les PV gardent leur proportion.
+func apply_mask(new_mask: MaskData) -> void:
+	if _mask_base.is_empty():
+		_mask_base = {"max_hp": max_hp, "move_speed": move_speed, "weapon": weapon}
+	var ratio: float = clampf(hp / maxf(max_hp, 0.001), 0.0, 1.0)
+	mask = new_mask
+	var hp_m: float = maxf(new_mask.max_hp_mult, 0.05) if new_mask != null else 1.0
+	var sp_m: float = maxf(new_mask.speed_mult, 0.05) if new_mask != null else 1.0
+	max_hp = float(_mask_base["max_hp"]) * hp_m
+	move_speed = float(_mask_base["move_speed"]) * sp_m
+	_anim_ref_speed = move_speed
+	hp = max_hp * ratio
+	var base_w: WeaponData = _mask_base["weapon"] as WeaponData
+	if base_w != null and new_mask != null:
+		var w := base_w.duplicate() as WeaponData
+		w.damage = base_w.damage * maxf(new_mask.damage_mult, 0.05)
+		w.fire_rate = base_w.fire_rate * maxf(new_mask.fire_rate_mult, 0.05)
+		w.projectile_color = base_w.projectile_color.lerp(new_mask.aura_color, 0.5)
+		weapon = w
+	else:
+		weapon = base_w
+	# Visuel : teinte légère du corps (multiplicative) + lueur elliptique au sol (dessin unique).
+	if _body != null:
+		_body.self_modulate = Color.WHITE.lerp(new_mask.aura_color, new_mask.aura_tint_strength) \
+			if new_mask != null else Color.WHITE
+	if _aura_glow == null and is_inside_tree():
+		_aura_glow = Node2D.new()
+		_aura_glow.name = "AuraGlow"
+		_aura_glow.z_index = -4
+		_aura_glow.draw.connect(func() -> void:
+			if mask == null:
+				return
+			_aura_glow.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, 0.42))
+			for i: int in 6:
+				var k: float = 1.0 - float(i) / 6.0
+				_aura_glow.draw_circle(Vector2.ZERO, 14.0 + 20.0 * k,
+					Color(mask.aura_color, mask.aura_glow_alpha * 0.22 * (1.0 - k * 0.6))))
+		add_child(_aura_glow)
+	if _aura_glow != null:
+		_aura_glow.visible = new_mask != null and new_mask.aura_glow_alpha > 0.0
+		_aura_glow.queue_redraw()
+	_hp_bar_dirty()
 
 
 static func load_default_weapon() -> WeaponData:

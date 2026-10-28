@@ -126,8 +126,8 @@ func try_unlock_with_inventory(door: Node, inv: Inventory) -> bool:
 	return true
 
 
-static func _hide_locked_label(door: Node) -> void:
-	if door != null and is_instance_valid(door):
-		var label := door.get_node_or_null(^"LockedLabel") as CanvasItem
+static func _hide_locked_label(door: Variant) -> void:
+	if is_instance_valid(door) and door is Node:
+		var label := (door as Node).get_node_or_null(^"LockedLabel") as CanvasItem
 		if label != null:
 			label.visible = false
