@@ -12,6 +12,8 @@ const COLOR_CORE := Color(1.0, 0.85, 0.55)
 const COLOR_GLOW := Color(1.0, 0.38, 0.12)
 ## Style « bullet » (hors-la-loi) : balle jaune-orangé, traînée fine.
 const STYLE_BULLET := &"bullet"
+## Laser (station spatiale) et acide (station sous-marine) : même orbe, autre couleur.
+const STYLE_COLORS := {&"laser": Color(0.35, 0.85, 1.0), &"acid": Color(0.55, 1.0, 0.25)}
 const BULLET_CORE := Color(1.0, 0.97, 0.75)
 const BULLET_GLOW := Color(1.0, 0.72, 0.15)
 
@@ -101,8 +103,9 @@ func _draw() -> void:
 		draw_circle(Vector2(3, 0), 3.8, BULLET_GLOW.lightened(0.3))
 		draw_circle(Vector2(3.5, 0), 2.2, BULLET_CORE)
 		return
-	draw_line(Vector2(-26, 0), Vector2(4, 0), Color(COLOR_GLOW, 0.2), 14.0 * k, true)
-	draw_line(Vector2(-18, 0), Vector2(4, 0), Color(COLOR_GLOW, 0.55), 7.0, true)
-	draw_circle(Vector2(2, 0), 9.0 * k, Color(COLOR_GLOW, 0.45))
-	draw_circle(Vector2(2, 0), 5.5, COLOR_GLOW.lightened(0.2))
+	var glow: Color = STYLE_COLORS.get(style, COLOR_GLOW)
+	draw_line(Vector2(-26, 0), Vector2(4, 0), Color(glow, 0.2), 14.0 * k, true)
+	draw_line(Vector2(-18, 0), Vector2(4, 0), Color(glow, 0.55), 7.0, true)
+	draw_circle(Vector2(2, 0), 9.0 * k, Color(glow, 0.45))
+	draw_circle(Vector2(2, 0), 5.5, glow.lightened(0.2))
 	draw_circle(Vector2(3, 0), 3.0, COLOR_CORE)

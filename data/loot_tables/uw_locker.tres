@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"uw_locker"
+display_name = "Casier"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.15
+search_time = 1.0
+entries = {
+&"uw_black_pearl": 0.2,
+&"uw_components": 4.0,
+&"uw_harpoon_bolts": 8.0,
+&"uw_medkit": 3.0,
+&"uw_oxygen_tank": 5.0,
+&"uw_pearl": 3.0,
+&"uw_research_log": 0.6
+}

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_underwater"
+display_name = "Butin d'ennemi (abysses)"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.0
+search_time = 1.0
+entries = {
+&"uw_bio_sample": 1.5,
+&"uw_brass_valve": 2.0,
+&"uw_components": 6.0,
+&"uw_harpoon_bolts": 8.0,
+&"uw_medkit": 3.0,
+&"uw_oxygen_tank": 4.0,
+&"uw_pearl": 3.0,
+&"uw_research_log": 0.5
+}

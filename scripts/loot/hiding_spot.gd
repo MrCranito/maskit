@@ -19,6 +19,7 @@ const DEFS := {
 	&"wardrobe": {"name": "Armoire", "scale": 0.55, "block": Vector2(48, 14), "shadow": 28.0, "foot": 2.0, "reach": 4.0},
 	&"haystack": {"name": "Botte de foin", "scale": 0.55, "block": Vector2(58, 20), "shadow": 34.0, "foot": 4.0, "reach": 8.0},
 	&"porch": {"name": "Sous le porche", "scale": 0.55, "block": Vector2(70, 16), "shadow": 0.0, "foot": 2.0, "reach": 8.0},
+	&"uw_locker": {"name": "Casier", "scale": 0.55, "block": Vector2(36, 14), "shadow": 0.0, "foot": 22.0, "reach": 4.0}, &"uw_pipes": {"name": "Derrière la tuyauterie", "scale": 0.55, "block": Vector2(70, 14), "shadow": 0.0, "foot": 18.0, "reach": 8.0}, &"uw_lab_table": {"name": "Sous la paillasse", "scale": 0.55, "block": Vector2(76, 22), "shadow": 0.0, "foot": 32.0, "reach": 8.0},
 }
 
 static var _tex_cache: Dictionary = {}
@@ -35,7 +36,7 @@ var _shake: Tween = null
 
 static func create(p_kind: StringName, pos: Vector2) -> HidingSpot:
 	var h := HidingSpot.new()
-	h.kind = p_kind if DEFS.has(p_kind) else &"barrel"
+	h.kind = p_kind if DEFS.has(p_kind) or not BiomeRegistry.hiding_def(p_kind).is_empty() else &"barrel"
 	h.name = "Hide_%s" % String(h.kind)
 	h.position = pos
 	return h
@@ -57,7 +58,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	_def = DEFS.get(kind, DEFS[&"barrel"])
+	if DEFS.has(kind):
+		_def = DEFS[kind]
+	else:
+		var bd: Dictionary = BiomeRegistry.hiding_def(kind)
+		_def = bd if not bd.is_empty() else DEFS[&"barrel"]
 	z_index = 10
 	set_process(false)
 	var tex := get_texture(kind)

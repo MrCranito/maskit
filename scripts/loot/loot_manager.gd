@@ -18,6 +18,8 @@ var _layout: FloorLayout = null
 var _run_seed: int = 0
 var _difficulty: int = 1
 var _drop_counter: int = 0
+## Table de butin des ennemis du biome courant (enemy_<biome>, repli « enemy »).
+var enemy_table: StringName = &"enemy"
 
 
 func _ready() -> void:
@@ -37,10 +39,21 @@ func _on_raid_started(seed_value: int) -> void:
 
 ## Appelé par LootSpawner à chaque construction d'étage.
 func register_floor(layout: FloorLayout, loot_root: Node2D, run_seed: int, difficulty: int) -> void:
+	enemy_table = BiomeRegistry.enemy_table_kind(_current_biome())
 	_layout = layout
 	_loot_root = loot_root
 	_run_seed = run_seed
 	_difficulty = difficulty
+
+
+## Biome du monde du raid en cours (d'après GameState.world_path).
+static func _current_biome() -> StringName:
+	var path: String = String(GameState.get("world_path"))
+	if path == "" or not ResourceLoader.exists(path):
+		return &"far_west"
+	var w: Resource = load(path)
+	var b: Variant = w.get("biome") if w != null else null
+	return StringName(str(b)) if b != null else &"far_west"
 
 
 func save_container_state(key: String, state: int, entries: Array) -> void:
@@ -64,7 +77,7 @@ func _on_enemy_died(enemy: Node2D, pos: Vector2) -> void:
 	_drop_counter += 1
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash([_run_seed, _layout.floor_index if _layout != null else 0, _drop_counter, "drop"])
-	var entries := roll_enemy_drop(rng, _difficulty, _layout.floor_index if _layout != null else 0, door_keys_of(_layout))
+	var entries := roll_enemy_drop(rng, _difficulty, _layout.floor_index if _layout != null else 0, door_keys_of(_layout), enemy_table)
 	if entries.is_empty():
 		return
 	var bag := LootContainer.create(&"drop", pos)
@@ -87,7 +100,7 @@ static func door_keys_of(layout: FloorLayout) -> Array[StringName]:
 
 
 ## Butin d'un ennemi (logique pure) : clef rare (0,5 % à 2 %) + éventuellement la table `enemy`.
-static func roll_enemy_drop(rng: RandomNumberGenerator, difficulty: int, floor_index: int, keys: Array[StringName]) -> Array[Dictionary]:
+static func roll_enemy_drop(rng: RandomNumberGenerator, difficulty: int, floor_index: int, keys: Array[StringName], table: StringName = &"enemy") -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var key_chance := LootDB.arr_at("key_drop_chance", difficulty, [0.005, 0.008, 0.011, 0.015, 0.02])
 	if not keys.is_empty() and rng.randf() < key_chance:
@@ -96,7 +109,8 @@ static func roll_enemy_drop(rng: RandomNumberGenerator, difficulty: int, floor_i
 			out.append({"item": k, "count": 1})
 	if rng.randf() < LootDB.getf("enemy_drop_chance", 0.25):
 		var ctx := LootRoller.Context.make(difficulty, floor_index, &"combat")
-		out.append_array(LootRoller.roll(LootDB.get_table(&"enemy"), rng, ctx))
+		var t: LootTable = LootDB.get_table(table)
+		out.append_array(LootRoller.roll(t if t != null else LootDB.get_table(&"enemy"), rng, ctx))
 	LootRoller.sort_entries(out)
 	return out
 

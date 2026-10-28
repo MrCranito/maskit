@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"uw_tank"
+display_name = "Réservoir"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 1.5
+entries = {
+&"uw_ambergris": 0.8,
+&"uw_bio_sample": 4.0,
+&"uw_black_pearl": 0.4,
+&"uw_brass_valve": 3.0,
+&"uw_pearl": 6.0,
+&"uw_rare_coral": 2.0
+}

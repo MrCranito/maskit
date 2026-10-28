@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"uw_sample_chest"
+display_name = "Coffre à échantillons"
+rolls_min = 2
+rolls_max = 3
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"uw_ambergris": 2.0,
+&"uw_bio_sample": 4.0,
+&"uw_black_pearl": 2.0,
+&"uw_coral_heart": 0.4,
+&"uw_mutagen": 5.0,
+&"uw_pearl": 4.0,
+&"uw_rare_coral": 4.0,
+&"uw_research_log": 3.0
+}

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_space_station"
+display_name = "Butin d'ennemi (station)"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.0
+search_time = 1.0
+entries = {
+&"space_circuit": 3.0,
+&"space_cracked_mask": 0.5,
+&"space_data_chip": 1.5,
+&"space_energy_cell": 6.0,
+&"space_medigel": 3.0,
+&"space_plasma_cells": 8.0,
+&"space_ration": 4.0,
+&"space_servo": 2.0
+}

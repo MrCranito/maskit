@@ -68,14 +68,22 @@ var _glow_color: Color = Color(0, 0, 0, 0)
 
 static func create(p_kind: StringName, pos: Vector2) -> LootContainer:
 	var c := LootContainer.new()
-	c.kind = p_kind if DEFS.has(p_kind) else &"crate"
+	c.kind = p_kind if is_known_kind(p_kind) else &"crate"
 	c.name = "Container_%s" % String(c.kind)
 	c.position = pos
 	return c
 
 
 static func is_known_kind(k: StringName) -> bool:
-	return DEFS.has(k)
+	return DEFS.has(k) or not BiomeRegistry.container_def(k).is_empty()
+
+
+## Définition du conteneur : Far West (DEFS), puis biomes (BiomeRegistry), sinon caisse.
+static func def_for(k: StringName) -> Dictionary:
+	if DEFS.has(k):
+		return DEFS[k]
+	var d: Dictionary = BiomeRegistry.container_def(k)
+	return d if not d.is_empty() else DEFS[&"crate"]
 
 
 static func get_texture(k: StringName, open: bool) -> Texture2D:
@@ -95,7 +103,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
-	_def = DEFS.get(kind, DEFS[&"crate"])
+	_def = def_for(kind)
 	z_index = 10
 	var table := LootDB.get_table(kind)
 	var default_time := LootDB.getf("search_time", 1.2)

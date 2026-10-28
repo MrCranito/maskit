@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_mall"
+display_name = "Butin d'ennemi (galeries)"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.0
+search_time = 1.0
+entries = {
+&"mall_batteries": 5.0,
+&"mall_canned_food": 4.0,
+&"mall_cash_bundle": 8.0,
+&"mall_energy_drink": 4.0,
+&"mall_first_aid": 2.0,
+&"mall_gift_card": 1.5,
+&"mall_gold_ring": 0.5,
+&"mall_painkillers": 3.0
+}
