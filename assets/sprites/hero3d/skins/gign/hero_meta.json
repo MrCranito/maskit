@@ -1,0 +1,91 @@
+{
+  "frame_size": [
+    128,
+    160
+  ],
+  "feet_offset": [
+    64,
+    131
+  ],
+  "display_height": 92.3,
+  "fps": {
+    "idle": 8,
+    "run": 18,
+    "backpedal": 14,
+    "strafe_l": 15,
+    "strafe_r": 15,
+    "hit": 12
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "frames": {
+    "idle": 8,
+    "run": 12,
+    "backpedal": 10,
+    "strafe_l": 10,
+    "strafe_r": 10,
+    "hit": 3
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "backpedal": true,
+    "strafe_l": true,
+    "strafe_r": true,
+    "hit": false
+  },
+  "hero_height_px": 111,
+  "hand_height": 20.4,
+  "hand_px": {
+    "e": [
+      86.9,
+      95.6
+    ],
+    "se": [
+      77.2,
+      106.7
+    ],
+    "s": [
+      59.7,
+      109.4
+    ],
+    "sw": [
+      44.8,
+      102.2
+    ],
+    "w": [
+      41.1,
+      89.2
+    ],
+    "nw": [
+      50.8,
+      78.1
+    ],
+    "n": [
+      68.3,
+      75.4
+    ],
+    "ne": [
+      83.2,
+      82.6
+    ]
+  },
+  "sheets": {
+    "idle": "res://assets/sprites/hero3d/skins/gign/hero_idle.png",
+    "run": "res://assets/sprites/hero3d/skins/gign/hero_run.png",
+    "backpedal": "res://assets/sprites/hero3d/skins/gign/hero_backpedal.png",
+    "strafe_l": "res://assets/sprites/hero3d/skins/gign/hero_strafe_l.png",
+    "strafe_r": "res://assets/sprites/hero3d/skins/gign/hero_strafe_r.png",
+    "hit": "res://assets/sprites/hero3d/skins/gign/hero_hit.png"
+  },
+  "skin": "gign",
+  "notes": "display_height = hauteur du cadre entier (frame_size.y px) en unités monde : scale = display_height / frame_size.y. feet_offset = point des pieds (px depuis le coin haut-gauche du cadre) -> offset = -(feet_offset - frame_size/2) si centered. hand_height (unités monde) = hauteur de la main droite au-dessus des pieds ; hand_px = position de la main droite (px dans le cadre) par direction, pose idle 0. Animations : idle, run (course vers l'avant), backpedal (recule en regardant devant), strafe_l / strafe_r (pas chassés vers la gauche / la droite du personnage), hit (non bouclée)."
+}

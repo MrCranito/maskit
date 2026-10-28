@@ -72,14 +72,21 @@ func test_audio_manager_api() -> void:
 # --- Héros, skins de personnage, armes (agent Art) ---------------------------------
 
 const HERO_DIR := "res://assets/sprites/hero3d/"
-const CHAR_SKINS: Array[StringName] = [&"default", &"desert", &"night", &"neon", &"gold"]
+const CHAR_SKINS: Array[StringName] = [&"default", &"gign", &"fantome", &"sas", &"desert", &"forest",
+	&"spetsnaz", &"cyber", &"scorpion"]
+const CHAR_PRICES: Array[int] = [0, 250, 250, 500, 500, 500, 1000, 1000, 1000]
+const CHAR_RARITIES: Array[int] = [0, 2, 2, 3, 3, 3, 4, 4, 4]
 const HERO_ANIMS: Array[String] = ["idle", "run", "backpedal", "strafe_l", "strafe_r", "hit"]
 const HERO_DIRS: Array[String] = ["e", "se", "s", "sw", "w", "nw", "n", "ne"]
 const WEAPON_IDS: Array[String] = [
-	"starter_pistol", "pistol", "pistol_heavy", "revolver", "revolver_gold", "smg", "smg_compact",
-	"shotgun", "shotgun_double", "rifle", "rifle_tactical", "sniper", "sniper_heavy", "lmg",
-	"rocket_launcher", "grenade_launcher",
+	"pistol_p9", "pistol_glock18", "pistol_deagle", "pistol_p320",
+	"smg_mp5", "smg_vector", "smg_p90", "smg_uzi",
+	"rifle_ak47", "rifle_m4a1", "rifle_scarh", "rifle_aug",
+	"sniper_m24", "sniper_ax50", "sniper_m82",
+	"rocket_rpg7", "rocket_m202", "rocket_javelin",
+	"gadget_frag", "gadget_smoke", "gadget_mine", "gadget_c4", "gadget_drone",
 ]
+const GADGET_IDS: Array[String] = ["gadget_frag", "gadget_smoke", "gadget_mine", "gadget_c4", "gadget_drone"]
 
 
 func _read_json(path: String) -> Dictionary:
@@ -141,13 +148,16 @@ func test_planches_skins_personnage() -> void:
 		_check_hero_dir(skin.sprite_dir)
 		assert_not_null(HeroSkin.frames_for(skin))
 		assert_false(HeroSkin.meta_for(skin).is_empty())
-	var def := load("res://data/skins/char_default.tres") as SkinData
-	assert_eq(def.price_gems, 0, "skin par défaut gratuit")
-	var prev := -1
-	for sid: StringName in CHAR_SKINS:
-		var s := load("res://data/skins/char_%s.tres" % sid) as SkinData
-		assert_gt(s.price_gems, prev, "prix croissants")
-		prev = s.price_gems
+	for k: int in CHAR_SKINS.size():
+		var s := load("res://data/skins/char_%s.tres" % CHAR_SKINS[k]) as SkinData
+		if s == null:
+			continue
+		assert_eq(s.price_gems, CHAR_PRICES[k], "prix de %s" % CHAR_SKINS[k])
+		assert_eq(s.rarity, CHAR_RARITIES[k], "rareté de %s" % CHAR_SKINS[k])
+		assert_gte(s.preview.get_height(), 256, "aperçu boutique en grand : %s" % CHAR_SKINS[k])
+	# Anciens skins supprimés.
+	for old: String in ["night", "neon", "gold"]:
+		assert_false(ResourceLoader.exists("res://data/skins/char_%s.tres" % old), "ancien skin encore présent : %s" % old)
 
 
 func test_hero_skin_repli() -> void:
@@ -174,4 +184,19 @@ func test_sprites_et_icones_armes() -> void:
 		var icon := load("res://assets/ui/weapons/%s.png" % wid) as Texture2D
 		assert_not_null(icon, "icône d'arme manquante : %s" % wid)
 		if icon != null:
-			assert_eq(Vector2i(icon.get_size()), Vector2i(192, 96), "taille d'icône : %s" % wid)
+			assert_eq(Vector2i(icon.get_size()), Vector2i(256, 128), "taille d'icône : %s" % wid)
+
+
+func test_sprites_au_sol_des_gadgets() -> void:
+	for gid: String in GADGET_IDS:
+		var tex := load("res://assets/sprites/weapons/%s_world.png" % gid) as Texture2D
+		assert_not_null(tex, "sprite au sol manquant : %s" % gid)
+		if tex != null:
+			assert_eq(Vector2i(tex.get_size()), Vector2i(64, 64), "taille du sprite au sol : %s" % gid)
+	assert_not_null(load("res://assets/sprites/weapons/gadget_drone_world_b.png"), "2e image du drone")
+
+
+func test_replis_par_categorie() -> void:
+	for cat: String in ["pistol", "smg", "rifle", "sniper", "rocket_launcher", "gadget"]:
+		assert_true(ResourceLoader.exists("res://assets/ui/weapons/%s.png" % cat), "icône de catégorie : %s" % cat)
+		assert_true(ResourceLoader.exists("res://assets/sprites/weapons/%s.png" % cat), "sprite de catégorie : %s" % cat)

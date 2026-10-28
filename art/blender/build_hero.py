@@ -1,25 +1,27 @@
-"""Héros d'Exfil Rush (sans masque) : modélisation 3D scriptée + rendus 8 directions, multi-skins.
+"""Soldat d'Exfil Rush (planche docs/reference/personnages_skins.jpg) : modélisation 3D scriptée,
+rendus 8 directions, 9 skins.
 
 Usage (depuis la racine du projet) :
-    python3 art/blender/build_hero.py                          # tout : 5 skins, planches, .tres, meta
-    python3 art/blender/build_hero.py --skins default,neon     # seulement certains skins
-    python3 art/blender/build_hero.py --preview s,e --anim idle:0,run:3 [--skins neon]
+    python3 art/blender/build_hero.py                          # tout : 9 skins, planches, .tres, meta
+    python3 art/blender/build_hero.py --skins default,gign     # seulement certains skins
+    python3 art/blender/build_hero.py --preview s,e --anim idle:0,run:3 [--skins cyber]
+    python3 art/blender/build_hero.py --shop [--skins ...]     # seulement les aperçus boutique
     python3 art/blender/build_hero.py --compact                # recompresse les planches existantes
     python3 art/blender/build_hero.py --blend                  # sauve seulement art/blender/hero.blend
 
-Personnage chibi-héroïque : visage cartoon, casquette à l'envers, t-shirt, gilet tactique,
-pantalon cargo, rangers, gants, petit sac à dos. Les pièces sont rigides, parentées à des
-articulations (empties). Jambes en cinématique directe, bras en IK à deux segments (les mains
-tiennent l'arme, dessinée par le jeu au point « main »).
+Personnage chibi militaire : très gros casque tactique (rails, casque audio, lunettes), cagoule,
+gilet porte-plaques avec poches, genouillères, rangers, gants ; mains jointes devant (prise à deux
+mains : l'arme est dessinée par le jeu au point « main »). Pièces rigides parentées à des
+articulations (empties), jambes en cinématique directe, bras en IK à deux segments.
 Un seul jeu de poses : chaque pose est rendue une fois par skin (échange de matériaux et
-d'accessoires), ce qui garde le temps de rendu raisonnable.
-Le personnage regarde -Y ; la caméra orthographique regarde depuis -Y, plongée ELEV degrés.
+d'accessoires). Le personnage regarde -Y ; caméra orthographique depuis -Y, plongée ELEV degrés.
 """
 from __future__ import annotations
 
 import json
 import math
 import os
+import random
 import sys
 import time
 
@@ -34,14 +36,15 @@ OUT_DEFAULT = os.path.join(ROOT, "assets", "sprites", "hero3d")
 OUT_SKINS = os.path.join(OUT_DEFAULT, "skins")
 TMP_DIR = os.environ.get("RDM_TMP", "/tmp/rdm_hero_frames")
 
-FRAME_W, FRAME_H = 128, 160   # cadre final (px) ; même échelle px/unité que l'ancien héros 160x160
+FRAME_W, FRAME_H = 128, 160   # cadre final (px)
+SHOP_W, SHOP_H = 256, 320     # aperçu boutique (preview.png), de face
 SS = 2                        # sur-échantillonnage du rendu
 ELEV = 48.0                   # plongée caméra (degrés)
 ORTHO_H = 2.30                # hauteur visible (unités Blender) du cadre
 CAM_TARGET_Z = 1.10
-HEAD_SCALE = 1.48
-HEAD_PITCH = -0.22          # tête relevée vers la caméra (visage lisible en plongée)
-LEG = 0.80                  # facteur de longueur des jambes (chibi)
+HEAD_SCALE = 1.56
+HEAD_PITCH = -0.20            # tête relevée vers la caméra (visage lisible en plongée)
+LEG = 0.74                    # facteur de longueur des jambes (silhouette trapue)
 PZ = 0.80 - 0.77 * (1 - LEG)  # hauteur du bassin au repos (pieds au sol)
 HERO_WORLD_HEIGHT = 64.0      # hauteur visible du héros en unités monde
 
@@ -58,148 +61,208 @@ ANIMS = {
 DIRS = {"e": 90.0, "se": 45.0, "s": 0.0, "sw": -45.0, "w": -90.0, "nw": -135.0, "n": 180.0, "ne": 135.0}
 
 # Bras (IK) : longueurs des segments, épaules (repère de la colonne).
-L_UP, L_LOW = 0.21, 0.235
-SHOULDER = {"L": Vector((0.225, 0.0, 0.335)), "R": Vector((-0.225, 0.0, 0.335))}
-# Mains au repos (prise à deux mains, devant le ventre, légèrement côté droit) — repère colonne.
-HAND_R = Vector((-0.05, -0.31, 0.19))
-HAND_L = Vector((0.035, -0.27, 0.21))
+L_UP, L_LOW = 0.20, 0.225
+SHOULDER = {"L": Vector((0.245, 0.0, 0.33)), "R": Vector((-0.245, 0.0, 0.33))}
+# Mains au repos (prise à deux mains, devant le ventre, côté droit) — repère colonne.
+HAND_R = Vector((-0.06, -0.33, 0.17))
+HAND_L = Vector((0.04, -0.30, 0.20))
 
-# ----------------------------------------------------------------------------- skins
-# Chaque skin : couleurs (base, ombre, lumière ; None = calculée) par clef, accessoires visibles.
-# Clef suffixée « ! » dans la valeur = matériau émissif (néon, lentilles).
-BASE_PAL = {
-    "skin": ("#f2b48c", "#b06c74", "#ffd8b4"),
-    "hair": ("#5e3822", "#2a1424", "#8a5632"),
-    "cap": ("#c8342c", "#561432", "#ee5a44"),
-    "capb": ("#2e2c36", "#121226", "#4e4a58"),
-    "tee": ("#e9e3d6", "#8e8aa8", "#fffaf0"),
-    "vest": ("#62703e", "#26302e", "#8a9a56"),
-    "vestd": ("#4c5832", "#1c2228", "#6c7a46"),
-    "strap": ("#38362e", "#14141e", "#56524a"),
-    "pants": ("#3f4b68", "#1a1e3a", "#5e6c8e"),
-    "pocket": ("#35405c", "#161a34", "#4e5a7a"),
-    "boot": ("#5c3c26", "#221424", "#84583a"),
-    "sole": ("#26222a", "#0e0c16", "#3e3842"),
-    "glove": ("#2e2c32", "#101020", "#4c4852"),
-    "pack": ("#8c6a40", "#3a2428", "#b88c56"),
-    "packd": ("#6a4c2e", "#2a1824", "#8e6840"),
-    "roll": ("#3e6e8c", "#1a2a4a", "#5a96b4"),
-    "belt": ("#3a2a22", "#160e1a", "#5a4234"),
-    "metal": ("#b8b4a8", "#4a4a62", "#f0ece0"),
-    "eye": ("#2a1a18", None, None),
-    "white": ("#ffffff", None, None),
-    "mouth": ("#7a2a2a", None, None),
-    "brow": ("#4a2a1a", None, None),
-    "acc1": ("#c8a060", "#5a3a30", "#f0cc88"),
-    "acc2": ("#3a3a44", "#141420", "#5a5a66"),
-    "glow": ("#ffffff!", None, None),
-    "glow2": ("#ffffff!", None, None),
+# ----------------------------------------------------------------------------- matériaux / skins
+# Spécification d'un matériau : (base, ombre, lumière) en hex (None = calculée),
+# "!#hex" = émissif (néon, lentilles), ("pat", [couleurs], échelle) = motif (camouflage, éclats).
+MULTICAM = ("pat", [("#8e7c5a", "#3a3030", "#b8a47a"), ("#655438", "#262026", "#867050"),
+                    ("#76784e", "#2a2c2c", "#9a9c6e")], 7.0)
+BASE_MATS = {
+    "helmet": ("#2a2c33", "#0b0c18", "#4c4e5a"),
+    "helmet_acc": ("#3c3a36", "#121220", "#625e56"),
+    "headset": ("#5e5a46", "#1e1c1e", "#8a8464"),
+    "goggles": ("#1c1c20", "#08080e", "#3a3a42"),
+    "lens": ("#d89a34", "#5a2c18", "#ffe6a0"),
+    "mask": ("#24252c", "#0a0a14", "#42434c"),
+    "bone": ("#e2ded2", "#86869e", "#ffffff"),
+    "socket": ("#121216", None, None),
+    "uniform": MULTICAM,
+    "vest": ("#2a2c30", "#0c0c16", "#484a50"),
+    "pouch": ("#33353a", "#101018", "#53555c"),
+    "strap": ("#1c1d22", "#08080e", "#35363e"),
+    "pad": ("#222328", "#09090f", "#404148"),
+    "forearm": ("#c69872", "#78505e", "#ecc29a"),
+    "glove": ("#1d1d22", "#08080e", "#3a3a42"),
+    "boot": ("#7a6044", "#2c1e26", "#a4825c"),
+    "sole": ("#222226", "#0a0a12", "#3a3a40"),
+    "belt": ("#2a2a2e", "#0c0c16", "#46464c"),
+    "patch": ("#b8302a", "#4a1024", "#e05040"),
+    "text": ("#f2f2f2", "#9a9ab0", "#ffffff"),
+    "flag_b": ("#2a46b0", None, None),
+    "flag_w": ("#f0f0f0", None, None),
+    "flag_r": ("#d02a2a", None, None),
+    "gold": ("#d8a840", "#6a4430", "#ffe490"),
+    "red": ("#a82226", "#3e0c1c", "#da4a3a"),
+    "shemagh": ("#d4c6a4", "#7a7088", "#f4e8c8"),
+    "ghillie": ("pat", [("#4e6a2a", "#18241a", "#7a9a3a"), ("#33461e", "#0e1814", "#56702c"),
+                        ("#6e7a34", "#222a1c", "#9aa84a")], 14.0),
+    "glow": "!#38f0ff",
+    "glow2": "!#c040ff",
 }
+# Accessoires optionnels (visibles seulement si listés par le skin).
+OPTIONAL = {"helmet", "goggles", "headset", "skull", "gign", "flag", "patch", "ghillie", "samurai",
+            "cyber", "scorpion", "shemagh", "hood"}
 
 SKINS = {
     "default": {
-        "name": "Recrue", "rarity": 0, "price": 0,
-        "desc": "La tenue de départ : casquette rouge, gilet olive et sac de route.",
-        "pal": {},
-        "acc": {"cap"},
-        "colors": ("#c8342c", "#62703e", "#3f4b68"),
+        "name": "Soldat standard", "rarity": 0, "price": 0,
+        "desc": "Un équipement polyvalent pour toutes les situations. Idéal pour commencer l'aventure.",
+        "mats": {},
+        "acc": {"helmet", "goggles", "headset", "patch"},
+        "colors": ("#2a2c33", "#8e7c5a", "#c48a2c"),
+    },
+    "gign": {
+        "name": "GIGN", "rarity": 2, "price": 250,
+        "desc": "Unité d'élite de la gendarmerie : tenue bleu nuit intégrale et gilet marqué GIGN.",
+        "mats": {
+            "helmet": ("#1e2a48", "#080c1e", "#3e5488"),
+            "helmet_acc": ("#20242e", "#080a14", "#3a404e"),
+            "headset": ("#1c1e26", "#08080e", "#363a46"),
+            "lens": ("#22324a", "#0a0e1e", "#5a7aa0"),
+            "mask": ("#181a22", "#06060e", "#30323c"),
+            "uniform": ("#1c2234", "#080a18", "#36405c"),
+            "vest": ("#161a26", "#06080e", "#2c3244"),
+            "pouch": ("#1c2030", "#080a14", "#343a50"),
+            "pad": ("#14161e", "#06060c", "#2c2e38"),
+            "forearm": ("#1c2234", "#080a18", "#36405c"),
+            "boot": ("#16161c", "#06060c", "#2e2e36"),
+            "belt": ("#14161e", "#06060c", "#2c2e38"),
+        },
+        "acc": {"helmet", "goggles", "headset", "gign", "flag"},
+        "colors": ("#1e2a48", "#161a26", "#f2f2f2"),
+    },
+    "fantome": {
+        "name": "Fantôme", "rarity": 2, "price": 250,
+        "desc": "Cagoule tête de mort et casque audio : une silhouette qu'on ne voit qu'une fois.",
+        "mats": {
+            "headset": ("#1c1d22", "#08080e", "#383a42"),
+            "mask": ("#1a1b20", "#06060c", "#33343c"),
+            "uniform": ("#1e1f24", "#08080e", "#3a3b42"),
+            "vest": ("#17181c", "#06060a", "#2e2f36"),
+            "pouch": ("#202126", "#08080e", "#3c3d44"),
+            "forearm": ("#1e1f24", "#08080e", "#3a3b42"),
+            "boot": ("#18181c", "#06060a", "#303036"),
+            "patch": ("#5a5c64", "#1c1e28", "#8a8c96"),
+        },
+        "acc": {"hood", "headset", "skull", "patch"},
+        "colors": ("#1e1f24", "#e2ded2", "#5a5c64"),
+    },
+    "sas": {
+        "name": "SAS", "rarity": 3, "price": 500,
+        "desc": "Casque sable, cagoule à mâchoire de crâne et camouflage désert des forces spéciales.",
+        "mats": {
+            "helmet": ("#9e8a62", "#3e3230", "#c8b282"),
+            "helmet_acc": ("#3a3630", "#121218", "#5c564c"),
+            "headset": ("#4a4a3a", "#18181a", "#6e6e56"),
+            "bone": ("#b8b4aa", "#5e5e72", "#dedad0"),
+            "mask": ("#4a4844", "#18181e", "#6c6a64"),
+            "uniform": ("pat", [("#a8946c", "#463a36", "#d0bc8c"), ("#7e6a48", "#30282a", "#a28a62"),
+                                ("#c4b48c", "#5a5050", "#e8d8ac")], 7.0),
+            "forearm": ("#a8946c", "#463a36", "#d0bc8c"),
+            "boot": ("#8a7050", "#33262a", "#b09068"),
+        },
+        "acc": {"helmet", "headset", "skull", "patch"},
+        "colors": ("#9e8a62", "#2a2c30", "#b8b4aa"),
     },
     "desert": {
-        "name": "Désert", "rarity": 1, "price": 150,
-        "desc": "Bandeau, lunettes de protection et chèche : prêt pour les tempêtes de sable.",
-        "pal": {
-            "hair": ("#3a2416", "#1a0e18", "#5a3a22"),
-            "tee": ("#d6c29a", "#7e7488", "#f4e4bc"),
-            "vest": ("#a8844e", "#4a3430", "#d0a86a"),
-            "vestd": ("#8c6c40", "#3a2828", "#ac8a52"),
-            "pants": ("#6e5c44", "#2c2230", "#927a5c"),
-            "pocket": ("#5e4e3a", "#241c28", "#7c684e"),
-            "boot": ("#9a744a", "#3e2a2a", "#c09662"),
-            "pack": ("#b09468", "#4a3a36", "#d6b886"),
-            "packd": ("#8a7050", "#3a2c2c", "#ac8e66"),
-            "roll": ("#7a6a4a", "#30282a", "#9e8a62"),
-            "acc1": ("#d8cbb0", "#7a6e80", "#fff4dc"),   # chèche / bandeau
-            "acc2": ("#3c3a36", "#141420", "#5c5850"),   # monture des lunettes
-            "glow": ("#ffb050!", None, None),            # verres ambrés
+        "name": "Desert", "rarity": 3, "price": 500,
+        "desc": "Casque sable, lunettes bleutées et chèche : taillé pour les tempêtes de sable.",
+        "mats": {
+            "helmet": ("#c8b48a", "#5e5046", "#ecdcb2"),
+            "helmet_acc": ("#7a6a50", "#2c2428", "#a08c6a"),
+            "headset": ("#8e7c5a", "#3a3030", "#b8a47a"),
+            "lens": ("#3a78c0", "#14244a", "#8ac4f0"),
+            "uniform": ("pat", [("#c8b48c", "#5e5048", "#ecdcb0"), ("#a89070", "#463a36", "#ccb48e"),
+                                ("#d8c8a4", "#6a6060", "#f8ecc8")], 6.0),
+            "vest": ("#a8946e", "#463a36", "#ccb68c"),
+            "pouch": ("#9a8664", "#3e3434", "#bea67e"),
+            "forearm": ("#c8b48c", "#5e5048", "#ecdcb0"),
+            "pad": ("#8a7a5c", "#342a2a", "#ae9a74"),
+            "boot": ("#a88c64", "#463630", "#ceae80"),
         },
-        "acc": {"headband", "goggles", "shemagh"},
-        "colors": ("#a8844e", "#d8cbb0", "#6e5c44"),
+        "acc": {"helmet", "goggles", "headset", "shemagh", "patch"},
+        "colors": ("#c8b48a", "#a8946e", "#3a78c0"),
     },
-    "night": {
-        "name": "Nuit tactique", "rarity": 2, "price": 250,
-        "desc": "Bonnet noir et jumelles de vision nocturne. Invisible… sauf les lentilles.",
-        "pal": {
-            "hair": ("#1c1a20", "#08080e", "#34303a"),
-            "tee": ("#3c4252", "#161a2c", "#5a6274"),
-            "vest": ("#25292f", "#0c0e18", "#3e444e"),
-            "vestd": ("#1c1f25", "#08090f", "#30343c"),
-            "strap": ("#1a1c20", "#06060c", "#30323a"),
-            "pants": ("#2c303a", "#0e1020", "#464c5a"),
-            "pocket": ("#24272f", "#0a0c18", "#3a3e48"),
-            "boot": ("#1e1e24", "#08080e", "#36363e"),
-            "glove": ("#18181c", "#06060c", "#2e2e34"),
-            "pack": ("#2e323a", "#0e1020", "#4a505a"),
-            "packd": ("#22252c", "#0a0c16", "#383c44"),
-            "roll": ("#3a4a3e", "#141e1e", "#566a5a"),
-            "belt": ("#1a1a1e", "#06060c", "#303036"),
-            "acc1": ("#22242c", "#0a0a14", "#3a3c46"),   # bonnet
-            "acc2": ("#3a3e46", "#121420", "#5a606a"),   # jumelles
-            "glow": ("#48ff7a!", None, None),
+    "forest": {
+        "name": "Forest", "rarity": 3, "price": 500,
+        "desc": "Tenue ghillie touffue : on ne voit qu'un buisson… armé.",
+        "mats": {
+            "uniform": ("pat", [("#4a5a2c", "#16201a", "#6e8240"), ("#2e3a1e", "#0c1410", "#4a5a2e"),
+                                ("#6a6a3a", "#22241e", "#8e8e50")], 9.0),
+            "forearm": ("#3a4a24", "#121c14", "#5a6c36"),
+            "vest": ("#3a4424", "#121a14", "#566236"),
+            "pouch": ("#46502c", "#161e16", "#646e3e"),
+            "mask": ("#1e221a", "#080a0a", "#363c2e"),
+            "lens": ("#1e2226", "#08080e", "#4a5664"),
+            "glove": ("#2a3020", "#0c100c", "#444c34"),
+            "pad": ("#2a3020", "#0c100c", "#444c34"),
+            "boot": ("#3a3226", "#121010", "#5a4c3a"),
         },
-        "acc": {"beanie", "nvg"},
-        "colors": ("#25292f", "#3c4252", "#48ff7a"),
+        "acc": {"goggles", "ghillie"},
+        "colors": ("#4e6a2a", "#33461e", "#6e7a34"),
     },
-    "neon": {
-        "name": "Néon", "rarity": 3, "price": 400,
-        "desc": "Casque audio, bandes lumineuses et semelles fluo : la nuit t'appartient.",
-        "pal": {
-            "hair": ("#3ad8f0", "#1a5078", "#a0f4ff"),
-            "cap": ("#e02c9a", "#4a0c50", "#ff6cc4"),
-            "capb": ("#1e1a2e", "#0a0818", "#36304a"),
-            "tee": ("#2a2440", "#100c24", "#443c60"),
-            "vest": ("#2e2248", "#100a24", "#4a3a6c"),
-            "vestd": ("#241a3a", "#0c081c", "#3a2c56"),
-            "strap": ("#1a1428", "#08060e", "#2e2640"),
-            "pants": ("#1e1a30", "#0a0818", "#36304e"),
-            "pocket": ("#18142a", "#080614", "#2c2644"),
-            "boot": ("#f0f0f8", "#7e7ea6", "#ffffff"),
-            "glove": ("#1a1628", "#08060e", "#302a42"),
-            "pack": ("#2a2242", "#0e0a22", "#463a66"),
-            "packd": ("#201a34", "#0a0818", "#382e52"),
-            "roll": ("#e02c9a", "#4a0c50", "#ff6cc4"),
-            "acc2": ("#22203a", "#0a0818", "#3a3656"),   # casque audio
-            "glow": ("#38f0ff!", None, None),
-            "glow2": ("#ff44c8!", None, None),
-            "sole": ("#38f0ff!", None, None),
+    "spetsnaz": {
+        "name": "Spetsnaz", "rarity": 4, "price": 1000,
+        "desc": "Armure de samouraï rouge laqué et casque à cornes dorées : la légende du front.",
+        "mats": {
+            "helmet": ("#9a1e22", "#360a18", "#d23e36"),
+            "helmet_acc": ("#2a1a1c", "#0c0608", "#4a2e30"),
+            "lens": ("#e0302a", "#4a0a14", "#ff8a6a"),
+            "mask": ("#3a2a2a", "#120a0e", "#5a4444"),
+            "bone": ("#3a2e2e", "#120a0e", "#5c4a4a"),
+            "uniform": ("#8a1e22", "#300a16", "#b8382e"),
+            "vest": ("#2a1c1e", "#0c0608", "#463032"),
+            "pouch": ("#7a1a1e", "#2a0812", "#a43028"),
+            "forearm": ("#8a1e22", "#300a16", "#b8382e"),
+            "pad": ("#24181a", "#0a0606", "#40302e"),
+            "boot": ("#1e1618", "#080406", "#3a2c2e"),
         },
-        "acc": {"cap", "headphones", "neon"},
-        "colors": ("#2e2248", "#38f0ff", "#ff44c8"),
+        "acc": {"helmet", "goggles", "samurai"},
+        "colors": ("#9a1e22", "#d8a840", "#2a1c1e"),
     },
-    "gold": {
-        "name": "Légende dorée", "rarity": 4, "price": 800,
-        "desc": "Épaulières en or, médaillon et casquette dorée : la tenue des légendes de l'extraction.",
-        "pal": {
-            "hair": ("#6a4024", "#2a1420", "#94603a"),
-            "cap": ("#e0b040", "#7a4a2c", "#fff0a0"),
-            "capb": ("#f4efe2", "#9894b0", "#ffffff"),
-            "tee": ("#2a2a36", "#0e0e1e", "#44444e"),
-            "vest": ("#f2ecdc", "#9a96b2", "#ffffff"),
-            "vestd": ("#e0b040", "#7a4a2c", "#fff0a0"),
-            "strap": ("#c89a3a", "#6a3e2a", "#f0d070"),
-            "pants": ("#26262e", "#0c0c18", "#40404a"),
-            "pocket": ("#1e1e26", "#0a0a14", "#36363e"),
-            "boot": ("#e0b040", "#7a4a2c", "#fff0a0"),
-            "sole": ("#f2ecdc", "#9a96b2", "#ffffff"),
-            "glove": ("#f2ecdc", "#9a96b2", "#ffffff"),
-            "pack": ("#f2ecdc", "#9a96b2", "#ffffff"),
-            "packd": ("#e0b040", "#7a4a2c", "#fff0a0"),
-            "roll": ("#b02a30", "#4a0e28", "#e04a44"),
-            "belt": ("#e0b040", "#7a4a2c", "#fff0a0"),
-            "acc1": ("#e8b840", "#7a4a2c", "#fff4b0"),   # épaulières, médaillon
-            "glow": ("#fff0a0!", None, None),
+    "cyber": {
+        "name": "Cyber", "rarity": 4, "price": 1000,
+        "desc": "Armure noire parcourue de néons violets et cyan, visière lumineuse.",
+        "mats": {
+            "helmet": ("#1a1828", "#08060e", "#34304a"),
+            "helmet_acc": ("#22203a", "#0a0818", "#3c3858"),
+            "headset": ("#1e1c30", "#08060e", "#38345a"),
+            "mask": ("#141220", "#06040a", "#2a2840"),
+            "uniform": ("#1c1a2a", "#08060e", "#36324c"),
+            "vest": ("#161422", "#06040a", "#2e2a44"),
+            "pouch": ("#201e32", "#08060e", "#3a3656"),
+            "forearm": ("#1c1a2a", "#08060e", "#36324c"),
+            "pad": ("#2a1e44", "#0c0818", "#4a3870"),
+            "glove": ("#18161e", "#06040a", "#302c3a"),
+            "boot": ("#18161e", "#06040a", "#302c3a"),
+            "belt": ("#18161e", "#06040a", "#302c3a"),
         },
-        "acc": {"cap", "pauldrons", "medal"},
-        "colors": ("#e0b040", "#f2ecdc", "#26262e"),
+        "acc": {"helmet", "headset", "cyber"},
+        "colors": ("#1a1828", "#c040ff", "#38f0ff"),
+    },
+    "scorpion": {
+        "name": "Scorpion", "rarity": 4, "price": 1000,
+        "desc": "Noir et or : masque doré, plaques gravées. Le dard frappe toujours en dernier.",
+        "mats": {
+            "helmet": ("#1a1a1e", "#06060a", "#36363e"),
+            "helmet_acc": ("#d8a840", "#6a4430", "#ffe490"),
+            "headset": ("#1e1e22", "#08080e", "#3a3a42"),
+            "uniform": ("#1c1c20", "#08080c", "#38383e"),
+            "vest": ("pat", [("#1c1c20", "#08080c", "#38383e"), ("#c8962e", "#5a3a28", "#f4d47a")], 9.0),
+            "pouch": ("#202024", "#08080c", "#3c3c42"),
+            "forearm": ("#1c1c20", "#08080c", "#38383e"),
+            "pad": ("#d0a03a", "#644030", "#ffe08a"),
+            "boot": ("#18181c", "#06060a", "#323238"),
+            "patch": ("#d0a03a", "#644030", "#ffe08a"),
+            "glow": "!#ffb030",
+        },
+        "acc": {"helmet", "headset", "scorpion", "patch"},
+        "colors": ("#1a1a1e", "#d8a840", "#1c1c20"),
     },
 }
 
@@ -210,12 +273,17 @@ def joint(name: str, parent, loc) -> bpy.types.Object:
     return e
 
 
-def poly_bm(pts) -> bmesh.types.BMesh:
-    bm = bmesh.new()
-    vs = [bm.verts.new(p) for p in pts]
-    bm.faces.new(vs)
-    bmesh.ops.triangulate(bm, faces=bm.faces)
-    return bm
+def arc_strip(r: float, a0: float, a1: float, z0: float, z1: float, n: int = 14,
+              cy: float = 0.0, flare: float = 0.0) -> bmesh.types.BMesh:
+    """Bande courbe (portion de cylindre vertical) d'angle a0..a1 (0 = devant, -Y), z0 bas -> z1 haut.
+    flare > 0 : le bas s'écarte (jupe, couvre-nuque)."""
+    secs = []
+    for i in range(n):
+        a = a0 + (a1 - a0) * i / (n - 1)
+        sx, sy = math.sin(a), -math.cos(a)
+        rb = r + flare
+        secs.append([(rb * sx, cy + rb * sy, z0), (r * sx, cy + r * sy, z1)])
+    return C.bm_loft(secs, closed=False)
 
 
 class Hero:
@@ -224,150 +292,189 @@ class Hero:
         self.parts: list[tuple[bpy.types.Object, str]] = []      # (objet, clef de matériau)
         self.acc: dict[str, list[bpy.types.Object]] = {}          # accessoire -> objets
         self.ph = C.toon("_placeholder", "#ff00ff")
+        self.rng = random.Random(7)
+        self.shop = False
         self.build()
 
     # ------------------------------------------------------------------ construction
-    def part(self, name, bm, key, parent, smooth=True, acc: str | None = None, nofs=False):
+    def part(self, name, bm, key, parent, smooth=True, acc: str | None = None, nofs=False,
+             thick: float = 0.0):
         ob = C.mesh_obj(name, bm, self.ph, smooth=smooth, coll=C.nofs_collection() if nofs else None)
         ob.parent = parent
+        if thick > 0.0:
+            C.solidify(ob, thick, 0.0)
         self.parts.append((ob, key))
         if acc:
             self.acc.setdefault(acc, []).append(ob)
         return ob
 
-    def decal(self, target, poly, key, name, lift=0.003, subdiv=3):
+    def decal(self, target, poly, key, name, lift=0.003, subdiv=3, acc=None):
         ob = C.decal(target, poly, self.ph, name, lift=lift, subdiv=subdiv, coll=C.nofs_collection())
         if ob is not None:
             self.parts.append((ob, key))
+            if acc:
+                self.acc.setdefault(acc, []).append(ob)
+        else:
+            print("decal manquée :", name)
         return ob
+
+    def text(self, body, size, key, parent, loc, acc):
+        ob = C.text_mesh("txt_" + body, body, size, self.ph, coll=C.nofs_collection())
+        ob.parent = parent
+        ob.location = loc
+        ob.rotation_euler = (math.pi / 2, 0, 0)
+        self.parts.append((ob, key))
+        self.acc.setdefault(acc, []).append(ob)
 
     def build(self) -> None:
         j = self.j
         j["root"] = root = joint("root", None, (0, 0, 0))
         j["pelvis"] = pelvis = joint("pelvis", root, (0, 0, PZ))
         j["spine"] = spine = joint("spine", pelvis, (0, 0, 0.08))
-        j["neck"] = neck = joint("neck", spine, (0, 0, 0.47))
+        j["neck"] = neck = joint("neck", spine, (0, 0, 0.45))
         j["head"] = head = joint("head", neck, (0, 0, 0.0))
         head.scale = (HEAD_SCALE,) * 3
         self.build_legs(pelvis)
         self.build_torso(pelvis, spine)
-        self.build_pack(spine)
+        self.build_back(spine)
         self.build_arms(spine)
         self.build_head(head, spine)
+        self.build_ghillie()
+        self.build_shop_rifle()
 
+    # --- jambes -----------------------------------------------------------
     def build_legs(self, pelvis) -> None:
         j = self.j
         for side, sx in (("L", 1), ("R", -1)):
-            hip = j["hip" + side] = joint("hip" + side, pelvis, (0.110 * sx, 0, -0.02))
+            hip = j["hip" + side] = joint("hip" + side, pelvis, (0.115 * sx, 0, -0.02))
             knee = j["knee" + side] = joint("knee" + side, hip, (0, 0, -0.36 * LEG))
-            self.part("thigh" + side, C.bm_xform(C.bm_cyl(12, 0.108, 0.092, 0.38),
-                      loc=(0, 0, -0.17), scale=(1, 1, LEG)), "pants", hip)
-            # poche cargo sur la cuisse (côté extérieur)
-            self.part("cargo" + side, C.bm_xform(C.bm_box(0.05, 0.13, 0.13, bevel=0.015),
-                      loc=(0.095 * sx, -0.005, -0.20 * LEG)), "pocket", hip)
-            self.part("shin" + side, C.bm_xform(C.bm_cyl(12, 0.092, 0.082, 0.22 * LEG),
-                      loc=(0, 0, LEG * -0.10)), "pants", knee)
-            # ranger : tige, revers, pied, semelle
-            self.part("bootShaft" + side, C.bm_xform(C.bm_cyl(12, 0.090, 0.098, 0.16 * LEG),
+            self.part("thigh" + side, C.bm_xform(C.bm_cyl(12, 0.122, 0.104, 0.38),
+                      loc=(0, 0, -0.17), scale=(1, 1, LEG)), "uniform", hip)
+            self.part("cargo" + side, C.bm_xform(C.bm_box(0.05, 0.13, 0.12, bevel=0.015),
+                      loc=(0.11 * sx, -0.005, -0.19 * LEG)), "uniform", hip)
+            if sx < 0:   # holster de cuisse (côté droit)
+                self.part("holster", C.bm_xform(C.bm_box(0.07, 0.13, 0.16, bevel=0.02),
+                          loc=(-0.13, -0.01, -0.14 * LEG)), "vest", hip)
+                self.part("holsterStrap", C.bm_xform(C.bm_cyl(12, 0.126, 0.126, 0.025),
+                          loc=(0, 0, -0.20 * LEG)), "strap", hip)
+            self.part("shin" + side, C.bm_xform(C.bm_cyl(12, 0.104, 0.094, 0.22 * LEG),
+                      loc=(0, 0, LEG * -0.10)), "uniform", knee)
+            # genouillère massive
+            kp = C.bm_sphere(14, 9, 1.0)
+            C.bm_xform(kp, loc=(0, -0.075, -0.015), scale=(0.105, 0.065, 0.10))
+            self.part("kneepad" + side, kp, "pad", knee)
+            self.part("kneeStrap" + side, C.bm_xform(C.bm_cyl(12, 0.108, 0.108, 0.025),
+                      loc=(0, 0, -0.06)), "strap", knee)
+            # ranger
+            self.part("bootShaft" + side, C.bm_xform(C.bm_cyl(12, 0.100, 0.108, 0.17 * LEG + 0.03),
                       loc=(0, 0, LEG * -0.27)), "boot", knee)
-            self.part("bootCuff" + side, C.bm_xform(C.bm_cyl(12, 0.096, 0.096, 0.03),
-                      loc=(0, 0, LEG * -0.19)), "boot", knee)
-            foot = C.bm_xform(C.bm_box(0.16, 0.26, 0.10, bevel=0.04), loc=(0, -0.055, -0.345 + 0.41 * (1 - LEG)))
+            foot = C.bm_xform(C.bm_box(0.18, 0.28, 0.11, bevel=0.045), loc=(0, -0.06, -0.345 + 0.41 * (1 - LEG)))
             self.part("foot" + side, foot, "boot", knee)
-            sole = C.bm_xform(C.bm_box(0.17, 0.27, 0.035, bevel=0.012), loc=(0, -0.055, -0.39 + 0.41 * (1 - LEG)))
+            sole = C.bm_xform(C.bm_box(0.19, 0.29, 0.04, bevel=0.012), loc=(0, -0.06, -0.39 + 0.41 * (1 - LEG)))
             self.part("sole" + side, sole, "sole", knee)
+            # néons (cyber)
+            self.part("neonShin" + side, C.bm_xform(C.bm_box(0.02, 0.012, 0.14 * LEG), loc=(0.0, -0.104, -0.14 * LEG)),
+                      "glow", knee, acc="cyber", nofs=True)
+            self.part("neonThigh" + side, C.bm_xform(C.bm_box(0.012, 0.02, 0.22 * LEG),
+                      loc=(0.124 * sx, 0, -0.17 * LEG)), "glow2", hip, acc="cyber", nofs=True)
+            self.part("neonKnee" + side, C.bm_xform(C.bm_torus(16, 5, 0.075, 0.009), loc=(0, -0.12, -0.015),
+                      rot=(math.pi / 2, 0, 0)), "glow", knee, acc="cyber", nofs=True)
+            # samouraï : plaques de cuisse (haidate)
+            self.part("haidate" + side, C.bm_xform(arc_strip(0.135, -1.0 * sx - 0.3 * sx, 0.6 * sx, -0.20, 0.0, n=8, flare=0.02),
+                      scale=(1, 1, LEG)), "red", hip, acc="samurai", thick=0.012, smooth=False)
 
+    # --- torse ------------------------------------------------------------
     def build_torso(self, pelvis, spine) -> None:
-        # bassin + ceinture
         self.part("hips", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, 0, -0.01),
-                  scale=(0.205, 0.155, 0.14)), "pants", pelvis)
-        self.part("belt", C.bm_xform(C.bm_cyl(16, 0.208, 0.208, 0.05), loc=(0, 0, 0.05),
+                  scale=(0.225, 0.165, 0.15)), "uniform", pelvis)
+        self.part("belt", C.bm_xform(C.bm_cyl(16, 0.226, 0.226, 0.06), loc=(0, 0, 0.05),
                   scale=(1, 0.78, 1)), "belt", pelvis)
-        self.part("buckle", C.bm_xform(C.bm_box(0.07, 0.03, 0.05, bevel=0.01),
-                  loc=(0, -0.165, 0.05)), "metal", pelvis)
-        # t-shirt (torse)
+        self.part("buckle", C.bm_xform(C.bm_box(0.08, 0.03, 0.05, bevel=0.01),
+                  loc=(0, -0.178, 0.05)), "helmet_acc", pelvis)
+        for k, x in enumerate((-0.16, 0.16)):
+            self.part("beltPouch%d" % k, C.bm_xform(C.bm_box(0.08, 0.07, 0.10, bevel=0.018),
+                      loc=(x, -0.12, 0.02)), "pouch", pelvis)
+        # torse (uniforme)
         torso = C.bm_loft([
-            C.ellipse(0, 0, 0.00, 0.172, 0.130, 14),
-            C.ellipse(0, 0.005, 0.15, 0.190, 0.140, 14),
-            C.ellipse(0, 0.010, 0.29, 0.218, 0.150, 14),
-            C.ellipse(0, 0.012, 0.39, 0.200, 0.138, 14),
-            C.ellipse(0, 0.012, 0.46, 0.105, 0.090, 14),
+            C.ellipse(0, 0, 0.00, 0.190, 0.140, 14),
+            C.ellipse(0, 0.005, 0.15, 0.205, 0.150, 14),
+            C.ellipse(0, 0.010, 0.29, 0.232, 0.158, 14),
+            C.ellipse(0, 0.012, 0.38, 0.215, 0.145, 14),
+            C.ellipse(0, 0.012, 0.45, 0.110, 0.095, 14),
         ])
-        self.part("torso", torso, "tee", spine)
-        self.part("collar", C.bm_xform(C.bm_torus(16, 6, 0.085, 0.022), loc=(0, 0.01, 0.455),
-                  scale=(1, 0.92, 1)), "tee", spine)
-        # gilet tactique (ouvert en haut, laisse voir le t-shirt aux épaules)
-        vest = C.bm_loft([
-            C.ellipse(0, 0.0, 0.02, 0.190, 0.148, 16),
-            C.ellipse(0, 0.006, 0.15, 0.208, 0.158, 16),
-            C.ellipse(0, 0.010, 0.29, 0.234, 0.168, 16),
-            C.ellipse(0, 0.012, 0.385, 0.210, 0.154, 16),
-        ], cap_start=False, cap_end=False)
-        self.part("vest", vest, "vest", spine)
-        # bretelles du gilet sur les épaules
+        self.part("torso", torso, "uniform", spine)
+        # gilet porte-plaques : ceinture abdominale + plaques avant/arrière + bretelles
+        cumm = C.bm_loft([C.ellipse(0, 0.004, 0.04, 0.218, 0.168, 16),
+                          C.ellipse(0, 0.008, 0.22, 0.236, 0.178, 16)], cap_start=False, cap_end=False)
+        self.part("cummerbund", cumm, "vest", spine, thick=0.012)
+        self.part("plateF", C.bm_xform(C.bm_box(0.36, 0.07, 0.30, bevel=0.03), loc=(0, -0.150, 0.25),
+                  rot=(0.06, 0, 0)), "vest", spine)
+        self.part("plateB", C.bm_xform(C.bm_box(0.36, 0.07, 0.31, bevel=0.03), loc=(0, 0.150, 0.25)),
+                  "vest", spine)
         for sx in (1, -1):
-            st = C.bm_tube(C.bezier((0.12 * sx, -0.14, 0.37), (0.15 * sx, -0.10, 0.47),
-                                    (0.15 * sx, 0.08, 0.47), (0.12 * sx, 0.14, 0.37), 6),
-                           [0.035] * 6, seg=6, flat=0.45, up=(0, 0, 1))
+            st = C.bm_tube(C.bezier((0.12 * sx, -0.16, 0.38), (0.15 * sx, -0.12, 0.47),
+                                    (0.15 * sx, 0.10, 0.47), (0.12 * sx, 0.16, 0.38), 6),
+                           [0.042] * 6, seg=6, flat=0.45, up=(0, 0, 1))
             self.part("vestStrap", st, "vest", spine)
-        # poches ventrales + poche radio
-        for k, x in enumerate((-0.095, 0.0, 0.095)):
-            self.part("pouch%d" % k, C.bm_xform(C.bm_box(0.078, 0.05, 0.10, bevel=0.016),
-                      loc=(x, -0.172, 0.10)), "vestd", spine)
-            self.part("flap%d" % k, C.bm_xform(C.bm_box(0.082, 0.054, 0.025, bevel=0.008),
-                      loc=(x, -0.176, 0.15)), "vest", spine)
-        self.part("radio", C.bm_xform(C.bm_box(0.07, 0.05, 0.09, bevel=0.015),
-                  loc=(0.10, -0.19, 0.28)), "vestd", spine)
-        # bretelles du sac (devant)
+        # poches chargeurs (3) + poche admin + radio
+        for k, x in enumerate((-0.11, 0.0, 0.11)):
+            self.part("mag%d" % k, C.bm_xform(C.bm_box(0.095, 0.06, 0.13, bevel=0.018),
+                      loc=(x, -0.198, 0.14)), "pouch", spine)
+            self.part("magFlap%d" % k, C.bm_xform(C.bm_box(0.10, 0.066, 0.03, bevel=0.008),
+                      loc=(x, -0.200, 0.205)), "vest", spine)
+        self.part("admin", C.bm_xform(C.bm_box(0.22, 0.04, 0.09, bevel=0.012), loc=(0, -0.192, 0.30),
+                  rot=(0.06, 0, 0)), "pouch", spine)
+        self.part("radio", C.bm_xform(C.bm_box(0.07, 0.06, 0.12, bevel=0.015), loc=(0.17, -0.16, 0.30)),
+                  "pouch", spine)
+        self.part("antenna", C.bm_tube([(0.17, -0.16, 0.36), (0.18, -0.15, 0.46), (0.19, -0.13, 0.52)],
+                                       [0.012, 0.010, 0.006], seg=5), "strap", spine)
+        # cou : col / cagoule
+        self.part("gaiter", C.bm_xform(C.bm_cyl(12, 0.10, 0.09, 0.10), loc=(0, 0.005, 0.46)), "mask", spine)
+        # GIGN : lettrage blanc sur la plaque avant
+        self.text("GIGN", 0.10, "text", spine, (0, -0.214, 0.372), "gign")
+        # cyber : bandes néon sur le gilet
         for sx in (1, -1):
-            st = C.bm_tube(C.bezier((0.10 * sx, 0.16, 0.40), (0.12 * sx, 0.02, 0.50),
-                                    (0.14 * sx, -0.17, 0.42), (0.14 * sx, -0.19, 0.24), 7),
-                           [0.026] * 7, seg=6, flat=0.40, up=(0, 0, 1))
-            self.part("packStrap", st, "strap", spine)
-        # bande néon (skin néon)
-        self.part("neonBand", C.bm_xform(C.bm_torus(20, 5, 0.215, 0.012), loc=(0, 0.008, 0.215),
-                  scale=(1, 0.76, 1)), "glow", spine, acc="neon", nofs=True)
-        self.part("neonBelt", C.bm_xform(C.bm_torus(20, 5, 0.211, 0.010), loc=(0, 0, 0.05),
-                  scale=(1, 0.80, 1)), "glow2", pelvis, acc="neon", nofs=True)
-        # épaulières dorées + médaillon (skin or)
+            self.part("neonVest", C.bm_xform(C.bm_box(0.014, 0.014, 0.26), loc=(0.15 * sx, -0.188, 0.24),
+                      rot=(0.06, 0, 0)), "glow" if sx > 0 else "glow2", spine, acc="cyber", nofs=True)
+        self.part("neonBelt", C.bm_xform(C.bm_torus(20, 5, 0.228, 0.010), loc=(0, 0, 0.05),
+                  scale=(1, 0.79, 1)), "glow2", pelvis, acc="cyber", nofs=True)
+        self.part("neonChest", C.bm_xform(C.bm_box(0.20, 0.014, 0.016), loc=(0, -0.196, 0.345)),
+                  "glow", spine, acc="cyber", nofs=True)
+        # scorpion : plaque de poitrine dorée
+        self.part("goldPlate", C.bm_xform(C.bm_box(0.20, 0.03, 0.08, bevel=0.015), loc=(0, -0.198, 0.32),
+                  rot=(0.06, 0, 0)), "gold", spine, acc="scorpion")
         for sx in (1, -1):
-            pad = C.bm_sphere(14, 9, 1.0)
-            for v in pad.verts:
-                if v.co.z < -0.2:
-                    v.co.z = -0.2 + (v.co.z + 0.2) * 0.2
-            self.part("pauldron", C.bm_xform(pad, loc=(0.24 * sx, 0.0, 0.37), rot=(0, 0.45 * sx, 0),
-                      scale=(0.12, 0.12, 0.085)), "acc1", spine, acc="pauldrons")
-        self.part("chain", C.bm_xform(C.bm_torus(18, 5, 0.12, 0.012), loc=(0, -0.03, 0.40),
-                  rot=(0.55, 0, 0)), "acc1", spine, acc="medal")
-        self.part("medal", C.bm_xform(C.bm_cyl(14, 0.045, 0.045, 0.02), loc=(0, -0.175, 0.31),
-                  rot=(1.35, 0, 0)), "acc1", spine, acc="medal")
-        # chèche autour du cou (skin désert)
-        self.part("shemagh", C.bm_xform(C.bm_torus(18, 8, 0.12, 0.055), loc=(0, 0.0, 0.44),
-                  scale=(1, 0.95, 0.8)), "acc1", spine, acc="shemagh")
-        self.part("shemaghTail", C.bm_tube(C.bezier((0.05, -0.12, 0.43), (0.08, -0.17, 0.38),
-                                                    (0.09, -0.18, 0.32), (0.07, -0.18, 0.27), 5),
-                                           [0.05, 0.052, 0.05, 0.045, 0.03], seg=6, flat=0.4),
-                  "acc1", spine, acc="shemagh")
+            self.part("goldTrim", C.bm_xform(C.bm_box(0.02, 0.03, 0.26), loc=(0.18 * sx, -0.186, 0.24),
+                      rot=(0.06, 0, 0)), "gold", spine, acc="scorpion")
+        # samouraï : jupe de plaques (kusazuri) à la ceinture
+        for k, a in enumerate((-1.9, -0.95, 0.0, 0.95, 1.9)):
+            pl = arc_strip(0.235, a - 0.40, a + 0.40, -0.20, 0.03, n=5, flare=0.05)
+            C.bm_xform(pl, scale=(1, 0.82, 1))
+            self.part("kusazuri%d" % k, pl, "red", pelvis, acc="samurai", thick=0.014, smooth=False)
+            for zz in (-0.06, -0.14):
+                band = arc_strip(0.243 + 0.05 * (0.03 - zz) / 0.23, a - 0.38, a + 0.38, zz - 0.008, zz + 0.008, n=5)
+                C.bm_xform(band, scale=(1, 0.82, 1))
+                self.part("kusaLace", band, "gold", pelvis, acc="samurai", thick=0.006, smooth=False)
+        # chèche (desert)
+        self.part("shemagh", C.bm_xform(C.bm_torus(18, 8, 0.12, 0.06), loc=(0, 0.0, 0.43),
+                  scale=(1.05, 1.0, 0.8)), "shemagh", spine, acc="shemagh")
+        self.part("shemaghTail", C.bm_tube(C.bezier((0.06, -0.12, 0.42), (0.09, -0.18, 0.37),
+                                                    (0.10, -0.20, 0.30), (0.08, -0.21, 0.25), 5),
+                                           [0.055, 0.058, 0.055, 0.05, 0.035], seg=6, flat=0.4),
+                  "shemagh", spine, acc="shemagh")
 
-    def build_pack(self, spine) -> None:
+    def build_back(self, spine) -> None:
         j = self.j
-        pk = j["pack"] = joint("pack", spine, (0, 0.17, 0.30))
-        self.part("pack", C.bm_xform(C.bm_box(0.31, 0.16, 0.32, bevel=0.05, segs=3),
-                  loc=(0, 0.06, -0.04)), "pack", pk)
-        self.part("packFlap", C.bm_xform(C.bm_box(0.32, 0.17, 0.08, bevel=0.03),
-                  loc=(0, 0.065, 0.10)), "packd", pk)
-        self.part("packPocket", C.bm_xform(C.bm_box(0.20, 0.06, 0.13, bevel=0.025),
-                  loc=(0, 0.15, -0.09)), "packd", pk)
-        # tapis de sol roulé sur le dessus (lisible vu de haut)
-        roll = C.bm_cyl(14, 0.065, 0.065, 0.36)
-        C.bm_xform(roll, loc=(0, 0.07, 0.19), rot=(0, math.pi / 2, 0))
-        self.part("packRoll", roll, "roll", pk)
-        for sx in (1, -1):
-            self.part("rollStrap", C.bm_xform(C.bm_cyl(12, 0.069, 0.069, 0.025), loc=(0.11 * sx, 0.07, 0.19),
-                      rot=(0, math.pi / 2, 0)), "strap", pk)
-        self.part("neonPack", C.bm_xform(C.bm_box(0.24, 0.02, 0.025), loc=(0, 0.185, -0.02)),
-                  "glow", pk, acc="neon", nofs=True)
+        pk = j["pack"] = joint("pack", spine, (0, 0.19, 0.28))
+        # poche d'hydratation / radio dorsale
+        self.part("hydra", C.bm_xform(C.bm_box(0.22, 0.08, 0.24, bevel=0.035, segs=3), loc=(0, 0.02, -0.02)),
+                  "pouch", pk)
+        self.part("hydraFlap", C.bm_xform(C.bm_box(0.23, 0.09, 0.05, bevel=0.02), loc=(0, 0.02, 0.10)),
+                  "vest", pk)
+        self.part("neonBack", C.bm_xform(C.bm_box(0.16, 0.014, 0.018), loc=(0, 0.065, -0.02)),
+                  "glow2", pk, acc="cyber", nofs=True)
 
+    # --- bras -------------------------------------------------------------
     def build_arms(self, spine) -> None:
         j = self.j
         for side, sx in (("L", 1), ("R", -1)):
@@ -375,172 +482,277 @@ class Hero:
             ua.rotation_mode = "QUATERNION"
             fa = j["fa" + side] = C.empty("fa" + side, (0, 0, 0), spine)
             fa.rotation_mode = "QUATERNION"
-            # bras : manche courte, bras nu, coude
-            self.part("shoulder" + side, C.bm_xform(C.bm_sphere(12, 8, 0.085), loc=(0, 0, -0.01)),
-                      "tee", ua)
-            self.part("sleeve" + side, C.bm_xform(C.bm_cyl(12, 0.086, 0.078, 0.12), loc=(0, 0, -0.05)),
-                      "tee", ua)
-            self.part("uarm" + side, C.bm_xform(C.bm_cyl(10, 0.060, 0.054, 0.16), loc=(0, 0, -0.13)),
-                      "skin", ua)
-            self.part("elbow" + side, C.bm_sphere(10, 7, 0.054), "skin", fa)
-            self.part("farm" + side, C.bm_xform(C.bm_cyl(10, 0.052, 0.048, 0.16), loc=(0, 0, -0.08)),
-                      "skin", fa)
-            self.part("gcuff" + side, C.bm_xform(C.bm_cyl(10, 0.060, 0.064, 0.05), loc=(0, 0, -0.165)),
+            self.part("shoulder" + side, C.bm_xform(C.bm_sphere(12, 8, 0.108), loc=(0, 0, -0.01)),
+                      "uniform", ua)
+            self.part("uarm" + side, C.bm_xform(C.bm_cyl(12, 0.100, 0.088, 0.19), loc=(0, 0, -0.10)),
+                      "uniform", ua)
+            # écusson d'épaule (côté extérieur)
+            self.part("patch" + side, C.bm_xform(C.bm_box(0.014, 0.075, 0.075, bevel=0.01),
+                      loc=(0.092 * sx, -0.005, -0.075)), "patch", ua, acc="patch" if sx > 0 else None)
+            if sx > 0:
+                for k, key in enumerate(("flag_b", "flag_w", "flag_r")):
+                    self.part("flag%d" % k, C.bm_xform(C.bm_box(0.014, 0.025, 0.06),
+                              loc=(0.094, 0.025 - k * 0.025, -0.075)), key, ua, acc="flag", smooth=False)
+            self.part("elbow" + side, C.bm_xform(C.bm_sphere(10, 7, 1.0), scale=(0.072, 0.075, 0.068)), "pad", fa)
+            self.part("farm" + side, C.bm_xform(C.bm_cyl(10, 0.080, 0.070, 0.16), loc=(0, 0, -0.08)),
+                      "forearm", fa)
+            self.part("gcuff" + side, C.bm_xform(C.bm_cyl(10, 0.068, 0.074, 0.05), loc=(0, 0, -0.165)),
                       "glove", fa)
-            hand = C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -L_LOW + 0.01), scale=(0.064, 0.060, 0.072))
+            hand = C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -L_LOW + 0.012), scale=(0.085, 0.078, 0.090))
             self.part("hand" + side, hand, "glove", fa)
+            self.part("neonArm" + side, C.bm_xform(C.bm_torus(14, 5, 0.066, 0.010), loc=(0, 0, -0.12)),
+                      "glow", fa, acc="cyber", nofs=True)
+            self.part("neonUarm" + side, C.bm_xform(C.bm_torus(14, 5, 0.087, 0.010), loc=(0, 0, -0.14)),
+                      "glow2", ua, acc="cyber", nofs=True)
+            # samouraï : sode (plaques d'épaule)
+            sode = arc_strip(0.115, 0.6 * sx + 0.9 * sx - 1.0 * sx, 0.6 * sx + 0.9 * sx + 1.0 * sx, -0.20, 0.03, n=8, flare=0.05)
+            self.part("sode" + side, sode, "red", ua, acc="samurai", thick=0.016, smooth=False)
+            for zz in (-0.05, -0.12):
+                band = arc_strip(0.118 + 0.05 * (0.03 - zz) / 0.23, 0.5 * sx, 2.5 * sx, zz - 0.008, zz + 0.008, n=8)
+                self.part("sodeLace", band, "gold", ua, acc="samurai", thick=0.006, smooth=False)
+            # scorpion : épaulière dorée
+            pad = C.bm_sphere(14, 9, 1.0)
+            for v in pad.verts:
+                if v.co.z < -0.2:
+                    v.co.z = -0.2 + (v.co.z + 0.2) * 0.2
+            self.part("goldPad" + side, C.bm_xform(pad, loc=(0.02 * sx, 0.0, 0.0), rot=(0, 0.35 * sx, 0),
+                      scale=(0.12, 0.12, 0.08)), "gold", ua, acc="scorpion")
 
+    # --- tête -------------------------------------------------------------
     def build_head(self, head, spine) -> None:
-        self.part("neck", C.bm_xform(C.bm_cyl(10, 0.065, 0.07, 0.10), loc=(0, 0.01, 0.46)), "skin", spine)
-        # crâne : sphère un peu large aux joues (visage rond)
+        # tête / cagoule
         sk = C.bm_sphere(22, 16, 1.0)
         for v in sk.verts:
             x, y, z = v.co
             if z < 0:
-                x *= 1.0 + 0.06 * (-z) - 0.22 * (-z) ** 2
-                y *= 1.0 - 0.10 * (-z)
-            v.co = Vector((x * 0.198, y * 0.186, z * 0.205))
-        for v in sk.verts:
-            v.co += Vector((0, 0, 0.215))
-        skull = self.part("skull", sk, "skin", head)
+                x *= 1.0 + 0.04 * (-z) - 0.20 * (-z) ** 2
+                y *= 1.0 - 0.08 * (-z)
+            v.co = Vector((x * 0.188, y * 0.180, z * 0.198 + 0.0)) + Vector((0, 0, 0.205))
+        skull = self.part("skull", sk, "mask", head)
+        self.part("nose", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.176, 0.175),
+                  scale=(0.030, 0.026, 0.028)), "mask", head)
+        # tête de mort (Fantôme, SAS) : décalques sur la cagoule
+        bone = [(0.150 * math.cos(a), 0.215 + (0.120 if math.sin(a) > 0 else 0.150) * math.sin(a)
+                 * (1.0 if math.sin(a) > 0 else (1.0 - 0.25 * abs(math.cos(a)))))
+                for a in (2 * math.pi * i / 20 for i in range(20))]
+        self.decal(skull, bone, "bone", "skullFace", lift=0.003, acc="skull")
         for sx in (1, -1):
-            self.part("ear", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0.192 * sx, 0.015, 0.20),
-                      scale=(0.030, 0.042, 0.050)), "skin", head)
-        self.part("nose", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.186, 0.165),
-                  scale=(0.030, 0.024, 0.026)), "skin", head)
-        # visage (décalques) : grands yeux, reflets, sourcils, sourire
-        for sx in (1, -1):
-            ex, ez = 0.078 * sx, 0.200
-            eye = [(ex + 0.040 * math.cos(a), ez + 0.056 * math.sin(a))
+            eye = [(0.064 * sx + 0.046 * math.cos(a), 0.240 + 0.040 * math.sin(a))
                    for a in (2 * math.pi * i / 14 for i in range(14))]
-            self.decal(skull, eye, "eye", "eye", lift=0.003)
-            hl = [(ex + 0.012 * sx * 0 + 0.010 + 0.012 * math.cos(a), ez + 0.020 + 0.014 * math.sin(a))
-                  for a in (2 * math.pi * i / 10 for i in range(10))]
-            self.decal(skull, hl, "white", "eyeHL", lift=0.005, subdiv=2)
-            bw = [(0.035 * sx, 0.272), (0.112 * sx, 0.285), (0.115 * sx, 0.262), (0.037 * sx, 0.252)]
-            if sx < 0:
-                bw.reverse()
-            self.decal(skull, bw, "brow", "brow", lift=0.004, subdiv=2)
-        mouth = []
-        for i in range(9):
-            t = i / 8
-            a = math.pi * (1.15 + 0.7 * t)
-            mouth.append((0.048 * math.cos(a), 0.118 + 0.030 * math.sin(a) + 0.030))
-        for i in range(8, -1, -1):
-            t = i / 8
-            a = math.pi * (1.15 + 0.7 * t)
-            mouth.append((0.040 * math.cos(a), 0.118 + 0.020 * math.sin(a) + 0.034))
-        self.decal(skull, mouth, "mouth", "mouth", lift=0.004, subdiv=2)
-        # cheveux : masse arrière + mèches sous la casquette
-        hm = C.bm_sphere(18, 12, 1.0)
+            self.decal(skull, eye, "socket", "skullEye", lift=0.006, acc="skull")
+        self.decal(skull, [(0.0, 0.200), (0.022, 0.160), (-0.022, 0.160)], "socket", "skullNose",
+                   lift=0.006, subdiv=2, acc="skull")
+        self.decal(skull, [(-0.075, 0.122), (0.075, 0.122), (0.075, 0.112), (-0.075, 0.112)], "socket",
+                   "skullMouth", lift=0.006, subdiv=2, acc="skull")
+        for k in range(-3, 4):
+            x = k * 0.022
+            self.decal(skull, [(x - 0.004, 0.142), (x + 0.004, 0.142), (x + 0.004, 0.092), (x - 0.004, 0.092)],
+                       "socket", "skullTooth", lift=0.006, subdiv=1, acc="skull")
+
+        # casque tactique (très gros) : coque coupée devant au-dessus des lunettes
+        R = 0.232
+        HZ = 0.245
+
+        def cut(y: float) -> float:
+            """Hauteur du bord du casque selon la position avant/arrière (au-dessus des lunettes devant)."""
+            f = max(0.0, min(1.0, -y / R))
+            return 0.352 * f ** 1.1 + 0.175 * (1 - f ** 1.1)
+        hm = C.bm_sphere(28, 18, 1.0)
         for v in hm.verts:
+            x, y, z = v.co * R
+            z = HZ + z * 0.92
+            v.co = Vector((x * 1.03, y * 1.02 + 0.010, max(z, cut(y))))
+        self.part("helmet", hm, "helmet", head, acc="helmet")
+        rim = []
+        for i in range(40):
+            a = 2 * math.pi * i / 40
+            x, y = R * 1.03 * math.sin(a), -R * 1.02 * math.cos(a) + 0.010
+            rim.append((x, y, cut(y - 0.010) + 0.004))
+        rim.append(rim[0])
+        self.part("helmetRim", C.bm_tube(rim, [0.017] * len(rim), seg=6), "helmet_acc", head, acc="helmet")
+        for sx in (1, -1):
+            self.part("rail", C.bm_xform(C.bm_box(0.03, 0.22, 0.04, bevel=0.008), loc=(0.236 * sx, 0.0, 0.25),
+                      rot=(0.25, 0, 0)), "helmet_acc", head, acc="helmet")
+        self.part("nvgMount", C.bm_xform(C.bm_box(0.10, 0.05, 0.075, bevel=0.012), loc=(0, -0.205, 0.405),
+                  rot=(-0.7, 0, 0)), "helmet_acc", head, acc="helmet")
+        self.part("velcro", C.bm_xform(C.bm_box(0.12, 0.10, 0.03, bevel=0.01), loc=(0, 0.02, 0.475),
+                  rot=(-0.2, 0, 0)), "helmet_acc", head, acc="helmet")
+        # cagoule / capuche (Fantôme)
+        hood = C.bm_sphere(20, 14, 1.0)
+        for v in hood.verts:
             x, y, z = v.co
-            v.co = Vector((x * 0.204, y * 0.194 + 0.022, z * 0.185 + 0.235))
-            # dégage le visage : l'avant bas rentre dans le crâne
-            if v.co.y < -0.06 and v.co.z < 0.31:
-                v.co.y = -0.06 + (v.co.y + 0.06) * 0.2
-        self.part("hair", hm, "hair", head)
-        for k, (x, ln, ang) in enumerate(((-0.08, 0.075, -0.35), (-0.015, 0.085, 0.05),
-                                          (0.05, 0.075, 0.40), (0.11, 0.06, 0.6))):
-            p0 = (x, -0.15, 0.345)
-            p3 = (x + ln * math.sin(ang) * 0.6, -0.20, 0.345 - ln)
-            pts = C.bezier(p0, (x, -0.19, 0.345), (p3[0], -0.215, 0.32 - ln * 0.5), p3, 5)
-            self.part("bang", C.bm_tube(pts, [0.045, 0.045, 0.035, 0.022, 0.004], seg=6, flat=0.5,
-                                        up=(0, 1, 0)), "hair", head)
-        # épis sur le dessus (visibles sans casquette)
-        for k, (x, y) in enumerate(((-0.06, -0.02), (0.05, 0.0), (0.0, 0.08), (-0.10, 0.10), (0.10, 0.09))):
-            pts = C.bezier((x, y, 0.36), (x * 1.2, y + 0.03, 0.40), (x * 1.5, y + 0.07, 0.42),
-                           (x * 1.8, y + 0.11, 0.425), 4)
-            self.part("spike", C.bm_tube(pts, [0.075, 0.055, 0.03, 0.004], seg=6), "hair", head,
-                      acc="spikes")
+            if y < -0.2 and z < 0.55:
+                y = -0.2 + (y + 0.2) * 0.15
+            v.co = Vector((x * 0.205, y * 0.198 + 0.012, z * 0.215 + 0.22))
+        self.part("hood", hood, "mask", head, acc="hood")
 
-        # casquette à l'envers
-        dome = C.bm_sphere(20, 12, 1.0)
-        for v in dome.verts:
-            if v.co.z < -0.05:
-                v.co.z = -0.05
-        C.bm_xform(dome, loc=(0, 0.012, 0.27), rot=(-0.20, 0, 0), scale=(0.222, 0.214, 0.180))
-        self.part("capDome", dome, "cap", head, acc="cap")
-        self.part("capButton", C.bm_xform(C.bm_sphere(8, 6, 0.022), loc=(0, 0.04, 0.435)), "capb",
-                  head, acc="cap")
-        brim = C.bm_loft([
-            [(-0.13, 0.17, 0.0), (0.13, 0.17, 0.0), (0.13, 0.17, 0.022), (-0.13, 0.17, 0.022)],
-            [(-0.14, 0.30, -0.035), (0.14, 0.30, -0.035), (0.14, 0.30, -0.013), (-0.14, 0.30, -0.013)],
-            [(-0.10, 0.36, -0.055), (0.10, 0.36, -0.055), (0.10, 0.36, -0.035), (-0.10, 0.36, -0.035)],
-        ])
-        C.bm_xform(brim, loc=(0, 0, 0.25))
-        self.part("capBrim", brim, "capb", head, smooth=False, acc="cap")
-        # ouverture de réglage à l'avant (bandeau sombre)
-        self.part("capStrap", C.bm_xform(C.bm_box(0.11, 0.03, 0.035, bevel=0.01), loc=(0, -0.19, 0.30),
-                  rot=(-0.4, 0, 0)), "capb", head, acc="cap")
-
-        # bandeau + lunettes (désert)
-        self.part("headband", C.bm_xform(C.bm_torus(22, 7, 0.200, 0.026), loc=(0, 0.01, 0.295),
-                  rot=(-0.15, 0, 0), scale=(1, 0.97, 1)), "acc1", head, acc="headband")
-        for k, sx in enumerate((1, -1)):
-            tail = C.bm_tube(C.bezier((0.02 * sx, 0.20, 0.30), (0.06 * sx, 0.27, 0.27),
-                                      (0.09 * sx, 0.30, 0.20), (0.11 * sx, 0.31, 0.13), 5),
-                             [0.03, 0.032, 0.03, 0.026, 0.02], seg=6, flat=0.4)
-            self.part("bandTail", tail, "acc1", head, acc="headband")
+        # casque audio
         for sx in (1, -1):
-            lens = C.bm_cyl(14, 0.050, 0.046, 0.04)
-            C.bm_xform(lens, loc=(0.07 * sx, -0.165, 0.34), rot=(math.pi / 2 - 0.65, 0, 0))
-            self.part("goggleRim", lens, "acc2", head, acc="goggles")
-            gl = C.bm_cyl(14, 0.036, 0.036, 0.01)
-            C.bm_xform(gl, loc=(0.07 * sx, -0.185, 0.355), rot=(math.pi / 2 - 0.65, 0, 0))
-            self.part("goggleLens", gl, "glow", head, acc="goggles", nofs=True)
+            cup = C.bm_cyl(16, 0.082, 0.076, 0.07)
+            C.bm_xform(cup, loc=(0.222 * sx, 0.015, 0.205), rot=(0, math.pi / 2, 0))
+            self.part("cup", cup, "headset", head, acc="headset")
+            ring = C.bm_torus(16, 5, 0.062, 0.012)
+            C.bm_xform(ring, loc=(0.258 * sx, 0.015, 0.205), rot=(0, math.pi / 2, 0))
+            self.part("cupRing", ring, "helmet_acc", head, acc="headset")
+            ringn = C.bm_torus(16, 5, 0.062, 0.012)
+            C.bm_xform(ringn, loc=(0.262 * sx, 0.015, 0.205), rot=(0, math.pi / 2, 0))
+            self.part("cupNeon", ringn, "glow", head, acc="cyber", nofs=True)
+        band = C.bm_tube([(0.235 * math.cos(a), 0.03, 0.205 + 0.30 * math.sin(a))
+                          for a in (math.pi * i / 12 for i in range(13))], [0.02] * 13, seg=6, up=(0, 1, 0))
+        self.part("hpBand", band, "headset", head, acc="hood")
+        self.part("mic", C.bm_tube(C.bezier((0.23, -0.01, 0.17), (0.22, -0.10, 0.12), (0.14, -0.17, 0.10),
+                                             (0.07, -0.19, 0.11), 5), [0.012] * 5, seg=5), "strap", head,
+                  acc="headset")
 
-        # bonnet + jumelles de vision nocturne (nuit)
-        bn = C.bm_sphere(20, 12, 1.0)
-        for v in bn.verts:
-            if v.co.z < -0.15:
-                v.co.z = -0.15
-        C.bm_xform(bn, loc=(0, 0.02, 0.29), rot=(-0.25, 0, 0), scale=(0.218, 0.212, 0.19))
-        self.part("beanie", bn, "acc1", head, acc="beanie")
-        self.part("beanieCuff", C.bm_xform(C.bm_torus(22, 7, 0.205, 0.035), loc=(0, 0.03, 0.27),
-                  rot=(-0.25, 0, 0)), "acc1", head, acc="beanie")
-        self.part("nvgMount", C.bm_xform(C.bm_box(0.08, 0.05, 0.06, bevel=0.012), loc=(0, -0.19, 0.36),
-                  rot=(-0.4, 0, 0)), "acc2", head, acc="nvg")
-        for sx in (1, -1):
-            tb = C.bm_cyl(12, 0.032, 0.036, 0.10)
-            C.bm_xform(tb, loc=(0.045 * sx, -0.23, 0.39), rot=(math.pi / 2 - 0.9, 0, 0))
-            self.part("nvgTube", tb, "acc2", head, acc="nvg")
-            ln = C.bm_cyl(12, 0.026, 0.026, 0.01)
-            C.bm_xform(ln, loc=(0.045 * sx, -0.27, 0.42), rot=(math.pi / 2 - 0.9, 0, 0))
-            self.part("nvgLens", ln, "glow", head, acc="nvg", nofs=True)
+        # lunettes de protection : bande courbe + écran
+        gfr = arc_strip(0.200, -1.32, 1.32, 0.200, 0.350, n=18, cy=-0.006)
+        self.part("gogFrame", gfr, "goggles", head, acc="goggles", thick=0.02, smooth=True)
+        lens = arc_strip(0.218, -1.12, 1.12, 0.212, 0.338, n=18, cy=-0.006)
+        self.part("lens", lens, "lens", head, acc="goggles", thick=0.006, smooth=True)
+        self.part("gogStrap", C.bm_xform(C.bm_torus(24, 5, 0.196, 0.016), loc=(0, 0.0, 0.275)),
+                  "strap", head, acc="goggles")
 
-        # casque audio (néon)
-        band = C.bm_tube([(0.20 * math.cos(a), 0.02, 0.22 + 0.27 * math.sin(a))
-                          for a in (math.pi * i / 10 for i in range(11))], [0.022] * 11, seg=6,
-                         up=(0, 1, 0))
-        self.part("hpBand", band, "acc2", head, acc="headphones")
+        # cyber : visière en V lumineuse + yeux
+        vz = 0.255
+        self.part("visor", C.bm_tube([(-0.15, -0.150, vz + 0.06), (-0.05, -0.200, vz), (0.0, -0.205, vz - 0.02),
+                                      (0.05, -0.200, vz), (0.15, -0.150, vz + 0.06)], [0.020] * 5, seg=6,
+                                     flat=0.6, up=(0, 1, 0)), "glow", head, acc="cyber", nofs=True)
+        self.part("visorPlate", arc_strip(0.198, -1.1, 1.1, 0.16, 0.33, n=16), "helmet", head,
+                  acc="cyber", thick=0.02)
+        self.part("helmNeon", C.bm_tube([(0.0, -0.21, 0.36), (0.0, -0.18, 0.44), (0.0, -0.08, 0.50),
+                                         (0.0, 0.06, 0.50)], [0.012] * 4, seg=5), "glow2", head,
+                  acc="cyber", nofs=True)
+
+        # scorpion : masque doré + crête dorée
+        gm = C.bm_sphere(20, 14, 1.0)
+        for v in gm.verts:
+            x, y, z = v.co
+            if y > -0.15:
+                y = -0.15 + (y + 0.15) * 0.08
+            v.co = Vector((x * 0.198, y * 0.200 - 0.006, z * 0.150 + 0.195))
+        gmask = self.part("goldMask", gm, "gold", head, acc="scorpion")
         for sx in (1, -1):
-            cup = C.bm_cyl(14, 0.07, 0.07, 0.05)
-            C.bm_xform(cup, loc=(0.205 * sx, 0.02, 0.20), rot=(0, math.pi / 2, 0))
-            self.part("hpCup", cup, "acc2", head, acc="headphones")
-            ring = C.bm_torus(14, 5, 0.05, 0.012)
-            C.bm_xform(ring, loc=(0.235 * sx, 0.02, 0.20), rot=(0, math.pi / 2, 0))
-            self.part("hpRing", ring, "glow2", head, acc="headphones", nofs=True)
+            slit = [(0.018 * sx, 0.268), (0.145 * sx, 0.292), (0.135 * sx, 0.218), (0.022 * sx, 0.200)]
+            if sx < 0:
+                slit.reverse()
+            self.decal(gmask, slit, "socket", "goldSlit", lift=0.004, subdiv=2, acc="scorpion")
+        self.decal(gmask, [(-0.006, 0.20), (0.006, 0.20), (0.004, 0.08), (-0.004, 0.08)], "socket",
+                   "goldLine", lift=0.004, subdiv=1, acc="scorpion")
+        self.part("goldCrest", C.bm_tube([(0.0, -0.20, 0.33), (0.0, -0.17, 0.43), (0.0, -0.07, 0.49),
+                                          (0.0, 0.08, 0.49), (0.0, 0.18, 0.42)], [0.022] * 5, seg=6, flat=0.6,
+                                         up=(1, 0, 0)), "gold", head, acc="scorpion")
+
+        # samouraï : couvre-nuque (shikoro), maedate dorée en croissant
+        for k, zz in enumerate((0.20, 0.15, 0.10)):
+            sh = arc_strip(0.238 + 0.022 * k, 1.25, 2 * math.pi - 1.25, zz - 0.06, zz, n=16, flare=0.025, cy=0.01)
+            self.part("shikoro%d" % k, sh, "helmet", head, acc="samurai", thick=0.016, smooth=False)
+        pts = []
+        for i in range(13):
+            t = math.pi + math.pi * i / 12
+            pts.append((0.26 * math.cos(t), -0.235 - 0.02 * abs(math.cos(t)), 0.36 + 0.30 * (1 + math.sin(t)) ** 1.0))
+        rr = [0.012 + 0.03 * math.sin(math.pi * i / 12) ** 0.7 for i in range(13)]
+        rr[0] = rr[-1] = 0.004
+        self.part("maedate", C.bm_tube(pts, rr, seg=8, flat=0.35, up=(0, 1, 0)), "gold", head, acc="samurai")
+        self.part("maedateBase", C.bm_xform(C.bm_cyl(12, 0.04, 0.04, 0.025), loc=(0, -0.235, 0.36),
+                  rot=(math.pi / 2, 0, 0)), "gold", head, acc="samurai")
+        # menpo (masque de visage) : mâchoire sombre sous les lunettes
+        mp = C.bm_sphere(18, 12, 1.0)
+        for v in mp.verts:
+            x, y, z = v.co
+            if y > -0.2:
+                y = -0.2 + (y + 0.2) * 0.1
+            if z > 0.3:
+                z = 0.3
+            v.co = Vector((x * 0.19, y * 0.20 - 0.01, z * 0.11 + 0.13))
+        mpo = self.part("menpo", mp, "bone", head, acc="samurai")
+        for k in range(-2, 3):
+            x = k * 0.03
+            self.decal(mpo, [(x - 0.005, 0.15), (x + 0.005, 0.15), (x + 0.005, 0.09), (x - 0.005, 0.09)],
+                       "red", "menpoTooth", lift=0.004, subdiv=1, acc="samurai")
+
+    # --- ghillie (Forest) ---------------------------------------------------
+    def build_ghillie(self) -> None:
+        """Touffes de lanières feuillues sur la tête, le buste, les bras et les jambes (un maillage par membre)."""
+        j = self.j
+        rng = self.rng
+        specs = [
+            # (articulation, centre, rayons ellipsoïde, nombre, longueur)
+            ("head", (0, 0.01, 0.24), (0.23, 0.22, 0.24), 120, 0.11),
+            ("spine", (0, 0.0, 0.25), (0.25, 0.20, 0.22), 90, 0.12),
+            ("pelvis", (0, 0.0, -0.02), (0.24, 0.18, 0.10), 30, 0.10),
+            ("hipL", (0, 0, -0.14), (0.13, 0.13, 0.12), 22, 0.09),
+            ("hipR", (0, 0, -0.14), (0.13, 0.13, 0.12), 22, 0.09),
+            ("kneeL", (0, 0, -0.07), (0.11, 0.11, 0.07), 14, 0.07),
+            ("kneeR", (0, 0, -0.07), (0.11, 0.11, 0.07), 14, 0.07),
+            ("uaL", (0, 0, -0.08), (0.10, 0.10, 0.09), 14, 0.08),
+            ("uaR", (0, 0, -0.08), (0.10, 0.10, 0.09), 14, 0.08),
+        ]
+        for name, c, r, n, ln in specs:
+            bms = []
+            if name == "head":
+                hood = C.bm_sphere(18, 12, 1.0)
+                C.bm_xform(hood, loc=(0, 0.015, 0.235), scale=(0.222, 0.212, 0.232))
+                for v in hood.verts:
+                    if v.co.y < -0.12 and 0.12 < v.co.z < 0.31 and abs(v.co.x) < 0.14:
+                        v.co.y = -0.12 + (v.co.y + 0.12) * 0.1
+                bms.append(hood)
+            for _ in range(n):
+                u = rng.uniform(-1, 1)
+                th = rng.uniform(0, 2 * math.pi)
+                s = math.sqrt(1 - u * u)
+                d = Vector((s * math.cos(th), s * math.sin(th), u))
+                if name == "head" and d.y < -0.45 and -0.6 < d.z < 0.45 and abs(d.x) < 0.65:
+                    continue   # laisse le visage dégagé
+                p = Vector(c) + Vector((d.x * r[0], d.y * r[1], d.z * r[2]))
+                out = Vector((d.x, d.y, max(d.z, -0.2))).normalized()
+                L = ln * rng.uniform(0.7, 1.3)
+                tip = p + out * L * 0.6 + Vector((0, 0, -L * 0.7))
+                mid = p + out * L * 0.5 + Vector((0, 0, -L * 0.15))
+                w = rng.uniform(0.018, 0.03)
+                bms.append(C.bm_tube([tuple(p), tuple(mid), tuple(tip)], [w, w * 0.9, 0.004], seg=4,
+                                     flat=0.35, up=tuple(out)))
+            bm = C.bm_merge(*bms)
+            self.part("ghillie_" + name, bm, "ghillie", j[name], acc="ghillie")
+
+    def build_shop_rifle(self) -> None:
+        """Fusil d'assaut tenu à deux mains, pour l'aperçu boutique uniquement (comme la planche)."""
+        sp = self.j["spine"]
+        g = C.empty("shopRifle", (0, 0, 0), sp)
+        self.j_rifle = g
+        blk, drk = "helmet_acc", "strap"
+        parts = [
+            (C.bm_box(0.09, 0.62, 0.11, bevel=0.012), (0, 0.0, 0.0), blk),       # boîtier + garde-main
+            (C.bm_box(0.06, 0.30, 0.06, bevel=0.008), (0, -0.44, 0.01), drk),    # canon
+            (C.bm_box(0.06, 0.07, 0.20, bevel=0.01), (0, -0.06, -0.13), drk),   # chargeur
+            (C.bm_box(0.07, 0.28, 0.12, bevel=0.012), (0, 0.42, -0.03), blk),   # crosse
+            (C.bm_box(0.05, 0.22, 0.04, bevel=0.006), (0, -0.05, 0.08), drk),   # rail / viseur
+        ]
+        for bm, loc, key in parts:
+            self.part("rifle", C.bm_xform(bm, loc=loc), key, g, acc="shop_rifle")
+        g.rotation_euler = (0.35, 0, 0.55)
+        g.location = HAND_R + Vector((0.04, -0.03, 0.06))
 
     # ------------------------------------------------------------------ skins
     def apply_skin(self, sid: str) -> None:
         sk = SKINS[sid]
-        pal = dict(BASE_PAL)
-        pal.update(sk["pal"])
+        spec = dict(BASE_MATS)
+        spec.update(sk["mats"])
         mats = {}
-        for key, (b, s, li) in pal.items():
+        for key, sp in spec.items():
             name = "%s_%s" % (sid, key)
-            if b.endswith("!"):
-                mats[key] = C.toon(name, b[:-1], emit=1.0)
-            elif key in ("eye", "white", "mouth", "brow"):
-                mats[key] = C.toon(name, b, s, li, rim=0.0, band=0.2)
+            if isinstance(sp, str) and sp.startswith("!"):
+                mats[key] = C.toon(name, sp[1:], emit=1.0)
+            elif sp[0] == "pat":
+                mats[key] = C.toon_pattern(name, sp[1], scale=sp[2], thresholds=(0.50, 0.58), rim=0.28)
+            elif key in ("socket", "flag_b", "flag_w", "flag_r", "text"):
+                mats[key] = C.toon(name, sp[0], sp[1], sp[2], rim=0.0, band=0.25)
             else:
-                mats[key] = C.toon(name, b, s, li, rim=0.30 if key != "skin" else 0.22)
+                mats[key] = C.toon(name, sp[0], sp[1], sp[2], rim=0.30)
         for ob, key in self.parts:
             ob.data.materials[0] = mats[key]
-        visible = sk["acc"]
+        visible = set(sk["acc"]) | ({"shop_rifle"} if self.shop else set())
         for acc, obs in self.acc.items():
-            on = acc in visible or (acc == "spikes" and not ({"cap", "beanie"} & visible))
+            on = acc in visible
             for ob in obs:
                 ob.hide_render = not on
                 ob.hide_viewport = not on
@@ -554,8 +766,8 @@ class Hero:
             ob.scale = (HEAD_SCALE,) * 3 if name == "head" else (1, 1, 1)
         self.j["pelvis"].location = (0, 0, PZ)
         self.j["head"].rotation_euler = (HEAD_PITCH, 0, 0)
-        self.j["neck"].location = (0, 0, 0.47)
-        self.j["pack"].location = (0, 0.17, 0.30)
+        self.j["neck"].location = (0, 0, 0.45)
+        self.j["pack"].location = (0, 0.19, 0.28)
 
     def arm_ik(self, side: str, target: Vector, pole: Vector) -> None:
         """IK 2 segments dans le repère de la colonne : place bras et avant-bras."""
@@ -727,7 +939,27 @@ def assemble(sid: str, frames: dict) -> None:
         blank = Image.new("RGBA", sheet.size, (0, 0, 0, 0))
         sheet = Image.composite(sheet, blank, a.point(lambda v: 255 if v else 0))
         compact_png(sheet, os.path.join(od, "hero_%s.png" % anim))
-    Image.open(frames[("idle", "s", 0)]).save(os.path.join(od, "preview.png"), optimize=True)
+
+
+def render_shop(hero: "Hero", cam, sids) -> None:
+    """Aperçu boutique en pied, de face (preview.png, SHOP_W x SHOP_H), légèrement de 3/4 comme la planche."""
+    sc = bpy.context.scene
+    old = (sc.render.resolution_x, sc.render.resolution_y, cam.data.ortho_scale, cam.location.copy())
+    sc.render.resolution_x, sc.render.resolution_y = SHOP_W * SS, SHOP_H * SS
+    cam.data.ortho_scale = ORTHO_H * 0.78
+    cam.location.z -= 0.14
+    hero.j["root"].rotation_euler = (0, 0, math.radians(-14))
+    hero.pose_idle(0)
+    hero.shop = True
+    for sid in sids:
+        hero.apply_skin(sid)
+        os.makedirs(out_dir(sid), exist_ok=True)
+        big = os.path.join(TMP_DIR, "shop_%s.png" % sid)
+        C.render_to(big)
+        C.downscale(big, os.path.join(out_dir(sid), "preview.png"), (SHOP_W, SHOP_H))
+    hero.shop = False
+    sc.render.resolution_x, sc.render.resolution_y, cam.data.ortho_scale = old[0], old[1], old[2]
+    cam.location = old[3]
 
 
 def compact_png(img, path: str) -> None:
@@ -848,7 +1080,7 @@ color_accent = %s
 glow = %.1f
 preview = ExtResource("2_prev")
 """ % (rd, sid, sk["name"], sk["desc"], sk["rarity"], sk["price"], rd.rstrip("/"),
-       col(p), col(s), col(a), 0.6 if sk["rarity"] >= 3 else 0.0)
+       col(p), col(s), col(a), 0.6 if sk["rarity"] >= 4 else (0.3 if sk["rarity"] == 3 else 0.0))
     d = os.path.join(ROOT, "data", "skins")
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, "char_%s.tres" % sid), "w") as f:
@@ -874,6 +1106,9 @@ def main() -> None:
         hero.apply_skin(skins[0])
         hero.pose_idle(0)
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(os.path.dirname(__file__), "hero.blend"))
+        return
+    if "--shop" in args:
+        render_shop(hero, cam, skins)
         return
     if "--preview" in args:
         dirs = args[args.index("--preview") + 1].split(",")
@@ -915,6 +1150,7 @@ def main() -> None:
                 hero_px = int(json.load(f).get("hero_height_px", hero_px))
         write_meta(sid, feet, hero_px, hands)
         write_skin_tres(sid)
+    render_shop(hero, cam, skins)
     hero.apply_skin("default")
     hero.pose_idle(0)
     hero.j["root"].rotation_euler = (0, 0, 0)

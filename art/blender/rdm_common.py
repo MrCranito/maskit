@@ -475,3 +475,124 @@ def downscale(src: str, dst: str | None, size: tuple[int, int]):
     if dst:
         pm.save(dst)
     return pm
+
+
+def _ramp_colors(base: str, shadow: str | None, lit: str | None):
+    b = hexcol(base)
+    sh = hexcol(shadow) if shadow else _mul(_mix(b, NIGHT, 0.40), (0.55, 0.62, 1.0))
+    li = hexcol(lit) if lit else tuple(min(1.0, v) for v in _mul(b, WARM))
+    return sh, _mix(sh, b, 0.65), b, li
+
+
+def toon_pattern(name: str, colors: list, scale: float = 6.0, thresholds=(0.52, 0.60),
+                 rim: float = 0.30, band: float = 0.50, detail: float = 2.0,
+                 coords: str = "Object") -> bpy.types.Material:
+    """Matériau toon à motif (camouflage, éclats d'or, usure) : 2 ou 3 couleurs (hex ou
+    (base, ombre, lumière)) réparties par un bruit en coordonnées objet, chacune avec sa rampe
+    toon 4 tons. thresholds = seuils du bruit pour la 2e puis la 3e couleur."""
+    if name in _mat_cache:
+        return _mat_cache[name]
+    m = bpy.data.materials.new(name)
+    m.use_nodes = True
+    nt = m.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    em = nt.nodes.new("ShaderNodeEmission")
+    nt.links.new(em.outputs[0], out.inputs[0])
+    specs = [(c, None, None) if isinstance(c, str) else tuple(c) for c in colors]
+    m.diffuse_color = (*hexcol(specs[0][0]), 1.0)
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    dot = nt.nodes.new("ShaderNodeVectorMath")
+    dot.operation = "DOT_PRODUCT"
+    nt.links.new(geo.outputs["Normal"], dot.inputs[0])
+    dot.inputs[1].default_value = LIGHT_DIR
+    remap = nt.nodes.new("ShaderNodeMapRange")
+    remap.inputs["From Min"].default_value = -1.0
+    remap.inputs["From Max"].default_value = 1.0
+    nt.links.new(dot.outputs["Value"], remap.inputs["Value"])
+    ramps = []
+    for spec in specs:
+        sh, mid, b, li = _ramp_colors(*spec)
+        ramp = nt.nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.interpolation = "CONSTANT"
+        els = ramp.color_ramp.elements
+        els[0].position = 0.0
+        els[0].color = (*sh, 1.0)
+        els[1].position = band - 0.08
+        els[1].color = (*mid, 1.0)
+        els.new(band + 0.06).color = (*b, 1.0)
+        els.new(band + 0.30).color = (*li, 1.0)
+        nt.links.new(remap.outputs["Result"], ramp.inputs["Factor"])
+        ramps.append(ramp.outputs["Color"])
+    tc = nt.nodes.new("ShaderNodeTexCoord")
+    col = ramps[0]
+    for k in range(1, len(ramps)):
+        nz = nt.nodes.new("ShaderNodeTexNoise")
+        nz.noise_dimensions = "3D"
+        nz.inputs["Scale"].default_value = scale * (1.0 + 0.37 * (k - 1))
+        nz.inputs["Detail"].default_value = detail
+        nz.inputs["Roughness"].default_value = 0.55
+        mp = nt.nodes.new("ShaderNodeMapping")
+        mp.inputs["Location"].default_value = (17.3 * k, 5.1 * k, 9.7 * k)
+        nt.links.new(tc.outputs[coords], mp.inputs["Vector"])
+        nt.links.new(mp.outputs["Vector"], nz.inputs["Vector"])
+        gt = nt.nodes.new("ShaderNodeMath")
+        gt.operation = "GREATER_THAN"
+        gt.inputs[1].default_value = thresholds[min(k - 1, len(thresholds) - 1)]
+        nt.links.new(nz.outputs["Fac"], gt.inputs[0])
+        mx = nt.nodes.new("ShaderNodeMix")
+        mx.data_type = "RGBA"
+        nt.links.new(gt.outputs[0], mx.inputs["Factor"])
+        nt.links.new(col, mx.inputs["A"])
+        nt.links.new(ramps[k], mx.inputs["B"])
+        col = mx.outputs["Result"]
+    if rim > 0.0:
+        lw = nt.nodes.new("ShaderNodeLayerWeight")
+        lw.inputs["Blend"].default_value = 0.35
+        rr = nt.nodes.new("ShaderNodeValToRGB")
+        rr.color_ramp.interpolation = "CONSTANT"
+        rr.color_ramp.elements[0].color = (0, 0, 0, 1)
+        rr.color_ramp.elements[1].position = 0.66
+        rr.color_ramp.elements[1].color = (rim, rim * 0.60, rim * 0.40, 1)
+        nt.links.new(lw.outputs["Facing"], rr.inputs["Factor"])
+        side = nt.nodes.new("ShaderNodeMath")
+        side.operation = "GREATER_THAN"
+        side.inputs[1].default_value = 0.10
+        nt.links.new(dot.outputs["Value"], side.inputs[0])
+        mrim = nt.nodes.new("ShaderNodeMix")
+        mrim.data_type = "RGBA"
+        nt.links.new(side.outputs[0], mrim.inputs["Factor"])
+        mrim.inputs["A"].default_value = (0, 0, 0, 1)
+        nt.links.new(rr.outputs["Color"], mrim.inputs["B"])
+        add = nt.nodes.new("ShaderNodeMix")
+        add.data_type = "RGBA"
+        add.blend_type = "ADD"
+        add.inputs["Factor"].default_value = 1.0
+        nt.links.new(col, add.inputs["A"])
+        nt.links.new(mrim.outputs["Result"], add.inputs["B"])
+        col = add.outputs["Result"]
+    nt.links.new(col, em.inputs["Color"])
+    em.inputs["Strength"].default_value = 1.0
+    _mat_cache[name] = m
+    return m
+
+
+def text_mesh(name: str, body: str, size: float, mat, extrude: float = 0.0,
+              coll=None) -> bpy.types.Object:
+    """Texte converti en maillage (police par défaut de Blender), centré, dans le plan XY."""
+    cu = bpy.data.curves.new(name + "_cu", type="FONT")
+    cu.body = body
+    cu.size = size
+    cu.align_x = "CENTER"
+    cu.align_y = "CENTER"
+    cu.extrude = extrude
+    tmp = bpy.data.objects.new(name + "_tmp", cu)
+    bpy.context.scene.collection.objects.link(tmp)
+    bpy.context.view_layer.update()
+    deps = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(deps))
+    bpy.data.objects.remove(tmp)
+    me.materials.append(mat)
+    ob = bpy.data.objects.new(name, me)
+    _link(ob, coll)
+    return ob

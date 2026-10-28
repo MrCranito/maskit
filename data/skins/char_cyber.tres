@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero3d/skins/cyber/preview.png" id="2_prev"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"char_cyber"
+display_name = "Cyber"
+description = "Armure noire parcourue de néons violets et cyan, visière lumineuse."
+kind = &"character"
+rarity = 4
+price_gems = 1000
+sprite_dir = "res://assets/sprites/hero3d/skins/cyber"
+color_primary = Color(0.102, 0.094, 0.157, 1)
+color_secondary = Color(0.753, 0.251, 1.000, 1)
+color_accent = Color(0.220, 0.941, 1.000, 1)
+glow = 0.6
+preview = ExtResource("2_prev")
