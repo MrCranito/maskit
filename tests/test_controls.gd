@@ -162,7 +162,7 @@ func test_right_stick_aims_and_fires_continuously() -> void:
 	for i: int in 59:  # 1 s au total
 		p._physics_process(1.0 / 60.0)
 	assert_almost_eq(p.aim_direction.y, 1.0, 0.01)
-	var expected: int = int(p.weapon.fire_rate)
+	var expected: int = mini(int(p.weapon.fire_rate), maxi(p.get_magazine_size(), 1))
 	assert_between(get_signal_emit_count(p, "fired"), expected, expected + 1, "tir continu à la cadence de l'arme")
 	assert_gt(p.get_noise_level(), 0.4, "bruit de tir encore élevé")
 
@@ -241,3 +241,66 @@ func test_set_hidden_false_via_interaction() -> void:
 	p.set_hidden(false)
 	assert_false(p.is_hidden())
 	assert_signal_emitted(p, "hidden_changed")
+
+
+func test_weapon_actions_bound() -> void:
+	for a: String in ["reload", "weapon_next", "weapon_prev", "weapon_1", "weapon_2", "weapon_3"]:
+		assert_true(InputMap.has_action(a), "action %s" % a)
+		assert_gt(InputMap.action_get_events(a).size(), 0)
+	var wheel := false
+	for ev: InputEvent in InputMap.action_get_events("weapon_next"):
+		if ev is InputEventMouseButton and (ev as InputEventMouseButton).button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			wheel = true
+	assert_true(wheel, "molette = arme suivante")
+
+
+func _key(action_key: Key) -> InputEventKey:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = action_key
+	ev.pressed = true
+	return ev
+
+
+func test_number_keys_switch_and_r_reloads() -> void:
+	var p := _spawn_player()
+	var a := WeaponData.new()
+	a.id = &"a"
+	a.magazine_size = 5
+	var b := WeaponData.new()
+	b.id = &"b"
+	var list: Array[WeaponData] = [a, b]
+	p.set_weapons(list)
+	p._unhandled_input(_key(KEY_2))
+	assert_eq(p.current_slot, 1)
+	p._unhandled_input(_key(KEY_1))
+	assert_eq(p.current_slot, 0)
+	p._unhandled_input(_key(KEY_Q))
+	assert_eq(p.current_slot, 1, "Q physique = arme suivante")
+	p.switch_to(0)
+	p.loadout.ammo[0] = 2
+	p._unhandled_input(_key(KEY_R))
+	assert_true(p.is_reloading(), "R force le rechargement")
+
+
+func test_semi_auto_click_fires_once() -> void:
+	var p := _spawn_player()
+	var w := WeaponData.new()
+	w.id = &"semi"
+	w.fire_rate = 30.0
+	w.magazine_size = 50
+	w.automatic = false
+	var list: Array[WeaponData] = [w]
+	p.set_weapons(list)
+	watch_signals(p)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	p._unhandled_input(click)
+	for i: int in 30:
+		p._physics_process(1.0 / 60.0)
+	assert_signal_emit_count(p, "fired", 1, "arme semi-auto : un tir par clic maintenu")
+	w.automatic = true
+	p._unhandled_input(click)
+	for i: int in 30:
+		p._physics_process(1.0 / 60.0)
+	assert_gt(get_signal_emit_count(p, "fired"), 5, "arme automatique : tir maintenu")
