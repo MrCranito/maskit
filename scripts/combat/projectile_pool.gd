@@ -58,7 +58,7 @@ func _create_one() -> Projectile:
 
 
 ## Tire un projectile. Renvoie null si le pool n'a pas pu en fournir un.
-func spawn(position: Vector2, direction: Vector2, weapon: WeaponData, source: Node) -> Projectile:
+func spawn(position: Vector2, direction: Vector2, weapon: WeaponData, source: Node, height: float = 0.0) -> Projectile:
 	if not is_instance_valid(_container):
 		_build()
 		if not is_instance_valid(_container):
@@ -67,7 +67,7 @@ func spawn(position: Vector2, direction: Vector2, weapon: WeaponData, source: No
 		# Pool épuisé : on l'agrandit plutôt que de perdre un tir.
 		_create_one()
 	var p: Projectile = _free.pop_back()
-	p.launch(position, direction, weapon, source)
+	p.launch(position, direction, weapon, source, height)
 	EventBus.projectile_fired.emit(p)
 	return p
 

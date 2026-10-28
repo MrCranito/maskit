@@ -41,7 +41,7 @@ const DT := 0.1
 
 var _world: Node2D
 var _player: StealthPlayer
-var _saved_player: Node2D
+var _saved_player = null
 
 
 func before_each() -> void:
@@ -50,12 +50,12 @@ func before_each() -> void:
 	_player = StealthPlayer.new()
 	_player.position = Vector2(5000, 5000)
 	_world.add_child(_player)
-	_saved_player = GameState.player
+	_saved_player = GameState.player if is_instance_valid(GameState.player) else null
 	GameState.player = _player
 
 
 func after_each() -> void:
-	GameState.player = _saved_player
+	GameState.player = _saved_player if is_instance_valid(_saved_player) else null
 
 
 func _make_data() -> EnemyData:

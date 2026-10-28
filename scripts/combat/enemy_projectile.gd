@@ -23,6 +23,9 @@ var lifetime_left: float = 0.0
 var source: Node = null
 var style: StringName = &""
 var _pulse: float = 0.0
+## Hauteur d'affichage (px monde) : trajectoire au sol (hitbox du joueur aux pieds), dessin surélevé.
+var visual_height: float = 0.0
+const DEFAULT_VISUAL_HEIGHT := 28.0
 
 
 func _ready() -> void:
@@ -34,8 +37,9 @@ func _ready() -> void:
 
 
 func launch(pos: Vector2, dir: Vector2, proj_speed: float, proj_damage: float, from: Node, lifetime: float,
-		proj_style: StringName = &"") -> void:
+		proj_style: StringName = &"", height: float = DEFAULT_VISUAL_HEIGHT) -> void:
 	style = proj_style
+	visual_height = height
 	global_position = pos
 	direction = dir.normalized() if dir != Vector2.ZERO else Vector2.RIGHT
 	rotation = direction.angle()
@@ -68,8 +72,7 @@ func _physics_process(delta: float) -> void:
 		deactivate()
 		return
 	global_position += direction * speed * delta
-	_pulse += delta
-	queue_redraw()
+	# Pas de redessin par frame (l'ancienne pulsation coûtait un redraw par balle et par frame).
 
 
 func _on_hit(other: Node) -> void:
@@ -86,7 +89,9 @@ func _on_hit(other: Node) -> void:
 
 
 func _draw() -> void:
-	var k := 1.0 + 0.15 * sin(_pulse * 25.0)
+	var k := 1.0
+	if visual_height != 0.0:
+		draw_set_transform(Vector2(0.0, -visual_height).rotated(-rotation))
 	if style == STYLE_BULLET:
 		# Balle : longue traînée fine jaune-orangé, coeur blanc chaud.
 		draw_line(Vector2(-30, 0), Vector2(4, 0), Color(BULLET_GLOW, 0.18), 10.0 * k, true)

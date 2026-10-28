@@ -54,6 +54,8 @@ var turn_boost: float = 1.8
 var invulnerability_duration: float = 0.6
 var hit_flash_duration: float = 0.12
 var noise_walk: float = 0.35
+## Demi-angle (°) du cône d'aide à la visée au stick (0 = désactivée).
+var _aim_assist_deg: float = 12.0
 var noise_fire_decay: float = 0.6
 var hide_exit_threshold: float = 0.5
 var hide_exit_grace: float = 0.3
@@ -184,6 +186,7 @@ func _load_balance() -> void:
 	invulnerability_duration = Balance.get_float("player", "invulnerability_duration", 0.6)
 	hit_flash_duration = Balance.get_float("player", "hit_flash_duration", 0.12)
 	noise_walk = Balance.get_float("player", "noise_walk", 0.35)
+	_aim_assist_deg = Balance.get_float("player", "aim_assist_deg", 12.0)
 	noise_fire_decay = Balance.get_float("player", "noise_fire_decay", 0.6)
 	hide_exit_threshold = Balance.get_float("player", "hide_exit_threshold", 0.5)
 	hide_exit_grace = Balance.get_float("player", "hide_exit_grace", 0.3)
@@ -339,8 +342,43 @@ func _update_aim(move_dir: Vector2) -> void:
 func _update_fire() -> void:
 	if weapon == null or _fire_cooldown > 0.0:
 		return
-	if _aim_stick_firing or _manual_fire_held:
+	if _aim_stick_firing:
+		# Mobile : aide à la visée (cône étroit vers l'ennemi visible le plus proche).
+		fire(apply_aim_assist(aim_direction))
+	elif _manual_fire_held:
 		fire(aim_direction)
+
+
+## Aide à la visée du stick : si un ennemi vivant et visible (non caché par le brouillard)
+## est dans un cône de [player] aim_assist_deg autour de `dir` et à portée de l'arme,
+## renvoie la direction (au sol) vers lui ; sinon `dir`. Coût : un parcours du groupe
+## enemies par tir (≈ 3 fois par seconde), pas par frame.
+func apply_aim_assist(dir: Vector2) -> Vector2:
+	if _aim_assist_deg <= 0.0 or weapon == null:
+		return dir
+	var cos_limit: float = cos(deg_to_rad(_aim_assist_deg))
+	var max_d: float = weapon.range
+	var best: Node2D = null
+	var best_score: float = -1.0
+	for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var n := e as Node2D
+		if n == null or not n.is_visible_in_tree():
+			continue
+		var to: Vector2 = n.global_position - global_position
+		var d: float = to.length()
+		if d < 1.0 or d > max_d:
+			continue
+		var c: float = dir.dot(to / d)
+		if c < cos_limit:
+			continue
+		# Préfère l'ennemi le mieux aligné, puis le plus proche.
+		var score: float = c - d / (max_d * 10.0)
+		if score > best_score:
+			best_score = score
+			best = n
+	if best == null:
+		return dir
+	return (best.global_position - global_position).normalized()
 
 
 ## Tire une salve dans `dir` selon l'arme (nombre de projectiles, dispersion), depuis le canon.
@@ -350,14 +388,18 @@ func fire(dir: Vector2) -> void:
 	var d0: Vector2 = dir.normalized() if dir != Vector2.ZERO else aim_direction
 	_fire_cooldown = weapon.get_fire_interval()
 	_fire_noise = 1.0
-	var origin: Vector2 = get_muzzle_position(d0)
+	# Trajectoire au niveau du sol (hitbox des ennemis et murs aux pieds) ; la balle est
+	# dessinée à la hauteur du canon.
+	var muzzle: Vector2 = get_muzzle_position(d0)
+	var height: float = maxf(global_position.y - muzzle.y, 0.0)
+	var origin: Vector2 = Vector2(muzzle.x, muzzle.y + height)
 	var count: int = maxi(weapon.projectile_count, 1)
 	var spread: float = deg_to_rad(weapon.spread_degrees)
 	for i: int in count:
 		var offset: float = 0.0
 		if count > 1:
 			offset = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
-		projectile_pool.spawn(origin, d0.rotated(offset), weapon, self)
+		projectile_pool.spawn(origin, d0.rotated(offset), weapon, self, height)
 	_on_fired_visual(d0)
 	fired.emit(d0)
 

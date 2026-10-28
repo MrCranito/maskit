@@ -17,6 +17,9 @@ var pierce_left: int = 0
 var lifetime_left: float = 0.0
 var color: Color = Color.WHITE
 var source: Node = null
+## Hauteur d'affichage (px monde) au-dessus du sol : la trajectoire (collisions) est
+## calculée au niveau du sol, comme les hitbox et les murs ; seul le dessin est surélevé.
+var visual_height: float = 0.0
 ## Cibles déjà touchées pendant ce vol (évite les doubles touches).
 var _hit_ids: Dictionary = {}
 var _drawn_color: Color = Color(0, 0, 0, 0)
@@ -33,8 +36,9 @@ func _ready() -> void:
 
 
 ## Lance le projectile depuis `pos` dans la direction `dir`.
-func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node) -> void:
+func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node, height: float = 0.0) -> void:
 	global_position = pos
+	visual_height = height
 	direction = dir.normalized() if dir != Vector2.ZERO else Vector2.RIGHT
 	rotation = direction.angle()
 	speed = weapon.projectile_speed
@@ -47,10 +51,10 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node) -> void:
 	_set_active(true)
 	# Recyclé depuis le pool : pas d'interpolation depuis son ancienne position.
 	reset_physics_interpolation()
-	# Le dessin (traînée) ne dépend que de la couleur : redessin seulement si elle change.
-	if color != _drawn_color:
-		_drawn_color = color
-		queue_redraw()
+	# Le dessin dépend de la couleur et du décalage de hauteur (fonction de l'angle) :
+	# un seul redessin par tir.
+	_drawn_color = color
+	queue_redraw()
 
 
 func deactivate() -> void:
@@ -102,7 +106,10 @@ func _on_hit(other: Node) -> void:
 
 
 func _draw() -> void:
-	# Traînée lumineuse (halo + coeur clair) et pointe, orientées vers +X.
+	# Traînée lumineuse (halo + coeur clair) et pointe, orientées vers +X,
+	# surélevées de visual_height (vers le haut de l'écran, quelle que soit la rotation).
+	if visual_height != 0.0:
+		draw_set_transform(Vector2(0.0, -visual_height).rotated(-rotation))
 	draw_line(Vector2(-30, 0), Vector2(6, 0), Color(color, 0.18), 11.0, true)
 	draw_line(Vector2(-24, 0), Vector2(6, 0), Color(color, 0.45), 6.0, true)
 	draw_line(Vector2(-16, 0), Vector2(8, 0), color.lightened(0.5), 2.5, true)
