@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy"
+display_name = "Butin d'ennemi"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.0
+search_time = 1.0
+entries = {
+&"bandage": 3.0,
+&"black_powder": 3.0,
+&"gold_nugget": 1.0,
+&"playing_cards": 2.0,
+&"revolver_ammo": 8.0,
+&"silver_dollars": 8.0,
+&"wanted_poster": 1.5,
+&"whisky": 1.0
+}

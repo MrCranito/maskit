@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"wardrobe"
+display_name = "Armoire"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.15
+search_time = 1.4
+entries = {
+&"bandage": 3.0,
+&"bowie_knife": 2.0,
+&"cavalry_medal": 1.0,
+&"leather_holster": 4.0,
+&"mask_robber": 1.2,
+&"money_bag": 0.6,
+&"pearl_necklace": 0.6,
+&"playing_cards": 3.0,
+&"pocket_watch": 1.5,
+&"sheriff_badge": 1.0,
+&"silver_dollars": 5.0
+}

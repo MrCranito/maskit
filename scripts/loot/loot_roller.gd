@@ -1,0 +1,116 @@
+class_name LootRoller
+extends RefCounted
+## Tirages de butin (logique pure, déterministe pour un RNG donné).
+## Poids final d'un objet = poids de base (table) × multiplicateur de sa rareté :
+##   × (1 + rarity_difficulty_bonus[r] × difficulté)
+##   × (1 + rarity_floor_bonus[r] × |étage|)
+##   × super_loot_rarity_mult[r]   (salle super_loot uniquement)
+## Les tableaux sont indexés par rareté (0 Commun … 4 Légendaire), cf. [loot].
+
+const ROOM_SUPER_LOOT := &"super_loot"
+
+
+class Context:
+	var difficulty: int = 1
+	var floor_index: int = 0
+	var room_type: StringName = &"combat"
+
+	static func make(p_difficulty: int, p_floor: int, p_room_type: StringName) -> Context:
+		var c := Context.new()
+		c.difficulty = p_difficulty
+		c.floor_index = p_floor
+		c.room_type = p_room_type
+		return c
+
+
+static func rarity_multiplier(rarity: int, ctx: Context) -> float:
+	var m := 1.0
+	m *= 1.0 + LootDB.arr_at("rarity_difficulty_bonus", rarity, [0.0, 0.05, 0.15, 0.3, 0.45]) * float(ctx.difficulty)
+	m *= 1.0 + LootDB.arr_at("rarity_floor_bonus", rarity, [0.0, 0.05, 0.2, 0.35, 0.5]) * float(absi(ctx.floor_index))
+	if ctx.room_type == ROOM_SUPER_LOOT:
+		m *= LootDB.arr_at("super_loot_rarity_mult", rarity, [0.3, 0.7, 2.0, 6.0, 10.0])
+	return maxf(m, 0.0)
+
+
+## Poids effectifs {item_id: poids} de la table dans ce contexte (ids inconnus ignorés).
+static func effective_weights(table: LootTable, ctx: Context) -> Dictionary:
+	var out := {}
+	for k: Variant in table.entries:
+		var id := StringName(k)
+		var it := LootDB.get_item(id)
+		if it == null:
+			continue
+		var w := float(table.entries[k]) * rarity_multiplier(it.rarity, ctx)
+		if w > 0.0:
+			out[id] = w
+	return out
+
+
+## Tire le contenu d'un conteneur : Array de {"item": ItemData, "count": int}.
+## Objets distincts (pas deux fois le même), triés par rareté décroissante.
+static func roll(table: LootTable, rng: RandomNumberGenerator, ctx: Context) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if table == null:
+		return out
+	var super_loot := ctx.room_type == ROOM_SUPER_LOOT
+	var empty := 0.0 if super_loot else table.empty_chance
+	if rng.randf() < empty:
+		return out
+	var n := rng.randi_range(table.rolls_min, maxi(table.rolls_min, table.rolls_max))
+	if super_loot:
+		n += LootDB.geti("super_loot_extra_rolls", 1)
+	var weights := effective_weights(table, ctx)
+	for i in n:
+		if weights.is_empty():
+			break
+		var id := pick_weighted(weights, rng)
+		weights.erase(id)
+		var it := LootDB.get_item(id)
+		var count := rng.randi_range(maxi(it.drop_min, 1), maxi(it.drop_max, it.drop_min))
+		out.append({"item": it, "count": mini(count, maxi(it.stack_max, 1) * 4)})
+	sort_entries(out)
+	return out
+
+
+static func sort_entries(entries: Array[Dictionary]) -> void:
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var ia: ItemData = a["item"]
+		var ib: ItemData = b["item"]
+		if ia.rarity != ib.rarity:
+			return ia.rarity > ib.rarity
+		return String(ia.id) < String(ib.id))
+
+
+## Tirage pondéré déterministe (clés triées, indépendant de l'ordre du dictionnaire).
+static func pick_weighted(weights: Dictionary, rng: RandomNumberGenerator) -> StringName:
+	var keys: Array = weights.keys()
+	keys.sort_custom(func(a: Variant, b: Variant) -> bool: return String(a) < String(b))
+	var total := 0.0
+	for k: Variant in keys:
+		total += float(weights[k])
+	var r := rng.randf() * total
+	for k2: Variant in keys:
+		r -= float(weights[k2])
+		if r <= 0.0:
+			return StringName(k2)
+	return StringName(keys[keys.size() - 1])
+
+
+## Meilleure rareté d'un contenu (-1 si vide).
+static func best_rarity(entries: Array) -> int:
+	var best := -1
+	for e: Dictionary in entries:
+		best = maxi(best, (e["item"] as ItemData).rarity)
+	return best
+
+
+static func total_value(entries: Array) -> int:
+	var v := 0
+	for e: Dictionary in entries:
+		v += (e["item"] as ItemData).value * int(e["count"])
+	return v
+
+
+## Seed stable d'un conteneur (même raid → même contenu).
+static func container_seed(run_seed: int, floor_index: int, cell: Vector2i, kind: StringName) -> int:
+	return hash([run_seed, floor_index, cell.x, cell.y, String(kind), "loot"])

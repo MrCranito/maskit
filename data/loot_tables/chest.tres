@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"chest"
+display_name = "Coffre"
+rolls_min = 2
+rolls_max = 4
+empty_chance = 0.0
+search_time = 1.6
+entries = {
+&"cavalry_medal": 2.0,
+&"colt_revolver": 2.0,
+&"gold_bar": 1.2,
+&"gold_nugget": 6.0,
+&"golden_revolver": 0.12,
+&"mask_fox": 0.15,
+&"mask_iron": 0.5,
+&"mask_robber": 1.5,
+&"mask_skull": 0.8,
+&"money_bag": 3.0,
+&"pearl_necklace": 1.5,
+&"pocket_watch": 3.0,
+&"raw_diamond": 0.3,
+&"silver_dollars": 6.0,
+&"snake_oil": 1.5,
+&"treasure_map": 1.0,
+&"winchester": 1.0
+}

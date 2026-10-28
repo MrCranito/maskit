@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"crate"
+display_name = "Caisse"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.12
+search_time = 1.2
+entries = {
+&"bandage": 5.0,
+&"black_powder": 8.0,
+&"canned_beans": 8.0,
+&"dynamite": 3.0,
+&"gold_nugget": 1.5,
+&"lasso": 3.0,
+&"leather_holster": 3.0,
+&"lockpicks": 1.5,
+&"money_bag": 0.4,
+&"revolver_ammo": 10.0,
+&"rifle_ammo": 5.0,
+&"silver_dollars": 6.0,
+&"whisky": 2.0,
+&"winchester": 0.3
+}

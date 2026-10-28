@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/loot_coins.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"silver_dollars"
+display_name = "Dollars d'argent"
+description = "Des pièces frappées à l'aigle, encore tièdes de la poche d'un bandit."
+icon = ExtResource("2_icon")
+tint = Color(0.86,0.88,0.94,1)
+rarity = 0
+type = &"valuable"
+stack_max = 50
+value = 2
+weight = 0.02
+drop_min = 3
+drop_max = 12
+heal_amount = 0.0

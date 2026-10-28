@@ -57,6 +57,32 @@ const PROPS := {
 	&"tunnel": [[&"rail_track", 0, 1, &"any"]],
 }
 
+## Rôle → cachettes possibles {kind: poids} (barrel, wardrobe, haystack, porch).
+## Rôles absents : pas de cachette dans la salle.
+const HIDING := {
+	&"street_entry": {&"barrel": 2.0, &"haystack": 1.0},
+	&"street": {&"barrel": 2.0, &"porch": 2.0, &"haystack": 1.0},
+	&"street_exit": {&"barrel": 1.0, &"porch": 1.0},
+	&"alley": {&"barrel": 2.0, &"haystack": 1.0},
+	&"backyard": {&"haystack": 2.0, &"barrel": 1.0},
+	&"plaza": {&"barrel": 1.0, &"porch": 1.0},
+	&"saloon_hall": {&"barrel": 1.0},
+	&"storage": {&"barrel": 2.0, &"wardrobe": 1.0},
+	&"store_shop": {&"barrel": 1.0},
+	&"bank_office": {&"wardrobe": 1.0},
+	&"office": {&"wardrobe": 1.0},
+	&"hotel_reception": {&"wardrobe": 1.0},
+	&"bedroom": {&"wardrobe": 2.0},
+	&"suite": {&"wardrobe": 1.0},
+	&"sheriff_office": {&"wardrobe": 1.0},
+	&"church_sacristy": {&"wardrobe": 1.0},
+	&"stable_main": {&"haystack": 3.0, &"barrel": 1.0},
+	&"stable_box": {&"haystack": 2.0},
+	&"mine_entrance": {&"barrel": 1.0},
+	&"mine_tools": {&"barrel": 1.0},
+	&"ore_room": {&"barrel": 1.0},
+}
+
 ## Rôle → conteneurs possibles {kind: poids}.
 const CONTAINERS := {
 	&"street_entry": {&"barrel": 1.0, &"crate": 1.0},
@@ -127,6 +153,8 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 		var rng2 := RandomNumberGenerator.new()
 		rng2.seed = hash([seed_value, L.floor_index, room2.id, "containers"])
 		_containers(c, room2, rng2)
+	# Cachettes : après les conteneurs, avant les ennemis (indépendant de la difficulté).
+	_hiding_spots(c, seed_value)
 	for room3 in L.rooms:
 		var rng3 := RandomNumberGenerator.new()
 		rng3.seed = hash([seed_value, L.floor_index, room3.id, "enemies"])
@@ -356,6 +384,45 @@ static func _containers(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerat
 		if p.x < 0:
 			break
 		c.L.add_spawn(c.L.container_spawns, p, kind, room.id)
+
+
+# --- Cachettes ------------------------------------------------------------------
+
+## Quelques cachettes par étage (nombre ∝ salles, borné par [loot] hiding_spots_min/max),
+## réparties entre les salles qui en acceptent (au plus une par salle et par passe).
+## Bloquantes : même règle que les conteneurs (jamais sur un passage d'une case).
+static func _hiding_spots(c: Ctx, seed_value: int) -> void:
+	var L := c.L
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([seed_value, L.floor_index, "hiding"])
+	var rooms: Array[FloorLayout.Room] = []
+	for room in L.rooms:
+		if HIDING.has(_role(room)) and room.type != FloorLayout.ROOM_SUPER_LOOT and room.type != FloorLayout.ROOM_BOSS:
+			rooms.append(room)
+	if rooms.is_empty():
+		return
+	for i in range(rooms.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp := rooms[i]
+		rooms[i] = rooms[j]
+		rooms[j] = tmp
+	var cfg := ConfigFile.new()
+	cfg.load(Cfg.PATH)
+	var per_room := float(cfg.get_value("loot", "hiding_spots_per_room", 0.25))
+	var mn := int(cfg.get_value("loot", "hiding_spots_min", 3))
+	var mx := int(cfg.get_value("loot", "hiding_spots_max", 7))
+	var want := clampi(int(round(L.rooms.size() * per_room)), mn, mx)
+	var placed := 0
+	for pass_i in 2:
+		for room in rooms:
+			if placed >= want:
+				return
+			var kind := _weighted(HIDING[_role(room)], rng)
+			var p := _place_blocking(c, room, rng, &"wall")
+			if p.x < 0:
+				continue
+			L.add_spawn(L.hiding_spot_spawns, p, kind, room.id)
+			placed += 1
 
 
 # --- Ennemis -------------------------------------------------------------------

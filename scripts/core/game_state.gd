@@ -4,6 +4,8 @@ extends Node
 var player: Node2D = null
 var debug_enabled: bool = false
 var run_seed: int = 0
+## Inventaire de raid (perdu à la mort, transféré à l'extraction — phase 6).
+var raid_inventory: Inventory = Inventory.from_balance()
 
 
 func _ready() -> void:

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://data/items/icons/bandage.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"bandage"
+display_name = "Bandages"
+description = "Coton propre et whisky pour désinfecter. Rend 20 PV."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 0
+type = &"consumable"
+stack_max = 5
+value = 8
+weight = 0.1
+drop_min = 1
+drop_max = 3
+heal_amount = 20.0

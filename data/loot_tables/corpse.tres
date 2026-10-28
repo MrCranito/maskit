@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"corpse"
+display_name = "Hors-la-loi"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.15
+search_time = 1.0
+entries = {
+&"bandage": 4.0,
+&"bowie_knife": 2.0,
+&"colt_revolver": 1.0,
+&"gold_nugget": 1.5,
+&"lockpicks": 1.0,
+&"mask_robber": 1.5,
+&"playing_cards": 3.0,
+&"revolver_ammo": 10.0,
+&"sheriff_badge": 0.8,
+&"silver_dollars": 8.0,
+&"wanted_poster": 4.0,
+&"whisky": 2.0
+}

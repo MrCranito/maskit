@@ -94,6 +94,9 @@ var extraction_cells: Array[Vector2i] = []
 var enemy_spawns: Array[Spawn] = []
 var container_spawns: Array[Spawn] = []
 var prop_spawns: Array[Spawn] = []
+## Cachettes (kind : barrel, wardrobe, haystack, porch). Bloquantes comme les conteneurs.
+## Peut rester vide (cartes écrites à la main, anciens générateurs).
+var hiding_spot_spawns: Array[Spawn] = []
 
 
 func _init(p_size: Vector2i = Vector2i.ZERO) -> void:

@@ -209,6 +209,7 @@ func _build_floor(index: int) -> void:
 	else:
 		_spawn_enemies()
 
+	LootSpawner.spawn_for_floor(layout, world_root, run_seed, difficulty)
 	_build_fog(state)
 	_last_player_cell = Vector2i(-9999, -9999)
 	_extraction_time = 0.0
@@ -664,6 +665,8 @@ func _build_ui() -> void:
 	else:
 		push_warning("Raid: overlay debug introuvable (%s)." % DEBUG_OVERLAY_SCENE_PATH)
 
+	_setup_loot_ui()
+
 	# Fondu au noir (changement d'étage), au-dessus de tout.
 	var fade_layer := CanvasLayer.new()
 	fade_layer.name = "Fade"
@@ -675,6 +678,13 @@ func _build_ui() -> void:
 	_fade_rect.color = Color(0, 0, 0, 0)
 	_fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade_layer.add_child(_fade_rect)
+
+
+## Butin (phase 4) : bouton action, sac + écran d'inventaire, fenêtre de butin.
+## Ajouté après les joysticks pour recevoir les touches avant eux.
+func _setup_loot_ui() -> void:
+	var loot_hud := InventoryHud.new()
+	ui_layer.add_child(loot_hud)
 
 
 static func _make_panel_style(radius: int) -> StyleBoxFlat:

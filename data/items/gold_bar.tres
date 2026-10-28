@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/loot_gold_bar.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"gold_bar"
+display_name = "Lingot d'or"
+description = "Coulé à la fonderie fédérale. Une fortune dans la paume."
+icon = ExtResource("2_icon")
+tint = Color(1,0.82,0.3,1)
+rarity = 3
+type = &"valuable"
+stack_max = 3
+value = 400
+weight = 2.0
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"safe"
+display_name = "Coffre-fort"
+rolls_min = 2
+rolls_max = 4
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"gold_bar": 3.0,
+&"gold_nugget": 4.0,
+&"golden_revolver": 0.25,
+&"mask_fox": 0.2,
+&"mask_iron": 0.5,
+&"money_bag": 6.0,
+&"pearl_necklace": 2.0,
+&"pocket_watch": 2.0,
+&"raw_diamond": 0.6,
+&"silver_dollars": 6.0,
+&"treasure_map": 1.5
+}

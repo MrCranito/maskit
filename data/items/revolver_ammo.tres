@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/ammo_bullets.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"revolver_ammo"
+display_name = "Balles de .45"
+description = "Munitions pour revolver, à l'unité."
+icon = ExtResource("2_icon")
+tint = Color(1,0.8,0.45,1)
+rarity = 0
+type = &"ammo"
+stack_max = 60
+value = 1
+weight = 0.02
+drop_min = 6
+drop_max = 18
+heal_amount = 0.0

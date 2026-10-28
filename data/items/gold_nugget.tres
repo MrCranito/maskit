@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://data/items/icons/gold_nugget.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"gold_nugget"
+display_name = "Pépite d'or"
+description = "Arrachée au filon de la mine du Crâne d'Argent. Lourde, brillante, convoitée."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 1
+type = &"valuable"
+stack_max = 10
+value = 25
+weight = 0.2
+drop_min = 1
+drop_max = 3
+heal_amount = 0.0
