@@ -38,6 +38,8 @@ const FACING_TURN_SPEED := 14.0
 const ALERT_DURATION := 0.9
 const ALERT_POP_TIME := 0.16
 const ALERT_HEIGHT := 22.0
+## Décalage (px) du « ! » au-dessus de la tête : laisse la place à la barre de vie.
+const ALERT_ABOVE_BAR := 30.0
 const ALERT_FILL := Color(1.0, 0.78, 0.16)
 const ALERT_FILL_LIGHT := Color(1.0, 0.95, 0.6)
 
@@ -52,6 +54,8 @@ const DEATH_SMOKE := 7
 const DEATH_GRAVITY := 380.0
 
 const EYE_GLOW_PULSE := 3.0
+## Intervalle (s) de redessin de la lueur des yeux hors télégraphe (performance).
+const EYE_REDRAW_INTERVAL := 0.066
 
 ## Données par kind. Coordonnées "eyes"/"feet" en pixels SVG.
 ##  path : sprite ; svg_size : taille du SVG ; feet : point d'ancrage au sol ;
@@ -160,6 +164,9 @@ var _cone_len: float = 0.0
 var _aim: Vector2 = Vector2.RIGHT
 var _slam_t: float = -1.0
 var _slam_radius: float = 0.0
+var _eye_redraw_left: float = 0.0
+## Frames de redessin restantes pour le calque d'effets (efface le dernier état).
+var _fx_dirty_frames: int = 0
 
 
 func _ready() -> void:
@@ -336,6 +343,16 @@ func _build() -> void:
 func _process(delta: float) -> void:
 	if _body == null:
 		return
+	# Caché (brouillard) et sans effet en cours : rien à animer ni à redessiner.
+	if not _dying and not is_visible_in_tree():
+		if _windup_t >= 0.0 or _alert_t >= 0.0 or _slam_t >= 0.0 or _flash_left > 0.0:
+			_windup_t = -1.0
+			_alert_t = -1.0
+			_slam_t = -1.0
+			_flash_left = 0.0
+			_mat.set_shader_parameter("windup", 0.0)
+			_mat.set_shader_parameter("flash", 0.0)
+		return
 	_time += delta
 	_facing = move_toward(_facing, _facing_target, delta * FACING_TURN_SPEED)
 
@@ -352,7 +369,7 @@ func _process(delta: float) -> void:
 	if _flash_left > 0.0:
 		_flash_left = maxf(_flash_left - delta, 0.0)
 		squash = (_flash_left / FLASH_DURATION) * HIT_SQUASH
-	_mat.set_shader_parameter("flash", clampf(_flash_left / FLASH_DURATION, 0.0, 1.0) * 0.85)
+		_mat.set_shader_parameter("flash", clampf(_flash_left / FLASH_DURATION, 0.0, 1.0) * 0.85)
 
 	var shake := Vector2.ZERO
 	if _windup_t >= 0.0:
@@ -364,8 +381,7 @@ func _process(delta: float) -> void:
 		_mat.set_shader_parameter("windup", w)
 		shake = Vector2(randf_range(-1.0, 1.0), randf_range(-0.5, 0.5)) * WINDUP_SHAKE * w
 		breath += w * 0.03
-	else:
-		_mat.set_shader_parameter("windup", 0.0)
+		_fx_dirty_frames = 2
 
 	if _alert_t >= 0.0:
 		_alert_t += delta
@@ -402,8 +418,17 @@ func _process(delta: float) -> void:
 		_body.rotation = tilt
 		_body.scale = Vector2(sx, sy)
 
-	_overlay.queue_redraw()
-	_fx.queue_redraw()
+	# Lueur des yeux : pulsation lente, redessinée ~15 fois/s (pas à chaque frame).
+	_eye_redraw_left -= delta
+	if _eye_redraw_left <= 0.0 or _windup_t >= 0.0:
+		_eye_redraw_left = EYE_REDRAW_INTERVAL
+		_overlay.queue_redraw()
+	# Effets (« ! », télégraphes, éclats) : redessin seulement s'il y a quelque chose à animer.
+	if _alert_t >= 0.0 or _windup_t >= 0.0 or _slam_t >= 0.0 or not _particles.is_empty():
+		_fx_dirty_frames = 2
+	if _fx_dirty_frames > 0:
+		_fx_dirty_frames -= 1
+		_fx.queue_redraw()
 
 
 # --- Dessin ------------------------------------------------------------------
@@ -538,7 +563,8 @@ func _draw_alert() -> void:
 	var fade_start := ALERT_DURATION * 0.65
 	if t > fade_start:
 		a = 1.0 - (t - fade_start) / (ALERT_DURATION - fade_start)
-	var base := get_head_offset() + Vector2(0, -6.0 - ALERT_HEIGHT * 0.5 - (1.0 - a) * 6.0)
+	# Au-dessus de la barre de vie, à la place de la jauge de reconnaissance (qui s'efface).
+	var base := get_head_offset() + Vector2(0, -ALERT_ABOVE_BAR - ALERT_HEIGHT * 0.5 - (1.0 - a) * 6.0)
 	_fx.draw_set_transform(base, 0.0, Vector2(pop, pop))
 	# Bâton biseauté.
 	var bar := PackedVector2Array([Vector2(-5.5, -14), Vector2(5.5, -14), Vector2(3, 4), Vector2(-3, 4)])

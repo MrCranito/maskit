@@ -27,6 +27,19 @@ enum AttackType { MELEE, RANGED }
 ## Rayon (px) d'errance autour du point d'apparition.
 @export var patrol_radius: float = 120.0
 
+@export_group("Discrétion")
+## Vitesse de remplissage de la jauge de reconnaissance par la VUE (jauge/s) :
+## joueur en mouvement, tout près. Modulée par la distance et l'immobilité (balance.cfg).
+@export var sight_gain: float = 1.5
+## Rayon (px) dans lequel l'ennemi entend le bruit du joueur (atténuation linéaire).
+@export var hearing_radius: float = 380.0
+## Remplissage de la jauge (jauge/s) pour un bruit perçu de 1 (tir à bout portant).
+@export var hearing_gain: float = 2.2
+## Décroissance de la jauge (jauge/s) quand rien n'est perçu.
+@export var awareness_decay: float = 0.15
+## Niveau de jauge à partir duquel l'ennemi a « repéré » le joueur (Alert puis Chase).
+@export_range(0.1, 1.0) var awareness_alert_threshold: float = 1.0
+
 @export_group("Attaque")
 @export var attack_type: AttackType = AttackType.MELEE
 ## Distance (px, centre à centre) à partir de laquelle l'ennemi attaque.

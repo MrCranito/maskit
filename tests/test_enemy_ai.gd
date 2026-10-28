@@ -1,6 +1,9 @@
 extends GutTest
 ## Tests de l'IA ennemie : détection, ligne de vue, alerte des voisins, mort.
 ## Scènes construites dans le test : ennemis, faux joueur, murs.
+## Depuis la jauge de reconnaissance, le passage en Alert n'est plus instantané : les données
+## de test ont un sight_gain élevé (repérage en quelques dixièmes de seconde) ; la montée
+## progressive de la jauge est testée dans test_stealth.gd.
 
 
 class FakePlayer extends CharacterBody2D:
@@ -59,6 +62,7 @@ func _make_data(angle: float = 360.0) -> EnemyData:
 	d.attack_windup = 0.1
 	d.attack_cooldown = 0.5
 	d.attack_damage = 5.0
+	d.sight_gain = 40.0  # Repérage rapide : ces tests portent sur la machine à états.
 	return d
 
 
@@ -107,9 +111,10 @@ func test_player_in_range_with_los_alert_then_chase() -> void:
 	var seen: Array = []
 	e.state_machine.state_changed.connect(func(_f: StringName, t: StringName) -> void: seen.append(t))
 	_player.global_position = Vector2(200, 0)
-	await wait_physics_frames(15)
+	await wait_until(func() -> bool: return seen.has(Enemy.STATE_ALERT), 1.5)
 	assert_true(e.can_see_player, "joueur vu")
 	assert_has(seen, Enemy.STATE_ALERT)
+	assert_eq(e.awareness, 1.0, "jauge pleine en Alert")
 	await wait_seconds(0.4)
 	assert_has(seen, Enemy.STATE_CHASE, "Alert → Chase après alert_duration")
 	assert_lt(seen.find(Enemy.STATE_ALERT), seen.find(Enemy.STATE_CHASE))
@@ -132,8 +137,9 @@ func test_vision_cone_ignores_player_behind() -> void:
 	await wait_physics_frames(15)
 	assert_false(e.is_in_vision_cone(_player.global_position))
 	assert_eq(e.current_state_name(), Enemy.STATE_PATROL)
+	assert_eq(e.awareness, 0.0, "aucune montée de jauge dans le dos")
 	_player.global_position = Vector2(200, 30)  # Devant.
-	await wait_physics_frames(15)
+	await wait_until(func() -> bool: return e.current_state_name() != Enemy.STATE_PATROL, 1.5)
 	assert_ne(e.current_state_name(), Enemy.STATE_PATROL, "détecté dans le cône")
 
 
@@ -144,12 +150,18 @@ func test_alert_propagates_to_neighbors() -> void:
 	var b := _spawn_enemy(Vector2(-200, 0))
 	var far := _spawn_enemy(Vector2(-1000, 0))
 	_player.global_position = Vector2(200, 0)
-	await wait_physics_frames(15)
+	await wait_until(func() -> bool: return a.is_in_combat(), 1.5)
+	await wait_physics_frames(2)
 	assert_false(b.has_line_of_sight_to(_player.global_position), "le voisin ne voit pas le joueur")
-	assert_ne(a.current_state_name(), Enemy.STATE_PATROL)
-	assert_true(b.current_state_name() == Enemy.STATE_ALERT or b.current_state_name() == Enemy.STATE_CHASE,
-		"voisin alerté (état %s)" % b.current_state_name())
+	assert_true(a.is_in_combat(), "a repère le joueur")
+	# Le voisin reçoit une forte hausse de jauge (pas un 1 instantané) et va enquêter.
+	var boost := Balance.get_float("enemy_ai", "neighbor_awareness_boost", 0.6)
+	assert_almost_eq(b.awareness, boost, 0.05, "voisin : hausse de jauge")
+	assert_lt(b.awareness, 1.0, "voisin : pas repéré instantanément")
+	assert_eq(b.current_state_name(), Enemy.STATE_INVESTIGATE, "voisin enquête")
+	assert_eq(b.stimulus_position, _player.global_position, "voisin enquête vers la position signalée")
 	assert_eq(far.current_state_name(), Enemy.STATE_PATROL, "ennemi lointain non alerté")
+	assert_eq(far.awareness, 0.0)
 
 
 func test_damage_triggers_alert() -> void:
@@ -158,13 +170,14 @@ func test_damage_triggers_alert() -> void:
 	await wait_physics_frames(2)
 	e.take_damage(1.0, _player)
 	assert_eq(e.current_state_name(), Enemy.STATE_ALERT)
+	assert_eq(e.awareness, 1.0, "dégâts : jauge à 1")
 	assert_almost_eq(e.hp, e.max_hp - 1.0, 0.001)
 
 
 func test_melee_attack_hits_player_in_range() -> void:
 	var e := _spawn_enemy(Vector2.ZERO)
 	_player.global_position = Vector2(40, 0)
-	await wait_seconds(0.8)
+	await wait_seconds(1.0)
 	assert_gt(_player.hits.size(), 0, "le joueur au contact est touché")
 	assert_eq(_player.hits[0][0], 5.0)
 

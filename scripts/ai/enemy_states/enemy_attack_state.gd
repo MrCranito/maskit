@@ -18,7 +18,7 @@ func enter(_msg: Dictionary = {}) -> void:
 	e.stop()
 	_struck = false
 	_windup_left = e.data.attack_windup
-	_recover_left = Balance.get_float("enemy_ai", "attack_recovery", 0.25)
+	_recover_left = e.attack_recovery
 	var p := e.get_player()
 	if p != null:
 		e.face_position(p.global_position)
