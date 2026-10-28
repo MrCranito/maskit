@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"armory_chest"
+display_name = "Coffre d'armurerie"
+rolls_min = 2
+rolls_max = 4
+empty_chance = 0.0
+search_time = 1.8
+entries = {
+&"space_antimatter": 0.15,
+&"space_cracked_mask": 0.6,
+&"space_encrypted_core": 0.4,
+&"space_fusion_cell": 2.5,
+&"space_iridium": 1.5,
+&"space_nanomeds": 2.0,
+&"space_officer_badge": 2.0,
+&"space_plasma_cells": 6.0,
+&"space_star_map": 1.0
+}

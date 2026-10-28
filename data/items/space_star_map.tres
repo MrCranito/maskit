@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/item_map.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"space_star_map"
+display_name = "Carte stellaire"
+description = "Relevé des routes orbitales, gravé sur verre de quartz."
+icon = ExtResource("2_icon")
+tint = Color(0.4,0.75,1.0,1)
+rarity = 2
+type = &"valuable"
+stack_max = 2
+value = 190
+weight = 0.2
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0

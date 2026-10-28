@@ -1,0 +1,89 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_02_space_station"
+display_name = "Station Orbitale Kagami"
+biome = &"space_station"
+palette = {
+"alarm": Color(1, 0.18, 0.16, 1),
+"amber": Color(1, 0.66, 0.2, 1),
+"cyan": Color(0.36, 0.9, 1, 1),
+"deck": Color(0.36, 0.4, 0.48, 1),
+"extraction": Color(0.3, 1, 0.75, 0.45),
+"floor": Color(0.36, 0.4, 0.48, 1),
+"grate": Color(0.26, 0.29, 0.36, 1),
+"hull": Color(0.2, 0.23, 0.3, 1),
+"machine": Color(0.24, 0.24, 0.28, 1),
+"panel": Color(0.62, 0.68, 0.76, 1),
+"planet": Color(0.3, 0.55, 0.95, 1),
+"shadow": Color(0.05, 0.07, 0.16, 1),
+"space": Color(0.02, 0.03, 0.08, 1),
+"stairs": Color(0.36, 0.9, 1, 1),
+"street": Color(0.26, 0.29, 0.36, 1),
+"void": Color(0.02, 0.03, 0.08, 1),
+"wall": Color(0.3, 0.34, 0.42, 1)
+}
+enemy_roster = {
+&"boss": {
+&"space_brute": 1.0,
+&"space_drone": 2.0,
+&"space_soldier": 1.0
+},
+&"combat": {
+&"space_android": 4.0,
+&"space_brute": 1.0,
+&"space_drone": 3.0,
+&"space_soldier": 3.0
+},
+&"corridor": {
+&"space_android": 2.0,
+&"space_drone": 4.0,
+&"space_soldier": 2.0
+},
+&"extraction": {
+&"space_android": 2.0,
+&"space_brute": 1.0,
+&"space_soldier": 2.0
+},
+&"loot": {
+&"space_android": 2.0,
+&"space_drone": 1.0,
+&"space_soldier": 2.0
+},
+&"rest": {
+&"space_drone": 1.0
+},
+&"spawn": {
+&"space_drone": 1.0
+},
+&"super_loot": {
+&"space_android": 1.0,
+&"space_brute": 3.0,
+&"space_soldier": 2.0
+},
+&"trap": {
+&"space_android": 2.0,
+&"space_brute": 1.0,
+&"space_drone": 3.0
+}
+}
+building_archetypes = Array[StringName]([])
+building_names = {}
+container_kinds = Array[StringName]([&"locker", &"cargo_crate", &"med_cabinet", &"armory_chest", &"cryo_pod", &"terminal"])
+prop_kinds = Array[StringName]([&"console", &"server_rack", &"bunk_bed", &"mess_table", &"med_bed", &"lab_bench", &"specimen_tank", &"cargo_stack", &"pipe_cluster", &"reactor_core", &"holo_table", &"captain_chair", &"weapon_rack", &"plant_bed", &"vending_machine", &"coolant_tank", &"power_node", &"escape_pod", &"floor_cables", &"warning_beacon", &"shuttle", &"workbench", &"fuel_drums"])
+floors_min = -1
+floors_max = 1
+boss_kind = &"space_reactor_colossus"
+generator_path = "res://scripts/biomes/space_station/space_station_generator.gd"
+builder_path = "res://scripts/biomes/space_station/space_station_builder.gd"
+containers_dir = "res://assets/sprites/space_station/containers/"
+floor_names = {
+-1: "Salle des machines",
+0: "Pont principal",
+1: "Pont de commandement"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"

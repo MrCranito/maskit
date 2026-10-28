@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"space_drone"
+display_name = "Drone de sécurité masqué"
+max_hp = 18.0
+move_speed = 175.0
+body_radius = 14.0
+detection_radius = 380.0
+detection_angle_deg = 200.0
+lose_sight_time = 2.0
+alert_duration = 0.35
+alert_neighbors_radius = 360.0
+patrol_radius = 150.0
+sight_gain = 2.4
+hearing_radius = 300.0
+hearing_gain = 1.6
+awareness_decay = 0.2
+attack_type = 1
+attack_range = 300.0
+attack_damage = 5.0
+attack_cooldown = 0.9
+attack_windup = 0.35
+projectile_speed = 560.0
+retreat_distance = 160.0
+projectile_count = 1
+projectile_spread_deg = 0.0
+projectile_lifetime = 0.0
+projectile_style = &"bullet"
+aoe_radius = 0.0
+awareness_alert_threshold = 1.0
+aura_color = Color(1, 1, 1, 0)

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"terminal"
+display_name = "Terminal"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 1.5
+entries = {
+&"space_circuit": 4.0,
+&"space_data_chip": 6.0,
+&"space_encrypted_core": 0.4,
+&"space_energy_cell": 2.0,
+&"space_star_map": 1.5
+}

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"locker"
+display_name = "Casier"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.15
+search_time = 1.2
+entries = {
+&"space_circuit": 2.0,
+&"space_data_chip": 2.0,
+&"space_energy_cell": 4.0,
+&"space_medigel": 3.0,
+&"space_nanomeds": 0.4,
+&"space_officer_badge": 1.0,
+&"space_plasma_cells": 5.0,
+&"space_ration": 5.0
+}

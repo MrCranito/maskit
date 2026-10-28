@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"cryo_pod"
+display_name = "Capsule cryogénique"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 1.6
+entries = {
+&"space_cracked_mask": 0.5,
+&"space_data_chip": 3.0,
+&"space_medigel": 2.0,
+&"space_officer_badge": 3.0,
+&"space_ration": 2.0,
+&"space_star_map": 0.8
+}

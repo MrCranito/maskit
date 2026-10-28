@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/ui_settings.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"space_circuit"
+display_name = "Circuit imprimé"
+description = "Carte électronique récupérée sur un terminal."
+icon = ExtResource("2_icon")
+tint = Color(0.45,0.95,0.55,1)
+rarity = 0
+type = &"material"
+stack_max = 10
+value = 12
+weight = 0.15
+drop_min = 1
+drop_max = 3
+heal_amount = 0.0

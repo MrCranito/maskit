@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"med_cabinet"
+display_name = "Armoire médicale"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.1
+search_time = 1.2
+entries = {
+&"space_data_chip": 1.0,
+&"space_medigel": 7.0,
+&"space_nanomeds": 2.0,
+&"space_ration": 2.0
+}

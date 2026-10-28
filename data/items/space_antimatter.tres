@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/third_party/icons/power_fire_ring.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"space_antimatter"
+display_name = "Fiole d'antimatière"
+description = "Confinement magnétique stable… pour l'instant. Une fortune."
+icon = ExtResource("2_icon")
+tint = Color(1.0,0.55,0.15,1)
+rarity = 4
+type = &"valuable"
+stack_max = 1
+value = 1400
+weight = 0.5
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0
