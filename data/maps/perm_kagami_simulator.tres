@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_8yl1r"]
+
+[resource]
+script = ExtResource("1_8yl1r")
+id = &"perm_kagami_simulator"
+display_name = "Simulateur Kagami"
+description = "Une section d'essai de la station : drones au ralenti, coursives bien éclairées."
+world_path = "res://data/worlds/world_02_space_station.tres"
+difficulty = 0
+accent_color = Color(0.45, 0.85, 0.95, 1)
+modifiers = {
+"enemy_density_mult": 0.7,
+"enemy_speed_mult": 0.85,
+"view_radius_mult": 1.15
+}
+tags = PackedStringArray("Entraînement", "Ennemis lents", "Vue dégagée")
+reward_text = "Butin modeste"

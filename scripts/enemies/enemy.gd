@@ -885,6 +885,30 @@ func get_shot_directions(aim: Vector2) -> Array[Vector2]:
 	return out
 
 
+# --- Modificateurs de carte (MapCard) -------------------------------------------------
+
+## Applique les modificateurs de la carte : PV, dégâts, vitesse, vitesse de la jauge de
+## reconnaissance (vue + ouïe). Travaille sur une copie de `data` marquée (meta
+## map_modified) : un ennemi restauré d'un étage déjà visité n'est pas modifié deux fois.
+## Conserve la proportion de PV restants.
+func apply_modifiers(hp_mult: float, damage_mult: float, speed_mult: float, awareness_mult: float) -> void:
+	if data == null or data.has_meta(&"map_modified"):
+		return
+	var ratio: float = clampf(hp / maxf(max_hp, 0.001), 0.0, 1.0)
+	var d := data.duplicate() as EnemyData
+	d.max_hp = data.max_hp * maxf(hp_mult, 0.05)
+	d.attack_damage = data.attack_damage * maxf(damage_mult, 0.0)
+	d.move_speed = data.move_speed * maxf(speed_mult, 0.05)
+	d.sight_gain = data.sight_gain * maxf(awareness_mult, 0.0)
+	d.hearing_gain = data.hearing_gain * maxf(awareness_mult, 0.0)
+	d.set_meta(&"map_modified", true)
+	data = d
+	max_hp = d.max_hp
+	hp = max_hp * ratio
+	if _health_bar != null:
+		_health_bar.queue_redraw()
+
+
 # --- Interface de dégâts ------------------------------------------------------------
 
 func take_damage(amount: float, source: Node) -> void:

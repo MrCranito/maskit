@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_halid"]
+
+[resource]
+script = ExtResource("1_halid")
+id = &"wk_dust_creek_full_moon"
+display_name = "Pleine lune sur Dust Creek"
+description = "La ville sous la lune : on y voit moins loin, mais les coffres sont mieux garnis."
+world_path = "res://data/worlds/world_01_far_west.tres"
+category = &"weekly"
+difficulty = 2
+accent_color = Color(0.6, 0.65, 1, 1)
+modifiers = {
+"loot_rarity_bonus": 0.4,
+"night": true,
+"view_radius_mult": 0.75
+}
+tags = PackedStringArray("Nuit", "Vue −25 %", "Rareté +40 %")
+reward_text = "Objets rares fréquents"

@@ -3,8 +3,8 @@ extends Control
 ## Menu principal : fond animé (ciel + ville + poussière), titre Rye, masque porté,
 ## boutons Jouer / Masques / Options / Crédits. Musique western_hub.
 ## Navigation : souris, tactile, clavier et manette (focus, ui_up/ui_down).
-## « Jouer » et « Masques » ouvrent la sélection du masque (Jouer : directement sur
-## la carte du masque porté, prêt à valider).
+## « Jouer » ouvre la sélection de carte (MapSelect), « Masques » la sélection du masque
+## (retour ici après « Choisir »).
 
 var play_button: Button = null
 var masks_button: Button = null
@@ -125,9 +125,6 @@ func _build_mask_badge() -> Control:
 	var n := MenuKit.label(mask.display_name if mask != null else "-", 24,
 		mask.aura_color.lightened(0.25) if mask != null else MenuKit.TEXT, MenuKit.nunito(900))
 	txt.add_child(n)
-	var diff := MenuKit.label("Difficulté : " + GameState.difficulty_name(GameState.difficulty), 15,
-		MenuKit.TEXT_DIM, MenuKit.nunito(700))
-	txt.add_child(diff)
 	return holder
 
 
@@ -145,13 +142,12 @@ func _intro() -> void:
 
 func _on_play() -> void:
 	MenuKit.sfx(&"confirm")
-	MaskSelect.open_on_selected = true
-	MenuKit.go_to(self, MenuKit.MASK_SELECT_SCENE)
+	MenuKit.go_to(self, MenuKit.MAP_SELECT_SCENE)
 
 
 func _on_masks() -> void:
 	MenuKit.sfx(&"click")
-	MaskSelect.open_on_selected = false
+	MaskSelect.return_scene = MenuKit.MAIN_MENU_SCENE
 	MenuKit.go_to(self, MenuKit.MASK_SELECT_SCENE)
 
 

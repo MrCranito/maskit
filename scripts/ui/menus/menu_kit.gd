@@ -21,6 +21,7 @@ const RED_DARK := Color(0.42, 0.05, 0.09)
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
 const MASK_SELECT_SCENE := "res://scenes/ui/menus/mask_select.tscn"
+const MAP_SELECT_SCENE := "res://scenes/ui/menus/map_select.tscn"
 const RAID_SCENE := "res://scenes/dungeon/raid.tscn"
 
 enum Style { PRIMARY, SECONDARY, GHOST }

@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_k1rug"]
+
+[resource]
+script = ExtResource("1_k1rug")
+id = &"mo_dust_creek_legend"
+display_name = "La Légende de Dust Creek"
+description = "La même ville pour tous ce mois-ci. Les hors-la-loi les plus redoutés y gardent leur trésor."
+world_path = "res://data/worlds/world_01_far_west.tres"
+category = &"monthly"
+difficulty = 4
+accent_color = Color(1, 0.55, 0.15, 1)
+modifiers = {
+"enemy_damage_mult": 1.3,
+"enemy_hp_mult": 1.5,
+"fixed_seed": 1885,
+"loot_quantity_mult": 1.5,
+"loot_rarity_bonus": 1.2
+}
+tags = PackedStringArray("Élites", "Carte fixe", "Butin ×1,5")
+reward_text = "Légendaires possibles"

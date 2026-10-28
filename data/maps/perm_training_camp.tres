@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_h4qhb"]
+
+[resource]
+script = ExtResource("1_h4qhb")
+id = &"perm_training_camp"
+display_name = "Camp d'entraînement"
+description = "Un quartier tranquille de Dust Creek, gardé par quelques bandits endormis. Idéal pour apprendre à fouiller et à se cacher."
+world_path = "res://data/worlds/world_01_far_west.tres"
+difficulty = 0
+accent_color = Color(0.55, 0.85, 0.5, 1)
+modifiers = {
+"awareness_mult": 0.75,
+"enemy_density_mult": 0.6,
+"enemy_hp_mult": 0.8,
+"player_hp_mult": 1.25
+}
+tags = PackedStringArray("Entraînement", "Peu d\'ennemis", "PV +25 %")
+reward_text = "Butin modeste"

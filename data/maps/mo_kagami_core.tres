@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_rsh4a"]
+
+[resource]
+script = ExtResource("1_rsh4a")
+id = &"mo_kagami_core"
+display_name = "Cœur du réacteur"
+description = "Le réacteur de Kagami s'emballe : ses gardiens aussi."
+world_path = "res://data/worlds/world_02_space_station.tres"
+category = &"monthly"
+difficulty = 4
+accent_color = Color(0.35, 1, 0.85, 1)
+modifiers = {
+"enemy_damage_mult": 1.4,
+"enemy_density_mult": 1.3,
+"loot_quantity_mult": 1.4,
+"loot_rarity_bonus": 1.3
+}
+tags = PackedStringArray("Dégâts ennemis +40 %", "Rareté +130 %")
+reward_text = "Légendaires possibles"

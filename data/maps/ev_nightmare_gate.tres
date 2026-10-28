@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_r0qmf"]
+
+[resource]
+script = ExtResource("1_r0qmf")
+id = &"ev_nightmare_gate"
+display_name = "Porte du cauchemar"
+description = "Une brèche s'ouvre dans Kagami. Même carte pour tous : qui en reviendra ?"
+world_path = "res://data/worlds/world_02_space_station.tres"
+category = &"event"
+difficulty = 4
+accent_color = Color(0.75, 0.15, 0.35, 1)
+modifiers = {
+"enemy_damage_mult": 1.6,
+"enemy_hp_mult": 1.6,
+"enemy_speed_mult": 1.2,
+"fixed_seed": 666,
+"loot_quantity_mult": 2.0,
+"loot_rarity_bonus": 2.0
+}
+tags = PackedStringArray("Élites", "Carte fixe", "Butin ×2")
+reward_text = "Légendaires fréquents"
+weight = 0.7

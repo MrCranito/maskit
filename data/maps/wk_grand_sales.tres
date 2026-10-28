@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_a0ab6"]
+
+[resource]
+script = ExtResource("1_a0ab6")
+id = &"wk_grand_sales"
+display_name = "Grandes soldes"
+description = "Les rayons débordent… et les pillards aussi."
+world_path = "res://data/worlds/world_03_mall.tres"
+category = &"weekly"
+difficulty = 2
+accent_color = Color(1, 0.75, 0.3, 1)
+modifiers = {
+"enemy_density_mult": 1.4,
+"loot_quantity_mult": 1.6
+}
+tags = PackedStringArray("Butin ×1,6", "Foule d\'ennemis")
+reward_text = "Butin abondant"

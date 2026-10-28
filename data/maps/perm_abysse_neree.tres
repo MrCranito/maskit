@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_1hu6u"]
+
+[resource]
+script = ExtResource("1_1hu6u")
+id = &"perm_abysse_neree"
+display_name = "Abysse Nérée"
+description = "Station sous-marine aux hublots fissurés. Les gardiens des profondeurs ne dorment jamais."
+world_path = "res://data/worlds/world_04_underwater.tres"
+difficulty = 2
+accent_color = Color(0.3, 0.85, 0.8, 1)
+modifiers = {
+"loot_rarity_bonus": 0.2
+}
+tags = PackedStringArray("Classique", "Rareté +20 %")
+reward_text = "Butin rare fréquent"

@@ -2,23 +2,22 @@ class_name MaskSelect
 extends Control
 ## Sélection du masque : cartes des 5 masques (portrait, nom, description courte, stats),
 ## aperçu du héros 3D animé teinté par l'aura, panneau de détail, bouton « Choisir »
-## → GameState.selected_mask_id (sauvegardé), puis choix de la difficulté et
-## « Partir en raid » → res://scenes/dungeon/raid.tscn.
-## Échap / bouton B : retour au menu principal.
+## → GameState.selected_mask_id (sauvegardé), puis retour à l'écran d'origine
+## (menu principal ou sélection de carte : `return_scene`). La difficulté n'est plus
+## choisie ici : elle dépend de la carte (MapSelect).
+## Échap / bouton B / « Retour » : retour à l'écran d'origine sans changer de masque.
 
-## Mis par le menu principal (« Jouer ») : focus direct sur « Choisir ».
-static var open_on_selected: bool = false
+## Écran où revenir après « Choisir » / « Retour » (fixé par l'appelant ; "" = rester,
+## pour les tests).
+static var return_scene: String = MenuKit.MAIN_MENU_SCENE
 
 var masks: Array[MaskData] = []
 var cards: Array[MaskCard] = []
 var preview: HeroPreview = null
 var choose_button: Button = null
 var back_button: Button = null
-var difficulty_panel: DifficultyPanel = null
 ## Masque affiché (pas forcément encore choisi).
 var current: MaskData = null
-## Scène lancée par « Partir en raid » (modifiable pour les tests).
-var raid_scene: String = MenuKit.RAID_SCENE
 
 var _background: MenuBackground = null
 var _name: Label = null
@@ -47,14 +46,10 @@ func _ready() -> void:
 
 
 func _initial_focus() -> void:
-	if open_on_selected:
-		choose_button.grab_focus()
-	else:
-		for c: MaskCard in cards:
-			if c.mask == current:
-				c.grab_focus()
-				return
-	open_on_selected = false
+	for c: MaskCard in cards:
+		if c.mask == current:
+			c.grab_focus()
+			return
 
 
 func _build() -> void:
@@ -187,8 +182,8 @@ func show_mask(m: MaskData, with_sound: bool = true) -> void:
 
 func _refresh_choose_label() -> void:
 	var equipped: bool = current != null and current.id == GameState.selected_mask_id
-	choose_button.text = "Partir avec ce masque" if equipped else "Choisir"
-	choose_button.add_theme_font_size_override("font_size", 24 if equipped else 30)
+	choose_button.text = "Garder ce masque" if equipped else "Choisir"
+	choose_button.add_theme_font_size_override("font_size", 25 if equipped else 30)
 
 
 func _refresh_equipped() -> void:
@@ -196,42 +191,32 @@ func _refresh_equipped() -> void:
 		c.set_equipped(c.mask.id == GameState.selected_mask_id)
 
 
-## « Choisir » : équipe le masque affiché (sauvegardé) puis ouvre le choix de difficulté.
-func choose_current() -> DifficultyPanel:
+## « Choisir » : équipe le masque affiché (sauvegardé) puis revient à l'écran d'origine.
+func choose_current() -> bool:
 	if current == null:
-		return null
+		return false
 	GameState.set_selected_mask(current.id)
 	_refresh_equipped()
 	_refresh_choose_label()
 	MenuKit.sfx(&"confirm")
 	MenuKit.vibrate(30)
-	return open_difficulty()
-
-
-func open_difficulty() -> DifficultyPanel:
-	if is_instance_valid(difficulty_panel):
-		return difficulty_panel
-	difficulty_panel = DifficultyPanel.new(current.display_name if current != null else "")
-	add_child(difficulty_panel)
-	difficulty_panel.launch_requested.connect(launch_raid)
-	difficulty_panel.closed.connect(func() -> void:
-		if is_instance_valid(choose_button):
-			choose_button.grab_focus())
-	return difficulty_panel
-
-
-func launch_raid() -> void:
-	# Nouveau raid : nouvelle seed (le raid relit GameState.run_seed).
-	GameState.run_seed = randi()
-	MenuKit.go_to(self, raid_scene, Balance.get_float("menu", "fade_time", 0.3) * 1.5)
+	_leave()
+	return true
 
 
 func go_back() -> void:
 	MenuKit.sfx(&"back")
-	MenuKit.go_to(self, MenuKit.MAIN_MENU_SCENE)
+	_leave()
+
+
+func _leave() -> void:
+	var target: String = return_scene
+	return_scene = MenuKit.MAIN_MENU_SCENE
+	if target != "":
+		MenuKit.go_to(self, target)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and not is_instance_valid(difficulty_panel):
+	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		go_back()

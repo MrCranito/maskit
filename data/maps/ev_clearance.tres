@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_02h31"]
+
+[resource]
+script = ExtResource("1_02h31")
+id = &"ev_clearance"
+display_name = "Liquidation totale"
+description = "Tout doit disparaître ! Les rayons sont pleins et les vigiles en pause."
+world_path = "res://data/worlds/world_03_mall.tres"
+category = &"event"
+difficulty = 0
+accent_color = Color(1, 0.6, 0.85, 1)
+modifiers = {
+"enemy_density_mult": 0.5,
+"enemy_hp_mult": 0.7,
+"loot_quantity_mult": 2.5
+}
+tags = PackedStringArray("Butin ×2,5", "Peu d\'ennemis")
+reward_text = "Butin ×2,5"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_vyi47"]
+
+[resource]
+script = ExtResource("1_vyi47")
+id = &"perm_galeries_lumiere"
+display_name = "Galeries Lumière"
+description = "Un centre commercial désert sur plusieurs étages. Escalators à l'arrêt, vitrines brisées."
+world_path = "res://data/worlds/world_03_mall.tres"
+accent_color = Color(1, 0.5, 0.75, 1)
+tags = PackedStringArray("Classique", "Plusieurs étages")
+reward_text = "Butin standard"

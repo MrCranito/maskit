@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_e8jex"]
+
+[resource]
+script = ExtResource("1_e8jex")
+id = &"perm_dust_creek"
+display_name = "Dust Creek"
+description = "La ville fantôme au coucher du soleil. Saloon, banque et mine : tout est à piller."
+world_path = "res://data/worlds/world_01_far_west.tres"
+difficulty = 0
+accent_color = Color(0.98, 0.62, 0.32, 1)
+tags = PackedStringArray("Classique")
+reward_text = "Butin standard"

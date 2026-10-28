@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_lhnfa"]
+
+[resource]
+script = ExtResource("1_lhnfa")
+id = &"mo_grand_magasin"
+display_name = "Nuit au grand magasin"
+description = "Après la fermeture, le grand magasin appartient aux rôdeurs."
+world_path = "res://data/worlds/world_03_mall.tres"
+category = &"monthly"
+difficulty = 3
+accent_color = Color(0.95, 0.4, 0.85, 1)
+modifiers = {
+"enemy_density_mult": 1.5,
+"loot_quantity_mult": 1.6,
+"loot_rarity_bonus": 1.0,
+"night": true
+}
+tags = PackedStringArray("Nuit", "Foule d\'ennemis", "Butin ×1,6")
+reward_text = "Butin abondant et rare"

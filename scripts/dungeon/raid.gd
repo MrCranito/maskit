@@ -101,6 +101,7 @@ func _ready() -> void:
 	difficulty = GameState.difficulty
 	_load_world()
 	_generate_floors()
+	_apply_map_modifiers()
 	_load_module_scripts()
 
 	level = Node2D.new()
@@ -112,6 +113,7 @@ func _ready() -> void:
 	_build_floor(current_floor)
 	_spawn_player(layout.player_spawn)
 	_build_ui()
+	_apply_map_player_modifiers()
 	_update_banner(true)
 	EventBus.player_died.connect(_on_player_died)
 	EventBus.debug_toggled.connect(_on_debug_toggled)
@@ -224,6 +226,7 @@ func _build_floor(index: int) -> void:
 
 	LootSpawner.spawn_for_floor(layout, world_root, run_seed, difficulty)
 	_build_fog(state)
+	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_extraction_time = 0.0
 	_extraction_shown = false
@@ -641,7 +644,8 @@ func get_world_display_name() -> String:
 
 
 func get_banner_text() -> String:
-	return "%s — %s" % [get_world_display_name(), world_floor_name(current_floor)]
+	var title: String = map_card.display_name if map_card != null else get_world_display_name()
+	return "%s — %s" % [title, world_floor_name(current_floor)]
 
 
 func get_current_room_name() -> String:
@@ -818,6 +822,142 @@ func show_toast(text: String) -> void:
 
 func get_toast_text() -> String:
 	return _toast_label.text if _toast_panel != null and _toast_panel.visible else ""
+
+
+# --- Carte (MapCard) : modificateurs ---------------------------------------------
+# GameState.current_map (fixée par la sélection de carte). Sans carte (raid lancé
+# directement, debug) : aucun modificateur, comportement d'origine.
+
+## Carte jouée (null = aucune).
+var map_card: MapCard = null
+
+
+## Au lancement, après la génération : bonus de butin (LootRoller) et densité d'ennemis
+## (points d'apparition retirés ou dupliqués, de façon déterministe depuis la seed).
+func _apply_map_modifiers() -> void:
+	map_card = GameState.current_map as MapCard
+	LootRoller.reset_map_bonus()
+	if map_card == null:
+		return
+	LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
+	LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
+	var density: float = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	if is_equal_approx(density, 1.0):
+		return
+	for idx: Variant in floors:
+		var l: FloorLayout = floors[idx]
+		l.enemy_spawns = scale_enemy_spawns(l, density, hash([run_seed, int(idx), "density"]))
+
+
+## Densité d'ennemis : < 1 retire des points d'apparition (jamais les boss), > 1 en
+## ajoute sur une case libre voisine d'un point existant (même salle). Déterministe.
+static func scale_enemy_spawns(l: FloorLayout, mult: float, seed_value: int) -> Array[FloorLayout.Spawn]:
+	var src: Array[FloorLayout.Spawn] = l.enemy_spawns
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var out: Array[FloorLayout.Spawn] = []
+	if mult < 1.0:
+		for sp: FloorLayout.Spawn in src:
+			var room := l.get_room(sp.room_id) if sp.room_id >= 0 else l.room_at(sp.cell)
+			if (room != null and room.type == &"boss") or rng.randf() < mult:
+				out.append(sp)
+		return out
+	out.append_array(src)
+	var extra: int = roundi(src.size() * (mult - 1.0))
+	var used: Dictionary = {}
+	for sp: FloorLayout.Spawn in src:
+		used[sp.cell] = true
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]
+	var tries: int = 0
+	while extra > 0 and not src.is_empty() and tries < extra * 12 + 24:
+		tries += 1
+		var base: FloorLayout.Spawn = src[rng.randi_range(0, src.size() - 1)]
+		var c: Vector2i = base.cell + dirs[rng.randi_range(0, dirs.size() - 1)] * rng.randi_range(1, 2)
+		var t: int = l.get_tile(c)
+		if used.has(c) or c == l.player_spawn or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+			continue
+		var r := l.room_at(c)
+		if r != null and base.room_id >= 0 and r.id != base.room_id:
+			continue
+		var sp := FloorLayout.Spawn.new()
+		sp.cell = c
+		sp.kind = base.kind
+		sp.room_id = base.room_id
+		out.append(sp)
+		used[c] = true
+		extra -= 1
+	return out
+
+
+## À chaque construction d'étage : stats des ennemis, rayon de vue du brouillard, nuit.
+func _apply_map_floor_modifiers() -> void:
+	if map_card == null:
+		return
+	if map_card.is_night() and floor_root != null:
+		# Un seul CanvasModulate est actif par canevas : on assombrit celui du décor
+		# (teinte d'ambiance du WorldBuilder) ou on en crée un.
+		var tint: Variant = Balance.get_value("maps", "night_tint", Color(0.5, 0.55, 0.8))
+		var night: Color = tint if tint is Color else Color(0.5, 0.55, 0.8)
+		var mods: Array[Node] = floor_root.find_children("*", "CanvasModulate", true, false)
+		if mods.is_empty():
+			var cm := CanvasModulate.new()
+			cm.name = "MapNight"
+			floor_root.add_child(cm)
+			mods.append(cm)
+		for cm: Node in mods:
+			(cm as CanvasModulate).color *= night
+	if enemies_container != null:
+		for e: Node in enemies_container.get_children():
+			if e.has_method("apply_modifiers"):
+				e.call("apply_modifiers", map_card.get_mod_f("enemy_hp_mult"), map_card.get_mod_f("enemy_damage_mult"),
+					map_card.get_mod_f("enemy_speed_mult"), map_card.get_mod_f("awareness_mult"))
+	var vr_mult: float = map_card.get_mod_f("view_radius_mult")
+	if fog != null and not is_equal_approx(vr_mult, 1.0) and fog.get("view_radius") != null:
+		var base_r: int = int(Balance.get_value("fog", "view_radius", 10))
+		var min_r: int = int(Balance.get_value("maps", "min_view_radius", 3))
+		fog.set("view_radius", maxi(min_r, roundi(base_r * vr_mult)))
+		if fog.has_method("_apply_shader_params"):
+			fog.call("_apply_shader_params")
+		if fog.has_method("invalidate"):
+			fog.call("invalidate")
+
+
+## Après l'apparition du joueur et de l'UI : stats du joueur, teinte nuit, badge de
+## difficulté dans le bandeau.
+func _apply_map_player_modifiers() -> void:
+	if map_card == null:
+		return
+	if is_instance_valid(player):
+		var hp_m: float = maxf(map_card.get_mod_f("player_hp_mult"), 0.05)
+		if not is_equal_approx(hp_m, 1.0) and player.get("max_hp") != null:
+			player.set("max_hp", float(player.get("max_hp")) * hp_m)
+			player.set("hp", float(player.get("max_hp")))
+			if hud != null and hud.has_method("set_health"):
+				hud.call("set_health", float(player.get("hp")), float(player.get("max_hp")))
+		var dmg_m: float = maxf(map_card.get_mod_f("player_damage_mult"), 0.0)
+		var w: Variant = player.get("weapon")
+		if not is_equal_approx(dmg_m, 1.0) and w is WeaponData:
+			var nw := (w as WeaponData).duplicate() as WeaponData
+			nw.damage *= dmg_m
+			player.set("weapon", nw)
+	if _banner_title != null:
+		var vbox := _banner_title.get_parent()
+		var row := HBoxContainer.new()
+		row.name = "MapTitleRow"
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 10)
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(row)
+		vbox.move_child(row, 0)
+		_banner_title.reparent(row)
+		var badge := MapTile.difficulty_badge(map_card.difficulty, true)
+		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(badge)
+		var center := vbox.get_parent().get_parent() as Control
+		if center != null:
+			center.offset_left = -330
+			center.offset_right = 330
 
 
 # --- Debug F3 -------------------------------------------------------------------

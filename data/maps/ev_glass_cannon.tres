@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_0y2nw"]
+
+[resource]
+script = ExtResource("1_0y2nw")
+id = &"ev_glass_cannon"
+display_name = "Canon de verre"
+description = "Tes balles font des ravages… mais un souffle peut te mettre à terre."
+world_path = "res://data/worlds/world_01_far_west.tres"
+category = &"event"
+difficulty = 0
+accent_color = Color(1, 0.45, 0.4, 1)
+modifiers = {
+"loot_quantity_mult": 1.5,
+"player_damage_mult": 2.0,
+"player_hp_mult": 0.5
+}
+tags = PackedStringArray("Tes dégâts ×2", "Tes PV −50 %")
+reward_text = "Butin ×1,5"

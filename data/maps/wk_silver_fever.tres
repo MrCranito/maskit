@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_qwg3k"]
+
+[resource]
+script = ExtResource("1_qwg3k")
+id = &"wk_silver_fever"
+display_name = "Fièvre de l'argent"
+description = "Un filon d'argent a rendu les bandits fous. Ils sont plus coriaces, et plus riches."
+world_path = "res://data/worlds/world_01_far_west.tres"
+category = &"weekly"
+difficulty = 3
+accent_color = Color(0.85, 0.88, 0.95, 1)
+modifiers = {
+"enemy_hp_mult": 1.3,
+"loot_quantity_mult": 1.5,
+"loot_rarity_bonus": 0.3
+}
+tags = PackedStringArray("Butin ×1,5", "Ennemis coriaces")
+reward_text = "Butin abondant"

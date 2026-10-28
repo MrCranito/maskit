@@ -5,9 +5,22 @@ extends RefCounted
 ##   × (1 + rarity_difficulty_bonus[r] × difficulté)
 ##   × (1 + rarity_floor_bonus[r] × |étage|)
 ##   × super_loot_rarity_mult[r]   (salle super_loot uniquement)
+##   × (1 + loot_rarity_bonus_weights[r] × map_rarity_bonus)   (carte jouée, [maps])
 ## Les tableaux sont indexés par rareté (0 Commun … 4 Légendaire), cf. [loot].
+## Nombre d'objets × map_quantity_mult (carte jouée ; chance de conteneur vide ÷ ce facteur).
 
 const ROOM_SUPER_LOOT := &"super_loot"
+
+## Bonus de la carte en cours (MapCard : loot_rarity_bonus / loot_quantity_mult), fixés par
+## Raid au lancement. Valeurs neutres (0 / 1) = comportement d'origine, tirages inchangés.
+static var map_rarity_bonus: float = 0.0
+static var map_quantity_mult: float = 1.0
+
+
+## Remet les bonus de carte à leurs valeurs neutres.
+static func reset_map_bonus() -> void:
+	map_rarity_bonus = 0.0
+	map_quantity_mult = 1.0
 
 
 class Context:
@@ -29,6 +42,11 @@ static func rarity_multiplier(rarity: int, ctx: Context) -> float:
 	m *= 1.0 + LootDB.arr_at("rarity_floor_bonus", rarity, [0.0, 0.05, 0.2, 0.35, 0.5]) * float(absi(ctx.floor_index))
 	if ctx.room_type == ROOM_SUPER_LOOT:
 		m *= LootDB.arr_at("super_loot_rarity_mult", rarity, [0.3, 0.7, 2.0, 6.0, 10.0])
+	if map_rarity_bonus != 0.0:
+		var w: Variant = Balance.get_value("maps", "loot_rarity_bonus_weights", [0.0, 0.3, 0.7, 1.2, 1.6])
+		var arr: Array = w if w is Array else []
+		var k: float = float(arr[clampi(rarity, 0, arr.size() - 1)]) if not arr.is_empty() else 0.0
+		m *= maxf(1.0 + k * map_rarity_bonus, 0.0)
 	return maxf(m, 0.0)
 
 
@@ -54,11 +72,15 @@ static func roll(table: LootTable, rng: RandomNumberGenerator, ctx: Context) -> 
 		return out
 	var super_loot := ctx.room_type == ROOM_SUPER_LOOT
 	var empty := 0.0 if super_loot else table.empty_chance
+	if map_quantity_mult > 1.0:
+		empty /= map_quantity_mult
 	if rng.randf() < empty:
 		return out
 	var n := rng.randi_range(table.rolls_min, maxi(table.rolls_min, table.rolls_max))
 	if super_loot:
 		n += LootDB.geti("super_loot_extra_rolls", 1)
+	if map_quantity_mult != 1.0:
+		n = maxi(1, roundi(n * maxf(map_quantity_mult, 0.0)))
 	var weights := effective_weights(table, ctx)
 	for i in n:
 		if weights.is_empty():

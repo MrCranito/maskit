@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_1xjwt"]
+
+[resource]
+script = ExtResource("1_1xjwt")
+id = &"ev_gold_rush"
+display_name = "Ruée vers l'or"
+description = "De l'or partout ! Mais la moitié des bandits de l'Ouest est venue se servir."
+world_path = "res://data/worlds/world_01_far_west.tres"
+category = &"event"
+difficulty = 2
+accent_color = Color(1, 0.8, 0.2, 1)
+modifiers = {
+"enemy_density_mult": 1.5,
+"loot_quantity_mult": 3.0
+}
+tags = PackedStringArray("Butin ×3", "Ennemis +50 %")
+reward_text = "Butin ×3"
+weight = 1.5

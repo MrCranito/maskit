@@ -15,6 +15,11 @@ var selected_mask_id: StringName = &"kitsune"
 var difficulty: int = 1
 ## Monde du prochain raid (fixé par la carte choisie ; vide = Far West).
 var world_path: String = ""
+## Carte du prochain raid (MapCard, scripts/maps/map_card.gd) ; null = raid lancé
+## directement (debug) : aucun modificateur.
+var current_map: Resource = null
+## Debug : heure UTC forcée (secondes Unix) pour la rotation des cartes ; 0 = heure réelle.
+var debug_time_override: int = 0
 
 
 func _ready() -> void:
@@ -46,6 +51,27 @@ func set_difficulty(value: int, persist: bool = true) -> void:
 	difficulty = clampi(value, 0, DIFFICULTY_NAMES.size() - 1)
 	if persist:
 		_save_mask_choice()
+
+
+## Fixe la carte du prochain raid : monde, difficulté (propre à la carte, non sauvegardée),
+## seed (fixed_seed de la carte, sinon nouvelle seed). null = aucune carte.
+func set_current_map(card: Resource, new_seed: bool = true) -> void:
+	current_map = card
+	if card == null:
+		return
+	world_path = String(card.get("world_path"))
+	difficulty = clampi(int(card.get("difficulty")), 0, DIFFICULTY_NAMES.size() - 1)
+	if new_seed:
+		var fixed: int = int(card.call("get_fixed_seed")) if card.has_method("get_fixed_seed") else 0
+		run_seed = fixed if fixed != 0 else randi()
+
+
+## Modificateur de la carte en cours (`default` sans carte ou clé absente).
+func map_modifier(key: String, default: Variant) -> Variant:
+	if current_map == null:
+		return default
+	var mods: Variant = current_map.get("modifiers")
+	return (mods as Dictionary).get(key, default) if mods is Dictionary else default
 
 
 ## Économie d'énergie : 30 images/s au lieu de 60 (moins de chauffe et de batterie).

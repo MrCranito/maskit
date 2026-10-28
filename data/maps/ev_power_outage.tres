@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_bnaby"]
+
+[resource]
+script = ExtResource("1_bnaby")
+id = &"ev_power_outage"
+display_name = "Panne de courant"
+description = "Toute la station est dans le noir. Seule ta lampe perce le brouillard."
+world_path = "res://data/worlds/world_02_space_station.tres"
+category = &"event"
+difficulty = 2
+accent_color = Color(0.5, 0.6, 1, 1)
+modifiers = {
+"awareness_mult": 0.7,
+"loot_rarity_bonus": 0.5,
+"night": true,
+"view_radius_mult": 0.45
+}
+tags = PackedStringArray("Brouillard très épais", "Nuit noire", "Discrétion")
+reward_text = "Objets rares fréquents"

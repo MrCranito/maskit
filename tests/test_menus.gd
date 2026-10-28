@@ -1,12 +1,14 @@
 extends GutTest
-## Menus : les scènes s'instancient, le choix du masque / de la difficulté met à jour
-## GameState, la pause met l'arbre en pause, les crédits contiennent l'attribution CC BY.
+## Menus : les scènes s'instancient, le choix du masque met à jour GameState (la difficulté
+## n'est plus choisie avec le masque : elle vient de la carte, cf. test_maps.gd), la pause
+## met l'arbre en pause, les crédits contiennent l'attribution CC BY.
 
 const SCENES := [
 	"res://scenes/ui/menus/splash.tscn",
 	"res://scenes/ui/menus/main_menu.tscn",
 	"res://scenes/ui/menus/mask_select.tscn",
 	"res://scenes/ui/menus/pause_menu.tscn",
+	"res://scenes/ui/menus/map_select.tscn",
 ]
 
 var _saved_mask: StringName = &"kitsune"
@@ -24,6 +26,7 @@ func after_each() -> void:
 	get_tree().paused = false
 	GameState.selected_mask_id = _saved_mask
 	GameState.difficulty = _saved_diff
+	MaskSelect.return_scene = MenuKit.MAIN_MENU_SCENE
 	SaveManager.data = _saved_data
 	SaveManager.save()
 
@@ -66,6 +69,9 @@ func test_main_menu_buttons() -> void:
 		assert_gte(b.custom_minimum_size.y, 60.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 	assert_eq(labels, ["Jouer", "Masques", "Options", "Crédits"] as Array[String])
+	assert_true(m.find_children("*", "Label", true, false).all(
+		func(l: Node) -> bool: return not (l as Label).text.begins_with("Difficulté")),
+		"Le menu principal n'affiche plus la difficulté")
 	var opts := m.open_options() as OptionsPanel
 	await wait_frames(2)
 	assert_not_null(opts.music_slider)
@@ -93,8 +99,9 @@ func test_credits_show_cc_by_attribution() -> void:
 
 func test_mask_select_updates_game_state() -> void:
 	GameState.selected_mask_id = &"kitsune"
+	GameState.difficulty = 2
+	MaskSelect.return_scene = ""  # pas de changement de scène pendant le test
 	var ms := (load(SCENES[2]) as PackedScene).instantiate() as MaskSelect
-	ms.raid_scene = ""  # pas de changement de scène pendant le test
 	add_child_autofree(ms)
 	await wait_frames(3)
 	assert_eq(ms.cards.size(), 5, "Une carte par masque")
@@ -109,18 +116,13 @@ func test_mask_select_updates_game_state() -> void:
 	ms.show_mask(spectre)
 	assert_eq(ms.current, spectre)
 	assert_eq(GameState.selected_mask_id, &"kitsune", "Afficher ne choisit pas")
-	var panel := ms.choose_current()
+	assert_true(ms.choose_current())
 	assert_eq(GameState.selected_mask_id, &"spectre", "« Choisir » met à jour GameState")
 	assert_eq(String(SaveManager.data.get("selected_mask_id", "")), "spectre", "Choix sauvegardé")
-	assert_not_null(panel, "Le choix de la difficulté s'ouvre")
 	await wait_frames(2)
-	assert_eq(panel.difficulty_buttons.size(), 5, "Facile → Cauchemar")
-	panel.difficulty_buttons[4].button_pressed = true
-	assert_eq(GameState.difficulty, 4)
-	assert_eq(GameState.difficulty_name(GameState.difficulty), "Cauchemar")
-	assert_eq(int(SaveManager.data.get("difficulty", -1)), 4)
-	panel.set_difficulty(0)
-	assert_eq(GameState.difficulty, 0)
+	assert_eq(ms.find_children("*", "ModalPanel", true, false).size(), 0, "Plus de choix de difficulté")
+	assert_eq(GameState.difficulty, 2, "La difficulté n'est pas modifiée par le masque")
+	assert_eq(MaskSelect.return_scene, MenuKit.MAIN_MENU_SCENE, "Retour par défaut au menu")
 
 
 func test_hero_preview_turns() -> void:
@@ -158,3 +160,17 @@ func test_pause_menu_pauses_tree() -> void:
 	pm.close()
 	assert_false(get_tree().paused, "Reprendre relance le jeu")
 	assert_false(pm.overlay.visible)
+
+
+func test_play_opens_map_select_and_mask_returns_there() -> void:
+	assert_true(ResourceLoader.exists(MenuKit.MAP_SELECT_SCENE))
+	var src := FileAccess.get_file_as_string("res://scripts/ui/menus/main_menu.gd")
+	assert_string_contains(src, "MenuKit.go_to(self, MenuKit.MAP_SELECT_SCENE)", "« Jouer » → sélection de carte")
+	var ms := (load(MenuKit.MAP_SELECT_SCENE) as PackedScene).instantiate() as MapSelect
+	ms.raid_scene = ""
+	add_child_autofree(ms)
+	await wait_frames(2)
+	assert_not_null(ms.change_mask_button, "Bouton « Changer de masque »")
+	# Simule le clic sans changer de scène : la cible de retour est la sélection de carte.
+	MaskSelect.return_scene = MenuKit.MAP_SELECT_SCENE
+	assert_eq(MaskSelect.return_scene, MenuKit.MAP_SELECT_SCENE)
