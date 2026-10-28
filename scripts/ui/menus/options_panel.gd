@@ -1,15 +1,17 @@
 class_name OptionsPanel
 extends ModalPanel
-## Options : volume de la musique, volume des effets (AudioManager), vibrations on/off.
+## Options : volume de la musique, volume des effets (AudioManager), vibrations on/off,
+## économie d'énergie (30 images/s, moins de chauffe et de batterie).
 ## Les valeurs sont sauvegardées dans SaveManager.data["settings"] (MenuKit.set_setting).
 
 var music_slider: HSlider = null
 var sfx_slider: HSlider = null
 var vibration_toggle: Button = null
+var power_toggle: Button = null
 
 
 func _init() -> void:
-	super._init("Options", Vector2(620, 440))
+	super._init("Options", Vector2(620, 520))
 
 
 func _build_body() -> void:
@@ -48,6 +50,29 @@ func _build_body() -> void:
 		MenuKit.sfx(&"toggle")
 		MenuKit.vibrate())
 	row.add_child(vibration_toggle)
+
+	# Économie d'énergie : limite à 30 images/s (moins de chauffe sur téléphone).
+	var row2 := HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 16)
+	body.add_child(row2)
+	var l2 := MenuKit.label("Économie d'énergie", 26, MenuKit.TEXT, MenuKit.nunito(800))
+	l2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row2.add_child(l2)
+	power_toggle = MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
+	power_toggle.toggle_mode = true
+	power_toggle.button_pressed = bool(MenuKit.get_setting(&"power_saving", false))
+	power_toggle.text = "30 i/s" if power_toggle.button_pressed else "60 i/s"
+	var on2 := MenuKit.panel_style(Color(0.18, 0.5, 0.3), Color(0.6, 1.0, 0.7, 0.8), 16, 2, 10)
+	on2.border_width_bottom = 5
+	power_toggle.add_theme_stylebox_override("pressed", on2)
+	power_toggle.add_theme_stylebox_override("hover_pressed", on2)
+	power_toggle.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
+	power_toggle.toggled.connect(func(on: bool) -> void:
+		power_toggle.text = "30 i/s" if on else "60 i/s"
+		MenuKit.set_setting(&"power_saving", on)
+		GameState.apply_power_saving(on)
+		MenuKit.sfx(&"toggle"))
+	row2.add_child(power_toggle)
 
 
 func _slider_row(text: String, value: float, on_change: Callable) -> HSlider:

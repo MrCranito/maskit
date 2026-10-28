@@ -46,6 +46,11 @@ func set_difficulty(value: int, persist: bool = true) -> void:
 		_save_mask_choice()
 
 
+## Économie d'énergie : 30 images/s au lieu de 60 (moins de chauffe et de batterie).
+func apply_power_saving(on: bool) -> void:
+	Engine.max_fps = 30 if on else 60
+
+
 static func difficulty_name(value: int) -> String:
 	return DIFFICULTY_NAMES[clampi(value, 0, DIFFICULTY_NAMES.size() - 1)]
 
@@ -61,6 +66,9 @@ func _load_mask_choice() -> void:
 	if MaskData.exists(saved_mask):
 		selected_mask_id = saved_mask
 	difficulty = clampi(int(data.get("difficulty", difficulty)), 0, DIFFICULTY_NAMES.size() - 1)
+	var settings: Variant = data.get("settings", {})
+	if settings is Dictionary:
+		apply_power_saving(bool((settings as Dictionary).get("power_saving", false)))
 
 
 func _save_mask_choice() -> void:
