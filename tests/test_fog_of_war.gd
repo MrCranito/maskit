@@ -137,13 +137,75 @@ func test_hideable_nodes() -> void:
 	assert_true(far.visible, "Réaffiché une fois en vue")
 
 
-func test_texture_and_transition() -> void:
+func test_explored_out_of_view_hides_entities() -> void:
+	# Une case explorée puis quittée retombe dans le brouillard : ses entités sont cachées.
 	_fog.update_from(_at(_layout.player_spawn))
-	_fog.update_from(_at(Vector2i(8, 14)))
-	# Une case nouvellement visible est en transition puis atteint 1.0.
-	var i := 14 * _layout.size.x + 16
+	var c := Vector2i(5, 15)
+	var enemy := Node2D.new()
+	enemy.add_to_group(FogOfWar.GROUP_HIDEABLE)
+	enemy.position = _at(c)
+	add_child_autofree(enemy)
+	_fog.update_hideables()
+	assert_true(enemy.visible, "En vue")
+	_fog.update_from(_at(Vector2i(32, 26)))
+	_fog.update_hideables()
+	assert_true(_fog.is_cell_explored(c), "Mémoire conservée")
+	assert_false(enemy.visible, "Exploré hors vue = brouillard, ennemi caché")
+
+
+func test_visibility_polygon() -> void:
+	_fog.update_from(_at(_layout.player_spawn))
+	var poly := _fog.get_visibility_polygon()
+	assert_gt(poly.size(), 8, "Polygone construit")
+	assert_true(_fog.is_world_point_visible(_at(Vector2i(8, 15))), "Rue en vue")
+	assert_false(_fog.is_world_point_visible(_at(Vector2i(6, 6))), "Saloon (porte fermée) hors du polygone")
+	assert_false(_fog.is_world_point_visible(_at(Vector2i(13, 22))), "Shérif derrière son mur")
+	assert_false(_fog.is_world_point_visible(_at(Vector2i(30, 14))), "Hors du rayon de vue")
+	# Le polygone s'arrête sur la face des murs ; les cases de mur vues sont
+	# révélées entières dans le masque (rangées fusionnées), pas au-delà.
+	assert_true(_fog.is_world_point_visible(_at(Vector2i(4, 13)) + Vector2(0, -28)), "Jusqu'à la face du mur")
+	assert_false(_fog.is_world_point_visible(_at(Vector2i(4, 11))), "Pas derrière le mur")
+	var wall_seen := false
+	for r: Rect2 in _fog._wall_rects:
+		if r.has_point(_at(Vector2i(4, 12))):
+			wall_seen = true
+	assert_true(wall_seen, "Case de mur vue ajoutée au masque")
+
+
+func test_polygon_follows_small_moves_and_invalidate() -> void:
+	_fog.update_from(_at(Vector2i(6, 14)))
+	var p0 := _fog.get_visibility_polygon().duplicate()
+	_fog.update_from(_at(Vector2i(6, 14)) + Vector2(1.0, 0.0))
+	assert_eq(_fog.get_visibility_polygon(), p0, "Mouvement < seuil : pas de recalcul")
+	_open_doors[Vector2i(6, 12)] = true
+	_fog.invalidate()
+	_fog.update_from(_at(Vector2i(6, 14)))
+	assert_true(_fog.is_world_point_visible(_at(Vector2i(6, 10))), "Porte ouverte : on voit à travers")
+	assert_false(_fog.is_world_point_visible(_at(Vector2i(4, 4))), "Pas tout le saloon depuis la rue")
+
+
+func test_render_nodes() -> void:
+	_fog.update_from(_at(_layout.player_spawn))
+	var vp := _fog.get_node_or_null("FogMask") as SubViewport
+	assert_not_null(vp, "Masque de visibilité en SubViewport")
+	assert_ne(vp.render_target_update_mode, SubViewport.UPDATE_ALWAYS, "Masque jamais rafraîchi à chaque frame")
+	assert_true(_fog.material is ShaderMaterial, "Shader de brouillard sur le nœud")
+
+
+func test_entity_fade_in() -> void:
+	_fog.update_from(_at(_layout.player_spawn))
+	var e := Node2D.new()
+	e.add_to_group(FogOfWar.GROUP_HIDEABLE)
+	e.position = _at(Vector2i(6, 6))
+	add_child_autofree(e)
+	_fog.update_hideables()
+	assert_false(e.visible)
+	e.position = _at(Vector2i(5, 14))
+	_fog.update_hideables()
+	assert_true(e.visible)
+	assert_lt(e.modulate.a, 0.5, "Fondu d'apparition")
 	await wait_seconds(_fog.transition_time + 0.15)
-	assert_almost_eq(_fog._display[i * 2], _fog._target[i * 2], 0.001, "Transition terminée")
+	assert_almost_eq(e.modulate.a, 1.0, 0.001, "Fondu terminé")
 
 
 func test_perf_90x60() -> void:
@@ -163,6 +225,7 @@ func test_perf_90x60() -> void:
 	var worst := 0.0
 	var total := 0.0
 	var n := 0
+	var poly_worst := 0.0
 	for k in 40:
 		var c := Vector2i(2 + (k * 7) % 86, 2 + (k * 5) % 56)
 		if not FloorLayout.is_walkable_tile(L.get_tile(c)):
@@ -170,8 +233,9 @@ func test_perf_90x60() -> void:
 		fog.invalidate()
 		fog.update_from(FloorLayout.cell_to_world(c))
 		worst = maxf(worst, fog.last_compute_ms)
+		poly_worst = maxf(poly_worst, fog.last_polygon_ms)
 		total += fog.last_compute_ms
 		n += 1
-	gut.p("FogOfWar recalcul 90x60 : moyen %.3f ms, pire %.3f ms (%d essais)" % [total / maxf(n, 1), worst, n])
-	assert_lt(total / maxf(n, 1), 4.0, "Recalcul moyen < 4 ms")
-	assert_lt(worst, 8.0, "Pas de pic aberrant")
+	gut.p("FogOfWar recalcul 90x60 (case + polygone) : moyen %.3f ms, pire %.3f ms, polygone pire %.3f ms (%d rayons) (%d essais)" % [total / maxf(n, 1), worst, poly_worst, fog.last_ray_count, n])
+	assert_lt(total / maxf(n, 1), 2.0, "Recalcul moyen < 2 ms")
+	assert_lt(worst, 6.0, "Pas de pic aberrant")
