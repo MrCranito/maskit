@@ -36,6 +36,13 @@ const TYPES: Array[StringName] = [TYPE_WEAPON, TYPE_AMMO, TYPE_CONSUMABLE, TYPE_
 @export var drop_max: int = 1
 ## Consommable : PV rendus à l'utilisation (0 = non utilisable).
 @export var heal_amount: float = 0.0
+## Type weapon : id de l'arme (data/weapons/<weapon_id>.tres) que cet objet représente.
+## Un objet arme dans le sac peut être équipé ; extrait, il rejoint l'arsenal (Profile).
+@export var weapon_id: StringName = &""
+
+
+func is_weapon() -> bool:
+	return type == TYPE_WEAPON and not String(weapon_id).is_empty()
 
 
 func is_stackable() -> bool:

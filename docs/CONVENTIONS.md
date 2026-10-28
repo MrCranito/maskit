@@ -159,3 +159,68 @@ Chaque biome fournit, à ces chemins :
 - **Conteneurs et cachettes** : sprites dans `containers_dir` (`<kind>.png`, `<kind>_open.png`, `hide_<kind>.png`), tables `data/loot_tables/<kind>.tres`, objets propres au biome `data/items/<id>.tres` (préfixe du biome dans l'id). Les cachettes doivent avoir un `kind` présent dans `containers_dir`.
 - Le raid charge tout dynamiquement (`GameState.world_path`) ; `BiomeAssets.set_world(world)` est appelé avant la construction.
 - Style : même pipeline Blender que le héros (`art/blender/rdm_common.py` : caméra orthographique 3/4 à 48°, matériaux toon, contour Freestyle), même échelle (héros ≈ 64 unités monde), règles de performance de la « Refonte » (atlas, peu de nœuds, pas de redessin par frame, aucune lumière dynamique).
+
+## Refonte « Exfil Rush » (retour de test n°3) — CONTRAT ENTRE AGENTS
+Le jeu s'appelle désormais **Exfil Rush** (slogan : « Tire. Pille. Tire-toi. »). Le projet est dans
+`/home/claude/maskit` (dépôt GitHub MrCranito/maskit). **Les masques n'existent plus** : plus de
+MaskData, de choix de masque, d'aura, de portraits. Le héros est un personnage simple sans masque.
+Les ennemis « masqués » (outlaw, masked_grunt…) restent : ce sont des ennemis, pas le système.
+
+### Fondations déjà écrites (ne pas changer les signatures sans l'orchestrateur)
+- `scripts/combat/weapon_data.gd` (`WeaponData`) : category (CAT_*), rarity, tir, chargeur
+  (magazine_size, reload_time, automatic), explosion (explosion_radius/damage), ressenti
+  (recoil_px, shake_px, move_speed_mult, muzzle_flash_scale, eject_shells), projectile_style
+  (bullet, pellet, tracer, rocket, grenade), sprite_id, icon, permanent, value.
+- `scripts/combat/weapon_catalog.gd` (`WeaponCatalog`) : get_weapon(id), all(), get_starter(),
+  icon_for(w) (icône `assets/ui/weapons/<sprite_id>.png`, sinon `<category>.png`). STARTER_ID = starter_pistol.
+- `scripts/loot/item_data.gd` : `weapon_id` + `is_weapon()`. Un objet arme dans le sac = `data/items/wpn_<weapon_id>.tres`
+  (type weapon, weapon_id, icon vide → l'UI utilise WeaponCatalog.icon_for).
+- Autoload **`Profile`** (`scripts/core/profile.gd`) : réserve d'armes (uids), arsenal de départ (`loadout`, 3 emplacements,
+  `[arsenal] loadout_slots`), objets extraits, gemmes, dollars, skins. API : get_stash_weapons(), set_loadout(uids),
+  get_loadout_weapons(), can_start_raid(), start_raid(), finish_extraction(weapon_ids, bag) → résumé,
+  finish_death() → résumé, ensure_starter(), add_gems(n), owns_skin(id), buy_skin(id), equip_character_skin(id),
+  get_character_skin(), equip_weapon_skin(id, category), get_weapon_skin(category), signaux changed / gems_changed.
+- `GameState.begin_raid()` : nouveau sac + `GameState.raid_weapons = Profile.start_raid()`. Les menus l'appellent juste
+  avant de charger `res://scenes/dungeon/raid.tscn`. `GameState.raid_weapons` vide (raid lancé en debug) → pistolet de départ.
+- `scripts/cosmetics/skin_data.gd` (`SkinData`, data/skins/*.tres), `weapon_skin.gd` (`WeaponSkin.apply(item, skin)`),
+  `hero_skin.gd` (`HeroSkin.frames_for/meta_for/material_for/current`). Les deux derniers sont des stubs à compléter
+  par leurs propriétaires (voir tableau).
+- balance.cfg : sections `[arsenal]`, `[extraction]`, `[shop]`.
+
+### Règles de la boucle
+- Avant un raid : choix de la carte → **validation de l'arsenal de départ** (1 à 3 armes de la réserve) → raid.
+- **Mort** (ou « Abandonner le raid » dans la pause, ou jeu quitté en plein raid) : écran de mort (armes et butin perdus),
+  puis retour au menu principal. `Profile.finish_death()`. Si la réserve est vide, un pistolet de départ est offert.
+- **Extraction** : rester `[extraction] channel_time` s sur une case d'extraction (barre circulaire, interrompue si on sort ;
+  les ennemis proches sont alertés au début). Réussite → `Profile.finish_extraction(armes tenues, sac)` → écran de résumé
+  (armes, objets, valeur, gemmes gagnées) → menu principal.
+- En raid, le joueur tient jusqu'à 3 armes (emplacements) ; les armes trouvées vont dans le sac et peuvent être équipées
+  depuis l'inventaire (échange avec l'arme de l'emplacement courant, qui retourne dans le sac).
+- Monétisation : **uniquement cosmétique** (skins de personnage et d'armes) payés en gemmes. Gemmes : packs (paiement
+  **simulé** pour l'instant, `scripts/cosmetics/store.gd`) + quelques gemmes à chaque extraction réussie. Aucun bonus de stats.
+
+### API joueur (propriétaire : agent Joueur)
+`Player` : `set_weapons(list: Array[WeaponData])`, `get_weapons() -> Array[WeaponData]` (taille ≤ 3, null = emplacement vide),
+`current_slot: int`, `weapon` (arme courante, compatibilité), `switch_to(slot)`, `next_weapon()`,
+`equip_into_current_slot(w: WeaponData) -> WeaponData` (renvoie l'arme remplacée, ou null), `get_carried_weapon_ids() -> Array[StringName]`,
+`get_ammo() -> int`, `is_reloading()`, `get_reload_progress() -> float`, `reload()`,
+signaux `weapons_changed`, `ammo_changed(ammo: int, magazine: int)`, `fired(direction)`. À sa création le joueur lit
+`GameState.raid_weapons`. Actions d'entrée : `weapon_next` (Q, molette), `weapon_1..3` (1, 2, 3), `reload` (R).
+
+### Sprites d'armes (propriétaire : agent Art) — liste FIGÉE des sprite_id
+`starter_pistol, pistol, pistol_heavy, revolver, revolver_gold, smg, smg_compact, shotgun, shotgun_double, rifle,
+rifle_tactical, sniper, sniper_heavy, lmg, rocket_launcher, grenade_launcher` (+ un fichier par catégorie : `pistol`,
+`revolver`, `smg`, `shotgun`, `rifle`, `sniper`, `lmg`, `rocket_launcher`, `grenade_launcher` sont dans la liste).
+Tenue : `assets/sprites/weapons/<sprite_id>.png` + `.json` (grip, muzzle, scale ; canon vers la droite).
+Icône d'inventaire : `assets/ui/weapons/<sprite_id>.png` (vue de profil, fond transparent, ~192×96).
+
+### Propriété des fichiers (un agent ne modifie QUE ses fichiers ; besoin ailleurs → le noter dans son rapport)
+| Agent | Fichiers |
+|---|---|
+| Arsenal & raid | `data/weapons/*`, `data/items/*`, `data/loot_tables/*`, `scripts/dungeon/raid.gd`, `scripts/dungeon/floor_state.gd`, `scripts/loot/*` (sauf item_data.gd), `scripts/ui/hud.gd`, `scripts/ui/inventory_*.gd`, nouveaux `scripts/ui/weapon_hud.gd`, `scripts/ui/raid_end_screen.gd`, tests associés, `tests/test_masks.gd` (à supprimer) |
+| Menus | `scripts/ui/menus/*`, `scenes/ui/menus/*`, `assets/ui/masks` (à supprimer), `scripts/cosmetics/weapon_skin.gd`, `scripts/cosmetics/store.gd`, `assets/shaders/weapon_skin.gdshader`, `data/skins/wsk_*.tres`, `scripts/maps/*` (affichage seulement), `tests/test_menus.gd`, `tests/test_maps.gd` |
+| Art | `art/blender/*`, `assets/sprites/hero3d/**`, `assets/sprites/hero/**`, `assets/sprites/weapons/*`, `assets/ui/weapons/*`, `scripts/cosmetics/hero_skin.gd`, `data/skins/char_*.tres`, `tests/test_assets.gd` |
+| Joueur | `scripts/player/*`, `scenes/player/*`, `scripts/combat/projectile*.gd`, `scenes/combat/projectile.tscn`, `scripts/combat/vfx/*` (nouveau), `scripts/core/input_setup.gd`, `tests/test_player_logic.gd`, `tests/test_controls.gd`, `tests/test_combat_fixes.gd` |
+| Tourelles | `scripts/enemies/turret*.gd`, `scripts/dungeon/turret_placer.gd`, `scripts/enemies/turret_data.gd`, `data/turrets/*`, `assets/sprites/turrets/*`, `tests/test_turrets.gd` |
+| Décor | `scripts/dungeon/gen/*`, `scripts/dungeon/dungeon_generator.gd`, `scripts/dungeon/world_builder.gd`, `scripts/dungeon/prop.gd`, `scripts/biomes/**`, `assets/sprites/{far_west,space_station,mall,underwater}/**`, `art/blender/{mall,space_station,underwater}/*`, `art/blender/build_props.py`, `tests/test_dungeon_generator.gd`, `tests/test_world_builder.gd`, tests de biome |
+| Orchestrateur | `CLAUDE.md`, `docs/*`, `project.godot`, `data/balance.cfg` (les agents y AJOUTENT leur propre section/clés en fin de section, sans toucher aux autres), `scripts/core/*` (hors input_setup), suppression finale de `scripts/core/mask_data.gd` et `data/masks/` |

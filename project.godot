@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 
-config/name="Les Royaumes des Masques : Extraction"
+config/name="Exfil Rush"
 run/main_scene="res://scenes/ui/menus/splash.tscn"
 run/max_fps=60
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -21,6 +21,7 @@ Balance="*res://scripts/core/balance.gd"
 InputSetup="*res://scripts/core/input_setup.gd"
 GameState="*res://scripts/core/game_state.gd"
 SaveManager="*res://scripts/save/save_manager.gd"
+Profile="*res://scripts/core/profile.gd"
 LootManager="*res://scripts/loot/loot_manager.gd"
 AudioManager="*res://scripts/core/audio_manager.gd"
 

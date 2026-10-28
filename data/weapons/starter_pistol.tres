@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"starter_pistol"
+display_name = "Petit pistolet"
+description = "Un pistolet compact et fiable. Offert quand ton arsenal est vide."
+family = "firearm"
+category = &"pistol"
+rarity = 0
+damage = 12.0
+fire_rate = 3.2
+projectile_speed = 950.0
+range = 560.0
+projectile_lifetime = 0.6
+projectile_count = 1
+inaccuracy_deg = 2.0
+projectile_color = Color(1, 0.82, 0.4, 1)
+projectile_style = &"bullet"
+magazine_size = 10
+reload_time = 1.0
+automatic = false
+recoil_px = 4.0
+shake_px = 1.6
+muzzle_flash_scale = 0.8
+sprite_id = &"starter_pistol"
+value = 20
