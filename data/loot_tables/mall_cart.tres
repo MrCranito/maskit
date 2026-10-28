@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"mall_cart"
+display_name = "Chariot de supermarché"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.15
+search_time = 1.0
+entries = {
+&"bandage": 1.0,
+&"mall_batteries": 4.0,
+&"mall_canned_food": 8.0,
+&"mall_energy_drink": 5.0,
+&"mall_painkillers": 1.0
+}

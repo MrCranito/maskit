@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"mall_vending"
+display_name = "Distributeur automatique"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.25
+search_time = 1.2
+entries = {
+&"mall_batteries": 2.0,
+&"mall_canned_food": 3.0,
+&"mall_cash_bundle": 1.0,
+&"mall_energy_drink": 8.0
+}

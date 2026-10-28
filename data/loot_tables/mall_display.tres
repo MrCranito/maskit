@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"mall_display"
+display_name = "Présentoir vitré"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.15
+search_time = 1.6
+entries = {
+&"mall_game_console": 2.0,
+&"mall_gold_ring": 1.5,
+&"mall_headphones": 4.0,
+&"mall_luxury_watch": 0.4,
+&"mall_perfume": 3.0,
+&"mall_smartphone": 4.0
+}

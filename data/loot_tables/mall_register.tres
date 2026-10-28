@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"mall_register"
+display_name = "Caisse enregistreuse"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 1.4
+entries = {
+&"mall_batteries": 2.0,
+&"mall_cash_bundle": 6.0,
+&"mall_gift_card": 5.0,
+&"mall_smartphone": 1.0
+}

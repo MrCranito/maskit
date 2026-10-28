@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"mall_corpse"
+display_name = "Pilleur tombé"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.1
+search_time = 1.3
+entries = {
+&"mall_cash_bundle": 3.0,
+&"mall_energy_drink": 2.0,
+&"mall_first_aid": 1.0,
+&"mall_gift_card": 2.0,
+&"mall_painkillers": 3.0,
+&"mall_smartphone": 2.0
+}
