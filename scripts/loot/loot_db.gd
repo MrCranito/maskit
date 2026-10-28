@@ -88,6 +88,29 @@ static func all_items() -> Array[ItemData]:
 	return out
 
 
+## Objet de sac représentant une arme : data/items/wpn_<id>.tres, sinon objet créé à la
+## volée (ex. pistolet de départ, sans objet dédié) et mis en cache.
+static func weapon_item(w: WeaponData) -> ItemData:
+	if w == null:
+		return null
+	var iid := StringName("wpn_" + String(w.id))
+	var it := get_item(iid)
+	if it != null:
+		return it
+	it = ItemData.new()
+	it.id = iid
+	it.display_name = w.display_name
+	it.description = w.description
+	it.rarity = w.rarity
+	it.type = ItemData.TYPE_WEAPON
+	it.weapon_id = w.id
+	it.stack_max = 1
+	it.value = w.value
+	it.weight = 1.0
+	_items[iid] = it
+	return it
+
+
 static func all_keys() -> Array[ItemData]:
 	var out: Array[ItemData] = []
 	for it: ItemData in all_items():

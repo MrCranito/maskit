@@ -8,6 +8,8 @@ extends RefCounted
 var enemies: Array[Dictionary] = []
 ## Case de porte (Vector2i) → FloorLayout.DoorState.
 var doors: Dictionary = {}
+## Cases (meta `turret_cell`) des tourelles détruites : elles ne réapparaissent pas au retour.
+var destroyed_turrets: Array[Vector2i] = []
 ## Exploration du brouillard (FogOfWar.get_state()), vide si pas de brouillard.
 var fog: PackedByteArray = PackedByteArray()
 

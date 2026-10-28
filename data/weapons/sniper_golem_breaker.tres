@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"sniper_golem_breaker"
+display_name = "Briseur de golems"
+description = "Calibre .50. Traverse la pierre, et ce qu'il y a derrière."
+family = "firearm"
+category = &"sniper"
+rarity = 3
+damage = 134.7
+fire_rate = 0.72
+projectile_speed = 1900.0
+range = 1199.0
+projectile_lifetime = 0.631
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 0.0
+pierce = 3
+projectile_color = Color(0.7, 0.95, 1.0, 1)
+projectile_style = &"tracer"
+affixes = Array[StringName]([])
+magazine_size = 6
+reload_time = 2.04
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 12.0
+shake_px = 5.0
+move_speed_mult = 0.9
+muzzle_flash_scale = 1.5
+eject_shells = true
+sprite_id = &"sniper_heavy"
+value = 1210

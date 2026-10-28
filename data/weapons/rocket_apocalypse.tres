@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rocket_apocalypse"
+display_name = "Apocalypse"
+description = "Barillet de deux roquettes. Fin de la discussion."
+family = "firearm"
+category = &"rocket_launcher"
+rarity = 4
+damage = 51.0
+fire_rate = 0.64
+projectile_speed = 520.0
+range = 918.0
+projectile_lifetime = 1.765
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 0.3
+pierce = 0
+projectile_color = Color(1.0, 0.55, 0.2, 1)
+projectile_style = &"rocket"
+affixes = Array[StringName]([])
+magazine_size = 2
+reload_time = 2.08
+automatic = false
+explosion_radius = 150.0
+explosion_damage = 145.8
+recoil_px = 14.0
+shake_px = 9.0
+move_speed_mult = 0.85
+muzzle_flash_scale = 1.8
+eject_shells = false
+sprite_id = &"rocket_launcher"
+value = 3360

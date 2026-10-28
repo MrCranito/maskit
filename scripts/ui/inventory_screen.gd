@@ -2,8 +2,9 @@ class_name InventoryScreen
 extends Control
 ## Écran d'inventaire de raid (bouton sac / touche I / Tab). Paysage 1280×720 :
 ## grille à gauche (cases 92 px), détail de l'objet sélectionné à droite
-## (nom couleur de rareté, type, description, valeur, poids), boutons
-## « Utiliser » (consommables), « Jeter », « Trier », « Fermer ».
+## (nom couleur de rareté, type, description, valeur, poids ; armes : catégorie, dégâts,
+## cadence, chargeur, DPS), boutons « Utiliser » (consommables), « Équiper » (armes :
+## échange avec l'arme de l'emplacement courant du joueur), « Jeter », « Trier », « Fermer ».
 ## Le jeu est mis en pause (ou ralenti, [loot] inventory_time_scale) tant qu'il est ouvert.
 ## Redessin uniquement sur Inventory.changed / sélection.
 
@@ -33,6 +34,7 @@ var _detail_empty: Label = null
 var _detail_box: VBoxContainer = null
 var _use_btn: Button = null
 var _drop_btn: Button = null
+var _equip_btn: Button = null
 var _dim: ColorRect = null
 var _panel: PanelContainer = null
 var _saved_time_scale: float = 1.0
@@ -298,6 +300,10 @@ func _build() -> void:
 	_use_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_use_btn.pressed.connect(_use_selected)
 	actions.add_child(_use_btn)
+	_equip_btn = InventoryStyle.button("Équiper", InventoryStyle.GOLD, 19, Vector2(0, 56))
+	_equip_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_equip_btn.pressed.connect(_equip_selected)
+	actions.add_child(_equip_btn)
 	_drop_btn = InventoryStyle.button("Jeter", InventoryStyle.DANGER, 19, Vector2(0, 56))
 	_drop_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_drop_btn.pressed.connect(_drop_selected)
@@ -365,6 +371,7 @@ func _refresh_detail() -> void:
 	_detail_empty.visible = not has
 	_use_btn.visible = has
 	_drop_btn.visible = has
+	_equip_btn.visible = false
 	if not has:
 		_detail_empty.text = "Votre sacoche est vide.\nFouillez caisses, coffres et cadavres pour la remplir." if inventory.is_empty() else "Touchez un objet pour voir son détail."
 		return
@@ -373,7 +380,8 @@ func _refresh_detail() -> void:
 	_detail_name.text = it.display_name
 	_detail_name.label_settings.font_color = LootDB.rarity_color(it.rarity).lightened(0.15)
 	var rc := LootDB.rarity_color(it.rarity)
-	_detail_meta.text = LootDB.type_name(it.type)
+	var wd: WeaponData = WeaponCatalog.get_weapon(it.weapon_id) if it.is_weapon() else null
+	_detail_meta.text = ("Arme · %s" % wd.get_category_name()) if wd != null else LootDB.type_name(it.type)
 	_detail_rarity_label.text = LootDB.rarity_name(it.rarity).to_upper()
 	var rst := StyleBoxFlat.new()
 	rst.bg_color = rc
@@ -384,12 +392,16 @@ func _refresh_detail() -> void:
 	rst.content_margin_bottom = 2
 	_detail_rarity.add_theme_stylebox_override("panel", rst)
 	_detail_desc.text = it.description
-	_set_facts([
-		["Valeur", "%d $" % it.value + ("   ×%d = %d $" % [n, it.value * n] if n > 1 else "")],
-		["Poids", "%s kg" % String.num(it.weight * n, 2)],
-		["Pile", "%d / %d" % [n, it.stack_max]],
-	] + ([["Soin", "+%d PV" % int(it.heal_amount)]] if it.is_usable() else []))
+	if wd != null:
+		_set_facts(weapon_facts(wd) + [["Valeur", "%d $" % it.value], ["Poids", "%s kg" % String.num(it.weight, 2)]])
+	else:
+		_set_facts([
+			["Valeur", "%d $" % it.value + ("   ×%d = %d $" % [n, it.value * n] if n > 1 else "")],
+			["Poids", "%s kg" % String.num(it.weight * n, 2)],
+			["Pile", "%d / %d" % [n, it.stack_max]],
+		] + ([["Soin", "+%d PV" % int(it.heal_amount)]] if it.is_usable() else []))
 	_use_btn.visible = it.is_usable()
+	_equip_btn.visible = wd != null
 	_drop_btn.text = "Jeter" if n <= 1 else "Jeter 1"
 	_detail_tile.queue_redraw()
 
@@ -408,6 +420,83 @@ func _draw_detail_tile() -> void:
 	if s.is_empty():
 		return
 	InventoryStyle.draw_item_tile(_detail_tile, Rect2(Vector2.ZERO, _detail_tile.size), s["item"], int(s["count"]), false, LootVisuals.text_font(800))
+
+
+## Lignes de fiche d'une arme : dégâts, cadence, chargeur, DPS (+ explosion, perforation).
+static func weapon_facts(w: WeaponData) -> Array:
+	var dmg := String.num(w.damage, 0) + ("  ×%d" % w.projectile_count if w.projectile_count > 1 else "")
+	var rows: Array = [
+		["Dégâts", dmg],
+		["Cadence", "%s tirs/s%s" % [String.num(w.fire_rate, 1), "  (auto)" if w.automatic else ""]],
+		["Chargeur", ("%d · %s s" % [w.magazine_size, String.num(w.reload_time, 1)]) if w.magazine_size > 0 else "illimité"],
+		["DPS", String.num(w.get_dps(), 0)],
+	]
+	if w.is_explosive():
+		rows.append(["Explosion", "%d (rayon %d)" % [int(w.explosion_damage), int(w.explosion_radius)]])
+	if w.pierce > 0:
+		rows.append(["Perforation", "+%d cible%s" % [w.pierce, "s" if w.pierce > 1 else ""]])
+	return rows
+
+
+## Équipe l'arme sélectionnée dans l'emplacement courant du joueur : l'objet quitte le sac,
+## l'arme remplacée y revient. Sac plein (l'arme remplacée ne rentrerait pas) : message, rien.
+## Renvoie true si l'échange a eu lieu.
+func _equip_selected() -> bool:
+	var it := get_selected_item()
+	var p: Node = GameState.player
+	if it == null or not it.is_weapon() or p == null or not is_instance_valid(p):
+		return false
+	var w := WeaponCatalog.get_weapon(it.weapon_id)
+	if w == null or not p.has_method("equip_into_current_slot"):
+		_flash_message("Impossible d'équiper cette arme pour l'instant.")
+		return false
+	var current: WeaponData = p.get("weapon") as WeaponData
+	var slot_idx := selected
+	var removed := inventory.remove_at(slot_idx, 1)
+	if removed.is_empty():
+		return false
+	# Vérifie la place pour l'arme remplacée AVANT l'échange (le sac a libéré une case).
+	var back_item: ItemData = null
+	var slot_empty := _current_slot_empty(p)
+	if current != null and not slot_empty:
+		back_item = LootDB.weapon_item(current)
+		if back_item != null and not inventory.can_add(back_item, 1):
+			# Remet l'objet exactement dans sa case (pas de nouvelle vérification de poids).
+			inventory.slots[slot_idx] = removed
+			inventory.changed.emit()
+			_flash_message("Sac plein : libère de la place pour ranger l'arme actuelle.")
+			_play(&"error")
+			return false
+	var replaced: Variant = p.call("equip_into_current_slot", w)
+	if replaced is WeaponData:
+		var bi := LootDB.weapon_item(replaced as WeaponData)
+		if bi != null:
+			inventory.add_item(bi, 1)
+	_play(&"click")
+	_refresh()
+	return true
+
+
+static func _current_slot_empty(p: Node) -> bool:
+	if not p.has_method("get_weapons"):
+		return false
+	var list: Variant = p.call("get_weapons")
+	var idx: Variant = p.get("current_slot")
+	if list is Array and idx is int:
+		var arr: Array = list
+		return int(idx) >= arr.size() or arr[int(idx)] == null
+	return false
+
+
+func _flash_message(text: String) -> void:
+	_detail_empty.visible = false
+	var lbl := _detail_desc
+	lbl.text = text
+	lbl.label_settings.font_color = InventoryStyle.DANGER.lightened(0.25)
+	get_tree().create_timer(1.8, true, false, true).timeout.connect(func() -> void:
+		if is_instance_valid(lbl):
+			lbl.label_settings.font_color = InventoryStyle.TEXT
+			_refresh_detail())
 
 
 func get_selected_item() -> ItemData:

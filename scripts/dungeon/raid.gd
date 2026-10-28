@@ -10,8 +10,14 @@ extends Node2D
 ##   pas de générateur  → FloorLayout.make_sample() (étage 0 seulement) ;
 ##   pas de WorldBuilder → FallbackBuilder (rectangles colorés, murs, portes simples) ;
 ##   pas de FogOfWar    → pas de brouillard.
-## Étages : l'état de l'étage quitté (ennemis vivants, portes, exploration) est gardé
-## dans un FloorState et restauré au retour. Mort du joueur → rechargement, même seed.
+## Étages : l'état de l'étage quitté (ennemis vivants, portes, tourelles détruites,
+## exploration) est gardé dans un FloorState et restauré au retour.
+## Fin du raid (boucle Exfil Rush) :
+##   extraction = rester [extraction] channel_time s sur une case d'extraction (anneau de
+##   progression, interrompue si on sort, ennemis proches alertés au début)
+##   → Profile.finish_extraction(armes tenues, sac) → écran de fin → menu ;
+##   mort (ou abandon depuis la pause) → Profile.finish_death() → écran de fin → menu.
+## Tourelles : TurretPlacer (scripts/dungeon/turret_placer.gd), chargé par chemin.
 
 const WORLD_PATH := "res://data/worlds/world_01_far_west.tres"
 const GENERATOR_PATH := "res://scripts/dungeon/dungeon_generator.gd"
@@ -25,6 +31,7 @@ const JOYSTICK_SCENE_PATH := "res://scenes/ui/virtual_joystick.tscn"
 const DEBUG_OVERLAY_SCENE_PATH := "res://scenes/ui/debug_overlay.tscn"
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
 const DEBUG_WORLD_DRAW_SCRIPT := preload("res://scripts/debug/debug_world_draw.gd")
+const TURRET_PLACER_PATH := "res://scripts/dungeon/turret_placer.gd"
 
 const GROUP_FOG_HIDEABLE := &"fog_hideable"
 ## Nom affiché si aucun WorldData n'est disponible (ville de la carte d'exemple).
@@ -85,8 +92,18 @@ var _fog_script: Script = null
 var _transitioning: bool = false
 var _stairs_cooldown: float = 0.0
 var _last_player_cell: Vector2i = Vector2i(-9999, -9999)
-var _extraction_time: float = 0.0
-var _extraction_shown: bool = false
+## Canalisation d'extraction en cours (s) ; -1 = pas de canalisation.
+var _extraction_time: float = -1.0
+## Raid terminé (extraction ou mort) : plus aucune fin ne peut se déclencher.
+var _raid_over: bool = false
+var _extraction_marker: Node2D = null
+var _channel_ring: ChannelRing = null
+var end_screen: RaidEndScreen = null
+## Tourelles de l'étage courant (nœud → case) et cases des tourelles détruites.
+var turrets_container: Node2D = null
+var _turret_cells: Dictionary = {}
+var _destroyed_turrets: Array[Vector2i] = []
+var _turret_script: Script = null
 
 var _banner_title: Label = null
 var _banner_room: Label = null
@@ -224,12 +241,14 @@ func _build_floor(index: int) -> void:
 	else:
 		_spawn_enemies()
 
+	_spawn_turrets(state)
+
 	LootSpawner.spawn_for_floor(layout, world_root, run_seed, difficulty)
+	_build_extraction_marker()
 	_build_fog(state)
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
-	_extraction_time = 0.0
-	_extraction_shown = false
+	_cancel_extraction(false)
 
 
 func _build_world_root() -> void:
@@ -432,6 +451,7 @@ func capture_floor_state() -> FloorState:
 		var fs: Variant = fog.call("get_state")
 		if fs is PackedByteArray:
 			s.fog = fs
+	s.destroyed_turrets = get_destroyed_turret_cells()
 	return s
 
 
@@ -480,6 +500,9 @@ func _free_current_floor() -> void:
 	floor_root = null
 	world_root = null
 	enemies_container = null
+	turrets_container = null
+	_turret_cells.clear()
+	_extraction_marker = null
 	nav_region = null
 	fog = null
 	_doors.clear()
@@ -569,14 +592,87 @@ func get_player_cell() -> Vector2i:
 
 
 func _on_player_died() -> void:
-	var delay := Balance.get_float("raid", "reload_delay", 2.0)
-	get_tree().create_timer(delay).timeout.connect(_reload_raid)
+	if _raid_over:
+		return
+	_cancel_extraction(false)
+	var delay := Balance.get_float("raid", "death_screen_delay", Balance.get_float("raid", "reload_delay", 2.0))
+	get_tree().create_timer(delay).timeout.connect(_finish_death)
 
 
-## Recharge le raid (même seed : GameState.run_seed n'est pas modifié).
-func _reload_raid() -> void:
-	if is_inside_tree() and get_tree().current_scene == self:
-		get_tree().reload_current_scene()
+## Abandon volontaire (menu pause, confirmation déjà faite) = mort immédiate.
+func abandon_raid() -> void:
+	if _raid_over:
+		return
+	_cancel_extraction(false)
+	_finish_death()
+
+
+## Mort : l'arsenal emporté et le butin sont perdus (Profile.finish_death), écran de fin.
+func _finish_death() -> void:
+	if _raid_over or not is_inside_tree():
+		return
+	_raid_over = true
+	var bag: Inventory = GameState.raid_inventory
+	var lost_items := 0
+	var lost_value := 0
+	if bag != null:
+		for i in bag.capacity():
+			var sl := bag.get_slot(i)
+			if not sl.is_empty():
+				lost_items += int(sl.get("count", 1))
+		lost_value = bag.total_value()
+	var summary: Dictionary = Profile.finish_death()
+	summary["lost_items"] = lost_items
+	summary["lost_value"] = lost_value
+	_end_raid_state()
+	_show_end_screen(false, summary)
+
+
+## Extraction réussie : armes tenues + sac rejoignent la réserve, écran de fin.
+func _finish_extraction() -> void:
+	if _raid_over or not is_inside_tree():
+		return
+	_raid_over = true
+	_cancel_extraction(false)
+	var summary: Dictionary = Profile.finish_extraction(get_carried_weapon_ids(), GameState.raid_inventory)
+	_end_raid_state()
+	_show_end_screen(true, summary)
+
+
+## Ids des armes tenues (API joueur, repli : arme courante).
+func get_carried_weapon_ids() -> Array[StringName]:
+	var out: Array[StringName] = []
+	if not is_instance_valid(player):
+		return out
+	if player.has_method(&"get_carried_weapon_ids"):
+		var v: Variant = player.call(&"get_carried_weapon_ids")
+		if v is Array:
+			for id: Variant in v:
+				out.append(StringName(str(id)))
+			return out
+	for w: WeaponData in WeaponHud.read_weapons(player):
+		if w != null:
+			out.append(w.id)
+	return out
+
+
+## Le raid est soldé côté profil : sac vidé, armes de raid oubliées (un raid relancé
+## directement repartira avec le pistolet de départ).
+func _end_raid_state() -> void:
+	if GameState.raid_inventory != null:
+		GameState.raid_inventory.clear()
+	GameState.raid_weapons.clear()
+	if is_instance_valid(player):
+		player.set_physics_process(false)
+
+
+func _show_end_screen(success: bool, summary: Dictionary) -> void:
+	end_screen = RaidEndScreen.create(success, summary)
+	add_child(end_screen)
+
+
+func is_raid_over() -> bool:
+	return _raid_over
 
 
 # --- Boucle ---------------------------------------------------------------------
@@ -594,20 +690,178 @@ func _process(delta: float) -> void:
 	_update_extraction(cell, delta)
 
 
+# --- Extraction -----------------------------------------------------------------
+
+static func extraction_channel_time() -> float:
+	return maxf(Balance.get_float("extraction", "channel_time", 5.0), 0.05)
+
+
+func is_extracting() -> bool:
+	return _extraction_time >= 0.0
+
+
+## Progression de la canalisation (0..1), 0 si aucune.
+func get_extraction_progress() -> float:
+	return clampf(_extraction_time / extraction_channel_time(), 0.0, 1.0) if is_extracting() else 0.0
+
+
 func _update_extraction(cell: Vector2i, delta: float) -> void:
-	if layout.extraction_cells.has(cell):
-		_extraction_time += delta
-		if not _extraction_shown and _extraction_time >= Balance.get_float("raid", "extraction_hint_delay", 0.5):
-			_extraction_shown = true
-			show_toast("Point d'extraction — disponible en phase 6")
-	else:
-		_extraction_time = 0.0
-		_extraction_shown = false
+	if _raid_over or _transitioning:
+		return
+	var alive := not player.has_method("is_alive") or bool(player.call("is_alive"))
+	var on_zone := alive and layout.extraction_cells.has(cell)
+	if not on_zone:
+		if is_extracting():
+			_cancel_extraction(alive)
+		return
+	if not is_extracting():
+		_start_extraction()
+	_extraction_time += delta
+	if _channel_ring != null:
+		_channel_ring.set_progress(get_extraction_progress())
+	if _extraction_time >= extraction_channel_time():
+		_finish_extraction()
+
+
+## Début de canalisation : anneau au-dessus du joueur, ennemis proches alertés.
+func _start_extraction() -> void:
+	_extraction_time = 0.0
+	if _channel_ring == null or not is_instance_valid(_channel_ring):
+		_channel_ring = ChannelRing.new()
+		_channel_ring.name = "ExtractionRing"
+		player.add_child(_channel_ring)
+	_channel_ring.position = Vector2(0, -Balance.get_float("extraction", "ring_height", 96.0))
+	_channel_ring.set_progress(0.0)
+	_channel_ring.visible = true
+	var n := alert_enemies_near(player.global_position, Balance.get_float("extraction", "alert_radius", 520.0))
+	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
+
+
+## Alerte les ennemis vivants dans `radius` autour de `pos` ; renvoie le nombre alerté.
+func alert_enemies_near(pos: Vector2, radius: float) -> int:
+	var n := 0
+	var r2 := radius * radius
+	for e: Node2D in get_alive_enemies():
+		if e.global_position.distance_squared_to(pos) > r2:
+			continue
+		if e.has_method("become_aware"):
+			e.call("become_aware", pos, false)
+			n += 1
+	return n
+
+
+func _cancel_extraction(notify: bool) -> void:
+	var was := is_extracting()
+	_extraction_time = -1.0
+	if _channel_ring != null and is_instance_valid(_channel_ring):
+		_channel_ring.visible = false
+	if notify and was and not _raid_over:
+		show_toast("Extraction interrompue")
+
+
+## Marqueur au sol bien visible sur les cases d'extraction (dessiné une fois, pulsation
+## par Tween sur l'opacité : aucun redessin par frame).
+func _build_extraction_marker() -> void:
+	_extraction_marker = null
+	if layout == null or layout.extraction_cells.is_empty():
+		return
+	var m := ExtractionMarker.new()
+	m.name = "ExtractionMarker"
+	m.cells = layout.extraction_cells.duplicate()
+	m.z_index = 1
+	floor_root.add_child(m)
+	_extraction_marker = m
+
+
+# --- Tourelles -------------------------------------------------------------------
+
+## Place les tourelles de l'étage (TurretPlacer, chargé par chemin) puis retire celles
+## détruites lors d'une visite précédente (FloorState.destroyed_turrets).
+func _spawn_turrets(state: FloorState) -> void:
+	_turret_cells.clear()
+	_destroyed_turrets.clear()
+	if state != null:
+		_destroyed_turrets.assign(state.destroyed_turrets)
+	if _turret_script == null:
+		_turret_script = _load_script(TURRET_PLACER_PATH) if ResourceLoader.exists(TURRET_PLACER_PATH) else null
+	if _turret_script == null:
+		return
+	turrets_container = Node2D.new()
+	turrets_container.name = "Turrets"
+	turrets_container.y_sort_enabled = true
+	turrets_container.z_index = 10
+	floor_root.add_child(turrets_container)
+	var res: Variant = _call_module(_turret_script, &"spawn_for_floor",
+		[self, layout, turrets_container, hash([run_seed, current_floor, "turrets"]), difficulty, current_floor])
+	if not (res is Array):
+		return
+	for t: Variant in res:
+		if not (t is Node2D) or not is_instance_valid(t):
+			continue
+		var node := t as Node2D
+		var cell: Vector2i = node.get_meta(&"turret_cell", FloorLayout.world_to_cell(node.global_position))
+		if _destroyed_turrets.has(cell):
+			node.queue_free()
+			continue
+		_turret_cells[node] = cell
+		node.add_to_group(GROUP_FOG_HIDEABLE)
+		if node.has_signal(&"destroyed"):
+			# Arguments du signal ignorés (unbind), seule la case compte.
+			var cb := _on_turret_destroyed.bind(cell).unbind(_signal_arg_count(node, &"destroyed"))
+			node.connect(&"destroyed", cb, CONNECT_ONE_SHOT)
+
+
+static func _signal_arg_count(obj: Object, sig: StringName) -> int:
+	for d: Dictionary in obj.get_signal_list():
+		if StringName(d.get("name", "")) == sig:
+			return (d.get("args", []) as Array).size()
+	return 0
+
+
+func _on_turret_destroyed(cell: Vector2i) -> void:
+	if not _destroyed_turrets.has(cell):
+		_destroyed_turrets.append(cell)
+
+
+## Cases des tourelles détruites de l'étage courant (signal `destroyed` ou is_alive).
+func get_destroyed_turret_cells() -> Array[Vector2i]:
+	var out: Array[Vector2i] = _destroyed_turrets.duplicate()
+	for node: Variant in _turret_cells:
+		var cell: Vector2i = _turret_cells[node]
+		var dead := not is_instance_valid(node) or (node as Node).is_queued_for_deletion() \
+			or ((node as Node).has_method("is_alive") and not bool((node as Node).call("is_alive")))
+		if dead and not out.has(cell):
+			out.append(cell)
+	return out
+
+
+## Tourelles vivantes de l'étage courant.
+func get_alive_turrets() -> Array[Node2D]:
+	var out: Array[Node2D] = []
+	for node: Variant in _turret_cells:
+		if is_instance_valid(node) and not (node as Node).is_queued_for_deletion() \
+				and (not (node as Node).has_method("is_alive") or bool((node as Node).call("is_alive"))):
+			out.append(node as Node2D)
+	return out
 
 
 func _on_debug_toggled(_enabled: bool) -> void:
 	# Contours de salles/portes redessinés par DebugWorldDraw ; brouillard autonome.
 	pass
+
+
+## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée.
+func _unhandled_input(event: InputEvent) -> void:
+	if not GameState.debug_enabled or _raid_over:
+		return
+	if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).echo:
+		match (event as InputEventKey).physical_keycode:
+			KEY_F5:
+				get_viewport().set_input_as_handled()
+				_finish_extraction()
+			KEY_F6:
+				get_viewport().set_input_as_handled()
+				_finish_death()
 
 
 # --- UI -------------------------------------------------------------------------
@@ -936,11 +1190,8 @@ func _apply_map_player_modifiers() -> void:
 			if hud != null and hud.has_method("set_health"):
 				hud.call("set_health", float(player.get("hp")), float(player.get("max_hp")))
 		var dmg_m: float = maxf(map_card.get_mod_f("player_damage_mult"), 0.0)
-		var w: Variant = player.get("weapon")
-		if not is_equal_approx(dmg_m, 1.0) and w is WeaponData:
-			var nw := (w as WeaponData).duplicate() as WeaponData
-			nw.damage *= dmg_m
-			player.set("weapon", nw)
+		if not is_equal_approx(dmg_m, 1.0):
+			apply_weapon_damage_mult(player, dmg_m)
 	if _banner_title != null:
 		var vbox := _banner_title.get_parent()
 		var row := HBoxContainer.new()
@@ -958,6 +1209,29 @@ func _apply_map_player_modifiers() -> void:
 		if center != null:
 			center.offset_left = -330
 			center.offset_right = 330
+
+
+## Multiplie les dégâts de toutes les armes tenues (copies dupliquées : les .tres du
+## catalogue ne sont jamais modifiés). API joueur get/set_weapons, repli : player.weapon.
+static func apply_weapon_damage_mult(p: Node, mult: float) -> void:
+	if p.has_method(&"get_weapons") and p.has_method(&"set_weapons"):
+		var list: Array[WeaponData] = []
+		for w: WeaponData in WeaponHud.read_weapons(p):
+			if w == null:
+				list.append(null)
+				continue
+			var nw := w.duplicate() as WeaponData
+			nw.damage *= mult
+			nw.explosion_damage *= mult
+			list.append(nw)
+		p.call(&"set_weapons", list)
+		return
+	var cur: Variant = p.get("weapon")
+	if cur is WeaponData:
+		var nw2 := (cur as WeaponData).duplicate() as WeaponData
+		nw2.damage *= mult
+		nw2.explosion_damage *= mult
+		p.set("weapon", nw2)
 
 
 # --- Debug F3 -------------------------------------------------------------------
@@ -1004,7 +1278,23 @@ func _draw_debug_doors(canvas: Node2D) -> void:
 		canvas.draw_rect(r.grow(-2.0), col, false, 3.0)
 
 
-## Encart près du joueur : seed, étage, modules branchés.
+func _debug_weapons_text() -> String:
+	var parts := PackedStringArray()
+	var cur := int(player.get("current_slot")) if player.get("current_slot") is int else 0
+	var ws := WeaponHud.read_weapons(player)
+	for i in ws.size():
+		var w: WeaponData = ws[i]
+		if w == null:
+			parts.append("[vide]")
+			continue
+		var ammo := ""
+		if i == cur and player.has_method("get_ammo"):
+			ammo = " %d/%d" % [int(player.call("get_ammo")), w.magazine_size]
+		parts.append(("> " if i == cur else "") + String(w.id) + ammo)
+	return ", ".join(parts) if not parts.is_empty() else "aucune"
+
+
+## Encart près du joueur : seed, étage, modules branchés, armes, extraction.
 func _draw_debug_info(canvas: Node2D) -> void:
 	if not is_instance_valid(player):
 		return
@@ -1014,11 +1304,118 @@ func _draw_debug_info(canvas: Node2D) -> void:
 			"oui" if uses_generator else "exemple",
 			"WorldBuilder" if uses_world_builder else "secours",
 			"oui" if uses_fog else "non"],
-		"Ennemis vivants : %d" % get_alive_enemies().size(),
+		"Ennemis vivants : %d · tourelles : %d (détruites %d)" % [get_alive_enemies().size(),
+			get_alive_turrets().size(), get_destroyed_turret_cells().size()],
+		"Armes : %s" % _debug_weapons_text(),
+		"Extraction : %s (%.1f s) · F5 extraire · F6 mourir" % [
+			("%.1f / %.1f s" % [_extraction_time, extraction_channel_time()]) if is_extracting() else "—",
+			extraction_channel_time()],
 	])
 	var font := ThemeDB.fallback_font
-	var origin := player.global_position + Vector2(-150, -110)
+	var origin := player.global_position + Vector2(-150, -150)
 	for i: int in lines.size():
 		var at := origin + Vector2(0, 20.0 * i)
 		canvas.draw_string_outline(font, at, lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 5, Color(0.07, 0.1, 0.18))
 		canvas.draw_string(font, at, lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
+
+
+# =====================================================================================
+
+## Marqueur au sol des cases d'extraction : dalles vertes cerclées, chevrons et libellé
+## « EXTRACTION » par zone. Dessiné une seule fois ; pulsation par Tween (modulate).
+class ExtractionMarker extends Node2D:
+	const COL := Color(0.35, 1.0, 0.55)
+	var cells: Array[Vector2i] = []
+
+	func _ready() -> void:
+		var tw := create_tween().set_loops()
+		tw.tween_property(self, "modulate:a", 0.55, 0.9).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(self, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
+
+	func _draw() -> void:
+		var ts := float(FloorLayout.TILE_SIZE)
+		var cell_set := {}
+		for c: Vector2i in cells:
+			cell_set[c] = true
+		for c: Vector2i in cells:
+			var r := Rect2(Vector2(c) * ts, Vector2(ts, ts))
+			draw_rect(r, Color(COL, 0.22))
+			# Bord de zone : uniquement les côtés sans case voisine d'extraction.
+			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				if cell_set.has(c + d):
+					continue
+				var a := r.position
+				var b := r.position
+				match d:
+					Vector2i.LEFT:
+						b = r.position + Vector2(0, ts)
+					Vector2i.RIGHT:
+						a = r.position + Vector2(ts, 0)
+						b = r.end
+					Vector2i.UP:
+						b = r.position + Vector2(ts, 0)
+					Vector2i.DOWN:
+						a = r.position + Vector2(0, ts)
+						b = r.end
+				draw_line(a, b, Color(COL, 0.95), 4.0, true)
+			# Chevron vers le haut (sortie).
+			var cc := r.get_center()
+			var pts := PackedVector2Array([cc + Vector2(-14, 8), cc + Vector2(0, -8), cc + Vector2(14, 8)])
+			draw_polyline(pts, Color(COL, 0.8), 5.0, true)
+		# Libellé par zone (groupes de cases contiguës).
+		var seen := {}
+		var font := LootVisuals.text_font(900)
+		for c: Vector2i in cells:
+			if seen.has(c):
+				continue
+			var group: Array[Vector2i] = []
+			var stack: Array[Vector2i] = [c]
+			seen[c] = true
+			while not stack.is_empty():
+				var cur: Vector2i = stack.pop_back()
+				group.append(cur)
+				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var nb := cur + d
+					if cell_set.has(nb) and not seen.has(nb):
+						seen[nb] = true
+						stack.append(nb)
+			var sum := Vector2.ZERO
+			var top := INF
+			for g: Vector2i in group:
+				sum += FloorLayout.cell_to_world(g)
+				top = minf(top, float(g.y) * ts)
+			var cx := sum.x / group.size()
+			var label := "EXTRACTION"
+			var fs := 22
+			var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			var at := Vector2(cx - w * 0.5, top - 10.0)
+			draw_string_outline(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 7, Color(0.03, 0.08, 0.06))
+			draw_string(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, COL)
+
+
+## Anneau de progression d'extraction au-dessus du joueur (redessiné seulement quand la
+## progression change, c.-à-d. pendant la canalisation).
+class ChannelRing extends Node2D:
+	const COL := Color(0.35, 1.0, 0.55)
+	var progress: float = 0.0
+
+	func _init() -> void:
+		z_as_relative = false
+		z_index = 95
+
+	func set_progress(p: float) -> void:
+		if is_equal_approx(p, progress):
+			return
+		progress = p
+		queue_redraw()
+
+	func _draw() -> void:
+		var r := 26.0
+		draw_circle(Vector2.ZERO, r + 7.0, Color(0.05, 0.07, 0.13, 0.82))
+		draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(COL, 0.25), 7.0, true)
+		draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 48, COL, 7.0, true)
+		var font := LootVisuals.text_font(900)
+		var remain := maxf(Raid.extraction_channel_time() * (1.0 - progress), 0.0)
+		var t := "%.1f" % remain
+		var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		draw_string(font, Vector2(-w * 0.5, 6.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)

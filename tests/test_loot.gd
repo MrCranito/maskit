@@ -28,7 +28,11 @@ func test_au_moins_25_objets_et_icones() -> void:
 		assert_ne(it.id, &"", "id renseigné")
 		assert_false(it.display_name.is_empty(), "%s : nom" % it.id)
 		assert_false(it.description.is_empty(), "%s : description" % it.id)
-		assert_not_null(it.icon, "%s : icône chargée" % it.id)
+		if it.is_weapon():
+			# Objet arme : icône vide, l'UI passe par WeaponCatalog.icon_for (ou un pictogramme).
+			assert_true(WeaponCatalog.has_weapon(it.weapon_id), "%s : arme %s connue" % [it.id, it.weapon_id])
+		else:
+			assert_not_null(it.icon, "%s : icône chargée" % it.id)
 		assert_between(it.rarity, 0, 4, "%s : rareté 0..4" % it.id)
 		assert_true(ItemData.TYPES.has(it.type), "%s : type connu (%s)" % [it.id, it.type])
 		assert_gte(it.stack_max, 1)

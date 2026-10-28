@@ -7,7 +7,7 @@
 script = ExtResource("1_item")
 id = &"treasure_map"
 display_name = "Carte au trésor"
-description = "Un parchemin taché : une croix rouge près du canyon des Masques."
+description = "Un parchemin taché : une croix rouge près du canyon du Vautour."
 icon = ExtResource("2_icon")
 tint = Color(0.96,0.84,0.6,1)
 rarity = 3

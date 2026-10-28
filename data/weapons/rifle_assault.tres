@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rifle_assault"
+display_name = "Fusil d'assaut"
+description = "Le standard : rafales maîtrisées, bonne portée."
+family = "firearm"
+category = &"rifle"
+rarity = 1
+damage = 16.0
+fire_rate = 6.76
+projectile_speed = 1150.0
+range = 700.0
+projectile_lifetime = 0.609
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 2.7
+pierce = 0
+projectile_color = Color(1.0, 0.84, 0.45, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 33
+reload_time = 1.71
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 4.5
+shake_px = 1.8
+move_speed_mult = 1.0
+muzzle_flash_scale = 1.0
+eject_shells = true
+sprite_id = &"rifle"
+value = 200

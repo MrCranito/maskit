@@ -114,15 +114,24 @@ func _push_feed(text: String, color: Color, item: ItemData) -> void:
 	h.add_theme_constant_override("separation", 8)
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(h)
-	if item != null and item.icon != null:
+	var tex := LootVisuals.item_icon(item)
+	if tex != null:
 		var ic := TextureRect.new()
-		ic.texture = LootVisuals.icon(item.icon)
+		ic.texture = tex
 		ic.modulate = item.tint
 		ic.custom_minimum_size = Vector2(26, 26)
 		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		h.add_child(ic)
+	elif item != null and item.is_weapon():
+		# Arme sans icône encore produite : pictogramme de la catégorie.
+		var w := WeaponCatalog.get_weapon(item.weapon_id)
+		var g := Control.new()
+		g.custom_minimum_size = Vector2(44, 26)
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		g.draw.connect(func() -> void: LootVisuals.draw_weapon(g, Rect2(Vector2.ZERO, g.size), w))
+		h.add_child(g)
 	h.add_child(InventoryStyle.label(text, 17, color, 800))
 	_feed.add_child(p)
 	var tw := p.create_tween()

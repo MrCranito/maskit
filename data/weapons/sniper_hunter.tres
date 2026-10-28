@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"sniper_hunter"
+display_name = "Fusil de chasse à lunette"
+description = "Verrou manuel, lunette x4. Un tir, un trophée."
+family = "firearm"
+category = &"sniper"
+rarity = 1
+damage = 79.8
+fire_rate = 0.83
+projectile_speed = 1900.0
+range = 1133.0
+projectile_lifetime = 0.596
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 0.0
+pierce = 2
+projectile_color = Color(0.7, 0.95, 1.0, 1)
+projectile_style = &"tracer"
+affixes = Array[StringName]([])
+magazine_size = 6
+reload_time = 2.28
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 12.0
+shake_px = 5.0
+move_speed_mult = 0.92
+muzzle_flash_scale = 1.5
+eject_shells = true
+sprite_id = &"sniper"
+value = 240

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"grenade_fireworks"
+display_name = "Bouquet final"
+description = "Tir rapide et explosions en gerbe colorée."
+family = "firearm"
+category = &"grenade_launcher"
+rarity = 3
+damage = 14.8
+fire_rate = 1.51
+projectile_speed = 560.0
+range = 610.0
+projectile_lifetime = 1.089
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 1.05
+pierce = 0
+projectile_color = Color(1.0, 0.4, 0.85, 1)
+projectile_style = &"grenade"
+affixes = Array[StringName]([])
+magazine_size = 5
+reload_time = 2.21
+automatic = false
+explosion_radius = 106.2
+explosion_damage = 78.1
+recoil_px = 9.0
+shake_px = 5.0
+move_speed_mult = 0.92
+muzzle_flash_scale = 1.3
+eject_shells = false
+sprite_id = &"grenade_launcher"
+value = 1320

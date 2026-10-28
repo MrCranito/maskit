@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"pistol_hammer"
+display_name = "Calibre .45 « Marteau »"
+description = "Chaque balle pèse son poids. Recul franc."
+family = "firearm"
+category = &"pistol"
+rarity = 2
+damage = 21.1
+fire_rate = 2.94
+projectile_speed = 950.0
+range = 594.0
+projectile_lifetime = 0.625
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 1.6
+pierce = 0
+projectile_color = Color(1.0, 0.82, 0.4, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 14
+reload_time = 0.9
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 6.0
+shake_px = 1.6
+move_speed_mult = 1.0
+muzzle_flash_scale = 0.8
+eject_shells = true
+sprite_id = &"pistol_heavy"
+value = 200

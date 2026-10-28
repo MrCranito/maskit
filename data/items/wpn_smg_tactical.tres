@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"wpn_smg_tactical"
+display_name = "Mitraillette tactique"
+description = "Crosse pliante et viseur reflex : plus stable."
+tint = Color(1, 1, 1, 1)
+rarity = 2
+type = &"weapon"
+stack_max = 1
+value = 350
+weight = 2.2
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0
+weapon_id = &"smg_tactical"

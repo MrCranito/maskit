@@ -120,10 +120,21 @@ static func draw_item_tile(ci: CanvasItem, rect: Rect2, item: ItemData, count: i
 	strip.corner_radius_bottom_left = 10
 	strip.corner_radius_bottom_right = 10
 	ci.draw_style_box(strip, Rect2(rect.position + Vector2(3, rect.size.y - 8), Vector2(rect.size.x - 6, 5)))
-	var tex := LootVisuals.icon(item.icon)
-	if tex != null:
-		var pad := rect.size.x * 0.17
-		ci.draw_texture_rect(tex, Rect2(rect.position + Vector2(pad, pad * 0.8), rect.size - Vector2(pad, pad) * 2.0), false, item.tint)
+	if item.is_weapon() and item.icon == null:
+		# Arme : icône large (profil) ou pictogramme de catégorie, catégorie en petit.
+		var w := WeaponCatalog.get_weapon(item.weapon_id)
+		var pad_x := rect.size.x * 0.08
+		LootVisuals.draw_weapon(ci, Rect2(rect.position + Vector2(pad_x, rect.size.y * 0.16), Vector2(rect.size.x - pad_x * 2.0, rect.size.y * 0.56)), w)
+		if w != null and rect.size.x >= 70.0:
+			var cat := w.get_category_name()
+			var cfs := int(rect.size.y * 0.13)
+			ci.draw_string_outline(font, rect.position + Vector2(7.0, cfs + 4.0), cat, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12.0, cfs, 4, NIGHT_BLUE_DEEP)
+			ci.draw_string(font, rect.position + Vector2(7.0, cfs + 4.0), cat, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12.0, cfs, Color(rc.lightened(0.35), 0.95))
+	else:
+		var tex := LootVisuals.item_icon(item)
+		if tex != null:
+			var pad := rect.size.x * 0.17
+			ci.draw_texture_rect(tex, Rect2(rect.position + Vector2(pad, pad * 0.8), rect.size - Vector2(pad, pad) * 2.0), false, item.tint)
 	if count > 1:
 		var txt := "×%d" % count
 		var fs := int(rect.size.y * 0.2)

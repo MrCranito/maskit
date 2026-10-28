@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"shotgun_dragon"
+display_name = "Souffle du dragon"
+description = "Cartouches incendiaires : un cône de braise."
+family = "firearm"
+category = &"shotgun"
+rarity = 3
+damage = 13.3
+fire_rate = 1.23
+projectile_speed = 820.0
+range = 371.0
+projectile_lifetime = 0.452
+projectile_count = 9
+spread_degrees = 29.9
+inaccuracy_deg = 2.1
+pierce = 0
+projectile_color = Color(1.0, 0.45, 0.15, 1)
+projectile_style = &"pellet"
+affixes = Array[StringName]([&"burn"])
+magazine_size = 8
+reload_time = 1.87
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 10.0
+shake_px = 5.0
+move_speed_mult = 1.0
+muzzle_flash_scale = 1.4
+eject_shells = true
+sprite_id = &"shotgun_double"
+value = 825

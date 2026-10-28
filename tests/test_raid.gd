@@ -7,11 +7,20 @@ const GENERATOR_PATH := "res://scripts/dungeon/dungeon_generator.gd"
 
 var _raid: Raid = null
 var _saved_debug: bool = false
+# Isolation du profil : fin de raid = Profile.finish_* (qui sauvegarde).
+var _saved_profile: Dictionary = {}
+var _saved_sm_data: Dictionary = {}
+var _save_existed: bool = false
+var _save_text: String = ""
 
 
 func before_each() -> void:
 	_saved_debug = GameState.debug_enabled
 	GameState.debug_enabled = false
+	_saved_profile = Profile.to_dict()
+	_saved_sm_data = (SaveManager.data as Dictionary).duplicate(true)
+	_save_existed = FileAccess.file_exists(SaveManager.SAVE_PATH)
+	_save_text = FileAccess.get_file_as_string(SaveManager.SAVE_PATH) if _save_existed else ""
 	_raid = (load(RAID_SCENE) as PackedScene).instantiate() as Raid
 	add_child_autofree(_raid)
 	await wait_physics_frames(3)
@@ -19,6 +28,15 @@ func before_each() -> void:
 
 func after_each() -> void:
 	GameState.debug_enabled = _saved_debug
+	get_tree().paused = false
+	Profile.from_dict(_saved_profile)
+	SaveManager.data = _saved_sm_data
+	if _save_existed:
+		var f := FileAccess.open(SaveManager.SAVE_PATH, FileAccess.WRITE)
+		if f != null:
+			f.store_string(_save_text)
+	elif FileAccess.file_exists(SaveManager.SAVE_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(SaveManager.SAVE_PATH))
 
 
 func test_scene_instantiates_with_available_modules() -> void:
@@ -180,3 +198,83 @@ func test_floor_change_with_synthetic_floor() -> void:
 				kept = false
 				break
 		assert_true(kept and fog_before.count(1) > 0, "Exploration du brouillard conservée")
+
+
+# --- Extraction, mort, tourelles (refonte Exfil Rush) -----------------------------------
+
+func test_extraction_canalisee_puis_ecran_de_fin() -> void:
+	if _raid.layout.extraction_cells.is_empty():
+		pending("Pas de case d'extraction sur cet étage")
+		return
+	assert_not_null(_raid._extraction_marker, "marqueur d'extraction au sol")
+	var cell: Vector2i = _raid.layout.extraction_cells[0]
+	_raid.place_player(cell)
+	var t := Raid.extraction_channel_time()
+	_raid._update_extraction(cell, t * 0.5)
+	assert_true(_raid.is_extracting(), "canalisation en cours")
+	assert_almost_eq(_raid.get_extraction_progress(), 0.5, 0.01)
+	# Sortie de zone : interrompue.
+	_raid._update_extraction(_raid.layout.player_spawn, 0.1)
+	assert_false(_raid.is_extracting(), "interrompue hors zone")
+	assert_eq(_raid.get_toast_text(), "Extraction interrompue")
+	# Canalisation complète.
+	_raid._update_extraction(cell, 0.01)
+	_raid._update_extraction(cell, t + 0.1)
+	assert_true(_raid.is_raid_over(), "raid terminé")
+	assert_not_null(_raid.end_screen, "écran de fin affiché")
+	assert_true(_raid.end_screen.success)
+	assert_eq(_raid.end_screen.get_title_text(), "Extraction réussie")
+	assert_false(Profile.raid_in_progress)
+	assert_true(get_tree().paused, "jeu en pause derrière l'écran de fin")
+
+
+func test_extraction_alerte_les_ennemis_proches() -> void:
+	var enemies := _raid.get_alive_enemies()
+	if enemies.is_empty():
+		pending("Aucun ennemi")
+		return
+	var e: Node2D = enemies[0]
+	assert_eq(_raid.alert_enemies_near(e.global_position, 50.0), _raid.get_alive_enemies().filter(
+		func(o: Node2D) -> bool: return o.global_position.distance_to(e.global_position) <= 50.0).size())
+	assert_gte(float(e.get("awareness")), 1.0, "ennemi alerté")
+
+
+func test_mort_puis_ecran_de_fin_sans_rechargement() -> void:
+	GameState.raid_inventory.add_item(LootDB.get_item(&"gold_nugget"), 2)
+	_raid._finish_death()
+	assert_true(_raid.is_raid_over())
+	assert_not_null(_raid.end_screen)
+	assert_false(_raid.end_screen.success)
+	assert_eq(int(_raid.end_screen.summary.get("lost_items", 0)), 2, "butin perdu compté")
+	assert_true(GameState.raid_inventory.is_empty(), "sac vidé")
+	# Une seconde fin (extraction) est ignorée.
+	_raid._finish_extraction()
+	assert_false(_raid.end_screen.success)
+
+
+func test_abandon_raid_equivaut_a_la_mort() -> void:
+	var deaths := int(Profile.stats.get("deaths", 0))
+	_raid.abandon_raid()
+	assert_true(_raid.is_raid_over())
+	assert_eq(int(Profile.stats.get("deaths", 0)), deaths + 1)
+	assert_false(_raid.end_screen.success)
+
+
+func test_modificateur_de_degats_sur_copies() -> void:
+	var before: Array[WeaponData] = WeaponHud.read_weapons(_raid.player)
+	if before.is_empty() or before[0] == null:
+		pending("Joueur sans arme")
+		return
+	var src: WeaponData = before[0]
+	var dmg := src.damage
+	Raid.apply_weapon_damage_mult(_raid.player, 2.0)
+	var after: Array[WeaponData] = WeaponHud.read_weapons(_raid.player)
+	assert_almost_eq(after[0].damage, dmg * 2.0, 0.01, "dégâts doublés")
+	assert_almost_eq(src.damage, dmg, 0.01, "ressource du catalogue intacte")
+
+
+func test_tourelles_detruites_memorisees_dans_floor_state() -> void:
+	var s := _raid.capture_floor_state()
+	assert_eq(s.destroyed_turrets.size(), _raid.get_destroyed_turret_cells().size())
+	_raid._on_turret_destroyed(Vector2i(3, 4))
+	assert_true(_raid.capture_floor_state().destroyed_turrets.has(Vector2i(3, 4)))

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"rifle_carbine"
+display_name = "Carabine"
+description = "Fusil semi-automatique robuste et polyvalent."
+family = "firearm"
+category = &"rifle"
+rarity = 0
+damage = 19.6
+fire_rate = 3.9
+projectile_speed = 1150.0
+range = 680.0
+projectile_lifetime = 0.591
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 3.0
+pierce = 0
+projectile_color = Color(1.0, 0.84, 0.45, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 30
+reload_time = 1.8
+automatic = false
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 4.5
+shake_px = 1.8
+move_speed_mult = 1.0
+muzzle_flash_scale = 1.0
+eject_shells = true
+sprite_id = &"rifle"
+value = 90

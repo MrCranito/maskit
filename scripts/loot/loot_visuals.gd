@@ -72,3 +72,73 @@ static func label_settings(font: Font, size: int, color: Color, outline: int = 0
 		ls.outline_size = outline
 		ls.outline_color = Color(0.05, 0.07, 0.13)
 	return ls
+
+
+# --- Armes : icône d'inventaire et pictogramme de repli -----------------------------
+
+## Icône à afficher pour un objet : arme → WeaponCatalog.icon_for (assets/ui/weapons/),
+## sinon l'icône de l'objet. null = dessiner le pictogramme (draw_weapon_glyph).
+static func item_icon(item: ItemData) -> Texture2D:
+	if item == null:
+		return null
+	if item.is_weapon() and item.icon == null:
+		return weapon_icon(WeaponCatalog.get_weapon(item.weapon_id))
+	return icon(item.icon)
+
+
+static func weapon_icon(w: WeaponData) -> Texture2D:
+	if w == null:
+		return null
+	return icon(WeaponCatalog.icon_for(w))
+
+
+## Dessine une icône d'arme (rapport ~2:1) centrée dans `rect` sans la déformer ;
+## pictogramme de la catégorie si l'icône n'existe pas encore.
+static func draw_weapon(ci: CanvasItem, rect: Rect2, w: WeaponData, color: Color = Color.WHITE) -> void:
+	if w == null:
+		return
+	var tex := weapon_icon(w)
+	if tex != null:
+		var ts := tex.get_size()
+		var k := minf(rect.size.x / maxf(ts.x, 1.0), rect.size.y / maxf(ts.y, 1.0))
+		var sz := ts * k
+		ci.draw_texture_rect(tex, Rect2(rect.position + (rect.size - sz) * 0.5, sz), false, color)
+	else:
+		draw_weapon_glyph(ci, rect, w.category, color.lerp(w.get_rarity_color().lightened(0.55), 0.35))
+
+
+## Silhouettes de profil (canon vers la droite) dans une boîte 100 × 50.
+## r = rectangle [x0, y0, x1, y1], p = polygone, c = disque [cx, cy, r].
+const GLYPHS := {
+	&"pistol": [["r", 22, 12, 82, 22], ["p", [50, 22, 64, 22, 60, 44, 45, 44]], ["r", 40, 22, 52, 26]],
+	&"revolver": [["r", 12, 15, 58, 21], ["r", 55, 10, 72, 27], ["p", [68, 22, 80, 20, 88, 42, 75, 44]], ["r", 46, 25, 58, 29]],
+	&"smg": [["r", 6, 16, 22, 20], ["r", 20, 13, 74, 26], ["r", 74, 17, 92, 21], ["r", 44, 26, 53, 46], ["p", [61, 26, 69, 26, 67, 40, 59, 40]]],
+	&"shotgun": [["p", [2, 18, 22, 13, 22, 26, 4, 33]], ["r", 22, 12, 42, 26], ["r", 42, 13, 97, 19], ["r", 46, 20, 86, 25]],
+	&"rifle": [["p", [2, 14, 26, 13, 26, 25, 4, 31]], ["r", 26, 12, 66, 26], ["r", 66, 16, 97, 20], ["r", 38, 7, 56, 11], ["p", [44, 26, 54, 26, 58, 44, 49, 46]]],
+	&"sniper": [["p", [2, 15, 26, 14, 26, 26, 2, 33]], ["r", 26, 14, 58, 25], ["r", 56, 17, 99, 20], ["r", 30, 5, 56, 11], ["r", 36, 11, 40, 14], ["r", 48, 11, 52, 14], ["p", [70, 20, 72, 20, 64, 40, 62, 40]]],
+	&"lmg": [["p", [2, 14, 20, 14, 20, 28, 4, 32]], ["r", 20, 12, 70, 28], ["r", 70, 16, 97, 21], ["r", 34, 28, 52, 43], ["r", 40, 6, 58, 12]],
+	&"rocket_launcher": [["r", 6, 14, 86, 28], ["p", [86, 12, 98, 16, 98, 26, 86, 30]], ["r", 2, 12, 8, 30], ["r", 40, 28, 48, 42], ["r", 52, 6, 62, 14]],
+	&"grenade_launcher": [["p", [2, 18, 22, 15, 22, 28, 4, 34]], ["r", 22, 14, 52, 28], ["c", 40, 26, 11], ["r", 50, 12, 88, 26], ["r", 56, 28, 64, 42]],
+}
+
+
+static func draw_weapon_glyph(ci: CanvasItem, rect: Rect2, category: StringName, color: Color) -> void:
+	var shapes: Array = GLYPHS.get(category, GLYPHS[&"pistol"])
+	var k := minf(rect.size.x / 100.0, rect.size.y / 50.0)
+	var origin := rect.position + (rect.size - Vector2(100.0, 50.0) * k) * 0.5
+	var shadow := Color(0.02, 0.03, 0.07, 0.55)
+	for pass_i in 2:
+		var off := Vector2(1.5, 2.0) * maxf(k, 0.5) if pass_i == 0 else Vector2.ZERO
+		var col := shadow if pass_i == 0 else color
+		for s: Array in shapes:
+			match String(s[0]):
+				"r":
+					ci.draw_rect(Rect2(origin + off + Vector2(s[1], s[2]) * k, Vector2(float(s[3]) - float(s[1]), float(s[4]) - float(s[2])) * k), col)
+				"c":
+					ci.draw_circle(origin + off + Vector2(s[1], s[2]) * k, float(s[3]) * k, col, true, -1.0, true)
+				"p":
+					var raw: Array = s[1]
+					var pts := PackedVector2Array()
+					for i in range(0, raw.size(), 2):
+						pts.append(origin + off + Vector2(raw[i], raw[i + 1]) * k)
+					ci.draw_colored_polygon(pts, col)

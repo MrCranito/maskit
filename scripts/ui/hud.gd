@@ -5,7 +5,8 @@ extends Control
 ## (EventBus.player_spawned / player_damaged / player_died) : aucun traitement par frame.
 ## Zones laissées libres pour les autres modules : haut centre = bandeau monde/salle
 ## (Raid), haut droite = bouton sac (inventaire), bas droite au-dessus du stick de visée
-## = bouton « action ».
+## = bouton « action ». Armes tenues (bas centre) + bouton de changement d'arme :
+## WeaponHud (scripts/ui/weapon_hud.gd), enfant de ce HUD.
 
 const NIGHT_BLUE := Color(0.071, 0.102, 0.18, 0.92)  # ~#121a2e
 const BORDER_LIGHT := Color(0.85, 0.88, 0.95, 0.85)
@@ -19,6 +20,7 @@ var _fill_style: StyleBoxFlat
 var _panel: PanelContainer
 var _hp: float = -1.0
 var _max_hp: float = -1.0
+var weapon_hud: WeaponHud = null
 
 
 func _ready() -> void:
@@ -28,6 +30,8 @@ func _ready() -> void:
 	set_process(false)
 	set_physics_process(false)
 	_build_ui()
+	weapon_hud = WeaponHud.new()
+	add_child(weapon_hud)
 	EventBus.player_spawned.connect(_on_player_spawned)
 	EventBus.player_damaged.connect(_on_player_damaged)
 	EventBus.player_died.connect(_on_player_died)
