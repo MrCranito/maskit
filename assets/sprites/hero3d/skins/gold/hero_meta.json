@@ -1,0 +1,91 @@
+{
+  "frame_size": [
+    128,
+    160
+  ],
+  "feet_offset": [
+    64,
+    131
+  ],
+  "display_height": 93.1,
+  "fps": {
+    "idle": 8,
+    "run": 18,
+    "backpedal": 14,
+    "strafe_l": 15,
+    "strafe_r": 15,
+    "hit": 12
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "frames": {
+    "idle": 8,
+    "run": 12,
+    "backpedal": 10,
+    "strafe_l": 10,
+    "strafe_r": 10,
+    "hit": 3
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "backpedal": true,
+    "strafe_l": true,
+    "strafe_r": true,
+    "hit": false
+  },
+  "hero_height_px": 110,
+  "hand_height": 22.6,
+  "hand_px": {
+    "e": [
+      85.6,
+      92.1
+    ],
+    "se": [
+      76.7,
+      102.7
+    ],
+    "s": [
+      60.3,
+      105.5
+    ],
+    "sw": [
+      46.1,
+      98.8
+    ],
+    "w": [
+      42.4,
+      86.6
+    ],
+    "nw": [
+      51.3,
+      76.1
+    ],
+    "n": [
+      67.7,
+      73.3
+    ],
+    "ne": [
+      81.9,
+      80.0
+    ]
+  },
+  "sheets": {
+    "idle": "res://assets/sprites/hero3d/skins/gold/hero_idle.png",
+    "run": "res://assets/sprites/hero3d/skins/gold/hero_run.png",
+    "backpedal": "res://assets/sprites/hero3d/skins/gold/hero_backpedal.png",
+    "strafe_l": "res://assets/sprites/hero3d/skins/gold/hero_strafe_l.png",
+    "strafe_r": "res://assets/sprites/hero3d/skins/gold/hero_strafe_r.png",
+    "hit": "res://assets/sprites/hero3d/skins/gold/hero_hit.png"
+  },
+  "skin": "gold",
+  "notes": "display_height = hauteur du cadre entier (frame_size.y px) en unités monde : scale = display_height / frame_size.y. feet_offset = point des pieds (px depuis le coin haut-gauche du cadre) -> offset = -(feet_offset - frame_size/2) si centered. hand_height (unités monde) = hauteur de la main droite au-dessus des pieds ; hand_px = position de la main droite (px dans le cadre) par direction, pose idle 0. Animations : idle, run (course vers l'avant), backpedal (recule en regardant devant), strafe_l / strafe_r (pas chassés vers la gauche / la droite du personnage), hit (non bouclée)."
+}

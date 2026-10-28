@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+[ext_resource type="Texture2D" path="res://assets/sprites/hero3d/skins/desert/preview.png" id="2_prev"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"char_desert"
+display_name = "Désert"
+description = "Bandeau, lunettes de protection et chèche : prêt pour les tempêtes de sable."
+kind = &"character"
+rarity = 1
+price_gems = 150
+sprite_dir = "res://assets/sprites/hero3d/skins/desert"
+color_primary = Color(0.659, 0.518, 0.306, 1)
+color_secondary = Color(0.847, 0.796, 0.690, 1)
+color_accent = Color(0.431, 0.361, 0.267, 1)
+glow = 0.0
+preview = ExtResource("2_prev")
