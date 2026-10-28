@@ -46,3 +46,7 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Cache Python (scripts Blender)
+__pycache__/
+*.pyc
