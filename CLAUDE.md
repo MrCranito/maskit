@@ -56,7 +56,7 @@ PAS de monde ouvert. Une carte = des bâtiments dans lesquels le joueur entre, r
 
 ## Vue et exploration
 - Jeu uniquement en paysage. Caméra de dessus qui suit le joueur et anticipe la visée. Mobile : deux joysticks (gauche = déplacement, droit = viser et tirer). PC : ZQSD/WASD + souris pour viser, clic gauche pour tirer. Pas de tir automatique.
-- Brouillard de guerre à 3 états : jamais vu (noir), exploré hors vue (grisé, ennemis cachés), visible. Vision bloquée par les murs. Implémentation : texture de masque mise à jour depuis la position du joueur + shader sur CanvasLayer.
+- Brouillard permanent : tout l'écran est sous une brume bleu nuit animée ; seul le champ de vision réel du joueur (polygone de visibilité, bloqué par murs et portes fermées) est net, avec bords doux et vignettage. Les zones visitées retombent dans le brouillard (souvenir très discret du décor) et les ennemis/conteneurs y sont cachés.
 - Donjon procédural : graphe de salles reliées par des couloirs, seed rejouable.
   Types de salles : combat, fouille, piège, repos, super-loot verrouillée, boss, extraction.
 - Plusieurs étages reliés par des escaliers, chacun plus dangereux et plus riche.
