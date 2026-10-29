@@ -1,12 +1,12 @@
 class_name WeaponHud
 extends Control
 ## HUD des armes tenues (paysage 1280×720) :
-##   - 3 emplacements en bas au centre, entre les deux sticks : icône de l'arme, liseré de
+##   - 3 emplacements en bas à droite, au-dessus du stick de visée : icône de l'arme, liseré de
 ##     rareté, touche (1, 2, 3) ; l'emplacement courant est plus grand, cerclé d'or, avec
 ##     les munitions « 7 / 10 » et un anneau de rechargement ;
 ##   - 1 emplacement d'équipement (grenade, mine, C4, drone) à droite des armes, charges « ×3 » ;
 ##   - bouton tactile « changer d'arme » à gauche du stick de visée (sous le bouton action,
-##     loin du sac) et, juste au-dessus, bouton « équipement » (use_gadget vers la visée) ;
+##     loin du sac) et, à sa gauche, bouton « équipement » (use_gadget vers la visée) ;
 ##   - toucher un emplacement = player.switch_to(i).
 ## Mise à jour sur signaux du joueur (weapons_changed, ammo_changed, fired). Rien n'est
 ## redessiné à chaque frame : seul un emplacement en cours de rechargement l'est, le temps
@@ -89,19 +89,23 @@ func _build() -> void:
 	add_child(_reload_poll)
 
 
-## Bas centre pour les emplacements ; bouton de changement à gauche du stick droit.
+## Emplacements en bas à droite, au-dessus du stick de visée (maquette Hud) ; bouton de
+## changement à gauche du stick droit, bouton d'équipement à sa gauche.
 func _place() -> void:
 	var vp := get_viewport_rect().size
 	var total_w := CURRENT_SIZE.x + OTHER_SIZE.x * (SLOT_COUNT - 1) + GAP * (SLOT_COUNT + 1) + 6.0 + GADGET_SIZE.x
 	_row.size = Vector2(total_w, CURRENT_SIZE.y)
 	var safe := HudSafeArea.margins(self)
-	_row.position = Vector2((vp.x - total_w) * 0.5, vp.y - maxf(BOTTOM_MARGIN, safe.w) - CURRENT_SIZE.y)
 	var rest := Vector2(vp.x * Balance.get_float("joystick", "right_rest_x", 0.87),
 		vp.y * Balance.get_float("joystick", "rest_y", 0.77))
 	var stick_r := Balance.get_float("joystick", "radius", 90.0)
+	var right := maxf(Balance.get_float("hud", "weapon_row_right", 56.0), safe.z)
+	var bottom := rest.y - stick_r - Balance.get_float("hud", "weapon_row_stick_gap", 22.0)
+	_row.alignment = BoxContainer.ALIGNMENT_END
+	_row.position = Vector2(vp.x - right - total_w, bottom - CURRENT_SIZE.y)
 	var c := rest + Vector2(-stick_r - SWITCH_RADIUS - 34.0, -stick_r * 0.55)
 	switch_button.position = c - switch_button.size * 0.5
-	var gc := c + Vector2(0, -SWITCH_RADIUS * 2.0 - 30.0)
+	var gc := c + Vector2(-SWITCH_RADIUS * 2.0 - 24.0, stick_r * 0.35)
 	gadget_button.position = gc - gadget_button.size * 0.5
 
 
