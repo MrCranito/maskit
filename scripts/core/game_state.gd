@@ -69,9 +69,9 @@ func map_modifier(key: String, default: Variant) -> Variant:
 	return (mods as Dictionary).get(key, default) if mods is Dictionary else default
 
 
-## Économie d'énergie : 30 images/s au lieu de 60 (moins de chauffe et de batterie).
+## Économie d'énergie (ancien interrupteur) : mode « éco » ou mode par défaut (FrameRate).
 func apply_power_saving(on: bool) -> void:
-	Engine.max_fps = 30 if on else 60
+	FrameRate.apply(FrameRate.MODE_ECO if on else FrameRate.MODE_MAX)
 
 
 static func difficulty_name(value: int) -> String:
@@ -86,9 +86,8 @@ func _load_settings() -> void:
 		sm.call("load_save")
 	var data: Dictionary = sm.get("data")
 	difficulty = clampi(int(data.get("difficulty", difficulty)), 0, DIFFICULTY_NAMES.size() - 1)
-	var settings: Variant = data.get("settings", {})
-	if settings is Dictionary:
-		apply_power_saving(bool((settings as Dictionary).get("power_saving", false)))
+	# Images par seconde : 120 si l'écran le permet (réglage « Images par seconde »).
+	FrameRate.apply(FrameRate.saved_mode())
 
 
 func _save_settings() -> void:

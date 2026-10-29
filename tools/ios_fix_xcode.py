@@ -67,6 +67,33 @@ extern __attribute__((weak)) NSString *const MTLIOErrorDomain = @"MTLIOErrorDoma
 extern __attribute__((weak)) NSString *const MTLLogStateErrorDomain = @"MTLLogStateErrorDomain";
 extern __attribute__((weak)) NSString *const MTLTensorDomain = @"MTLTensorDomain";
 }
+// 3. Écran 120 Hz (ProMotion) : Godot 4.7 fixe l'affichage iOS à 60 images/s
+//    (GDTView.preferredFrameRate = 60). On le remplace, à l'initialisation de la vue, par la
+//    fréquence maximale de l'écran ; Engine.max_fps (réglage « Images par seconde » du jeu)
+//    limite ensuite à 120, 60 ou 30. Nécessite CADisableMinimumFrameDurationOnPhone (Info.plist).
+#import <UIKit/UIKit.h>
+#import <objc/runtime.h>
+#import <objc/message.h>
+static void (*raiders_orig_common_init)(id, SEL) = NULL;
+static void raiders_common_init(id self, SEL _cmd) {
+	if (raiders_orig_common_init) {
+		raiders_orig_common_init(self, _cmd);
+	}
+	NSInteger maxFps = [UIScreen mainScreen].maximumFramesPerSecond;
+	if (maxFps > 60 && [self respondsToSelector:@selector(setPreferredFrameRate:)]) {
+		((void (*)(id, SEL, float))objc_msgSend)(self, @selector(setPreferredFrameRate:), (float)maxFps);
+	}
+}
+__attribute__((constructor)) static void raiders_enable_promotion(void) {
+	Class cls = NSClassFromString(@"GDTView");
+	if (cls == Nil) {
+		return;
+	}
+	Method m = class_getInstanceMethod(cls, NSSelectorFromString(@"godot_commonInit"));
+	if (m != NULL) {
+		raiders_orig_common_init = (void (*)(id, SEL))method_setImplementation(m, (IMP)raiders_common_init);
+	}
+}
 #if TARGET_OS_SIMULATOR
 @interface MTLFXSpatialScalerDescriptor : NSObject
 @end
@@ -240,8 +267,19 @@ def main() -> None:
     # 3. Remplaçants MetalFX pour le simulateur
     text = add_stub_source(text, proj_dir, root / name)
 
+    # 4. Écran 120 Hz (ProMotion) autorisé sur iPhone
+    plist = root / name / f"{name}-Info.plist"
+    if plist.exists():
+        pl = plist.read_text(encoding="utf-8")
+        if "CADisableMinimumFrameDurationOnPhone" not in pl:
+            i = pl.rfind("</dict>")
+            pl = pl[:i] + "\t<key>CADisableMinimumFrameDurationOnPhone</key>\n\t<true/>\n" + pl[i:]
+            plist.write_text(pl, encoding="utf-8")
+    else:
+        print("Attention : Info.plist introuvable (%s), 120 Hz non activé." % plist)
+
     pbx.write_text(text, encoding="utf-8")
-    print("Projet corrigé : Metal lié, constantes Metal manquantes remplacées, MetalFX seulement sur iPhone, simulateur arm64 natif.")
+    print("Projet corrigé : Metal lié, constantes Metal manquantes remplacées, MetalFX seulement sur iPhone, simulateur arm64 natif, écran 120 Hz (ProMotion) activé.")
 
 
 if __name__ == "__main__":
