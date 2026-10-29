@@ -34,6 +34,8 @@ var arsenal_button: NavButton = null
 var crafting_button: NavButton = null
 var merchant_button: NavButton = null
 var shop_button: NavButton = null
+## Entrée « Progression » (niveau de raider, déblocages).
+var progression_button: NavButton = null
 ## Carte du pass de combat (bas gauche). Pas d'entrée « Pass » dans le menu : la carte la remplace.
 var pass_card: PassCard = null
 var coop_button: Button = null
@@ -148,6 +150,7 @@ func _build() -> void:
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stats.add_theme_constant_override("separation", 16)
 	brand.add_child(stats)
+	stats.add_child(_stat_chip(&"level", &"star", "niveau"))
 	stats.add_child(_stat_chip(&"raids", &"target", "raids"))
 	stats.add_child(_stat_chip(&"extractions", &"exit", "extraits"))
 	stats.add_child(_stat_chip(&"rate", &"percent", "réussite"))
@@ -196,12 +199,14 @@ func _build() -> void:
 	merchant_button = NavButton.new("Inventaire", &"chest", MenuKit.GOLD)
 	crafting_button = NavButton.new("Atelier", &"anvil", MenuKit.TEXT)
 	shop_button = NavButton.new("Boutique", &"bag", MenuKit.GEM)
-	for b: NavButton in [arsenal_button, merchant_button, crafting_button, shop_button]:
+	progression_button = NavButton.new("Progression", &"star", MenuKit.GOLD)
+	for b: NavButton in [progression_button, arsenal_button, merchant_button, crafting_button, shop_button]:
 		nav.add_child(b)
 	arsenal_button.pressed.connect(_on_arsenal)
 	crafting_button.pressed.connect(func() -> void: _go_optional(crafting_button, MenuKit.CRAFTING_SCENE))
 	merchant_button.pressed.connect(func() -> void: _go_optional(merchant_button, MenuKit.MERCHANT_SCENE))
 	shop_button.pressed.connect(func() -> void: _go_shop(&""))
+	progression_button.pressed.connect(func() -> void: _go_optional(progression_button, MenuKit.PROGRESSION_SCENE))
 	crafting_button.set_soon(not scene_exists(MenuKit.CRAFTING_SCENE))
 	merchant_button.set_soon(not scene_exists(MenuKit.MERCHANT_SCENE))
 
@@ -253,7 +258,7 @@ func _build() -> void:
 	play_button.name = "PlayButton"
 	play_button.pressed.connect(_on_play)
 	act.add_child(play_button)
-	buttons = [play_button, coop_button, pass_card, arsenal_button, crafting_button, merchant_button, shop_button]
+	buttons = [play_button, coop_button, pass_card, progression_button, arsenal_button, crafting_button, merchant_button, shop_button]
 
 	# Version (discrète, centrée en bas)
 	var version: String = str(ProjectSettings.get_setting("application/config/version", ""))
@@ -274,7 +279,7 @@ func _stat_chip(key: StringName, _glyph: StringName, caption: String) -> HBoxCon
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 5)
-	var v := MenuKit.label("0", 20, MenuKit.GOLD if key == &"rate" else MenuKit.TEXT, MenuKit.display())
+	var v := MenuKit.label("0", 20, MenuKit.GOLD if key == &"rate" or key == &"level" else MenuKit.TEXT, MenuKit.display())
 	row.add_child(v)
 	var c := MenuKit.label(caption, 12, MenuKit.TEXT_DIM, MenuKit.nunito(600))
 	c.size_flags_vertical = Control.SIZE_SHRINK_END
@@ -394,6 +399,7 @@ func _refresh_profile() -> void:
 	var st: Dictionary = Profile.stats
 	var raids: int = int(st.get("raids", 0))
 	var ext: int = int(st.get("extractions", 0))
+	(stat_values[&"level"] as Label).text = str(Profile.raider_level())
 	(stat_values[&"raids"] as Label).text = str(raids)
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"

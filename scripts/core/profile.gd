@@ -21,6 +21,8 @@ signal gold_changed(gold: int)
 ## Seuil de victimes atteint : l'arme devient achetable à l'armurerie (message en raid).
 signal weapon_unlocked(weapon_id: StringName)
 signal crafted(recipe_id: StringName)
+## Niveau de raider gagné (progression permanente, RaiderProgress) : nouveaux déblocages du niveau.
+signal raider_level_up(level: int, unlocks: Array)
 
 const SAVE_KEY := "profile"
 
@@ -60,6 +62,8 @@ var skin_character: StringName = &""
 ## Skin d'arme par catégorie : String(category) → skin id ; clé "any" = toutes les armes.
 var skin_weapons: Dictionary = {}
 var stats: Dictionary = {"raids": 0, "extractions": 0, "deaths": 0}
+## XP de raider cumulée (progression permanente, voir RaiderProgress).
+var raider_xp: int = 0
 var raid_in_progress: bool = false
 ## Armes emportées dans le raid en cours (ids), pour le résumé de mort.
 var raid_weapon_ids: Array[StringName] = []
@@ -123,8 +127,37 @@ func get_stash_weapons() -> Array[Dictionary]:
 	return out
 
 
+## Emplacements d'armes de l'arsenal de départ : dépendent du niveau de raider
+## (RaiderProgress, [raider] start_loadout_slots + déblocages), plafonnés par [arsenal] loadout_slots.
 static func loadout_slots() -> int:
-	return int(Balance.get_value("arsenal", "loadout_slots", 3))
+	return RaiderProgress.loadout_slots_at(RaiderProgress.current_level())
+
+
+## Niveau de raider actuel.
+func raider_level() -> int:
+	return RaiderProgress.level_for_xp(raider_xp)
+
+
+## Ajoute de l'XP de raider. Donne les récompenses uniques (gemmes, or) des niveaux franchis et
+## émet raider_level_up pour chacun. Renvoie {xp, level_before, level_after, unlocks: Array}.
+func add_raider_xp(amount: int) -> Dictionary:
+	var before := raider_level()
+	raider_xp += maxi(amount, 0)
+	var after := raider_level()
+	var gained: Array = []
+	for lv in range(before + 1, after + 1):
+		var ul: Array[Dictionary] = RaiderProgress.unlocks_at(lv)
+		for d: Dictionary in ul:
+			match d["kind"]:
+				RaiderProgress.KIND_GEMS:
+					add_gems(int(d.get("value", 0)))
+				RaiderProgress.KIND_GOLD:
+					add_gold(int(d.get("value", 0)))
+			gained.append(d)
+		raider_level_up.emit(lv, ul)
+	save()
+	changed.emit()
+	return {"xp": maxi(amount, 0), "level_before": before, "level_after": after, "unlocks": gained}
 
 
 ## Fixe l'arsenal de départ : uids inconnus ignorés, au plus loadout_slots() armes et
@@ -610,6 +643,7 @@ func to_dict() -> Dictionary:
 		"skins_owned": sk, "skin_character": String(skin_character),
 		"skin_weapons": skin_weapons.duplicate(), "stats": stats.duplicate(),
 		"raid_in_progress": raid_in_progress, "raid_weapon_ids": rw, "next_uid": _next_uid,
+		"raider_xp": raider_xp,
 	}
 
 
@@ -650,6 +684,8 @@ func from_dict(d: Dictionary) -> void:
 	var st: Variant = d.get("stats", {})
 	if st is Dictionary:
 		stats.merge(st, true)
+	# Sauvegarde d'avant le niveau de raider : XP estimée à partir des statistiques.
+	raider_xp = int(d.get("raider_xp", RaiderProgress.xp_from_stats(stats)))
 	raid_in_progress = bool(d.get("raid_in_progress", false))
 	raid_weapon_ids.clear()
 	for s: Variant in d.get("raid_weapon_ids", []):

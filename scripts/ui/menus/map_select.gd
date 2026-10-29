@@ -466,6 +466,9 @@ func _refresh_launch() -> void:
 	elif not MapRotation.is_active(selected_entry, MapRotation.now()):
 		launch_button.disabled = true
 		_d_status.text = "Terminée"
+	elif RaiderProgress.current_level() < RaiderProgress.required_level(card.id):
+		launch_button.disabled = true
+		_d_status.text = "Niveau de raider %d requis" % RaiderProgress.required_level(card.id)
 	else:
 		launch_button.disabled = false
 		_d_status.text = "Étape suivante : tes armes"

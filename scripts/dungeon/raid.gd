@@ -746,6 +746,9 @@ func _end_raid_state() -> void:
 
 func _show_end_screen(success: bool, summary: Dictionary) -> void:
 	summary["pass_xp"] = BattlePassSystem.get_instance().add_raid_xp(summary.merged({"success": success}))
+	# Niveau de raider (permanent) : même barème que le pass, × [raider] xp_ratio.
+	var pxp: Variant = summary["pass_xp"]
+	summary["raider"] = Profile.add_raider_xp(RaiderProgress.raid_xp(int((pxp as Dictionary).get("xp", 0)) if pxp is Dictionary else 0))
 	if NetHooks.active and NetHooks.defer_end_screen(success, summary):
 		return  # Coop : spectateur du coéquipier, écran de fin plus tard.
 	end_screen = RaidEndScreen.create(success, summary)

@@ -150,7 +150,7 @@ func test_main_menu_buttons() -> void:
 		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
-	assert_eq(labels, ["DÉPLOYER", "Coop", "Pass", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
+	assert_eq(labels, ["DÉPLOYER", "Coop", "Pass", "Progression", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
 	assert_eq(m.gem_counter.value_label.text, "42")
 	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
@@ -271,6 +271,8 @@ func _check_lobby_layout(vp: Vector2) -> void:
 
 func test_loadout_summary_shows_loadout() -> void:
 	_test_profile(0)
+	# 3e emplacement d'arme : débloqué par le niveau de raider (RaiderProgress)
+	Profile.raider_xp = RaiderProgress.xp_total_for(RaiderProgress.max_level())
 	var uids: Array[int] = []
 	for e: Dictionary in Profile.get_stash_weapons():
 		if String(e["id"]) in ["rifle_ak47", "smg_mp5", "gadget_frag"]:

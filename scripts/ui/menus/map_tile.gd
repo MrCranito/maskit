@@ -39,7 +39,12 @@ func _init(p_entry: Dictionary = {}, p_mode: Mode = Mode.COMPACT, p_upcoming: bo
 
 
 func is_playable() -> bool:
-	return card != null and card.is_available() and not upcoming
+	return card != null and card.is_available() and not upcoming and not is_level_locked()
+
+
+## Carte réservée à un niveau de raider supérieur (RaiderProgress, [raider] unlocks).
+func is_level_locked() -> bool:
+	return card != null and RaiderProgress.current_level() < RaiderProgress.required_level(card.id)
 
 
 func _ready() -> void:
@@ -105,6 +110,16 @@ func _build() -> void:
 	_time_pill.offset_right = -10
 	_time_pill.offset_top = 10
 	_frame.add_child(_time_pill)
+	if is_level_locked():
+		var lock := MenuKit.pill("Niv. %d" % RaiderProgress.required_level(card.id), Color(MenuKit.NIGHT_DEEP, 0.92), 14,
+			MenuKit.TEXT, Color(1, 1, 1, 0.35))
+		lock.name = "LevelLock"
+		lock.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		lock.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		lock.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		lock.offset_right = -10
+		lock.offset_bottom = -10
+		_frame.add_child(lock)
 	if upcoming and mode == Mode.COMPACT:
 		# Petite vignette : le minuteur passe sous le badge (pas la place sur une ligne).
 		_time_pill.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -271,7 +286,7 @@ func _refresh() -> void:
 		_ring_style.shadow_size = 6
 	_ring_style.shadow_offset = Vector2.ZERO
 	_ring.queue_redraw()
-	var dimmed: bool = not card.is_available() or upcoming
+	var dimmed: bool = not card.is_available() or upcoming or is_level_locked()
 	_frame.modulate = Color(0.6, 0.62, 0.7) if dimmed else Color.WHITE
 
 

@@ -351,6 +351,8 @@ func test_ecran_de_fin_extraction_et_mort() -> void:
 
 func test_arsenal_3_armes_plus_1_equipement() -> void:
 	var p := _new_profile()
+	# 3e emplacement d'arme : débloqué par le niveau de raider (RaiderProgress)
+	Profile.raider_xp = RaiderProgress.xp_total_for(RaiderProgress.max_level())
 	var uids: Array[int] = []
 	for id: StringName in [&"smg_mp5", &"gadget_frag", &"rifle_ak47", &"sniper_m24", &"pistol_deagle", &"gadget_c4"]:
 		uids.append(int(p.call("add_weapon", id)))
