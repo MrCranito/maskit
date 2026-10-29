@@ -168,7 +168,7 @@ func _build_header() -> Control:
 	var grow := HBoxContainer.new()
 	grow.add_theme_constant_override("separation", 6)
 	gold.add_child(grow)
-	var coin := MenuGlyph.new(&"coin", MenuKit.GOLD, 26)
+	var coin := MenuGlyph.new(&"coin", MenuKit.COIN, 26)
 	coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	grow.add_child(coin)
 	gold_label = MenuKit.label("0", 20, MenuKit.TEXT, MenuKit.nunito(1000), 3)
@@ -1082,7 +1082,7 @@ class RewardIcon extends Control:
 			"gems":
 				c = GemIcon.new()
 			"gold":
-				c = MenuGlyph.new(&"coin", MenuKit.GOLD, 32)
+				c = MenuGlyph.new(&"coin", MenuKit.COIN, 32)
 			"item":
 				var it := item_of(r)
 				var tr2 := TextureRect.new()

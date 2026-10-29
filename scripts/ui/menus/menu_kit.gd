@@ -22,6 +22,8 @@ const TEXT_DIM := Color(1.0, 1.0, 1.0, 0.62)
 const GOLD := Color(0.718, 0.608, 1.0)              # #B79BFF
 const VIOLET := Color(0.486, 0.302, 1.0)            # #7C4DFF : action principale, bandeaux
 const VIOLET_LIGHT := Color(0.616, 0.482, 1.0)      # #9D7BFF
+## Couleur de la pièce d'or (monnaie), distincte de l'accent.
+const COIN := Color(0.949, 0.757, 0.306)            # #F2C14E
 const RED := Color(0.78, 0.13, 0.17)
 const RED_DARK := Color(0.42, 0.05, 0.09)
 
