@@ -57,6 +57,13 @@ var pack_consumables: bool = true
 ## Consommables mis dans le sac au lancement du raid en cours (id → n).
 var raid_packed: Dictionary = {}
 var skins_owned: Array[StringName] = []
+## Boutique : bonus de premier achat consommé, packs à contenu achetés (Store).
+var shop_first_bonus_used: bool = false
+var bundles_bought: Array[StringName] = []
+## Coffres de skins gratuits : en stock, extractions vers le prochain, coffres sans Épique.
+var free_chests: int = 0
+var chest_progress: int = 0
+var chest_pity_count: int = 0
 ## Skin de personnage porté (vide = apparence par défaut).
 var skin_character: StringName = &""
 ## Skin d'arme par catégorie : String(category) → skin id ; clé "any" = toutes les armes.
@@ -292,11 +299,23 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 	raid_weapon_ids.clear()
 	raid_packed.clear()
 	stats["extractions"] = int(stats.get("extractions", 0)) + 1
+	var chest := add_chest_progress()
 	ensure_starter()
 	save()
 	gems_changed.emit(gems)
 	return {"weapons": got_weapons, "items": got_items, "value": estimate, "loot_value": value,
-		"gems": earned, "unlock_kills": report}
+		"gems": earned, "unlock_kills": report, "chest": chest}
+
+
+## Une extraction réussie de plus vers le prochain coffre gratuit ([chests] every_extractions).
+## Renvoie true si un coffre vient d'être gagné.
+func add_chest_progress() -> bool:
+	chest_progress += 1
+	if chest_progress < Store.chest_every():
+		return false
+	chest_progress = 0
+	free_chests += 1
+	return true
 
 
 ## Mort (ou abandon) : l'arsenal emporté et le butin sont perdus.
@@ -582,6 +601,13 @@ func owns_skin(id: StringName) -> bool:
 
 
 ## Achat d'un skin en gemmes. Renvoie false si inconnu, déjà possédé ou pas assez de gemmes.
+## Ajoute un skin possédé (pack, coffre, pass) sans débiter de gemmes.
+func grant_skin(id: StringName) -> void:
+	if not skins_owned.has(id):
+		skins_owned.append(id)
+	save()
+
+
 func buy_skin(id: StringName) -> bool:
 	var s := SkinData.get_skin(id)
 	# Skins du pass de combat : jamais achetables en gemmes (récompenses de palier).
@@ -644,6 +670,8 @@ func to_dict() -> Dictionary:
 		"skin_weapons": skin_weapons.duplicate(), "stats": stats.duplicate(),
 		"raid_in_progress": raid_in_progress, "raid_weapon_ids": rw, "next_uid": _next_uid,
 		"raider_xp": raider_xp,
+		"shop_first_bonus_used": shop_first_bonus_used, "bundles_bought": _names_to_array(bundles_bought),
+		"free_chests": free_chests, "chest_progress": chest_progress, "chest_pity": chest_pity_count,
 	}
 
 
@@ -679,6 +707,13 @@ func from_dict(d: Dictionary) -> void:
 	for s: Variant in d.get("skins_owned", []):
 		skins_owned.append(StringName(str(s)))
 	skin_character = StringName(str(d.get("skin_character", "")))
+	shop_first_bonus_used = bool(d.get("shop_first_bonus_used", false))
+	bundles_bought.clear()
+	for b: Variant in d.get("bundles_bought", []):
+		bundles_bought.append(StringName(str(b)))
+	free_chests = maxi(int(d.get("free_chests", 0)), 0)
+	chest_progress = maxi(int(d.get("chest_progress", 0)), 0)
+	chest_pity_count = maxi(int(d.get("chest_pity", 0)), 0)
 	var sw: Variant = d.get("skin_weapons", {})
 	skin_weapons = (sw as Dictionary).duplicate() if sw is Dictionary else {}
 	var st: Variant = d.get("stats", {})
