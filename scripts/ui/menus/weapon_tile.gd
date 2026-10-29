@@ -10,6 +10,10 @@ extends Button
 ## cadenas + progression « 0/1 » (à débloquer en tuant un ennemi), « BUTIN » (Légendaire :
 ## jamais en vente) ; la quantité possédée reste affichée en haut à droite.
 
+## Disposition « D » (arsenal de départ, maquette Loadout) : carte encre à coin haut droit coupé,
+## halo de rareté, icône centrée, nom en Anton, barre de rareté en bas, repère « [1] » violet
+## quand l'arme est placée, contour blanc quand elle est affichée. À régler avant _ready.
+var style_d: bool = false
 var weapon: WeaponData = null
 var uids: Array[int] = []
 var locked: bool = false
@@ -59,6 +63,12 @@ func _ready() -> void:
 	add_theme_stylebox_override("focus", focus)
 	var r: int = weapon.rarity if weapon != null else 0
 	var rc: Color = MenuKit.rarity_color(r)
+	if style_d:
+		_build_d(r, rc)
+		resized.connect(func() -> void: pivot_offset = size * 0.5)
+		MenuKit.add_feedback(self, 1.04)
+		_refresh()
+		return
 
 	# Cadre + fond teinté (découpé aux coins arrondis)
 	_frame = Panel.new()
@@ -136,6 +146,83 @@ func _ready() -> void:
 	_refresh()
 
 
+func _build_d(r: int, rc: Color) -> void:
+	custom_minimum_size = Vector2(0, Balance.get_float("menu", "loadout_card_height", 200.0))
+	(get_theme_stylebox("focus") as StyleBoxFlat).set_corner_radius_all(0)
+	_frame = Panel.new()
+	_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.96), 20.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+	box.corners = CutBox.CUT_TOP_RIGHT
+	_frame.add_theme_stylebox_override("panel", box)
+	_frame.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	add_child(_frame)
+	_content = Control.new()
+	_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame.add_child(_content)
+	_content.add_child(MenuKit.rarity_backdrop(r))
+	icon_view = WeaponIcon.new(weapon)
+	icon_view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	icon_view.anchor_left = 0.12
+	icon_view.anchor_right = 0.88
+	icon_view.anchor_top = 0.16
+	icon_view.anchor_bottom = 0.58
+	_content.add_child(icon_view)
+	name_label = MenuKit.label(weapon.display_name if weapon != null else "-", 27, MenuKit.TEXT, MenuKit.display(), 0)
+	name_label.uppercase = true
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	name_label.offset_left = 8
+	name_label.offset_right = -8
+	name_label.offset_top = -64
+	name_label.offset_bottom = -18
+	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_content.add_child(name_label)
+	var bar := ColorRect.new()
+	bar.name = "RarityBar"
+	bar.color = rc
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bar.offset_top = -5
+	_content.add_child(bar)
+	# Contour blanc (arme affichée), au-dessus du contenu
+	var ring := Panel.new()
+	ring.name = "Ring"
+	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rs := CutBox.new()
+	rs.draw_center = false
+	rs.border_color = MenuKit.TEXT
+	rs.border_width = 3.0
+	rs.cut = 20.0
+	rs.corners = CutBox.CUT_TOP_RIGHT
+	ring.add_theme_stylebox_override("panel", rs)
+	add_child(ring)
+	_count = MenuKit.pill("", Color(MenuKit.NIGHT_DEEP, 0.82), 14, MenuKit.TEXT)
+	_count.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_count.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_count.offset_right = -24
+	_count.offset_top = 8
+	add_child(_count)
+	_lock = LockIcon.new()
+	_lock.visible = false
+	add_child(_lock)
+	_shop_pill = MenuKit.pill("", Color(0, 0, 0, 0), 14, MenuKit.TEXT)
+	_shop_pill.visible = false
+	add_child(_shop_pill)
+	# Repère d'emplacement « [1] » / « [É] » (violet clair, haut gauche)
+	_slot_badge = PanelContainer.new()
+	_slot_badge.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_slot_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_slot_badge.position = Vector2(12, 8)
+	var t := MenuKit.label("", 17, MenuKit.GOLD, MenuKit.nunito(600), 0)
+	t.name = "Text"
+	_slot_badge.add_child(t)
+	add_child(_slot_badge)
+
+
 ## Exemplaires possédés (consultation : mise à jour sans reconstruire).
 func set_uids(p_uids: Array[int]) -> void:
 	uids = p_uids
@@ -180,6 +267,14 @@ func _refresh() -> void:
 		return
 	var r: int = weapon.rarity if weapon != null else 0
 	var rc: Color = MenuKit.rarity_color(r)
+	if style_d:
+		(get_node(^"Ring") as Panel).visible = focused_detail
+		_count.visible = owned_count() > 1
+		(_count.get_node(^"Text") as Label).text = "×%d" % owned_count()
+		_slot_badge.visible = slot_index >= 0
+		var g: bool = weapon != null and weapon.is_gadget()
+		(_slot_badge.get_node(^"Text") as Label).text = "[%s]" % ("É" if g else str(slot_index + 1))
+		return
 	var rs := (get_node(^"Ring") as Panel).get_theme_stylebox("panel") as StyleBoxFlat
 	var sel: bool = slot_index >= 0
 	rs.border_color = MenuKit.TEXT if sel else (rc.lightened(0.25) if focused_detail else Color(rc, 0.85))

@@ -553,6 +553,32 @@ func test_loadout_restores_previous_choice() -> void:
 	assert_false(a.validate_button.disabled)
 
 
+func test_loadout_layout_d() -> void:
+	# Maquette Loadout : bandeau violet à droite (fiche + Équiper + DÉPLOYER) ; 1er tap = fiche,
+	# 2e tap ou bouton du bandeau = équiper / retirer.
+	_test_profile()
+	var a := _loadout()
+	await wait_frames(3)
+	assert_true(a.slab.is_ancestor_of(a.validate_button), "DÉPLOYER dans le bandeau")
+	assert_true(a.slab.is_ancestor_of(a.equip_button), "Équiper dans le bandeau")
+	assert_eq(a.validate_button.text, "DÉPLOYER")
+	var t: WeaponTile = null
+	for x: WeaponTile in a.tiles:
+		if not x.weapon.is_gadget() and x.weapon != a.detail_weapon:
+			t = x
+			break
+	assert_true(t.style_d, "Cartes d'armes au format D")
+	a.call("_on_tile_pressed", t)
+	assert_eq(a.detail_weapon, t.weapon, "1er tap : fiche")
+	assert_eq(a.selected_weapon_count(), 0, "1er tap : rien d'équipé")
+	assert_eq(a.equip_button.text, "ÉQUIPER EN 01")
+	a.call("_on_tile_pressed", t)
+	assert_eq(a.selected_weapon_count(), 1, "2e tap : équipée")
+	assert_eq(a.equip_button.text, "RETIRER")
+	a.equip_button.pressed.emit()
+	assert_eq(a.selected_weapon_count(), 0, "Bouton du bandeau : retirée")
+
+
 func test_arsenal_catalog_sections() -> void:
 	_test_profile()
 	var a := (load("res://scenes/ui/menus/arsenal.tscn") as PackedScene).instantiate() as ArsenalScreen

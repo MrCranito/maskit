@@ -36,7 +36,12 @@ var sections: Dictionary = {}
 var selected_uids: Array[int] = []
 var detail_weapon: WeaponData = null
 
+## Arsenal de départ : « DÉPLOYER » (enregistre l'arsenal et lance le raid).
 var validate_button: Button = null
+## Arsenal de départ : équiper / retirer l'arme affichée (bandeau de droite).
+var equip_button: Button = null
+## Arsenal de départ : bandeau violet de droite (fiche de l'arme + DÉPLOYER).
+var slab: Control = null
 var back_button: Button = null
 var skin_button: Button = null
 var slot_buttons: Array[Button] = []
@@ -116,7 +121,8 @@ func _ready() -> void:
 	show_weapon_detail(first, false)
 	_refresh_slots(false)
 	MenuKit.fade_in(self)
-	(validate_button if loadout_mode and not validate_button.disabled else back_button).grab_focus.call_deferred()
+	if not loadout_mode:
+		back_button.grab_focus.call_deferred()
 
 
 func _read_stash() -> void:
@@ -143,6 +149,9 @@ func owned_count(id: StringName) -> int:
 # --- Construction -------------------------------------------------------------------
 
 func _build() -> void:
+	if loadout_mode:
+		_build_loadout()
+		return
 	var safe := MenuKit.safe_container(self)
 	add_child(safe)
 	var root := VBoxContainer.new()
@@ -197,9 +206,6 @@ func _build() -> void:
 	gem_counter.pressed.connect(func() -> void: MenuKit.go_to(self, MenuKit.SHOP_SCENE))
 	head.add_child(gem_counter)
 
-	if loadout_mode:
-		root.add_child(_build_slots_bar())
-
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 16)
@@ -226,72 +232,273 @@ func _build() -> void:
 	body.add_child(_build_detail())
 
 
-## Barre : 3 emplacements d'armes + 1 d'équipement, rappel, bouton de validation.
-func _build_slots_bar() -> Control:
-	var p := PanelContainer.new()
-	var st := MenuKit.panel_style(Color(MenuKit.NIGHT, 0.92), MenuKit.BORDER, 16, 1, 8)
-	st.content_margin_left = 12
-	st.content_margin_right = 10
-	p.add_theme_stylebox_override("panel", st)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 12)
-	p.add_child(row)
+# --- Arsenal de départ : disposition de la maquette « Loadout » (direction D, ×1,67) ---------
+##  - en-tête : retour carré (→ cartes), « ÉTAPE 2/2 · CARTE » + « ARSENAL DE DÉPART » ;
+##  - emplacements (armes puis équipement) en cartes encre à liseré de rareté ;
+##  - ligne de risque (rose) : armes perdues si tu meurs + soins emportés (bascule) ;
+##  - grille de 4 colonnes des armes possédées (WeaponTile.style_d), triées par rareté ;
+##    1er tap = fiche, 2e tap sur l'arme affichée = équiper / retirer ;
+##  - à droite, bandeau violet translucide dépoli : catégorie, nom, rareté, stats, bouton
+##    « Équiper en 0N » / « Retirer », aide, puis « DÉPLOYER ».
+
+func _build_loadout() -> void:
+	var m: Vector4 = MenuKit.safe_margins(self)
+	m.x = maxf(m.x, Balance.get_float("menu", "lobby_margin_left", 80.0))
+	m.w = maxf(m.w, Balance.get_float("menu", "lobby_margin_bottom", 36.0))
+	var vp: Vector2 = get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var slab_w: float = clampf(vp.x * Balance.get_float("menu", "lobby_slab_ratio", 0.3),
+		Balance.get_float("menu", "lobby_slab_min", 370.0), Balance.get_float("menu", "lobby_slab_max", 440.0))
+
+	var sl := MainMenu.LobbySlab.new()
+	sl.name = "Slab"
+	sl.cut = Balance.get_float("menu", "lobby_slab_cut", 94.0)
+	sl.color = Color(MenuKit.VIOLET, Balance.get_float("menu", "lobby_slab_alpha", 0.66))
+	sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sl.anchor_left = 1.0
+	sl.anchor_right = 1.0
+	sl.anchor_bottom = 1.0
+	sl.offset_left = -slab_w
+	add_child(sl)
+	MenuKit.frosted(sl)
+	slab = sl
+
+	var left := VBoxContainer.new()
+	left.name = "Left"
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	left.offset_left = m.x
+	left.offset_top = m.y
+	left.offset_right = -slab_w - 24.0
+	left.offset_bottom = -m.w * 0.5
+	left.add_theme_constant_override("separation", 14)
+	add_child(left)
+
+	# En-tête
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_theme_constant_override("separation", 22)
+	left.add_child(head)
+	back_button = MenuKit.square_back_button("Cartes")
+	back_button.pressed.connect(go_back)
+	head.add_child(back_button)
+	var tcol := VBoxContainer.new()
+	tcol.alignment = BoxContainer.ALIGNMENT_CENTER
+	tcol.add_theme_constant_override("separation", 0)
+	tcol.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(tcol)
+	_sub_label = MenuKit.label("", 17, MenuKit.VIOLET_LIGHT, MenuKit.nunito(600), 0)
+	_sub_label.uppercase = true
+	tcol.add_child(_sub_label)
+	tcol.add_child(MenuKit.label("ARSENAL DE DÉPART", 40, MenuKit.TEXT, MenuKit.display(), 0))
+	_refresh_subtitle()
+
+	# Emplacements
 	_slots_row = HBoxContainer.new()
-	_slots_row.add_theme_constant_override("separation", 8)
-	row.add_child(_slots_row)
-	var sw: float = Balance.get_float("menu", "loadout_slot_width", 132.0)
-	for i: int in Profile.loadout_slots():
+	_slots_row.add_theme_constant_override("separation", 7)
+	_slots_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.add_child(_slots_row)
+	var avail: float = vp.x - m.x - slab_w - 24.0
+	var n_slots: int = Profile.loadout_slots()
+	var sw: float = clampf((avail - 7.0 * n_slots) / (n_slots + 0.85),
+		Balance.get_float("menu", "loadout_slot_min", 150.0), Balance.get_float("menu", "loadout_slot_max", 260.0))
+	for i: int in n_slots:
 		var b := _slot_button(sw)
 		b.pressed.connect(func() -> void: _on_slot_pressed(i))
 		_slots_row.add_child(b)
 		slot_buttons.append(b)
-	var sep := ColorRect.new()
-	sep.color = Color(1, 1, 1, 0.15)
-	sep.custom_minimum_size = Vector2(2, 0)
-	_slots_row.add_child(sep)
-	gadget_slot_button = _slot_button(sw)
+	gadget_slot_button = _slot_button(sw * 0.85)
 	gadget_slot_button.pressed.connect(_on_gadget_slot_pressed)
 	_slots_row.add_child(gadget_slot_button)
 
-	var wcol := VBoxContainer.new()
-	wcol.alignment = BoxContainer.ALIGNMENT_CENTER
-	wcol.add_theme_constant_override("separation", 0)
-	wcol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(wcol)
-	var w1 := MenuKit.label("Les armes emportées sont perdues si tu meurs.", 16, Color(1.0, 0.72, 0.66), MenuKit.nunito(900))
-	w1.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	wcol.add_child(w1)
-	_hint = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(750))
-	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	wcol.add_child(_hint)
-	var crow := HBoxContainer.new()
-	crow.add_theme_constant_override("separation", 8)
-	wcol.add_child(crow)
-	consumables_label = MenuKit.label("", 14, Color(0.6, 0.95, 0.65), MenuKit.nunito(850))
+	# Ligne de risque + soins emportés
+	var risk := HBoxContainer.new()
+	risk.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	risk.add_theme_constant_override("separation", 14)
+	left.add_child(risk)
+	var warn := MenuKit.label("▲ Armes emportées perdues si tu meurs", 17, Color(1.0, 0.44, 0.57), MenuKit.nunito(600), 0)
+	warn.uppercase = true
+	warn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	risk.add_child(warn)
+	consumables_label = MenuKit.label("", 17, Color(1, 1, 1, 0.7), MenuKit.nunito(600), 0)
 	consumables_label.name = "Consumables"
-	consumables_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	consumables_label.max_lines_visible = 2
 	consumables_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	consumables_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	crow.add_child(consumables_label)
-	consumables_toggle = MenuKit.button("Soins : oui", MenuKit.Style.GHOST, 14, Vector2(104, 36))
+	consumables_label.clip_text = true
+	consumables_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	risk.add_child(consumables_label)
+	consumables_toggle = MenuKit.button("Soins : oui", MenuKit.Style.GHOST, 15, Vector2(118, 44))
 	MenuKit.tighten(consumables_toggle, 8)
 	consumables_toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	consumables_toggle.pressed.connect(toggle_consumables)
-	crow.add_child(consumables_toggle)
+	risk.add_child(consumables_toggle)
 	_refresh_consumables()
-	validate_button = MenuKit.button("Valider et partir", MenuKit.Style.PRIMARY, 24, Vector2(240, 76))
-	MenuKit.tighten(validate_button, 16)
-	validate_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+
+	# Grille des armes
+	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.scroll_deadzone = 14
+	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left.add_child(_scroll)
+	_list = VBoxContainer.new()
+	_list.add_theme_constant_override("separation", 10)
+	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scroll.add_child(_list)
+
+	# Bandeau : fiche de l'arme + DÉPLOYER
+	var col := VBoxContainer.new()
+	col.name = "SlabContent"
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.offset_left = sl.cut
+	col.offset_top = maxf(m.y, 36.0)
+	col.offset_right = -maxf(m.z, 44.0)
+	col.offset_bottom = -maxf(m.w, 40.0)
+	col.add_theme_constant_override("separation", 10)
+	sl.add_child(col)
+	_d_cat = _slab_label(17, MenuKit.nunito(600))
+	_d_cat.uppercase = true
+	col.add_child(_d_cat)
+	_d_name = _slab_label(54, MenuKit.display())
+	_d_name.uppercase = true
+	_d_name.clip_text = true
+	_d_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_d_name.custom_minimum_size.x = slab_w - sl.cut - 44.0
+	col.add_child(_d_name)
+	_d_rarity = MenuKit.rarity_band(0, 16, 30, 0)
+	_d_rarity.size_flags_horizontal = Control.SIZE_SHRINK_END
+	(_d_rarity.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_left = 12
+	(_d_rarity.get_theme_stylebox("panel") as StyleBoxFlat).content_margin_right = 12
+	((_d_rarity.get_node(^"Text") as Label)).uppercase = true
+	col.add_child(_d_rarity)
+	_d_bars = StatBars.new()
+	_d_bars.stacked = true
+	_d_bars.custom_minimum_size.x = Balance.get_float("menu", "loadout_detail_width", 300.0)
+	_d_bars.size_flags_horizontal = Control.SIZE_SHRINK_END
+	col.add_child(_d_bars)
+	equip_button = Button.new()
+	equip_button.name = "EquipButton"
+	equip_button.focus_mode = Control.FOCUS_ALL
+	equip_button.custom_minimum_size = Vector2(_d_bars.custom_minimum_size.x, 66)
+	equip_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	equip_button.add_theme_font_override("font", MenuKit.display())
+	equip_button.add_theme_font_size_override("font_size", 27)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		equip_button.add_theme_color_override(k, MenuKit.TEXT)
+	equip_button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.4))
+	var eb := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, 16.0, Color(0, 0, 0, 0), 0.0, 16.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT
+		return c
+	equip_button.add_theme_stylebox_override("normal", eb.call(MenuKit.NIGHT_DEEP))
+	equip_button.add_theme_stylebox_override("hover", eb.call(MenuKit.NIGHT_PANEL))
+	equip_button.add_theme_stylebox_override("pressed", eb.call(Color(0, 0, 0, 1)))
+	equip_button.add_theme_stylebox_override("hover_pressed", eb.call(Color(0, 0, 0, 1)))
+	equip_button.add_theme_stylebox_override("disabled", eb.call(Color(MenuKit.NIGHT_DEEP, 0.55)))
+	var ef := CutBox.new()
+	ef.draw_center = false
+	ef.border_color = MenuKit.TEXT
+	ef.border_width = 2.0
+	ef.cut = 18.0
+	ef.corners = CutBox.CUT_TOP_LEFT
+	ef.grow = 4.0
+	equip_button.add_theme_stylebox_override("focus", ef)
+	equip_button.pressed.connect(_on_equip_pressed)
+	MenuKit.add_feedback(equip_button, 1.04)
+	col.add_child(equip_button)
+	_hint = _slab_label(15, MenuKit.nunito(500))
+	_hint.modulate.a = 0.8
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hint.custom_minimum_size.x = _d_bars.custom_minimum_size.x
+	_hint.size_flags_horizontal = Control.SIZE_SHRINK_END
+	col.add_child(_hint)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(spacer)
+	validate_button = _deploy_button()
+	validate_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	validate_button.pressed.connect(validate_and_go)
-	row.add_child(validate_button)
-	return p
+	col.add_child(validate_button)
+	# Restes de la fiche « consultation » : non affichés ici, gardés pour le code commun
+	_d_style = StyleBoxFlat.new()
+	_d_icon = WeaponIcon.new()
+	_d_owned = Label.new()
+	_d_desc = Label.new()
+	for c: Control in [_d_icon, _d_owned, _d_desc]:
+		c.visible = false
+		col.add_child(c)
+	_scroll.resized.connect(_update_columns)
+
+
+func _slab_label(px: int, font: Font) -> Label:
+	var l := MenuKit.label("", px, MenuKit.TEXT, font, 0)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	return l
+
+
+## « DÉPLOYER » en Anton, sans fond (comme au lobby) ; atténué tant qu'aucune arme n'est choisie.
+func _deploy_button() -> Button:
+	var b := Button.new()
+	b.name = "DeployButton"
+	b.text = "DÉPLOYER"
+	b.focus_mode = Control.FOCUS_ALL
+	var fs: int = int(Balance.get_value("menu", "deploy_font_size", 84))
+	b.add_theme_font_override("font", MenuKit.display())
+	b.add_theme_font_size_override("font_size", fs)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(k, MenuKit.TEXT)
+	b.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.35))
+	var hov := CutBox.make(Color(1, 1, 1, 0.1), 14.0, Color(0, 0, 0, 0), 0.0, 6.0, 0.0)
+	for k: String in ["normal", "pressed", "disabled"]:
+		b.add_theme_stylebox_override(k, CutBox.make(Color(0, 0, 0, 0), 14.0, Color(0, 0, 0, 0), 0.0, 6.0, 0.0))
+	b.add_theme_stylebox_override("hover", hov)
+	b.add_theme_stylebox_override("hover_pressed", hov)
+	var f := CutBox.new()
+	f.draw_center = false
+	f.border_color = Color(MenuKit.TEXT, 0.5)
+	f.border_width = 1.5
+	f.cut = 14.0
+	f.grow = 2.0
+	b.add_theme_stylebox_override("focus", f)
+	MenuKit.add_feedback(b, 1.03)
+	return b
+
+
+## Bouton du bandeau : retire l'arme affichée si elle est placée, sinon l'équipe.
+func _on_equip_pressed() -> void:
+	if detail_weapon != null:
+		toggle_model(detail_weapon)
+		_refresh_equip_button()
+
+
+func _refresh_equip_button() -> void:
+	if equip_button == null:
+		return
+	var w := detail_weapon
+	var placed := false
+	if w != null:
+		for u: int in (owned.get(String(w.id), []) as Array):
+			if selected_uids.has(u):
+				placed = true
+	equip_button.disabled = w == null
+	if w == null:
+		equip_button.text = "ÉQUIPER"
+	elif placed:
+		equip_button.text = "RETIRER"
+	elif w.is_gadget():
+		equip_button.text = "ÉQUIPER EN GADGET"
+	elif selected_weapon_count() >= Profile.loadout_slots():
+		equip_button.text = "EMPLACEMENTS PLEINS"
+	else:
+		equip_button.text = "ÉQUIPER EN %02d" % (selected_weapon_count() + 1)
 
 
 func _slot_button(w: float) -> Button:
 	var b := Button.new()
 	b.focus_mode = Control.FOCUS_ALL
-	b.custom_minimum_size = Vector2(w, 80)
+	b.custom_minimum_size = Vector2(w, Balance.get_float("menu", "loadout_slot_height", 100.0))
 	b.clip_contents = true
 	MenuKit.add_feedback(b, 1.04)
 	return b
@@ -387,8 +594,7 @@ func _refresh_subtitle() -> void:
 		return
 	var card: MapCard = GameState.current_map as MapCard
 	if loadout_mode:
-		_sub_label.text = "%s  ·  %s  ·  %s" % [card.display_name, card.biome_name(), card.difficulty_name()] \
-			if card != null else "Choisis tes armes pour le raid."
+		_sub_label.text = ("Étape 2/2 · %s" % card.display_name) if card != null else "Étape 2/2"
 	elif shop_mode:
 		_sub_label.text = "Achète des armes avec ton or. Légendaires : butin uniquement."
 	else:
@@ -455,6 +661,9 @@ func _fill() -> void:
 		c.queue_free()
 	tiles.clear()
 	sections.clear()
+	if loadout_mode:
+		_fill_loadout()
+		return
 	for cat: StringName in _categories():
 		var models := _models_of(cat)
 		if models.is_empty():
@@ -487,6 +696,43 @@ func _fill() -> void:
 		_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_list.add_child(_empty_label)
 	_update_columns()
+	_refresh_tiles()
+
+
+## Arsenal de départ : une seule grille (cartes « D »), armes possédées triées par rareté
+## décroissante puis catégorie ; les équipements à la fin.
+func _fill_loadout() -> void:
+	var models: Array[WeaponData] = []
+	for cat: StringName in _categories():
+		models.append_array(_models_of(cat))
+	models.sort_custom(func(a: WeaponData, b: WeaponData) -> bool:
+		if a.is_gadget() != b.is_gadget():
+			return not a.is_gadget()
+		if a.rarity != b.rarity:
+			return a.rarity > b.rarity
+		return String(a.id) < String(b.id))
+	var grid := GridContainer.new()
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	grid.columns = int(Balance.get_value("menu", "loadout_columns", 4))
+	_list.add_child(grid)
+	sections[&"all"] = grid
+	for w: WeaponData in models:
+		var ids: Array[int] = []
+		ids.assign(owned.get(String(w.id), []))
+		var t := WeaponTile.new(w, ids, false)
+		t.style_d = true
+		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		t.pressed.connect(func() -> void: _on_tile_pressed(t))
+		grid.add_child(t)
+		tiles.append(t)
+	if tiles.is_empty():
+		_empty_label = MenuKit.label("Ta réserve est vide. Extrais-toi avec des armes pour la remplir.",
+			20, MenuKit.TEXT_DIM, MenuKit.nunito(600), 0)
+		_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_list.add_child(_empty_label)
 	_refresh_tiles()
 
 
@@ -532,7 +778,7 @@ static func _silhouette_material() -> ShaderMaterial:
 
 
 func _update_columns() -> void:
-	if _scroll == null:
+	if _scroll == null or loadout_mode:
 		return
 	var w: float = (_scroll.size.x if _scroll.size.x > 0.0 else 800.0) - 10.0
 	var cw: float = Balance.get_float("menu", "weapon_card_width", 176.0)
@@ -576,10 +822,12 @@ func _tile_of(w: WeaponData) -> WeaponTile:
 # --- Sélection ------------------------------------------------------------------------
 
 func _on_tile_pressed(t: WeaponTile) -> void:
-	if loadout_mode and not t.locked:
+	# Arsenal de départ : 1er tap = fiche, 2e tap sur l'arme affichée = équiper / retirer.
+	if loadout_mode and not t.locked and detail_weapon == t.weapon:
 		toggle_model(t.weapon)
-	else:
-		MenuKit.sfx(&"click_soft", -4.0)
+		_refresh_equip_button()
+		return
+	MenuKit.sfx(&"click_soft", -4.0)
 	show_weapon_detail(t.weapon)
 
 
@@ -637,6 +885,7 @@ func toggle_weapon(uid: int) -> bool:
 func _after_change() -> void:
 	_refresh_slots(true)
 	_refresh_tiles()
+	_refresh_equip_button()
 
 
 func _on_slot_pressed(i: int) -> void:
@@ -660,6 +909,12 @@ func _on_gadget_slot_pressed() -> void:
 	elif sections.has(WeaponData.CAT_GADGET):
 		# Emplacement vide : fait défiler jusqu'à la section « Autres ».
 		_scroll.ensure_control_visible(sections[WeaponData.CAT_GADGET])
+	else:
+		for t: WeaponTile in tiles:
+			if t.weapon.is_gadget():
+				_scroll.ensure_control_visible(t)
+				show_weapon_detail(t.weapon)
+				break
 
 
 ## Compatibilité : détail d'un exemplaire.
@@ -679,6 +934,7 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 		_d_rarity.visible = false
 		_d_icon.set_weapon(null)
 		_d_bars.show_weapon(null)
+		_refresh_equip_button()
 		if skin_button != null:
 			skin_button.disabled = true
 		_refresh_shop_box(null)
@@ -694,12 +950,15 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 	(_d_rarity.get_node(^"Text") as Label).text = MenuKit.rarity_name(w.rarity)
 	(_d_rarity.get_node(^"Text") as Label).add_theme_color_override("font_color",
 		Color(0.16, 0.1, 0.02) if w.rarity >= 4 else MenuKit.TEXT)
-	(_d_rarity.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = rc.darkened(0.1)
+	(_d_rarity.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = rc if loadout_mode else rc.darkened(0.1)
+	if loadout_mode:
+		(_d_rarity.get_node(^"Text") as Label).add_theme_color_override("font_color", Color(0.07, 0.04, 0.14))
+		_refresh_equip_button()
 	_d_cat.text = String(WeaponData.CATEGORY_NAMES.get(w.category, "Arme")) + ("  ·  explosif" if w.is_explosive() else "")
 	var n := owned_count(w.id)
 	_d_owned.text = ("Possédée ×%d" % n) if n > 0 else "Non possédée"
 	_d_owned.add_theme_color_override("font_color", MenuKit.TEXT if n > 0 else MenuKit.TEXT_DIM)
-	_d_bars.show_weapon(w, rc.lightened(0.15))
+	_d_bars.show_weapon(w, MenuKit.TEXT if loadout_mode else rc.lightened(0.15))
 	if shop_mode:
 		_d_desc.text = w.description
 	else:
@@ -727,68 +986,72 @@ func _refresh_slots(animate: bool) -> void:
 		else:
 			weapons.append(w)
 	for i: int in slot_buttons.size():
-		_fill_slot(slot_buttons[i], weapons[i] if i < weapons.size() else null, str(i + 1),
+		_fill_slot(slot_buttons[i], weapons[i] if i < weapons.size() else null, "%02d" % (i + 1),
 			animate and i == weapons.size() - 1)
-	_fill_slot(gadget_slot_button, gadget, "Équipement", false)
+	_fill_slot(gadget_slot_button, gadget, "GADGET", false)
 	validate_button.disabled = weapons.is_empty()
 	if _hint != null:
-		_hint.text = ("Touche une arme pour l'emporter (1 à %d) et un équipement." % Profile.loadout_slots()) \
-			if weapons.is_empty() else ("%d / %d armes · %s · touche un emplacement pour le vider." % [
-				weapons.size(), Profile.loadout_slots(), gadget.display_name if gadget != null else "sans équipement"])
+		_hint.text = ("Touche une arme puis Équiper (1 à %d armes + 1 gadget)." % Profile.loadout_slots()) \
+			if weapons.is_empty() else ("%d / %d armes · %s. Touche un emplacement pour le vider." % [
+				weapons.size(), Profile.loadout_slots(), gadget.display_name if gadget != null else "sans gadget"])
 
 
+## Emplacement « D » : carte encre à coin haut droit coupé, liseré gauche à la couleur de rareté
+## (blanc atténué si vide), numéro « 01 » en haut à gauche, icône + nom (« + LIBRE » si vide).
 func _fill_slot(b: Button, w: WeaponData, tag: String, animate: bool) -> void:
 	for c: Node in b.get_children():
 		b.remove_child(c)
 		c.queue_free()
-	var st: StyleBoxFlat
-	if w != null:
-		var rc: Color = MenuKit.rarity_color(w.rarity)
-		st = MenuKit.panel_style(Color(0.07, 0.09, 0.15, 0.97), Color(rc, 0.9), 8, 2, 0)
-		st.shadow_color = Color(rc, 0.35)
-		st.shadow_size = 6
-		st.shadow_offset = Vector2.ZERO
-	else:
-		st = MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.6), Color(1, 1, 1, 0.25), 8, 2, 0)
-		st.shadow_size = 0
-	var hov := st.duplicate() as StyleBoxFlat
-	hov.bg_color = st.bg_color.lightened(0.08)
-	b.add_theme_stylebox_override("normal", st)
-	b.add_theme_stylebox_override("hover", hov)
-	b.add_theme_stylebox_override("pressed", hov)
-	b.add_theme_stylebox_override("hover_pressed", hov)
+	var accent: Color = MenuKit.rarity_color(w.rarity) if w != null else Color(1, 1, 1, 0.25)
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, 20.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+		c.corners = CutBox.CUT_TOP_RIGHT
+		c.accent_width = 5.0
+		c.accent_color = accent
+		return c
+	b.add_theme_stylebox_override("normal", mk.call(Color(MenuKit.NIGHT_DEEP, 0.82)))
+	b.add_theme_stylebox_override("hover", mk.call(Color(MenuKit.NIGHT_PANEL, 0.9)))
+	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 0.9)))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 0.9)))
+	var f := CutBox.new()
+	f.draw_center = false
+	f.border_color = MenuKit.TEXT
+	f.border_width = 2.0
+	f.cut = 22.0
+	f.corners = CutBox.CUT_TOP_RIGHT
+	f.grow = 3.0
+	b.add_theme_stylebox_override("focus", f)
 	b.text = ""
 	b.tooltip_text = "Retirer" if w != null else "Emplacement libre"
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 16
+	row.offset_right = -12
+	row.offset_top = 22
+	row.offset_bottom = -6
+	row.add_theme_constant_override("separation", 12)
+	b.add_child(row)
 	if w != null:
-		var bd := MenuKit.rarity_backdrop(w.rarity)
-		b.add_child(bd)
 		var ic := WeaponIcon.new(w)
-		ic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		ic.offset_left = 10
-		ic.offset_right = -10
-		ic.offset_top = 16
-		ic.offset_bottom = -22
-		b.add_child(ic)
-		var band := MenuKit.rarity_band(w.rarity, 12, 20)
-		band.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-		band.offset_top = -20
-		(band.get_node(^"Text") as Label).text = w.display_name
-		(band.get_theme_stylebox("panel") as StyleBoxFlat).corner_radius_bottom_left = 7
-		(band.get_theme_stylebox("panel") as StyleBoxFlat).corner_radius_bottom_right = 7
-		b.add_child(band)
-		if animate and b.is_inside_tree():
-			b.pivot_offset = b.size * 0.5
-			create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
-				.tween_property(b, "scale", Vector2.ONE, 0.25).from(Vector2(1.12, 1.12))
-	else:
-		var plus := MenuKit.label("+", 30, Color(1, 1, 1, 0.3), MenuKit.nunito(900))
-		plus.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		plus.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		plus.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		b.add_child(plus)
-	var num := MenuKit.label(tag, 12, Color(MenuKit.TEXT_DIM, 0.95), MenuKit.nunito(1000), 3)
-	num.position = Vector2(7, 2)
+		ic.custom_minimum_size = Vector2(minf(b.custom_minimum_size.x * 0.42, 110.0), 0)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(ic)
+	var name_l := MenuKit.label(w.display_name if w != null else "+ libre", 17,
+		MenuKit.TEXT if w != null else Color(1, 1, 1, 0.55), MenuKit.nunito(600), 0)
+	name_l.uppercase = true
+	name_l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_l.clip_text = true
+	name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(name_l)
+	var num := MenuKit.label(tag, 15, Color(1, 1, 1, 0.5), MenuKit.nunito(600), 0)
+	num.position = Vector2(14, 6)
 	b.add_child(num)
+	if w != null and animate and b.is_inside_tree():
+		b.pivot_offset = b.size * 0.5
+		create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
+			.tween_property(b, "scale", Vector2.ONE, 0.25).from(Vector2(1.08, 1.08))
 
 
 func _shake(c: Control) -> void:
@@ -889,7 +1152,10 @@ func _refresh_consumables() -> void:
 	var parts: PackedStringArray = []
 	for e: Dictionary in Profile.consumables_preview():
 		parts.append("%s ×%d" % [(e["item"] as ItemData).display_name, int(e["count"])])
-	if not Profile.pack_consumables:
+	if loadout_mode:
+		consumables_label.text = ("· Soins : " + (", ".join(parts) if not parts.is_empty() else "aucun en réserve")) \
+			if Profile.pack_consumables else "· Soins : aucun (désactivés)"
+	elif not Profile.pack_consumables:
 		consumables_label.text = "Consommables emportés : aucun (désactivé)"
 	elif parts.is_empty():
 		consumables_label.text = "Consommables emportés : aucun soin en réserve (fabrique-en à l'atelier)"

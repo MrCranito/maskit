@@ -405,6 +405,43 @@ static func back_button(text: String = "Retour") -> Button:
 	return button("‹  " + text, Style.GHOST, 22, Vector2(150, 64))
 
 
+## Retour de la direction « D » : carré à coins coupés, contour blanc fin, chevron gauche
+## (maquette : en-têtes Arsenal de départ, Pass). `tip` = infobulle (« Cartes », « Menu »…).
+static func square_back_button(tip: String = "Retour", px: float = 74.0) -> Button:
+	var b := Button.new()
+	b.name = "BackButton"
+	b.tooltip_text = tip
+	b.focus_mode = Control.FOCUS_ALL
+	b.custom_minimum_size = Vector2(px, px)
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, px * 0.22, Color(1, 1, 1, 0.5), 1.5, 0.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+		return c
+	var f := CutBox.new()
+	f.draw_center = false
+	f.border_color = TEXT
+	f.border_width = 2.0
+	f.cut = px * 0.22
+	f.grow = 4.0
+	f.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+	b.add_theme_stylebox_override("normal", mk.call(Color(NIGHT_DEEP, 0.55)))
+	b.add_theme_stylebox_override("hover", mk.call(Color(1, 1, 1, 0.12)))
+	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 0.5)))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 0.5)))
+	b.add_theme_stylebox_override("focus", f)
+	var chev := Control.new()
+	chev.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chev.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chev.draw.connect(func() -> void:
+		var c := chev.size * 0.5
+		var k := chev.size.y * 0.16
+		chev.draw_polyline(PackedVector2Array([c + Vector2(k * 0.5, -k), c + Vector2(-k * 0.5, 0), c + Vector2(k * 0.5, k)]),
+			TEXT, maxf(3.0, px * 0.055), true))
+	b.add_child(chev)
+	add_feedback(b, 1.06)
+	return b
+
+
 ## Puce de filtre (bouton bascule) ; `accent` = couleur une fois activée.
 static func chip(text: String, accent: Color = VIOLET, group: ButtonGroup = null) -> Button:
 	var b := Button.new()
