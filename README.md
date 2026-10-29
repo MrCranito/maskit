@@ -101,3 +101,5 @@ python3 tools/ios_fix_xcode.py build/ios/Maskit.xcodeproj
 ```
 
 Le script corrige deux défauts des modèles iOS de Godot (vérifié jusqu’à 4.7.2) : « Framework 'MetalFX' not found » (MetalFX lié seulement sur iPhone) et « Undefined symbol: _main » sur le simulateur des Mac Apple Silicon (la bibliothèque officielle du simulateur ne contient que du x86_64 : le script fabrique une version arm64 à partir de celle de l'iPhone). Le simulateur tourne alors nativement.
+
+- « Undefined symbol: _MTLIOErrorDomain » (Godot 4.7) : le script lie Metal explicitement et définit en faible les constantes Metal absentes de certains SDK (fichier simulator_stubs.mm).

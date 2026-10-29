@@ -3,6 +3,9 @@
 
 Usage : python3 tools/ios_fix_xcode.py build/ios/Maskit.xcodeproj
 
+3. « Undefined symbol: _MTLIOErrorDomain » (Godot 4.7, metal-cpp) : Metal lié explicitement et
+   constantes Metal absentes de certains SDK définies en faible (simulator_stubs.mm).
+
 Défauts corrigés :
 1. « Framework 'MetalFX' not found » : MetalFX n'existe pas dans le SDK du simulateur.
    → MetalFX n'est lié (en lien faible) que pour les vrais iPhone.
@@ -29,11 +32,42 @@ PLATFORM_IOSSIMULATOR = 7
 MH_MAGIC_64 = 0xFEEDFACF
 CPU_TYPE_ARM64 = 0x0100000C
 
-STUBS = """// Généré par tools/ios_fix_xcode.py : remplaçants des classes MetalFX pour le simulateur.
-// Le moteur GL Compatibility du jeu n'utilise jamais MetalFX.
+STUBS = """// Généré par tools/ios_fix_xcode.py.
+// 1. Constantes Metal référencées par metal-cpp (Godot 4.7) : selon la version du SDK d'Xcode,
+//    certaines n'existent pas (MTLTensorDomain : iOS 26, MTLLogStateErrorDomain : iOS 18,
+//    MTLIOErrorDomain : iOS 16, et le simulateur n'en exporte qu'une partie) → « Undefined symbol ».
+//    Définitions faibles : ce ne sont que des noms (domaines d'erreur, compteurs de profilage), et
+//    le moteur GL Compatibility du jeu n'utilise pas le pilote Metal de Godot.
+// 2. Remplaçants des classes MetalFX pour le simulateur (MetalFX absent du SDK simulateur).
 #include <TargetConditionals.h>
-#if TARGET_OS_SIMULATOR
 #import <Foundation/Foundation.h>
+extern "C" {
+extern __attribute__((weak)) NSString *const MTLBinaryArchiveDomain = @"MTLBinaryArchiveDomain";
+extern __attribute__((weak)) NSString *const MTLCommandBufferEncoderInfoErrorKey = @"MTLCommandBufferEncoderInfoErrorKey";
+extern __attribute__((weak)) NSString *const MTLCommonCounterClipperInvocations = @"MTLCommonCounterClipperInvocations";
+extern __attribute__((weak)) NSString *const MTLCommonCounterClipperPrimitivesOut = @"MTLCommonCounterClipperPrimitivesOut";
+extern __attribute__((weak)) NSString *const MTLCommonCounterComputeKernelInvocations = @"MTLCommonCounterComputeKernelInvocations";
+extern __attribute__((weak)) NSString *const MTLCommonCounterFragmentCycles = @"MTLCommonCounterFragmentCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterFragmentInvocations = @"MTLCommonCounterFragmentInvocations";
+extern __attribute__((weak)) NSString *const MTLCommonCounterFragmentsPassed = @"MTLCommonCounterFragmentsPassed";
+extern __attribute__((weak)) NSString *const MTLCommonCounterPostTessellationVertexCycles = @"MTLCommonCounterPostTessellationVertexCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterPostTessellationVertexInvocations = @"MTLCommonCounterPostTessellationVertexInvocations";
+extern __attribute__((weak)) NSString *const MTLCommonCounterRenderTargetWriteCycles = @"MTLCommonCounterRenderTargetWriteCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterSetStageUtilization = @"MTLCommonCounterSetStageUtilization";
+extern __attribute__((weak)) NSString *const MTLCommonCounterSetStatistic = @"MTLCommonCounterSetStatistic";
+extern __attribute__((weak)) NSString *const MTLCommonCounterSetTimestamp = @"MTLCommonCounterSetTimestamp";
+extern __attribute__((weak)) NSString *const MTLCommonCounterTessellationCycles = @"MTLCommonCounterTessellationCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterTessellationInputPatches = @"MTLCommonCounterTessellationInputPatches";
+extern __attribute__((weak)) NSString *const MTLCommonCounterTimestamp = @"MTLCommonCounterTimestamp";
+extern __attribute__((weak)) NSString *const MTLCommonCounterTotalCycles = @"MTLCommonCounterTotalCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterVertexCycles = @"MTLCommonCounterVertexCycles";
+extern __attribute__((weak)) NSString *const MTLCommonCounterVertexInvocations = @"MTLCommonCounterVertexInvocations";
+extern __attribute__((weak)) NSString *const MTLCounterErrorDomain = @"MTLCounterErrorDomain";
+extern __attribute__((weak)) NSString *const MTLIOErrorDomain = @"MTLIOErrorDomain";
+extern __attribute__((weak)) NSString *const MTLLogStateErrorDomain = @"MTLLogStateErrorDomain";
+extern __attribute__((weak)) NSString *const MTLTensorDomain = @"MTLTensorDomain";
+}
+#if TARGET_OS_SIMULATOR
 @interface MTLFXSpatialScalerDescriptor : NSObject
 @end
 @implementation MTLFXSpatialScalerDescriptor
@@ -135,7 +169,13 @@ def main() -> None:
     if m:
         text = text.replace(m.group(0), "")
         text = re.sub(r"^\s*" + m.group(1) + r" /\* MetalFX\.framework \*/,\n", "", text, flags=re.M)
-    flag = '\t\t\t\t"OTHER_LDFLAGS[sdk=iphoneos*]" = "$(LD_CLASSIC_$(XCODE_VERSION_ACTUAL)) -weak_framework MetalFX";\n'
+    flag = '\t\t\t\t"OTHER_LDFLAGS[sdk=iphoneos*]" = "$(LD_CLASSIC_$(XCODE_VERSION_ACTUAL)) -framework Metal -weak_framework MetalFX";\n'
+    # Metal n'est référencé que par metal-cpp (C++, pas d'autolink) : lien explicite partout.
+    text = re.sub(r'^(\s*OTHER_LDFLAGS = "\$\(LD_CLASSIC_\$\(XCODE_VERSION_ACTUAL\)\))(\s*)";',
+                  lambda mm: mm.group(1) + ' -framework Metal";' if "-framework Metal" not in mm.group(0) else mm.group(0),
+                  text, flags=re.M)
+    text = text.replace('-weak_framework MetalFX";', '-framework Metal -weak_framework MetalFX";')
+    text = text.replace('-framework Metal -framework Metal', '-framework Metal')
     if "OTHER_LDFLAGS[sdk=iphoneos*]" not in text:
         text = re.sub(r"(^\s*OTHER_LDFLAGS = .*;\n)", lambda mm: mm.group(1) + flag, text, flags=re.M)
 
@@ -201,7 +241,7 @@ def main() -> None:
     text = add_stub_source(text, proj_dir, root / name)
 
     pbx.write_text(text, encoding="utf-8")
-    print("Projet corrigé : MetalFX lié seulement sur iPhone, simulateur arm64 natif.")
+    print("Projet corrigé : Metal lié, constantes Metal manquantes remplacées, MetalFX seulement sur iPhone, simulateur arm64 natif.")
 
 
 if __name__ == "__main__":
