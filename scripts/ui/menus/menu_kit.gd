@@ -1,21 +1,27 @@
 class_name MenuKit
 extends RefCounted
-## Boîte à outils des menus de RaidersGo :
-## police Nunito (titres en Black, texte en Bold), panneaux bleu nuit aux coins arrondis, gros boutons tactiles
+## Boîte à outils des menus de RaidersGo (direction « D ») :
+## titres en Anton (capitales condensées), texte en Space Grotesk, fond encre, accent violet,
+## panneaux à angles vifs, boutons à coins coupés (CutBox), gros boutons tactiles
 ## (retour de pression, survol PC, focus manette/clavier), transitions en fondu,
 ## marges de sécurité (encoche), réglages joueur (volumes, vibrations).
 ## Aucun _process : toutes les animations passent par des Tween.
 
 const RYE: FontFile = preload("res://assets/fonts/rye/Rye-Regular.ttf")
 const NUNITO: FontFile = preload("res://assets/fonts/nunito/Nunito-Variable.ttf")
+const ANTON: FontFile = preload("res://assets/fonts/anton/Anton-Regular.ttf")
+const SPACE: FontFile = preload("res://assets/fonts/space_grotesk/SpaceGrotesk-Variable.ttf")
 
-const NIGHT := Color(0.071, 0.102, 0.18)            # #121a2e
-const NIGHT_PANEL := Color(0.071, 0.102, 0.18, 0.9)
-const NIGHT_DEEP := Color(0.035, 0.05, 0.1)
-const BORDER := Color(0.85, 0.88, 0.95, 0.35)
-const TEXT := Color(1.0, 0.98, 0.95)
-const TEXT_DIM := Color(0.78, 0.8, 0.86)
-const GOLD := Color(0.98, 0.78, 0.45)
+const NIGHT := Color(0.035, 0.035, 0.07)           # encre (direction D)
+const NIGHT_PANEL := Color(0.024, 0.027, 0.05, 0.85)
+const NIGHT_DEEP := Color(0.02, 0.02, 0.04)
+const BORDER := Color(1.0, 1.0, 1.0, 0.16)
+const TEXT := Color(1.0, 1.0, 1.0)
+const TEXT_DIM := Color(1.0, 1.0, 1.0, 0.62)
+## Accent clair (historiquement « or ») : sélection, focus, liens.
+const GOLD := Color(0.718, 0.608, 1.0)              # #B79BFF
+const VIOLET := Color(0.486, 0.302, 1.0)            # #7C4DFF : action principale, bandeaux
+const VIOLET_LIGHT := Color(0.616, 0.482, 1.0)      # #9D7BFF
 const RED := Color(0.78, 0.13, 0.17)
 const RED_DARK := Color(0.42, 0.05, 0.09)
 
@@ -38,17 +44,24 @@ static var _font_cache: Dictionary = {}
 
 # --- Polices ----------------------------------------------------------------------
 
-## Nunito à la graisse donnée (200..1000), mise en cache.
+## Police de texte (Space Grotesk) à la graisse donnée, ramenée dans 300..700 ; mise en cache.
+## (Nom historique : l'interface utilisait Nunito.)
 static func nunito(weight: int = 700) -> Font:
+	weight = clampi(weight, 300, 700)
 	var key: String = "n%d" % weight
 	if _font_cache.has(key):
 		return _font_cache[key]
 	var fv := FontVariation.new()
-	fv.base_font = NUNITO
+	fv.base_font = SPACE
 	var tag: int = TextServerManager.get_primary_interface().name_to_tag("wght")
 	fv.variation_opentype = {tag: weight}
 	_font_cache[key] = fv
 	return fv
+
+
+## Police d'affichage (Anton) : titres, boutons, gros chiffres.
+static func display() -> Font:
+	return ANTON
 
 
 static func label(text: String, size: int, color: Color = TEXT, font: Font = null, outline: int = 0) -> Label:
@@ -64,12 +77,12 @@ static func label(text: String, size: int, color: Color = TEXT, font: Font = nul
 	return l
 
 
-## Titre (Nunito Black, contour sombre) avec ombre portée.
+## Titre : Anton en capitales, légère ombre portée.
 static func title(text: String, size: int, color: Color = TEXT) -> Label:
-	var l := label(text, size, color, nunito(1000), maxi(4, size / 9))
-	l.add_theme_color_override("font_shadow_color", Color(0.05, 0.02, 0.08, 0.7))
+	var l := label(text.to_upper(), size, color, ANTON)
+	l.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.03, 0.55))
 	l.add_theme_constant_override("shadow_offset_x", 0)
-	l.add_theme_constant_override("shadow_offset_y", maxi(2, size / 16))
+	l.add_theme_constant_override("shadow_offset_y", maxi(1, size / 20))
 	return l
 
 
@@ -81,11 +94,11 @@ static func panel_style(bg: Color = NIGHT_PANEL, border: Color = BORDER, radius:
 	s.bg_color = bg
 	s.border_color = border
 	s.set_border_width_all(border_w)
-	s.set_corner_radius_all(radius)
+	s.set_corner_radius_all(mini(radius, 2))   # direction D : angles vifs
 	s.set_content_margin_all(margin)
-	s.shadow_color = Color(0.0, 0.0, 0.05, 0.35)
-	s.shadow_size = 10
-	s.shadow_offset = Vector2(0, 4)
+	s.shadow_color = Color(0.0, 0.0, 0.03, 0.3)
+	s.shadow_size = 8
+	s.shadow_offset = Vector2(0, 3)
 	s.anti_aliasing = true
 	return s
 
@@ -96,57 +109,45 @@ static func panel(bg: Color = NIGHT_PANEL, radius: int = 18, margin: int = 18) -
 	return p
 
 
-static func _button_box(bg: Color, border: Color, bottom: int, radius: int) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(2)
-	s.border_width_bottom = bottom
-	s.set_corner_radius_all(radius)
-	s.content_margin_left = 26
-	s.content_margin_right = 26
-	s.content_margin_top = 10
-	s.content_margin_bottom = 10 + bottom - 2
-	s.anti_aliasing = true
+static func _button_box(bg: Color, border: Color, bottom: int, _radius: int) -> CutBox:
+	var s := CutBox.make(bg, 12.0, border, 1.5 if border.a > 0.0 else 0.0, 24.0, 8.0)
+	s.content_margin_bottom = 8.0 + float(bottom - 2)
 	return s
 
 
-## Gros bouton tactile stylé. Retours : survol (éclairci + léger agrandissement),
-## pression (écrasement), focus (liseré or), son + vibration au clic.
+## Gros bouton tactile : coins coupés, libellé en Anton capitales. Retours : survol (éclairci +
+## léger agrandissement), pression (écrasement), focus (contour violet), son + vibration au clic.
 static func button(text: String, style: Style = Style.SECONDARY, font_size: int = 28,
 		min_size: Vector2 = Vector2(300, 74)) -> Button:
 	var b := Button.new()
-	b.text = text
+	b.text = text.to_upper()
 	b.custom_minimum_size = min_size
 	b.focus_mode = Control.FOCUS_ALL
-	b.add_theme_font_override("font", nunito(900))
+	b.add_theme_font_override("font", ANTON)
 	b.add_theme_font_size_override("font_size", font_size)
 	var base: Color
 	var edge: Color
 	match style:
 		Style.PRIMARY:
-			base = RED
-			edge = Color(1.0, 0.62, 0.5, 0.9)
+			base = VIOLET
+			edge = Color(0, 0, 0, 0)
 		Style.GHOST:
-			base = Color(NIGHT, 0.55)
-			edge = Color(1, 1, 1, 0.22)
+			base = Color(NIGHT_DEEP, 0.55)
+			edge = Color(1, 1, 1, 0.35)
 		_:
-			base = Color(0.11, 0.15, 0.27, 0.94)
-			edge = Color(0.85, 0.88, 0.95, 0.45)
-	var radius: int = 16
-	var normal := _button_box(base, edge, 5, radius)
-	normal.border_color = edge
-	var hover := _button_box(base.lightened(0.14), edge.lightened(0.3), 5, radius)
-	var pressed := _button_box(base.darkened(0.2), edge, 2, radius)
-	pressed.content_margin_top = 13
-	var focus := StyleBoxFlat.new()
+			base = Color(NIGHT_DEEP, 0.85)
+			edge = Color(1, 1, 1, 0.28)
+	var normal := _button_box(base, edge, 2, 0)
+	var hover := _button_box(base.lightened(0.12), edge.lightened(0.3), 2, 0)
+	var pressed := _button_box(base.darkened(0.2), edge, 2, 0)
+	pressed.content_margin_top += 2.0
+	var focus := CutBox.new()
 	focus.draw_center = false
 	focus.border_color = GOLD
-	focus.set_border_width_all(3)
-	focus.set_corner_radius_all(radius + 3)
-	focus.set_expand_margin_all(4)
-	focus.anti_aliasing = true
-	var disabled := _button_box(Color(base, 0.4), Color(edge, 0.3), 5, radius)
+	focus.border_width = 2.5
+	focus.cut = 14.0
+	focus.grow = 4.0
+	var disabled := _button_box(Color(base, 0.4), Color(edge, 0.3 * edge.a), 2, 0)
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
 	b.add_theme_stylebox_override("pressed", pressed)
@@ -157,8 +158,6 @@ static func button(text: String, style: Style = Style.SECONDARY, font_size: int 
 		b.add_theme_color_override(c, TEXT)
 	b.add_theme_color_override("font_pressed_color", Color(TEXT, 0.85))
 	b.add_theme_color_override("font_disabled_color", Color(TEXT, 0.4))
-	b.add_theme_constant_override("outline_size", 4)
-	b.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.08, 0.55))
 	add_feedback(b)
 	return b
 
@@ -386,31 +385,24 @@ static func back_button(text: String = "Retour") -> Button:
 
 
 ## Puce de filtre (bouton bascule) ; `accent` = couleur une fois activée.
-static func chip(text: String, accent: Color = GOLD, group: ButtonGroup = null) -> Button:
+static func chip(text: String, accent: Color = VIOLET, group: ButtonGroup = null) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.toggle_mode = true
 	b.button_group = group
 	b.focus_mode = Control.FOCUS_ALL
 	b.custom_minimum_size = Vector2(0, 52)
-	b.add_theme_font_override("font", nunito(900))
-	b.add_theme_font_size_override("font_size", 18)
-	var off := panel_style(Color(NIGHT, 0.75), Color(1, 1, 1, 0.18), 26, 1, 0)
-	off.content_margin_left = 18
-	off.content_margin_right = 18
-	off.shadow_size = 0
-	var hov := off.duplicate() as StyleBoxFlat
-	hov.bg_color = Color(0.14, 0.18, 0.3, 0.9)
-	var on := off.duplicate() as StyleBoxFlat
-	on.bg_color = accent.darkened(0.35)
-	on.border_color = accent.lightened(0.35)
-	on.set_border_width_all(2)
-	var focus := StyleBoxFlat.new()
+	b.add_theme_font_override("font", nunito(700))
+	b.add_theme_font_size_override("font_size", 17)
+	var off := CutBox.make(Color(NIGHT_DEEP, 0.75), 8.0, Color(1, 1, 1, 0.18), 1.0, 18.0, 4.0)
+	var hov := CutBox.make(Color(1, 1, 1, 0.08), 8.0, Color(1, 1, 1, 0.3), 1.0, 18.0, 4.0)
+	var on := CutBox.make(accent.darkened(0.25), 8.0, accent.lightened(0.35), 1.5, 18.0, 4.0)
+	var focus := CutBox.new()
 	focus.draw_center = false
 	focus.border_color = GOLD
-	focus.set_border_width_all(2)
-	focus.set_corner_radius_all(28)
-	focus.set_expand_margin_all(3)
+	focus.border_width = 2.0
+	focus.cut = 10.0
+	focus.grow = 3.0
 	b.add_theme_stylebox_override("normal", off)
 	b.add_theme_stylebox_override("hover", hov)
 	b.add_theme_stylebox_override("pressed", on)
@@ -430,7 +422,7 @@ static func pill(txt: String, bg: Color, font_size: int = 14, fg: Color = TEXT, 
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var s := StyleBoxFlat.new()
 	s.bg_color = bg
-	s.set_corner_radius_all(10)
+	s.set_corner_radius_all(2)
 	s.content_margin_left = 9
 	s.content_margin_right = 9
 	s.content_margin_top = 2
@@ -485,8 +477,8 @@ static func make_touch_scroll(scroll: ScrollContainer) -> TouchScroller:
 static func tighten(b: Button, h_margin: int = 14) -> void:
 	for st: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:
 		var sb := b.get_theme_stylebox(st)
-		if sb is StyleBoxFlat:
-			var d := (sb as StyleBoxFlat).duplicate() as StyleBoxFlat
+		if sb != null and not (sb is StyleBoxEmpty):
+			var d := sb.duplicate() as StyleBox
 			d.content_margin_left = h_margin
 			d.content_margin_right = h_margin
 			b.add_theme_stylebox_override(st, d)
@@ -502,8 +494,8 @@ static func rarity_band(r: int, font_size: int = 15, height: float = 28.0, round
 	p.custom_minimum_size = Vector2(0, height)
 	var s := StyleBoxFlat.new()
 	s.bg_color = c.darkened(0.12) if r < 4 else c.darkened(0.05)
-	s.corner_radius_bottom_left = round_bottom
-	s.corner_radius_bottom_right = round_bottom
+	s.corner_radius_bottom_left = mini(round_bottom, 0)
+	s.corner_radius_bottom_right = mini(round_bottom, 0)
 	s.border_color = c.lightened(0.3)
 	s.border_width_top = 1
 	s.anti_aliasing = true
