@@ -11,6 +11,7 @@ const KINDS := [&"mall_guard", &"mall_clown", &"mall_sniper", &"mall_mannequin",
 const KEYS := [&"key_mall_jewelry", &"key_mall_offices"]
 const Pop := preload("res://scripts/biomes/mall/mall_populator.gd")
 const EnemyKinds := preload("res://scripts/biomes/mall/enemy_kinds.gd")
+const Plan := preload("res://scripts/biomes/mall/mall_plan.gd")
 
 var world: WorldData
 ## runs[seed][diff] = Array[FloorLayout]
@@ -82,6 +83,8 @@ func test_monde_charge() -> void:
 
 # --- Structure -----------------------------------------------------------------------
 
+## (Refonte) Rez-de-chaussée = plan façon maquette (portrait, parking extérieur) ; autres étages :
+## grille commune de l'ancien squelette.
 func test_quatre_etages_meme_grille() -> void:
 	for per: Array in runs:
 		var floors: Array = per[0]
@@ -92,7 +95,8 @@ func test_quatre_etages_meme_grille() -> void:
 		for f: FloorLayout in floors:
 			assert_gt(f.floor_index, prev, "trié par floor_index")
 			prev = f.floor_index
-			assert_eq(f.size, g.size, "même grille")
+			if f.floor_index != 0:
+				assert_eq(f.size, _floor(floors, 1).size, "même grille (étages -1, 1, 2)")
 			for r in f.rooms:
 				assert_gt(r.tags.size(), 0, "rôle de salle (tags[0])")
 
@@ -514,3 +518,188 @@ func _big_cells(f: FloorLayout) -> Dictionary:
 		for q in Pop.spawn_footprint(s):
 			out[q] = true
 	return out
+
+
+# --- Rez-de-chaussée façon maquette + paquets pré-rendus (assets/prerender/mall/<seed>/) -------
+
+func _grounds() -> Array[FloorLayout]:
+	var out: Array[FloorLayout] = []
+	for per: Array in runs:
+		out.append(_floor(per[1], 0))
+	return out
+
+
+func _rooms_role(f: FloorLayout, role: String) -> Array[FloorLayout.Room]:
+	var out: Array[FloorLayout.Room] = []
+	for r in f.rooms:
+		if r.tags.size() > 0 and r.tags[0] == role:
+			out.append(r)
+	return out
+
+
+## Composition de la maquette : grand rectangle, ceinture de boutiques, galerie, atrium à fontaine,
+## escalators doubles, hall d'entrée au sud sur un parking extérieur (spawn), quais d'extraction.
+func test_rez_de_chaussee_composition() -> void:
+	for f in _grounds():
+		assert_eq(f.size, Vector2i(Plan.W, Plan.H), "plan portrait du rez-de-chaussée")
+		assert_eq(_rooms_role(f, "gallery").size(), 1, "galerie")
+		var atr := _rooms_role(f, "atrium")
+		assert_eq(atr.size(), 1, "atrium")
+		assert_eq(_rooms_role(f, "entrance").size(), 1, "hall d'entrée")
+		var park := _rooms_role(f, "parking")
+		assert_eq(park.size(), 1, "parking")
+		if park.size() == 1:
+			assert_true(park[0].rect.has_point(f.player_spawn), "arrivée sur le parking")
+			assert_gt(park[0].rect.position.y, Plan.GAL.end.y, "parking au sud du bâtiment")
+		var shops := 0
+		for r in f.rooms:
+			if r.tags.size() > 0 and (String(r.tags[0]).begins_with("shop_") or r.tags[0] in ["supermarket", "arcade"]):
+				shops += 1
+		assert_gte(shops, 16, "ceinture de boutiques")
+		assert_gte(_rooms_role(f, "shop_cafe").size(), 1, "café")
+		assert_eq(_rooms_role(f, "arcade").size(), 1, "salle d'arcade")
+		var fountain := 0
+		for p in f.prop_spawns:
+			if p.kind == &"fountain":
+				fountain += 1
+				if atr.size() == 1:
+					assert_true(atr[0].rect.has_point(p.cell), "fontaine dans l'atrium")
+		assert_eq(fountain, 1, "une fontaine")
+		var up := 0
+		var down := 0
+		for s in f.stairs:
+			if s.target_floor > 0:
+				up += 1
+			else:
+				down += 1
+		assert_eq(up, 2, "escalators doubles vers l'étage")
+		assert_eq(down, 2, "escalators doubles vers le sous-sol")
+		assert_gte(f.extraction_cells.size(), 2, "extraction")
+		for e in f.extraction_cells:
+			assert_eq(String(f.room_at(e).tags[0]), "service", "extraction aux quais de livraison")
+		var c: Dictionary = f.get_meta(&"render_contract", {})
+		assert_true(c.has("modules") and c.has("escalators") and c.has("parking"), "contrat de rendu")
+
+
+## Le plan du rez-de-chaussée ne dépend pas de la difficulté (même paquet pré-rendu pour toutes).
+func test_rez_de_chaussee_independant_de_la_difficulte() -> void:
+	for i in 4:
+		var a := MallGenerator.generate_floor(_seed(i), world, 0, 0)
+		var b := MallGenerator.generate_floor(_seed(i), world, 4, 0)
+		assert_eq(PrerenderBackdrop.layout_md5(a), PrerenderBackdrop.layout_md5(b), "seed %d" % _seed(i))
+
+
+## Boutiques à plafond (toit rendu incliné vers le nord) : aucune porte dans leur mur nord.
+func test_portes_visibles_camera_inclinee() -> void:
+	for f in _grounds():
+		var bad: Array = []
+		for d in f.doors:
+			if d.vertical:
+				continue
+			var south := f.room_at(d.cell + Vector2i.DOWN)
+			if south != null and south.building_id >= 0:
+				var b2 := f.buildings[south.building_id]
+				if d.cell.y == b2.rect.position.y:
+					bad.append(d.cell)
+		assert_eq(bad, [], "porte dans le mur nord d'une boutique à plafond")
+
+
+func test_constructeur_toits_logiques() -> void:
+	var f := _grounds()[0]
+	var root: Node = MallBuilder.build(f, world)
+	add_child_autofree(root)
+	var roofs: Array = root.call("get_roofs")
+	assert_eq(roofs.size(), f.buildings.size(), "un toit logique par boutique fermée")
+	for r: Node in roofs:
+		assert_true(String(r.name).begins_with("Roof_"))
+	assert_true(root.has_method("prerender_hide"))
+
+
+func _mall_packs() -> PackedInt32Array:
+	return PrerenderBackdrop.available_seeds(&"mall")
+
+
+func _mall_meta(s: int) -> Dictionary:
+	var fa := FileAccess.open(PrerenderBackdrop.pack_root(&"mall") + str(s) + "/map.json", FileAccess.READ)
+	return JSON.parse_string(fa.get_as_text()) if fa != null else {}
+
+
+func test_paquets_mall_correspondent_au_plan() -> void:
+	var seeds := _mall_packs()
+	assert_gt(seeds.size(), 0, "au moins une carte de centre commercial pré-rendue")
+	for s in seeds:
+		var m := _mall_meta(s)
+		var L := MallGenerator.generate_floor(s, world, 1, 0)
+		assert_eq(String(m.get("tiles_md5", "")), PrerenderBackdrop.layout_md5(L), "seed %d : empreinte du plan" % s)
+		assert_gte(int(m.get("ppc", 0)), 72, "seed %d : résolution ≥ 72 px/case" % s)
+		assert_eq(int(m.get("tilt_deg", 0)), 38)
+		assert_eq((m.get("interiors", []) as Array).size(), L.buildings.size(), "un intérieur par boutique fermée")
+		assert_true(m.has("collision") and m.has("occluders"), "collisions et occultation")
+		var dir := PrerenderBackdrop.pack_root(&"mall") + str(s) + "/"
+		for t: Dictionary in m["tiles"]:
+			assert_true(ResourceLoader.exists(dir + String(t["file"])), "tuile %s" % t["file"])
+		assert_true(ResourceLoader.exists(dir + "minimap.webp"), "mini-carte")
+		assert_true(ResourceLoader.exists(dir + "footprint.png"), "emprise")
+		assert_lt(int((m.get("collision_stats", {}) as Dictionary).get("unblocked_cells", 0)), 60, "rendu cohérent avec le plan")
+		var b := PrerenderBackdrop.create(s, L, &"mall")
+		assert_not_null(b, "fond accepté par le jeu")
+		if b != null:
+			b.free()
+
+
+func test_paquets_mall_collisions_gardent_les_passages() -> void:
+	for s in _mall_packs():
+		var m := _mall_meta(s)
+		var L := MallGenerator.generate_floor(s, world, 1, 0)
+		var cov := {}
+		for r: Array in m.get("collision", []):
+			var rr := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			for y in range(floori(rr.position.y / 64.0), ceili(rr.end.y / 64.0)):
+				for x in range(floori(rr.position.x / 64.0), ceili(rr.end.x / 64.0)):
+					var cr := Rect2(x * 64.0, y * 64.0, 64.0, 64.0).intersection(rr)
+					cov[Vector2i(x, y)] = float(cov.get(Vector2i(x, y), 0.0)) + cr.get_area() / 4096.0
+		var prot: Array[Vector2i] = [L.player_spawn]
+		for d in L.doors:
+			prot.append(d.cell)
+		for st in L.stairs:
+			prot.append(st.cell)
+		prot.append_array(L.extraction_cells)
+		for c: Vector2i in prot:
+			assert_lt(float(cov.get(c, 0.0)), 0.01, "seed %d : abord %s libre" % [s, c])
+		var blocked := {}
+		for c2: Vector2i in cov:
+			if float(cov[c2]) >= 0.5:
+				blocked[c2] = true
+		var base := L.flood_reachable(L.player_spawn)
+		var seen := {L.player_spawn: true}
+		var stack: Array[Vector2i] = [L.player_spawn]
+		while not stack.is_empty():
+			var c3: Vector2i = stack.pop_back()
+			for dv: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var n := c3 + dv
+				if seen.has(n) or blocked.has(n) or not FloorLayout.is_walkable_tile(L.get_tile(n)):
+					continue
+				seen[n] = true
+				stack.append(n)
+		var objs := {}
+		for l: Array in [L.container_spawns, L.hiding_spot_spawns]:
+			for sp: FloorLayout.Spawn in l:
+				for q in FloorLayout.spawn_cells(sp):
+					objs[q] = true
+		var lost: Array = []
+		for c4: Vector2i in base:
+			if not blocked.has(c4) and not seen.has(c4) and not objs.has(c4):
+				lost.append(c4)
+		assert_eq(lost, [], "seed %d : cases devenues inaccessibles" % s)
+
+
+## Tourelles : toujours accrochées à un mur (case WALL rendue), face à une case praticable.
+func test_tourelles_sur_murs_visibles() -> void:
+	var placer: Script = load("res://scripts/dungeon/turret_placer.gd")
+	for f in _grounds():
+		var spots: Array = placer.call("find_spots", f, 1234, 2, 0, "world_03_mall")
+		for sp: Dictionary in spots:
+			var c: Vector2i = sp["cell"]
+			var n: Vector2i = sp["normal"]
+			assert_eq(f.get_tile(c), T.WALL, "tourelle sur un mur")
+			assert_true(FloorLayout.is_walkable_tile(f.get_tile(c + n)), "face à une case praticable")

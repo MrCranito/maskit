@@ -26,8 +26,8 @@ const BIG := {
 ## Rôle → [kind, min, max, placement] ; placement : &"wall", &"center", &"any".
 const PROPS := {
 	&"entrance": [[&"planter", 1, 2, &"wall"], [&"mall_map", 1, 1, &"wall"], [&"bench", 0, 1, &"wall"], [&"debris", 1, 2, &"any"], [&"puddle", 0, 1, &"any"], [&"trash_bin", 0, 1, &"wall"]],
-	&"atrium": [[&"palm_pot", 4, 6, &"any"], [&"bench", 3, 4, &"center"], [&"planter", 2, 4, &"center"], [&"puddle", 2, 3, &"any"], [&"debris", 1, 2, &"any"], [&"neon_sign", 1, 2, &"any"]],
-	&"gallery": [[&"planter", 1, 3, &"wall"], [&"bench", 1, 2, &"wall"], [&"trash_bin", 0, 2, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 0, 2, &"any"], [&"debris", 0, 2, &"any"], [&"mall_map", 0, 1, &"wall"], [&"palm_pot", 0, 1, &"wall"]],
+	&"atrium": [[&"palm_pot", 6, 9, &"any"], [&"bench", 6, 9, &"center"], [&"planter", 4, 6, &"center"], [&"food_table", 2, 4, &"center"], [&"display_table", 1, 2, &"center"], [&"puddle", 2, 3, &"any"], [&"debris", 2, 3, &"any"], [&"neon_sign", 1, 2, &"any"]],
+	&"gallery": [[&"planter", 3, 6, &"center"], [&"bench", 3, 6, &"center"], [&"trash_bin", 1, 3, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 1, 3, &"any"], [&"debris", 2, 4, &"any"], [&"mall_map", 1, 2, &"wall"], [&"palm_pot", 2, 4, &"wall"], [&"display_table", 2, 4, &"center"], [&"food_table", 1, 3, &"center"]],
 	&"balcony": [[&"planter", 0, 2, &"wall"], [&"bench", 0, 1, &"wall"], [&"neon_sign", 0, 1, &"wall"], [&"debris", 0, 1, &"any"], [&"puddle", 0, 1, &"any"]],
 	&"food_court": [[&"food_table", 3, 6, &"center"], [&"trash_bin", 1, 2, &"wall"], [&"palm_pot", 0, 1, &"wall"], [&"neon_sign", 1, 1, &"wall"]],
 	&"shop_clothes": [[&"clothes_rack", 2, 4, &"any"], [&"mannequin", 1, 3, &"wall"], [&"checkout", 0, 1, &"wall"]],

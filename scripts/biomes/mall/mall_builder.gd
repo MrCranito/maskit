@@ -125,6 +125,15 @@ func get_roofs() -> Array[Node2D]:
 	return _roofs
 
 
+## (Pré-rendu) Masque les visuels remplacés par le fond pré-calculé (escalators, lueurs peintes) ;
+## PrerenderBackdrop.attach_to masque déjà Ground, Walls (visuels), FloorDetails, décors et toits.
+func prerender_hide() -> void:
+	for nm: String in ["StairsVisual", "Glows"]:
+		var n := get_node_or_null(NodePath(nm))
+		if n is CanvasItem:
+			(n as CanvasItem).visible = false
+
+
 func get_props() -> Array[Node2D]:
 	return _props
 
