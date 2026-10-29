@@ -3,8 +3,8 @@ extends RefCounted
 ## Petits utilitaires visuels partagés (textures avec mipmaps pour les icônes
 ## 512 px, polices du projet). Tout est mis en cache.
 
-const FONT_TITLE_PATH := "res://assets/fonts/rye/Rye-Regular.ttf"
-const FONT_TEXT_PATH := "res://assets/fonts/nunito/Nunito-Variable.ttf"
+const FONT_TITLE_PATH := "res://assets/fonts/anton/Anton-Regular.ttf"
+const FONT_TEXT_PATH := "res://assets/fonts/space_grotesk/SpaceGrotesk-Variable.ttf"
 
 static var _mip_cache: Dictionary = {}
 static var _fonts: Dictionary = {}
@@ -39,8 +39,9 @@ static func title_font() -> Font:
 	return _font("title", FONT_TITLE_PATH, 0)
 
 
-## Nunito à la graisse demandée (400 normal, 700 gras, 800 extra-gras).
+## Police de texte (Space Grotesk) à la graisse demandée, ramenée dans 300..700.
 static func text_font(weight: int = 600) -> Font:
+	weight = clampi(weight, 300, 700)
 	return _font("text_%d" % weight, FONT_TEXT_PATH, weight)
 
 

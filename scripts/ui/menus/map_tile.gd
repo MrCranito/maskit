@@ -39,7 +39,12 @@ func _init(p_entry: Dictionary = {}, p_mode: Mode = Mode.COMPACT, p_upcoming: bo
 
 
 func is_playable() -> bool:
-	return card != null and card.is_available() and not upcoming
+	return card != null and card.is_available() and not upcoming and not is_level_locked()
+
+
+## Carte réservée à un niveau de raider supérieur (RaiderProgress, [raider] unlocks).
+func is_level_locked() -> bool:
+	return card != null and RaiderProgress.current_level() < RaiderProgress.required_level(card.id)
 
 
 func _ready() -> void:
@@ -53,7 +58,7 @@ func _ready() -> void:
 	focus.draw_center = false
 	focus.border_color = MenuKit.GOLD
 	focus.set_border_width_all(3)
-	focus.set_corner_radius_all(20)
+	focus.set_corner_radius_all(2)
 	focus.set_expand_margin_all(5)
 	add_theme_stylebox_override("focus", focus)
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
@@ -71,7 +76,7 @@ func _build() -> void:
 	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var fs := StyleBoxFlat.new()
 	fs.bg_color = accent.darkened(0.65)
-	fs.set_corner_radius_all(16)
+	fs.set_corner_radius_all(2)
 	fs.anti_aliasing = true
 	_frame.add_theme_stylebox_override("panel", fs)
 	_frame.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
@@ -105,6 +110,16 @@ func _build() -> void:
 	_time_pill.offset_right = -10
 	_time_pill.offset_top = 10
 	_frame.add_child(_time_pill)
+	if is_level_locked():
+		var lock := MenuKit.pill("Niv. %d" % RaiderProgress.required_level(card.id), Color(MenuKit.NIGHT_DEEP, 0.92), 14,
+			MenuKit.TEXT, Color(1, 1, 1, 0.35))
+		lock.name = "LevelLock"
+		lock.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		lock.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		lock.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		lock.offset_right = -10
+		lock.offset_bottom = -10
+		_frame.add_child(lock)
 	if upcoming and mode == Mode.COMPACT:
 		# Petite vignette : le minuteur passe sous le badge (pas la place sur une ligne).
 		_time_pill.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -148,7 +163,7 @@ func _build() -> void:
 	_ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ring_style = StyleBoxFlat.new()
 	_ring_style.draw_center = false
-	_ring_style.set_corner_radius_all(16)
+	_ring_style.set_corner_radius_all(2)
 	_ring_style.anti_aliasing = true
 	_ring.add_theme_stylebox_override("panel", _ring_style)
 	add_child(_ring)
@@ -204,7 +219,7 @@ static func difficulty_badge(level: int, compact: bool) -> PanelContainer:
 	s.bg_color = c.darkened(0.5)
 	s.border_color = c.lightened(0.25)
 	s.set_border_width_all(2)
-	s.set_corner_radius_all(10)
+	s.set_corner_radius_all(2)
 	s.content_margin_left = 8
 	s.content_margin_right = 9
 	s.content_margin_top = 2
@@ -260,9 +275,9 @@ func _refresh() -> void:
 		return
 	var accent: Color = card.accent_color
 	if selected:
-		_ring_style.border_color = accent.lerp(Color.WHITE, 0.35)
+		_ring_style.border_color = MenuKit.VIOLET_LIGHT
 		_ring_style.set_border_width_all(4)
-		_ring_style.shadow_color = Color(accent, 0.6)
+		_ring_style.shadow_color = Color(MenuKit.VIOLET, 0.55)
 		_ring_style.shadow_size = 18
 	else:
 		_ring_style.border_color = Color(1, 1, 1, 0.16)
@@ -271,7 +286,7 @@ func _refresh() -> void:
 		_ring_style.shadow_size = 6
 	_ring_style.shadow_offset = Vector2.ZERO
 	_ring.queue_redraw()
-	var dimmed: bool = not card.is_available() or upcoming
+	var dimmed: bool = not card.is_available() or upcoming or is_level_locked()
 	_frame.modulate = Color(0.6, 0.62, 0.7) if dimmed else Color.WHITE
 
 

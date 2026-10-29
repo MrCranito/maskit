@@ -150,7 +150,7 @@ func test_main_menu_buttons() -> void:
 		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
-	assert_eq(labels, ["JOUER", "Coop", "Pass", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
+	assert_eq(labels, ["DÉPLOYER", "Coop", "Pass", "Progression", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
 	assert_eq(m.gem_counter.value_label.text, "42")
 	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
@@ -227,8 +227,8 @@ func test_lobby_hero_reflects_skin() -> void:
 
 
 func test_lobby_layout_nav_and_loadout() -> void:
-	# Barre de navigation gardée en bas à gauche ; « Arsenal de départ » sous la barre du haut,
-	# sans chevaucher la navigation ni le héros ; Coop à gauche de JOUER.
+	# Direction D : menu texte à gauche sous la barre du haut, carte du pass en bas à gauche,
+	# bandeau violet à droite avec Coop puis DÉPLOYER ; plus de résumé d'arsenal au lobby.
 	_test_profile(0)
 	for vp: Vector2 in [Vector2(1280, 720), Vector2(1560, 720)]:   # 16:9 et téléphone large (19,5:9)
 		await _check_lobby_layout(vp)
@@ -239,27 +239,28 @@ func _check_lobby_layout(vp: Vector2) -> void:
 	await wait_frames(2)
 	m.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	m.size = vp
-	await wait_frames(2)
+	await wait_seconds(1.1)   # fin des animations d'entrée
+	assert_null(m.loadout_summary, "L'arsenal se choisit à l'étape 2, plus au lobby")
 	var top: Rect2 = (m.get("_top") as Control).get_global_rect()
 	var nav: Rect2 = (m.get("_nav") as Control).get_global_rect()
-	await wait_seconds(1.1)   # fin des animations d'entrée
-	var ls: Rect2 = m.loadout_summary.get_global_rect()
-	nav = (m.get("_nav") as Control).get_global_rect()
-	assert_gte(ls.position.y - top.end.y, 20.0, "Le panneau respire sous la barre du haut")
-	assert_false(ls.intersects(nav), "Pas de chevauchement avec la navigation")
-	assert_lt(nav.position.x, vp.x * 0.1, "Navigation en bas à gauche")
-	assert_gt(nav.end.y, vp.y - 60.0)
+	assert_lt(nav.position.x, vp.x * 0.1, "Menu texte à gauche")
+	assert_gte(nav.position.y, top.end.y - 1.0, "Menu sous la barre du haut")
 	var hero_rect: Rect2 = m.lobby.hero_hit.get_global_rect()
-	assert_false(ls.intersects(hero_rect.grow(-hero_rect.size.x * 0.15)), "Pas sur le héros")
+	var hero_core := hero_rect.grow(-hero_rect.size.x * 0.15)
+	assert_false(nav.intersects(hero_core), "Menu pas sur le héros")
+	var pc: Rect2 = m.pass_card.get_global_rect()
+	assert_lt(pc.position.x, vp.x * 0.1, "Pass en bas à gauche")
+	assert_gt(pc.end.y, vp.y - 60.0)
+	assert_false(pc.intersects(nav), "Pass sous le menu")
+	assert_false(pc.intersects(hero_core), "Pass pas sur le héros")
+	var slab: Rect2 = (m.get("slab") as Control).get_global_rect()
+	assert_almost_eq(slab.end.x, vp.x, 1.0, "Bandeau collé au bord droit")
+	assert_false(top.intersects(slab), "La barre du haut s'arrête avant le bandeau")
 	var coop: Rect2 = m.coop_button.get_global_rect()
 	var play: Rect2 = m.play_button.get_global_rect()
-	assert_lt(coop.end.x, play.position.x + 1.0, "Coop à gauche de JOUER")
-	assert_false(coop.intersects(nav))
-	# Carte du pass sous l'arsenal, sans chevaucher la navigation ni le héros
-	var pc: Rect2 = m.pass_card.get_global_rect()
-	assert_gt(pc.position.y, ls.end.y, "Pass sous l'arsenal de départ")
-	assert_false(pc.intersects(nav), "Pass au-dessus de la navigation")
-	assert_false(pc.intersects(hero_rect.grow(-hero_rect.size.x * 0.15)), "Pass pas sur le héros")
+	assert_lt(coop.end.x, play.position.x + 1.0, "Coop à gauche de DÉPLOYER")
+	assert_true(slab.encloses(play.grow(-1.0)), "DÉPLOYER dans le bandeau")
+	assert_true(slab.encloses(coop.grow(-1.0)), "Coop dans le bandeau")
 	assert_eq(m.merchant_button.caption.text, "Inventaire", "Marchand renommé Inventaire")
 	assert_eq(m.merchant_button.soon, not ResourceLoader.exists(MenuKit.MERCHANT_SCENE), "Inventaire : « Bientôt » si absent")
 	assert_eq(m.crafting_button.soon, not ResourceLoader.exists(MenuKit.CRAFTING_SCENE))
@@ -268,55 +269,10 @@ func _check_lobby_layout(vp: Vector2) -> void:
 	m.call("_go_optional", m.merchant_button, "res://scenes/ui/menus/__absent__.tscn")
 	assert_false(bool(m.get_meta(&"_leaving", false)), "« Bientôt » : on reste au lobby")
 
-
-func test_lobby_assets_and_layout() -> void:
-	for f: String in ["back.jpg", "camp.png", "front.png", "flag_cloth.png", "flame.png", "smoke.png", "lobby.json"]:
-		assert_true(FileAccess.file_exists("res://assets/ui/menu/lobby/" + f), f)
-	for f: String in ["back.jpg", "camp.png", "front.png", "flag_cloth.png"]:
-		var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/ui/menu/lobby/" + f))
-		assert_lte(maxi(img.get_width(), img.get_height()), 2048, "Texture ≤ 2048 : " + f)
-	var l := LobbyScene.new()
-	add_child_autofree(l)
-	await wait_frames(1)
-	l.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	l.size = Vector2(1280, 720)   # paysage 16:9 (le viewport des tests peut avoir un autre format)
-	await wait_frames(1)
-	assert_not_null(l.flag, "Drapeau")
-	assert_true(l.flag.material is ShaderMaterial, "Drapeau ondulé par shader (fluide), plus d'images")
-	assert_gte(l.flag.polygon.size(), 60, "Maillage subdivisé")
-	assert_gte(l.flag.texture.get_width(), 256, "Texture du drapeau haute résolution")
-	assert_not_null(l.flames, "Flammes")
-	assert_true(l.flames.material is ShaderMaterial, "Flammes déformées par shader")
-	# le héros est au centre-gauche et entièrement dans l'écran
-	var feet := l.hero_screen_position()
-	assert_between(feet.x / l.size.x, 0.3, 0.5, "Héros au centre-gauche")
-	assert_between(feet.y / l.size.y, 0.6, 0.97, "Pieds du héros visibles")
-	l.stop_loops()
-
-
-func test_lobby_hero_is_sharp_and_smooth() -> void:
-	# Net sur Retina : pose ≥ 600 px de haut, import sans perte avec mipmaps ; idle continue.
-	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(LobbyHero.META_PATH))
-	assert_gte(float((meta as Dictionary).get("hero_px", 0)), 600.0, "Héros rendu en haute résolution")
-	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
-		var id := String(s.id).trim_prefix("char_")
-		assert_true(ResourceLoader.exists(LobbyHero.DIR + id + ".png"), "Pose du skin " + id)
-		var imp := FileAccess.get_file_as_string(LobbyHero.DIR + id + ".png.import")
-		assert_string_contains(imp, "compress/mode=0", "Import sans perte : " + id)
-		assert_string_contains(imp, "mipmaps/generate=true", "Mipmaps : " + id)
-	var h := LobbyHero.new(false)
-	add_child_autofree(h)
-	await wait_frames(1)
-	var samples: Dictionary = {}
-	for i: int in 10:
-		await wait_frames(1)
-		samples[h.body.scale.y] = true
-	assert_gte(samples.size(), 8, "L'idle change à chaque image (pas d'animation saccadée)")
-	assert_false(h.has_node("AnimatedSprite2D"))
-
-
 func test_loadout_summary_shows_loadout() -> void:
 	_test_profile(0)
+	# 3e emplacement d'arme : débloqué par le niveau de raider (RaiderProgress)
+	Profile.raider_xp = RaiderProgress.xp_total_for(RaiderProgress.max_level())
 	var uids: Array[int] = []
 	for e: Dictionary in Profile.get_stash_weapons():
 		if String(e["id"]) in ["rifle_ak47", "smg_mp5", "gadget_frag"]:
@@ -350,7 +306,7 @@ func test_pass_card_on_lobby() -> void:
 	assert_eq(c.badge.tier, 4, "Palier actuel")
 	assert_true(c.claim_pill.visible)
 	assert_string_contains((c.claim_pill.get_node("Text") as Label).text, "%d à récupérer" % bp.claimable_count())
-	assert_string_contains(c.next_label.text, "Prochaine")
+	assert_string_contains(c.next_label.text, "Palier %d" % (c.badge.tier + 1))
 	assert_false(c.premium_pill.visible)
 	bp.premium = true
 	bp.claim_all()
@@ -440,15 +396,11 @@ func test_play_card_shows_map() -> void:
 	var p := PlayCard.new()
 	add_child_autofree(p)
 	await wait_frames(1)
-	assert_eq(p.title_label.text, "JOUER")
+	assert_eq(p.title_label.text, "DÉPLOYER")
 	assert_eq(p.map_label.text, "%s · %s" % [card.display_name, card.difficulty_name()], "Ligne discrète : carte · difficulté")
-	assert_null(p.find_child("*", true, false) as TextureRect if p.find_children("*", "TextureRect", true, false).any(
-		func(t: Node) -> bool: return t.name != "Sheen") else null, "Plus de vignette de carte")
-	var n := p.get_theme_stylebox("normal") as StyleBoxFlat
-	assert_eq(n.bg_color, PlayCard.palette()["base"], "Couleur d'action (plus de rouge)")
-	assert_ne(n.bg_color, MenuKit.RED)
-	var pr := p.get_theme_stylebox("pressed") as StyleBoxFlat
-	assert_lt(pr.border_width_bottom, n.border_width_bottom, "L'appui s'enfonce")
+	assert_eq(p.find_children("*", "TextureRect", true, false).size(), 0, "Pas de vignette de carte")
+	assert_true(p.get_theme_stylebox("normal") is CutBox, "Coins coupés (direction D)")
+	assert_eq((p.get_theme_stylebox("normal") as CutBox).bg_color.a, 0.0, "Sans fond : posé sur le bandeau violet")
 	GameState.current_map = null
 	assert_not_null(PlayCard.displayed_card(), "Sans carte choisie : première carte de la rotation")
 

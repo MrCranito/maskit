@@ -81,7 +81,7 @@ func _draw() -> void:
 	inner.draw_center = false
 	inner.border_color = Color(InventoryStyle.GOLD, 0.5)
 	inner.set_border_width_all(2)
-	inner.set_corner_radius_all(14)
+	inner.set_corner_radius_all(2)
 	draw_style_box(inner, r.grow(-5.0))
 	if _icon != null:
 		draw_texture_rect(_icon, Rect2(Vector2(15, 10), Vector2(48, 48)), false, Color(1.0, 0.93, 0.8))

@@ -36,6 +36,8 @@ var back_button: Button = null
 var tick_timer: Timer = null
 
 var _background: MenuBackground = null
+## Direction D : l'image de la carte choisie remplit le fond (assombrie, voile à gauche).
+var _map_bg: TextureRect = null
 var _scroll: ScrollContainer = null
 var _strip: HBoxContainer = null
 var _detail_style: StyleBoxFlat = null
@@ -59,6 +61,29 @@ func _ready() -> void:
 	_background = MenuBackground.new()
 	_background.dim = Balance.get_float("menu", "screen_dim", 0.45)
 	add_child(_background)
+	_map_bg = TextureRect.new()
+	_map_bg.name = "MapBackdrop"
+	_map_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_map_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_map_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_map_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_map_bg.modulate = Color(0.5, 0.5, 0.55)
+	add_child(_map_bg)
+	var g := Gradient.new()
+	g.set_color(0, Color(MenuKit.NIGHT_DEEP, 0.92))
+	g.set_color(1, Color(MenuKit.NIGHT_DEEP, 0.2))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_to = Vector2(1, 0)
+	gt.width = 64
+	gt.height = 4
+	var veil := TextureRect.new()
+	veil.texture = gt
+	veil.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	veil.stretch_mode = TextureRect.STRETCH_SCALE
+	veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(veil)
 	_build()
 	tick_timer = Timer.new()
 	tick_timer.wait_time = 1.0
@@ -132,10 +157,12 @@ func _build() -> void:
 	root.add_child(_build_detail())
 
 
-## Panneau bas : infos compactes de la carte choisie + bouton d'action.
+## Panneau bas (bandeau violet translucide) : infos compactes de la carte choisie + bouton d'action.
+## La difficulté est propre à la carte : affichée, jamais choisie.
 func _build_detail() -> Control:
 	var panel := PanelContainer.new()
-	_detail_style = MenuKit.panel_style(Color(MenuKit.NIGHT, 0.94), MenuKit.BORDER, 20, 2, 14)
+	_detail_style = MenuKit.panel_style(Color(MenuKit.VIOLET, 0.62), Color(0, 0, 0, 0), 0, 0, 14)
+	_detail_style.shadow_size = 0
 	_detail_style.content_margin_left = 20
 	panel.add_theme_stylebox_override("panel", _detail_style)
 	panel.custom_minimum_size = Vector2(0, Balance.get_float("maps", "detail_height", 132.0))
@@ -164,7 +191,7 @@ func _build_detail() -> Control:
 	var line3 := HBoxContainer.new()
 	line3.add_theme_constant_override("separation", 18)
 	info.add_child(line3)
-	_d_reward = MenuKit.label("", 16, MenuKit.GOLD, MenuKit.nunito(900))
+	_d_reward = MenuKit.label("", 16, MenuKit.TEXT, MenuKit.nunito(700))
 	line3.add_child(_d_reward)
 	_d_time = MenuKit.label("", 16, MenuKit.TEXT, MenuKit.nunito(900))
 	line3.add_child(_d_time)
@@ -173,10 +200,10 @@ func _build_detail() -> Control:
 	act.alignment = BoxContainer.ALIGNMENT_CENTER
 	act.add_theme_constant_override("separation", 4)
 	row.add_child(act)
-	launch_button = MenuKit.button("Choisir mon arsenal", MenuKit.Style.PRIMARY, 26, Vector2(330, 76))
+	launch_button = MenuKit.button("Choisir mon arsenal", MenuKit.Style.SECONDARY, 28, Vector2(330, 76))
 	launch_button.pressed.connect(launch_selected)
 	act.add_child(launch_button)
-	_d_status = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+	_d_status = MenuKit.label("", 14, Color(MenuKit.TEXT, 0.8), MenuKit.nunito(600))
 	_d_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	act.add_child(_d_status)
 	return panel
@@ -404,18 +431,16 @@ func _show_detail(e: Dictionary) -> void:
 		_refresh_launch()
 		return
 	var accent: Color = card.accent_color
-	_detail_style.border_color = Color(accent, 0.85)
-	_detail_style.shadow_color = Color(accent, 0.3)
 	_background.set_glow_color(accent)
+	_map_bg.texture = card.get_thumbnail()
 	_d_name.text = card.display_name
-	_d_name.add_theme_color_override("font_color", accent.lerp(Color.WHITE, 0.7))
 	_d_sub.text = "%s  ·  %s" % [card.biome_name(), card.difficulty_name()]
-	_d_sub.add_theme_color_override("font_color", card.difficulty_color().lerp(Color.WHITE, 0.45))
+	_d_sub.add_theme_color_override("font_color", Color(MenuKit.TEXT, 0.85))
 	var mods: Array[Dictionary] = card.describe_modifiers()
 	for line: Dictionary in mods:
 		_d_mods.add_child(MapTile.modifier_chip(line, 15))
 	if mods.is_empty():
-		_d_mods.add_child(MenuKit.pill("Règles normales", Color(0.16, 0.2, 0.34, 0.95), 15, MenuKit.TEXT_DIM))
+		_d_mods.add_child(MenuKit.pill("Règles normales", Color(MenuKit.NIGHT_DEEP, 0.55), 15, MenuKit.TEXT))
 	_d_reward.text = ("Récompense : " + card.reward_text) if card.reward_text != "" else ""
 	_d_mods.tooltip_text = card.description
 	_refresh_detail_time(MapRotation.now())
@@ -441,6 +466,9 @@ func _refresh_launch() -> void:
 	elif not MapRotation.is_active(selected_entry, MapRotation.now()):
 		launch_button.disabled = true
 		_d_status.text = "Terminée"
+	elif RaiderProgress.current_level() < RaiderProgress.required_level(card.id):
+		launch_button.disabled = true
+		_d_status.text = "Niveau de raider %d requis" % RaiderProgress.required_level(card.id)
 	else:
 		launch_button.disabled = false
 		_d_status.text = "Étape suivante : tes armes"

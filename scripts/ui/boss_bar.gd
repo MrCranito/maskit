@@ -1,14 +1,15 @@
 class_name BossBar
 extends Control
-## Barre de vie du boss (haut centre, sous le bandeau monde/salle), charte UI : panneau bleu
-## nuit, bordure fine claire, nom en blanc gras, titre gris clair, barre rouge sombre avec
-## crans de phase. Apparaît quand le boss engage le combat (EventBus.boss_engaged), affiche un
+## Barre de vie du boss (haut centre, sous le bandeau monde/salle), direction D : encre
+## translucide à coins biseautés (CutBox), barre d'accent rouge, nom en Anton, titre en Space
+## Grotesk, jauge rouge avec crans de phase. Apparaît quand le boss engage le combat (EventBus.boss_engaged), affiche un
 ## bandeau à chaque phase (boss_phase_changed) et disparaît à sa mort (boss_defeated).
 ## Réglages : balance.cfg [boss] bar_width, phase_banner_time.
 
-const NIGHT_BLUE := Color(0.071, 0.102, 0.18, 0.94)
-const BORDER_LIGHT := Color(0.85, 0.88, 0.95, 0.85)
-const TEXT_SECONDARY := Color(0.78, 0.8, 0.86)
+const INK := Color(0.024, 0.027, 0.05, 0.78)
+const BORDER_LIGHT := Color(1.0, 1.0, 1.0, 0.45)
+const TEXT_SECONDARY := Color(1.0, 1.0, 1.0, 0.62)
+const PHASE_COLOR := Color(0.718, 0.608, 1.0)
 const FILL := Color(0.78, 0.1, 0.12)
 const FILL_LOW := Color(1.0, 0.35, 0.15)
 const LAG_FILL := Color(1.0, 0.85, 0.6, 0.75)
@@ -45,14 +46,9 @@ func _build() -> void:
 	var w := Balance.get_float("boss", "bar_width", 560.0)
 	_panel = PanelContainer.new()
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var st := StyleBoxFlat.new()
-	st.bg_color = NIGHT_BLUE
-	st.border_color = BORDER_LIGHT
-	st.set_border_width_all(1)
-	st.set_corner_radius_all(14)
-	st.set_content_margin_all(8)
-	st.content_margin_left = 14
-	st.content_margin_right = 14
+	var st := CutBox.make(INK, 12.0, Color(0, 0, 0, 0), 0.0, 16.0, 8.0)
+	st.accent_width = 4.0
+	st.accent_color = FILL
 	_panel.add_theme_stylebox_override("panel", st)
 	add_child(_panel)
 	var col := VBoxContainer.new()
@@ -63,20 +59,20 @@ func _build() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 10)
 	col.add_child(row)
-	_name = _label(20, Color.WHITE, true)
+	_name = _label(22, Color.WHITE, MenuKit.ANTON)
 	row.add_child(_name)
-	_title = _label(13, TEXT_SECONDARY, false)
+	_title = _label(13, TEXT_SECONDARY, MenuKit.SPACE)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(_title)
-	_phase = _label(13, Color(1.0, 0.78, 0.4), true)
+	_phase = _label(15, PHASE_COLOR, MenuKit.ANTON)
 	row.add_child(_phase)
 	_gauge = Control.new()
 	_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_gauge.custom_minimum_size = Vector2(w, 16)
 	_gauge.draw.connect(_draw_gauge)
 	col.add_child(_gauge)
-	_banner = _label(30, Color(1.0, 0.9, 0.7), true)
+	_banner = _label(40, Color.WHITE, MenuKit.ANTON)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner.add_theme_constant_override("outline_size", 8)
 	_banner.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.08))
@@ -84,14 +80,12 @@ func _build() -> void:
 	add_child(_banner)
 
 
-func _label(size: int, color: Color, bold: bool) -> Label:
+func _label(size: int, color: Color, font: Font) -> Label:
 	var l := Label.new()
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	l.add_theme_font_override("font", font)
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
-	if bold:
-		l.add_theme_constant_override("outline_size", 2)
-		l.add_theme_color_override("font_outline_color", color)
 	return l
 
 

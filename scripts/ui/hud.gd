@@ -8,11 +8,13 @@ extends Control
 ## = bouton « action ». Armes tenues (bas centre) + bouton de changement d'arme :
 ## WeaponHud (scripts/ui/weapon_hud.gd), enfant de ce HUD.
 
-const NIGHT_BLUE := Color(0.071, 0.102, 0.18, 0.92)  # ~#121a2e
-const BORDER_LIGHT := Color(0.85, 0.88, 0.95, 0.85)
-const GOLD := Color(0.91, 0.72, 0.36)
-const HP_FILL := Color(0.82, 0.13, 0.14)
-const HP_LOW := Color(1.0, 0.35, 0.2)
+const NIGHT_BLUE := Color(0.024, 0.027, 0.05, 0.72)  # encre translucide (direction D)
+const BORDER_LIGHT := Color(1.0, 1.0, 1.0, 0.45)
+const GOLD := Color(0.718, 0.608, 1.0)
+const HP_FILL := Color(1.0, 1.0, 1.0)
+const HP_LOW := Color(1.0, 0.3, 0.43)
+## Nombre de crans de la barre de vie (10 PV par cran pour 100 PV).
+const HP_CELLS := 10
 
 var _bar: ProgressBar
 var _hp_label: Label
@@ -52,18 +54,14 @@ func _build_ui() -> void:
 	var m: int = int(Balance.get_value("hud", "margin", 16))
 	var w: float = Balance.get_float("hud", "hp_bar_width", 300.0)
 
-	# Charte UI : panneau bleu nuit, coins arrondis, bordure fine claire.
+	# Direction D : boîte encre translucide, coin haut droit coupé, barre à crans.
 	_panel = PanelContainer.new()
 	_panel.name = "HealthPanel"
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_panel.position = Vector2(m, m)
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = NIGHT_BLUE
-	panel_style.border_color = BORDER_LIGHT
-	panel_style.set_border_width_all(1)
-	panel_style.set_corner_radius_all(14)
-	panel_style.set_content_margin_all(8)
+	var panel_style := CutBox.make(NIGHT_BLUE, 12.0, Color(0, 0, 0, 0), 0.0, 12.0, 8.0)
+	panel_style.corners = CutBox.CUT_TOP_RIGHT
 	_panel.add_theme_stylebox_override("panel", panel_style)
 	add_child(_panel)
 
@@ -81,37 +79,39 @@ func _build_ui() -> void:
 
 	_bar = ProgressBar.new()
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar.custom_minimum_size = Vector2(w, 34)
+	_bar.custom_minimum_size = Vector2(w, 20)
+	_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_bar.show_percentage = false
 	_bar.min_value = 0.0
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.04, 0.06, 0.11)
-	bg.border_color = Color(GOLD, 0.55)
-	bg.set_border_width_all(1)
-	bg.set_corner_radius_all(9)
+	bg.bg_color = Color(1, 1, 1, 0.14)
 	_fill_style = StyleBoxFlat.new()
 	_fill_style.bg_color = HP_FILL
-	_fill_style.set_corner_radius_all(9)
 	_bar.add_theme_stylebox_override("background", bg)
 	_bar.add_theme_stylebox_override("fill", _fill_style)
 	row.add_child(_bar)
+	# crans : fines séparations encre par-dessus la barre
+	var cells := Control.new()
+	cells.name = "Cells"
+	cells.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cells.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cells.draw.connect(func() -> void:
+		for i in range(1, HP_CELLS):
+			var x: float = cells.size.x * float(i) / float(HP_CELLS)
+			cells.draw_line(Vector2(x, 0), Vector2(x, cells.size.y), Color(0.02, 0.02, 0.04, 0.85), 3.0))
+	_bar.add_child(cells)
 
+	# PV en gros chiffres (Anton) à droite de la barre
 	_hp_label = Label.new()
 	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hp_label.custom_minimum_size = Vector2(92, 0)
 	var settings := LabelSettings.new()
-	var bold := FontVariation.new()
-	bold.base_font = ThemeDB.fallback_font
-	bold.variation_embolden = 0.9
-	settings.font = bold
-	settings.font_size = 22
+	settings.font = LootVisuals.title_font()
+	settings.font_size = 26
 	settings.font_color = Color.WHITE
-	settings.outline_size = 5
-	settings.outline_color = NIGHT_BLUE
 	_hp_label.label_settings = settings
-	_bar.add_child(_hp_label)
+	row.add_child(_hp_label)
 
 
 func _draw_heart(c: Control) -> void:
@@ -146,7 +146,9 @@ func set_health(current: float, maximum: float) -> void:
 	_bar.max_value = _max_hp
 	_bar.value = _hp
 	_hp_label.text = "%d / %d" % [ceili(_hp), ceili(_max_hp)]
-	_fill_style.bg_color = HP_LOW if _hp / _max_hp <= 0.3 else HP_FILL
+	var low: bool = _hp / _max_hp <= 0.3
+	_fill_style.bg_color = HP_LOW if low else HP_FILL
+	_hp_label.label_settings.font_color = HP_LOW if low else Color.WHITE
 
 
 func get_health() -> float:
