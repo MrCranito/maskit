@@ -1,0 +1,135 @@
+{
+  "kind": "gunslinger",
+  "name": "Pistolero",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 113,
+  "head_px": 34,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      138.6,
+      89.2
+    ],
+    "se": [
+      120.8,
+      109.9
+    ],
+    "s": [
+      88.5,
+      115.2
+    ],
+    "sw": [
+      60.6,
+      102.0
+    ],
+    "w": [
+      53.4,
+      78.0
+    ],
+    "nw": [
+      71.2,
+      57.3
+    ],
+    "n": [
+      103.5,
+      52.0
+    ],
+    "ne": [
+      131.4,
+      65.2
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      12,
+      83,
+      150,
+      162
+    ],
+    "se": [
+      12,
+      83,
+      150,
+      162
+    ],
+    "s": [
+      43,
+      79,
+      179,
+      167
+    ],
+    "sw": [
+      43,
+      79,
+      179,
+      167
+    ],
+    "w": [
+      43,
+      79,
+      179,
+      167
+    ],
+    "nw": [
+      42,
+      93,
+      180,
+      181
+    ],
+    "n": [
+      42,
+      93,
+      180,
+      181
+    ],
+    "ne": [
+      13,
+      96,
+      149,
+      177
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/gunslinger/gunslinger_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la lame (image attack 3)."
+}

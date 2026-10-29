@@ -1,7 +1,7 @@
 extends EnemyState
-## Alerte (« repéré », jauge à 1) : « ! » au-dessus de la tête, courte pause (alert_duration)
-## tournée vers la cible, prévient les voisins (si msg.propagate : ils reçoivent une forte
-## hausse de jauge, cf. Enemy.receive_alert), puis Chase.
+## Alerte (« repéré », jauge à 1) : « ! » au-dessus de la tête, cri (« Il est là ! »), courte
+## pause tournée vers la cible, prévient les voisins (si msg.propagate : forte hausse de jauge,
+## cf. Enemy.receive_alert), puis Chase.
 
 var _left: float = 0.0
 
@@ -21,6 +21,7 @@ func enter(msg: Dictionary = {}) -> void:
 	e._visual_call(&"play_alert")
 	_left = e.data.alert_duration
 	if bool(msg.get("propagate", true)):
+		e.shout(&"spot")
 		e.alert_neighbors(target_pos)
 
 

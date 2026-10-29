@@ -293,6 +293,16 @@ static func _reserve(c: Ctx) -> void:
 		around.append(d.cell)
 	for s in L.stairs:
 		around.append(s.cell)
+	# Pied des échelles (toits) : libre de tout décor / conteneur.
+	for e: Dictionary in L.ladders:
+		around.append(e["cell"])
+	# Passages entre les wagons du train : jamais encombrés (ni décor, ni conteneur).
+	for k in range(L.train.size() - 1):
+		var ra: Rect2i = L.train[k]["rect"]
+		var rb: Rect2i = L.train[k + 1]["rect"]
+		for gx in range(ra.end.x, rb.position.x):
+			for gy in range(ra.position.y, ra.end.y):
+				c.reserved[Vector2i(gx, gy)] = true
 	for a in around:
 		for dy in range(-1, 2):
 			for dx in range(-1, 2):

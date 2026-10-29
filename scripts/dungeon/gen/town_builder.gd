@@ -194,6 +194,9 @@ static func build(seed_value: int, world: WorldData) -> TownResult:
 	# --- Formations rocheuses au milieu (couverts) -------------------------------------------
 	_inner_rocks(x)
 
+	# --- Échelles vers les toits (façade sud, visible) ---------------------------------------
+	_ladders(x, seed_value, spawn, ex)
+
 	# --- Salles des cours / enclos, portes rattachées à la bonne salle extérieure -----------
 	for y: Dictionary in x.yards:
 		var yr := L.add_room(y["inner"], true, FloorLayout.ROOM_LOOT if rng.randf() < 0.5 else FloorLayout.ROOM_COMBAT,
@@ -687,7 +690,7 @@ static func _buildings(x: Ctx, world: WorldData, want_mine: bool) -> void:
 				break
 			if x.is_occ(road):
 				continue
-			for d in DIRS:
+			for d in _facade_dirs():
 				var q := road - d
 				if x.L.paths.has(q) or x.is_occ(q) or x.is_keep(q):
 					continue
@@ -727,7 +730,7 @@ static func _buildings(x: Ctx, world: WorldData, want_mine: bool) -> void:
 			break
 		if x.is_occ(pt) or x.is_keep(pt):
 			continue
-		var dirs2 := DIRS.duplicate()
+		var dirs2 := _facade_dirs()
 		_shuffle(dirs2, rng)
 		for d: Vector2i in dirs2:
 			var tr := d.x != 0
@@ -765,7 +768,7 @@ static func _buildings(x: Ctx, world: WorldData, want_mine: bool) -> void:
 		hp4.archetype = &"shack"
 		hp4.rooms[0].role = &"shack"
 		hp4.rooms[0].name = "Cabane"
-		for d4: Vector2i in [Vector2i.DOWN, Vector2i.UP]:
+		for d4: Vector2i in _facade_dirs(true):
 			var o4 := {"rect": Rect2i(pt2, hp4.size), "fx": false, "fy": d4 == Vector2i.UP, "tr": false}
 			var r4: Rect2i = o4["rect"]
 			if not _free(x, r4, 1, 2) or not _porch_ok(x, r4, d4):
@@ -781,6 +784,18 @@ static func _buildings(x: Ctx, world: WorldData, want_mine: bool) -> void:
 	for b2 in x.L.buildings.duplicate():
 		if (b2.archetype == &"stable" or b2.archetype == &"store") and rng.randf() < 0.7:
 			_annex(x, b2, ctx)
+
+
+## Côtés de façade autorisés. Rendu pré-calculé (caméra inclinée vers le nord) : seule la façade
+## SUD est visible ; une porte au nord est cachée sous le toit projeté, une porte est / ouest est
+## vue par la tranche (sous le débord du toit). [generator] village_facade_south_only = true →
+## toutes les portes extérieures sont sur la façade sud. `ns` : variante nord / sud seulement.
+static func _facade_dirs(ns: bool = false) -> Array[Vector2i]:
+	if Cfg.geti("village_facade_south_only", 1) != 0:
+		return [Vector2i.DOWN]
+	if ns:
+		return [Vector2i.DOWN, Vector2i.UP]
+	return DIRS.duplicate()
 
 
 ## Bâtiment important : près de son point d'attraction, puis plus loin, puis balayage complet.
@@ -814,7 +829,7 @@ static func _place_building(x: Ctx, p: Tpl.Plan, target: Vector2i, radius: float
 	for t in tries:
 		var road: Vector2i = cands[rng.randi_range(0, cands.size() - 1)]
 		var dirs: Array[Vector2i] = []
-		for d in DIRS:
+		for d in _facade_dirs():
 			# Bâtiments à plusieurs pièces : façade au nord ou au sud seulement (gabarits d'ameublement).
 			if d.x != 0 and p.rooms.size() > 1:
 				continue
@@ -903,7 +918,7 @@ static func _scan_place(x: Ctx, p: Tpl.Plan, target: Vector2i) -> bool:
 	var roads := x.frontage.duplicate()
 	roads.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return (a - target).length_squared() < (b - target).length_squared())
 	for road: Vector2i in roads:
-		for d: Vector2i in [Vector2i.DOWN, Vector2i.UP]:
+		for d: Vector2i in _facade_dirs(true):
 			if x.is_occ(road - d) or x.is_keep(road - d) or x.L.paths.has(road - d):
 				continue
 			for sb in 3:
@@ -924,7 +939,7 @@ static func _scan_place(x: Ctx, p: Tpl.Plan, target: Vector2i) -> bool:
 			pts.append(Vector2i(xx, yy))
 	pts.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return (a - target).length_squared() < (b - target).length_squared())
 	for pt in pts:
-		for d2: Vector2i in [Vector2i.DOWN, Vector2i.UP]:
+		for d2: Vector2i in _facade_dirs(true):
 			var o2 := {"rect": Rect2i(pt, p.size), "fx": false, "fy": d2 == Vector2i.UP, "tr": false}
 			var r2: Rect2i = o2["rect"]
 			if not _free(x, r2, 1, 2) or not _porch_ok(x, r2, d2):
@@ -1284,6 +1299,60 @@ static func _rail_fences(x: Ctx) -> void:
 			_mark(x.occ, x.W, x.H, r)
 			x.L.fences.append(pl)
 			break
+
+
+# --- Échelles -----------------------------------------------------------------------------------
+
+## 2 à 5 bâtiments (déterministe, tirage propre aux échelles : n'altère pas le reste du plan) reçoivent
+## une échelle appuyée contre la façade SUD (seule visible), sur la 2e colonne depuis un angle :
+## pied = case de rue au sud du mur (porche), sommet = case du mur sud (bord du toit).
+## Conditions : pied praticable et libre (aucune structure), pas de porte sur la colonne ni ses
+## voisines, case au sud du pied praticable (accès), loin de l'apparition et de l'extraction.
+## Le pied est réservé (keep) : ni cour, ni rocher, ni décor (populator : abords réservés).
+static func _ladders(x: Ctx, seed_value: int, spawn: Vector2i, ex: Vector2i) -> void:
+	var L := x.L
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([seed_value, "ladders"])
+	var want := Cfg.range_i(rng, "village_ladders_min", "village_ladders_max", 2, 5)
+	var skip: Array = Cfg.get_arr("village_ladder_skip", ["mine", "shed", "ruin"])
+	var order: Array[int] = []
+	for b in L.buildings:
+		order.append(b.id)
+	_shuffle(order, rng)
+	for bid in order:
+		if L.ladders.size() >= want:
+			break
+		var b := L.buildings[bid]
+		if skip.has(String(b.archetype)) or b.rect.size.x < 4 or b.rect.size.y < 4:
+			continue
+		var cols: Array[int] = [b.rect.position.x + 1, b.rect.end.x - 2]
+		if rng.randf() < 0.5:
+			cols.reverse()
+		for col in cols:
+			var foot := Vector2i(col, b.rect.end.y)
+			if _ladder_ok(x, b, foot, spawn, ex):
+				L.ladders.append({"cell": foot, "building_id": b.id, "top_cell": Vector2i(col, b.rect.end.y - 1)})
+				for c in [foot, foot + Vector2i.DOWN]:
+					x.keep[x.i(c)] = 1
+				break
+
+
+static func _ladder_ok(x: Ctx, b: FloorLayout.Building, foot: Vector2i, spawn: Vector2i, ex: Vector2i) -> bool:
+	var L := x.L
+	if x.facing.get(b.id, Vector2i.DOWN) != Vector2i.DOWN:
+		return false
+	for c in [foot, foot + Vector2i.DOWN]:
+		if not x.inb(c) or L.get_tile(c) != T.STREET or x.is_occ(c):
+			return false
+	for dx in range(-1, 2):
+		if L.get_tile(Vector2i(foot.x + dx, b.rect.end.y - 1)) != T.WALL:
+			return false
+	if (foot - spawn).length_squared() < 16 or (foot - ex).length_squared() < 16:
+		return false
+	for e: Dictionary in L.ladders:
+		if (e["building_id"] as int) == b.id:
+			return false
+	return true
 
 
 # --- Rochers -----------------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_outlaw_knife"
+display_name = "Bandit abattu"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.15
+search_time = 0.9
+entries = {
+&"bandage": 4.0,
+&"gold_nugget": 1.2,
+&"lasso": 1.5,
+&"lockpicks": 1.2,
+&"playing_cards": 3.0,
+&"pocket_watch": 0.5,
+&"revolver_ammo": 5.0,
+&"silver_dollars": 8.0,
+&"whisky": 2.0,
+&"wpn_gadget_frag": 0.6,
+&"wpn_pistol_glock18": 0.08,
+&"wpn_smg_mp5": 0.25
+}

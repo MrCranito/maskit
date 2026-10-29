@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_shotgun_brute"
+display_name = "Brute abattue"
+rolls_min = 2
+rolls_max = 3
+empty_chance = 0.05
+search_time = 1.1
+entries = {
+&"bandage": 4.0,
+&"canned_beans": 4.0,
+&"gold_nugget": 2.0,
+&"money_bag": 0.6,
+&"revolver_ammo": 6.0,
+&"silver_dollars": 6.0,
+&"snake_oil": 0.8,
+&"whisky": 3.0,
+&"wpn_rifle_ak47": 0.3,
+&"wpn_smg_mp5": 0.7,
+&"wpn_smg_vector": 0.15
+}

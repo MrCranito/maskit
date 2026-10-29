@@ -6,7 +6,8 @@ extends Area2D
 signal released(projectile: EnemyProjectile)
 
 const LAYER_ENEMY_PROJECTILES := 16
-const MASK_WORLD_AND_PLAYER := 1 | 2
+## Couche 7 (64) : joueur perché sur un toit (voir RoofWalk) — toujours touché par les tirs.
+const MASK_WORLD_AND_PLAYER := 1 | 2 | 64
 
 const COLOR_CORE := Color(1.0, 0.85, 0.55)
 const COLOR_GLOW := Color(1.0, 0.38, 0.12)

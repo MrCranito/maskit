@@ -35,6 +35,10 @@ const MASK_WORLD := 1
 const MASK_ENEMIES := 4
 ## Rayon du corps (collision aux pieds, cf. player.tscn).
 const BODY_RADIUS := 15.0
+## (Toits) Couches du joueur perché : il est sur la couche 7 (« roof_player », touchée par les tirs
+## ennemis, ignorée des corps ennemis, portes, escaliers) et ne heurte que les bords du toit (couche 8).
+const LAYER_ROOF_PLAYER := 64
+const MASK_ROOF_BOUNDS := 128
 const DEFAULT_WEAPON_PATH := "res://data/weapons/starter_pistol.tres"
 const FALLBACK_WEAPON_PATH := "res://data/weapons/starter_revolver.tres"
 
@@ -146,6 +150,10 @@ var _lowg_recoil_push: float = 6.0
 @onready var camera: Camera2D = $Camera2D
 @onready var projectile_pool: ProjectilePool = $ProjectilePool
 var visual: PlayerVisual = null
+## (Toits) Bâtiment sur le toit duquel se tient le joueur (-1 = au sol), voir RoofWalk.
+var roof_building_id: int = -1
+var _climbing: bool = false
+var _roof_saved: Dictionary = {}
 
 
 func _ready() -> void:
@@ -466,6 +474,12 @@ func _physics_process(delta: float) -> void:
 	_dry_fire_cooldown = maxf(_dry_fire_cooldown - delta, 0.0)
 	_tick_weapon(delta)
 	if not _alive:
+		_update_camera(delta)
+		return
+	if _climbing:
+		# (Toits) Montée / descente d'échelle : position animée par RoofWalk, aucune commande.
+		velocity = Vector2.ZERO
+		_is_moving = false
 		_update_camera(delta)
 		return
 
@@ -1016,11 +1030,67 @@ func get_hide_spot() -> Node:
 	return _hide_spot
 
 
+# --- Toits (RoofWalk) ----------------------------------------------------------
+
+func is_on_roof() -> bool:
+	return roof_building_id >= 0
+
+
+func is_climbing() -> bool:
+	return _climbing
+
+
+## Échelle : verrouille les commandes et coupe les collisions pendant l'animation.
+func set_climbing(on: bool) -> void:
+	_climbing = on
+	velocity = Vector2.ZERO
+	_is_moving = false
+	_manual_fire_held = false
+	_manual_fire_pending = false
+	if on:
+		collision_mask = 0
+	elif roof_building_id >= 0:
+		collision_mask = MASK_ROOF_BOUNDS
+	elif not _roof_saved.is_empty():
+		collision_mask = int(_roof_saved["mask"])
+	else:
+		collision_mask = MASK_WORLD | MASK_ENEMIES
+
+
+## Sur le toit du bâtiment `bid` (z d'affichage `roof_z`) ou retour au sol (bid = -1).
+func set_roof_state(bid: int, roof_z: int = 60) -> void:
+	if bid >= 0 and roof_building_id < 0:
+		_roof_saved = {"layer": collision_layer, "mask": collision_mask, "z": z_index}
+	roof_building_id = bid
+	if bid >= 0:
+		collision_layer = LAYER_ROOF_PLAYER
+		collision_mask = 0 if _climbing else MASK_ROOF_BOUNDS
+		z_index = roof_z
+	elif not _roof_saved.is_empty():
+		collision_layer = int(_roof_saved["layer"])
+		collision_mask = 0 if _climbing else int(_roof_saved["mask"])
+		z_index = int(_roof_saved["z"])
+		_roof_saved = {}
+
+
+## Logique pure : un coup venant de `source` atteint-il un joueur perché ? Seuls les tirs
+## (ennemis à distance, tourelles, explosions sans ennemi source) ; ni mêlée ni coup de zone au sol.
+static func roof_hit_allowed(source: Object) -> bool:
+	if source == null or not is_instance_valid(source):
+		return true
+	var d: Variant = source.get("data")
+	if d is Object and (d as Object).has_method("is_ranged"):
+		return bool((d as Object).call("is_ranged"))
+	return true
+
+
 # --- Dégâts ------------------------------------------------------------------
 
 func take_damage(amount: float, _source: Node) -> void:
 	if not _alive or _invulnerable_left > 0.0 or amount <= 0.0:
 		return
+	if roof_building_id >= 0 and not roof_hit_allowed(_source):
+		return  # (Toits) la mêlée n'atteint pas le toit
 	hp = maxf(hp - amount, 0.0)
 	_invulnerable_left = invulnerability_duration
 	if visual != null:
@@ -1088,6 +1158,7 @@ func get_debug_info() -> Dictionary:
 		"pool_active": projectile_pool.get_active_count() if projectile_pool != null else 0,
 		"gadget": ("%s x%d" % [loadout.gadget.display_name, get_gadget_charges()]) if loadout.gadget != null else "-",
 		"low_gravity": in_low_gravity,
+		"roof": roof_building_id,
 	}
 
 

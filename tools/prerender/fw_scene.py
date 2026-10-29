@@ -4,9 +4,16 @@ export_layout.gd (ou tools/prerender/maquette_layout.py), rendue en Cycles.
 
 Usage (bpy en module) :
   python3 fw_scene.py <layout.json> <out_dir> [ppc=24] [samples=16] [passes=full,int] [margin=4]
-Passes : full (carte entière, par morceaux) ; int (patch « sans toit » par bâtiment) ;
-         crop:x0;x1;y0;y1 (zone en cases → crop.png) ; view:x0;x1;y0;y1;tilt;ppc (vue libre → view.png)
-Sorties : full.png, b<id>_in.png, render.json (géométrie pour compose.py).
+Passes : full (carte entière, par morceaux, reprise possible : _chunks_full/) ; int (patch « sans
+         toit » par bâtiment) ; mask (emprise au sol réelle, vue zénithale, 4 px/case → mask.png,
+         voir render_mask) ; occ (ids d'occultation par pixel, même caméra que full → occ.png, voir
+         render_occ) ; crop:x0;x1;y0;y1 (zone en cases → crop.png) ;
+         view:x0;x1;y0;y1;tilt;ppc (vue libre → view.png)
+Sorties : full.png, b<id>_in.png, mask.png, occ.png, render.json (géométrie, toits, échelles) et
+          layout.json (copie du plan) pour compose.py.
+Cohérence rendu ↔ collisions (correctif « zones interdites ») : rochers rognés à leurs cases
+(slab clamp), props / repères / wagons ramenés dans leur emprise (fit_xy), fouillis tenant dans
+une case libre sans couper de passage, échelles contre la façade sud (seule visible).
 
 PROJECTION (documentée, vérifiée par test) :
   caméra orthographique inclinée de TILT (35°) vers le nord, pixel_aspect_x = 1/cos(TILT),
@@ -861,6 +868,32 @@ class MB:
         return ob
 
 
+def fit_xy(mb, start, x0, x1, y0, y1, margin=0.04, zlo=0.12, zcut=1.0):
+    """Ramène l'emprise AU SOL (sommets zlo < z < zcut) des sommets ajoutés depuis `start` dans le
+    rectangle [x0,x1]×[y0,y1] (Blender) : échelle uniforme en XY (≤ 1) + translation. Garantit que
+    l'objet rendu ne déborde pas de ses cases bloquantes (cohérence rendu ↔ collisions)."""
+    pts = [mb.V[i] for i in range(start, len(mb.V)) if zlo < mb.V[i][2] < zcut]
+    if not pts:
+        return
+    bx0, bx1 = min(p[0] for p in pts), max(p[0] for p in pts)
+    by0, by1 = min(p[1] for p in pts), max(p[1] for p in pts)
+    ax0, ax1, ay0, ay1 = min(x0, x1) + margin, max(x0, x1) - margin, min(y0, y1) + margin, max(y0, y1) - margin
+    k = min(1.0, (ax1 - ax0) / max(bx1 - bx0, 1e-6), (ay1 - ay0) / max(by1 - by0, 1e-6))
+    cx, cy = (bx0 + bx1) / 2, (by0 + by1) / 2
+    hx, hy = (bx1 - bx0) / 2 * k, (by1 - by0) / 2 * k
+    tx = min(max(cx, ax0 + hx), ax1 - hx)
+    ty = min(max(cy, ay0 + hy), ay1 - hy)
+    for i in range(start, len(mb.V)):
+        x, y, z = mb.V[i]
+        mb.V[i] = (tx + (x - cx) * k, ty + (y - cy) * k, z)
+
+
+def cells_fit(mb, start, rect, margin=0.04, zlo=0.12, zcut=1.0):
+    """fit_xy sur un rectangle de cases [x, y, w, h] (y = rangée du haut)."""
+    x, y, w, h = rect
+    fit_xy(mb, start, x, x + w, Y(y + h), Y(y), margin, zlo, zcut)
+
+
 # ======================================================================= analyse du layout
 bld_cells = {}
 for b in LAYOUT["buildings"]:
@@ -889,6 +922,13 @@ for lm in LAYOUT["landmarks"] + LAYOUT["train"]:
     for yy in range(y, y + h):
         for xx in range(x, x + w):
             occupied.add((xx, yy))
+# échelles (toits) : pied + case au sud réservés (pas de fouillis), infos de toit pour compose.py
+LADDERS = {int(l["building_id"]): l for l in LAYOUT.get("ladders", [])}
+for l_ in LAYOUT.get("ladders", []):
+    for dy_ in (0, 1):
+        for dx_ in (-1, 0, 1):
+            game_cells.add((l_["cell"][0] + dx_, l_["cell"][1] + dy_))
+ROOF_INFO = {}
 rock_cells = set()
 for rf in LAYOUT["rock_formations"]:
     for c in rf["cells"]:
@@ -1183,7 +1223,9 @@ def build_building(b):
     rise = min(0.32 * span + 0.15, 1.7)
     if style in ("plank", "shingle"):
         rise *= 1.1
-    has_ff = side == "S" and (arch in FALSE_FRONT or rng.random() < 0.28)
+    lad = LADDERS.get(int(b["id"]))
+    # Bâtiment à échelle : pas de fausse façade (l'échelle doit atteindre le bord visible du toit).
+    has_ff = side == "S" and lad is None and (arch in FALSE_FRONT or rng.random() < 0.28)
     top = gable(roof, mx0, my0, mx1, my1, H1, rmat, ridge_x, rise, 0.24, gm, rng, ov_s=(-0.02 if has_ff else None))
     # pignons/annexes
     if annex:
@@ -1265,6 +1307,13 @@ def build_building(b):
     pdepth = 1.0
     if side == "S" and (arch != "shack" or rng.random() < 0.5):
         xa, xb = X0 + (0.0 if rng.random() < 0.6 else 0.5), X1 - (0.0 if rng.random() < 0.6 else 0.5)
+        if lad is not None:
+            # porche raccourci : la colonne de l'échelle reste dégagée (auvent compris)
+            lc = lad["cell"][0]
+            if lc - X0 < X1 - lc:
+                xa = max(xa, lc + 1.08)
+            else:
+                xb = min(xb, lc - 0.08)
         ya, yb = YS - pdepth, YS
         porch.box(xa, ya, 0.0, xb, yb, 0.14, "deck")
         porch.box(xa, ya - 0.02, 0.0, xb, ya + 0.06, 0.12, "trim")
@@ -1298,6 +1347,9 @@ def build_building(b):
         for d in door_cells:
             if d[1] == y + h - 1:
                 porch.box(d[0] + 0.05, YS - 0.45, 0.0, d[0] + 0.95, YS, 0.12, "deck")
+    if lad is not None:
+        build_ladder(lad, H1, b["id"])
+    ROOF_INFO[int(b["id"])] = {"eave": round(H1, 3), "top": round(top, 3), "stories": stories}
     # ---------------- objets
     ob = walls.to_object("walls_%d" % b["id"], "world")
     floor.to_object("floor_%d" % b["id"], "world")
@@ -1308,6 +1360,25 @@ def build_building(b):
     co_ = cut.to_object("cut_%d" % b["id"], "world")
     co_.hide_render = True
     return H1, top
+
+
+def build_ladder(lad, H1, bid):
+    """Échelle en bois appuyée contre la façade sud (visible), du pied (case `cell`, au sud du mur)
+    jusqu'au-dessus de l'égout du toit (H1). Objet « ladder_<id> » (collection world, hors masque
+    d'emprise et hors occultation : le joueur y grimpe)."""
+    mb = MB()
+    cx = lad["cell"][0] + 0.5
+    ys = Y(lad["cell"][1])           # face sud du mur sud
+    yb, yt = ys - 0.62, ys - 0.30    # pied écarté du mur, sommet au-delà du débord du toit
+    zt = H1 + 0.42
+    for sg in (-1, 1):
+        mb.seg((cx + sg * 0.21, yb, 0.0), (cx + sg * 0.19, yt, zt), 0.035, "wood_dark", 6)
+    n = int(zt / 0.27)
+    for k in range(1, n + 1):
+        t = k / (n + 0.6)
+        yy = yb + (yt - yb) * t
+        mb.seg((cx - 0.21, yy, zt * t), (cx + 0.21, yy, zt * t), 0.022, "wood", 5)
+    mb.to_object("ladder_%d" % bid, "world")
 
 
 def build_interior_furniture(b, rng):
@@ -1328,8 +1399,23 @@ def build_interior_furniture(b, rng):
 
 
 # ======================================================================= rochers
-def slab(mb, cx, cy, z, rx, ry, h, rng, rot=0.0, seg=22):
-    """Bloc de grès arrondi : profil latéral bombé + dessus en dôme bosselé (grille polaire)."""
+def cellset_ray(S, x, y, ang, maxd=8.0, step=0.04):
+    """Distance (cases) depuis (x, y) (repère Blender) jusqu'à la sortie de l'ensemble de cases S
+    dans la direction `ang`."""
+    dx, dy = math.cos(ang), math.sin(ang)
+    d = 0.0
+    while d < maxd:
+        px, py = x + dx * d, y + dy * d
+        if (int(math.floor(px)), int(math.floor(-py))) not in S:
+            return d
+        d += step
+    return maxd
+
+
+def slab(mb, cx, cy, z, rx, ry, h, rng, rot=0.0, seg=22, clamp=None, inset=0.06):
+    """Bloc de grès arrondi : profil latéral bombé + dessus en dôme bosselé (grille polaire).
+    clamp : ensemble de cases (x, rangée) ; le contour est alors rogné pour rester dans ces cases
+    (à `inset` près) : l'emprise rendue = les cases bloquantes du plan."""
     ph = [rng.uniform(0, 50) for _ in range(3)]
     rad = []
     for j in range(seg):
@@ -1339,6 +1425,14 @@ def slab(mb, cx, cy, z, rx, ry, h, rng, rot=0.0, seg=22):
             + 0.04 * mnoise.noise(Vector((math.cos(a) * 7 + ph[0], math.sin(a) * 7, z * 4)))
         rad.append(k)
     cr, sr = math.cos(rot), math.sin(rot)
+    lim = None
+    if clamp is not None:
+        lim = []
+        for j in range(seg):
+            a = j / seg * math.tau
+            lx, ly = math.cos(a) * rx * rad[j], math.sin(a) * ry * rad[j]
+            ang = math.atan2(lx * sr + ly * cr, lx * cr - ly * sr)
+            lim.append(max(cellset_ray(clamp, cx, cy, ang) - inset, 0.05))
     tilt = (rng.uniform(-0.12, 0.12), rng.uniform(-0.12, 0.12))
     # (hauteur relative, facteur de rayon) : flanc bombé puis dôme
     prof = [(0.0, 0.9), (0.12, 0.99), (0.5, 1.0), (0.82, 0.97), (0.94, 0.88), (1.0, 0.7), (1.04, 0.4), (1.06, 0.12)]
@@ -1352,7 +1446,12 @@ def slab(mb, cx, cy, z, rx, ry, h, rng, rot=0.0, seg=22):
             if fz > 0.8:
                 bump = 0.12 * h * mnoise.noise(Vector((lx * 1.3 + ph[2], ly * 1.3, z)))
             zz = z + h * fz + bump + (lx * tilt[0] + ly * tilt[1]) * (fz > 0.5)
-            ring.append(mb.v((cx + lx * cr - ly * sr, cy + lx * sr + ly * cr, zz)))
+            wx, wy = lx * cr - ly * sr, lx * sr + ly * cr
+            if lim is not None:
+                rr_ = math.hypot(wx, wy)
+                if rr_ > lim[j]:
+                    wx, wy = wx * lim[j] / rr_, wy * lim[j] / rr_
+            ring.append(mb.v((cx + wx, cy + wy, zz)))
         rings.append(ring)
     mi = mb.mi("rock")
     for r0, r1 in zip(rings, rings[1:]):
@@ -1367,39 +1466,55 @@ def slab(mb, cx, cy, z, rx, ry, h, rng, rot=0.0, seg=22):
 
 def rock_formation(mb, cells, height, rng):
     """Formation de grès façon maquette : colonnes de galettes stratifiées empilées (strates
-    bien lisibles), de hauteurs variées, quelques blocs isolés et éboulis au pied."""
+    bien lisibles), de hauteurs variées. Les colonnes COUVRENT toutes les cases de la formation
+    (couverture gloutonne depuis les cases les plus profondes) et leur contour est rogné aux cases
+    (slab clamp) : l'emprise rendue correspond exactement aux cases murées du plan."""
     S = set(tuple(c) for c in cells)
     xs = [c[0] + 0.5 for c in cells]
     ys = [c[1] + 0.5 for c in cells]
     cx, cyr = sum(xs) / len(xs), sum(ys) / len(ys)
     rmax = max(math.hypot(x - cx, y - cyr) for x, y in zip(xs, ys)) + 0.5
     cy = -cyr
-    # colonnes : centres tirés dans l'emprise, rayon ~1–2 cases
-    cols = []
-    pts = list(zip(xs, ys))
-    rng.shuffle(pts)
-    ncol = max(1, min(3, int(len(cells) / 30) + 1))
-    pts.sort(key=lambda q: math.hypot(q[0] - cx, q[1] - cyr))
-    cand = pts[: max(1, len(pts) // 2)]
-    rng.shuffle(cand)
-    for (px, py) in cand:
-        if len(cols) >= ncol:
-            break
-        r = min(rmax * rng.uniform(0.82, 0.98) / (1.0 + 0.2 * (ncol - 1)), 4.2)
-        if all(math.hypot(px - qx, py - qy) > (r + qr) * 0.5 for (qx, qy, qr) in cols):
-            cols.append((px, py, r))
-    if not cols:
-        cols = [(cx, cyr, 1.0)]
+    # profondeur (distance au bord, en cases) de chaque case
+    N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    depth = {}
+    queue = []
+    for c in sorted(S):
+        if any((c[0] + dx, c[1] + dy) not in S for dx, dy in N4):
+            depth[c] = 0
+            queue.append(c)
+    i = 0
+    while i < len(queue):
+        c = queue[i]
+        i += 1
+        for dx, dy in N4:
+            n = (c[0] + dx, c[1] + dy)
+            if n in S and n not in depth:
+                depth[n] = depth[c] + 1
+                queue.append(n)
+    dmax = max(depth.values()) if depth else 0
+    order = sorted(S, key=lambda c: (-depth[c], rng.random()))
+    uncovered = set(S)
     top_z = 0.0
-    for (px, py, r) in cols:
-        dc = math.hypot(px - cx, py - cyr) / max(rmax, 0.5)
-        hcol = height * rng.uniform(0.85, 1.15) * (1.0 - 0.25 * dc)
+    ncol = 0
+    for c in order:
+        if c not in uncovered:
+            continue
+        if ncol >= 40:
+            break
+        px, py = c[0] + 0.5 + rng.uniform(-0.15, 0.15), c[1] + 0.5 + rng.uniform(-0.15, 0.15)
+        r = min(depth[c] + 1.0, 4.2)
+        first = ncol == 0
+        ncol += 1
+        k_h = 1.0 if first else (0.45 + 0.5 * min(1.0, (depth[c] + 1.0) / (dmax + 1.0)))
+        hcol = height * rng.uniform(0.88, 1.12) * k_h
         z = 0.0
-        rx, ry = r * rng.uniform(0.9, 1.45), r * rng.uniform(0.75, 1.05)
+        rx, ry = r * rng.uniform(1.0, 1.35), r * rng.uniform(0.9, 1.1)
         ox, oy = 0.0, 0.0
         while z < hcol:
             hh = rng.uniform(0.5, 0.8)
-            slab(mb, px + ox, -py + oy, z, rx, ry, hh, rng, rng.uniform(0, math.pi), 40)
+            slab(mb, px + ox, -py + oy, z, rx, ry, hh, rng, rng.uniform(0, math.pi), 40, clamp=S,
+                 inset=rng.uniform(0.04, 0.12))
             z += hh * 0.9
             k = rng.uniform(0.9, 1.0) if z < hcol * 0.75 else rng.uniform(0.7, 0.85)
             rx *= k
@@ -1409,43 +1524,36 @@ def rock_formation(mb, cells, height, rng):
             if rx < 0.3:
                 break
         top_z = max(top_z, z)
-    # blocs isolés autour
-    for _ in range(int(2 + rmax * 0.8)):
-        a = rng.uniform(0, math.tau)
-        rr = rmax * rng.uniform(0.8, 1.1)
-        r = rng.uniform(0.4, 0.9)
-        z = 0.0
-        for k in range(rng.randint(1, 3)):
-            hh = rng.uniform(0.25, 0.4)
-            slab(mb, cx + math.cos(a) * rr, cy + math.sin(a) * rr, z, r * rng.uniform(1.0, 1.3), r, hh, rng, rng.uniform(0, 3))
-            z += hh * 0.92
-            r *= 0.8
-    # éboulis
+        for q in list(uncovered):
+            if math.hypot(q[0] + 0.5 - px, q[1] + 0.5 - py) <= r * 0.8 + 0.25:
+                uncovered.discard(q)
+    # éboulis : cailloux plats (sous le plan de coupe du masque, non bloquants)
     for _ in range(int(6 + rmax * 5)):
         a = rng.uniform(0, math.tau)
-        rr = rmax * rng.uniform(0.9, 1.5)
-        r = rng.uniform(0.06, 0.22)
-        mb.sphere(cx + math.cos(a) * rr, cy + math.sin(a) * rr, r * 0.2, r, "rock", sub=1, sx=1.2, sz=0.6, jitter=0.25, rng=rng)
+        rr = rmax * rng.uniform(0.9, 1.4)
+        r = rng.uniform(0.04, 0.13)
+        mb.sphere(cx + math.cos(a) * rr, cy + math.sin(a) * rr, r * 0.15, r, "rock", sub=1, sx=1.2, sz=0.5, jitter=0.25, rng=rng)
     prof = [rmax] * 24
     return (cx, cy, [(cx, cy, top_z, 1.0)], prof, rmax)
 
 
 def scree(mb, cells, height, rng):
     """Éboulis : amas de blocs bas posés sur l'emprise (cases murs)."""
+    S = set(tuple(c) for c in cells)
     for (cx, cy) in cells:
         for k in range(rng.randint(1, 2)):
-            px, py = cx + rng.uniform(0.15, 0.85), cy + rng.uniform(0.15, 0.85)
-            r = rng.uniform(0.3, 0.55)
+            px, py = cx + rng.uniform(0.3, 0.7), cy + rng.uniform(0.3, 0.7)
+            r = rng.uniform(0.38, 0.6)
             z = 0.0
             for j in range(rng.randint(1, 2)):
                 hh = rng.uniform(0.25, 0.45) * height
-                slab(mb, px, -py, z, r * rng.uniform(1.0, 1.3), r, hh, rng, rng.uniform(0, 3), 18)
+                slab(mb, px, -py, z, r * rng.uniform(1.0, 1.3), r, hh, rng, rng.uniform(0, 3), 18, clamp=S, inset=0.05)
                 z += hh * 0.85
                 r *= 0.75
     for _ in range(len(cells) * 2):
         c = rng.choice(cells)
-        mb.sphere(c[0] + rng.uniform(-0.3, 1.3), -(c[1] + rng.uniform(-0.3, 1.3)), 0.03, rng.uniform(0.06, 0.18), "rock", sub=1,
-                  sx=1.2, sz=0.6, jitter=0.25, rng=rng)
+        mb.sphere(c[0] + rng.uniform(-0.3, 1.3), -(c[1] + rng.uniform(-0.3, 1.3)), 0.02, rng.uniform(0.04, 0.12), "rock", sub=1,
+                  sx=1.2, sz=0.5, jitter=0.25, rng=rng)
 
 
 # ======================================================================= végétation
@@ -1787,12 +1895,13 @@ def prop(mb, k, x, y, sw, sh, rng, rot=0.0):
             mb.box(x - s, y - 0.2, 0, x + s, y + 0.2, 0.5, m)
 
 
-def clutter_cluster(mb, X, Yb, rng, n=None):
-    """Grappe de fouillis (3–7 objets serrés) autour de (X, Yb)."""
+def clutter_cluster(mb, X, Yb, rng, n=None, spread=(0.6, 0.45), wagons=True):
+    """Grappe de fouillis (3–7 objets serrés) autour de (X, Yb). spread = demi-étendue (x, y) des
+    positions ; wagons=False : pas de charrette (trop grande pour une case)."""
     n = n or rng.randint(3, 7)
     for i in range(n):
-        x = X + rng.uniform(-0.6, 0.6)
-        y = Yb + rng.uniform(-0.45, 0.45)
+        x = X + rng.uniform(-spread[0], spread[0])
+        y = Yb + rng.uniform(-spread[1], spread[1])
         r = rng.random()
         if r < 0.24:
             barrel(mb, x, y, rng, rng.uniform(0.85, 1.05))
@@ -1812,56 +1921,96 @@ def clutter_cluster(mb, X, Yb, rng, n=None):
             mb.cyl(x, y, 0.0, 0.06, 0.36, "wood_dark", 14)
         elif r < 0.9:
             mb.box(x - 0.15, y - 0.15, 0, x + 0.15, y + 0.15, 0.08, "rust_iron", rot=rng.uniform(0, 3))
-        elif r < 0.915 and n >= 4:
+        elif r < 0.915 and n >= 4 and wagons:
             st = len(mb.V)
             wagon(mb, x, y, rng.uniform(0, math.pi), rng, covered=False)
             scale_verts(mb, st, (x, y, 0.0), (1.3, 1.3, 1.3))
         elif r < 0.95:
             # établi
-            mb.box(x - 0.5, y - 0.25, 0.5, x + 0.5, y + 0.25, 0.56, "wood")
+            mb.box(x - 0.36, y - 0.22, 0.5, x + 0.36, y + 0.22, 0.56, "wood")
             for (a_, b2) in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
-                mb.box(x + a_ * 0.42 - 0.03, y + b2 * 0.18 - 0.03, 0, x + a_ * 0.42 + 0.03, y + b2 * 0.18 + 0.03, 0.5, "wood_dark")
+                mb.box(x + a_ * 0.3 - 0.03, y + b2 * 0.16 - 0.03, 0, x + a_ * 0.3 + 0.03, y + b2 * 0.16 + 0.03, 0.5, "wood_dark")
         else:
             shrub(mb, x, y, 0.9, rng)
 
 
 def build_clutter():
     """Grappes de fouillis le long des bâtiments et dans les cours (caisses, tonneaux, planches,
-    sacs, foin, roues, bric-à-brac) comme sur la maquette."""
+    sacs, foin, roues, bric-à-brac) comme sur la maquette.
+    Cohérence rendu ↔ collisions : chaque grappe tient dans UNE case de rue (le masque d'emprise la
+    rend bloquante en jeu, cf. compose.py), jamais sur un chemin, un porche, une voie, les abords
+    d'une porte / d'un conteneur / d'une échelle, et seulement si bloquer cette case garde le sable
+    libre d'un seul tenant autour (même test d'anneau que le générateur). Pas de charrette."""
     mb = MB()
     rng = random.Random(SEED * 31 + 7)
+    blocked = set()
+    for yy in range(-1, H + 1):
+        for xx in range(-1, W + 1):
+            if tile(xx, yy) not in (1, 2, 4, 5, 6):
+                blocked.add((xx, yy))
+    for key in ("prop_spawns", "container_spawns", "hiding_spot_spawns"):
+        for sp in LAYOUT.get(key, []):
+            x0_, y0_, w_, h_ = _rect_of_spawn(sp)
+            for yy in range(y0_, y0_ + h_):
+                for xx in range(x0_, x0_ + w_):
+                    blocked.add((xx, yy))
+    porch_rows = set()
+    for b in LAYOUT["buildings"]:
+        x, y, w, h = b["rect"]
+        for xx in range(x - 1, x + w + 1):
+            porch_rows.add((xx, y + h))
+    ring8 = ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))
+
+    def ok(c):
+        if tile(*c) != 1 or c in blocked or c in occupied or c in rail_set or c in game_cells or c in path_set \
+                or c in porch_rows:
+            return False
+        free = [(c[0] + dx, c[1] + dy) not in blocked for dx, dy in ring8]
+        if not any(free):
+            return False
+        return sum(1 for k in range(8) if free[k] and not free[k - 1]) <= 1
+
+    placed = []
     for b in LAYOUT["buildings"]:
         x, y, w, h = b["rect"]
         cand = []
-        south = y + h + (1.5 if b.get("porch_side") == "S" else 0.6)
         for xx in range(x, x + w):
-            cand += [(xx + 0.5, y - 0.6), (xx + 0.5, south)]
+            cand += [(xx, y - 1), (xx, y + h + 1)]
         for yy in range(y, y + h):
-            cand += [(x - 0.65, yy + 0.5), (x + w + 0.65, yy + 0.5)]
+            cand += [(x - 1, yy), (x + w, yy)]
         rng.shuffle(cand)
-        used = []
-        for (px, py) in cand:
-            if len(used) >= max(5, int((w + h) * 1.0)):
+        used = 0
+        for c in cand:
+            if used >= max(3, int((w + h) * 0.6)):
                 break
-            c = (int(math.floor(px)), int(math.floor(py)))
-            if tile(*c) != 1 or c in occupied or c in rail_set or c in game_cells or c in path_set and rng.random() < 0.7:
+            if not ok(c) or any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 2 for u in placed):
                 continue
-            if any(abs(px - u) + abs(py - v) < 1.6 for (u, v) in used):
-                continue
-            used.append((px, py))
-            clutter_cluster(mb, px, Y(py), rng)
+            blocked.add(c)
+            placed.append(c)
+            used += 1
+            clutter_cluster(mb, c[0] + 0.5, Y(c[1]) - 0.5, rng, rng.randint(2, 4), spread=(0.16, 0.14), wagons=False)
     # grappes libres dans les cours (cases non-chemin proches des bâtiments)
     for (cx_, cy_), b in list(bld_cells.items())[::6]:
         for _ in range(2):
-            px, py = cx_ + rng.uniform(-4, 4), cy_ + rng.uniform(-4, 4)
-            c = (int(math.floor(px)), int(math.floor(py)))
-            if tile(*c) == 1 and c not in occupied and c not in path_set and c not in rail_set and c not in game_cells:
-                clutter_cluster(mb, px, Y(py), rng, rng.randint(2, 4))
+            c = (cx_ + rng.randint(-4, 4), cy_ + rng.randint(-4, 4))
+            if not ok(c) or any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 2 for u in placed):
+                continue
+            blocked.add(c)
+            placed.append(c)
+            clutter_cluster(mb, c[0] + 0.5, Y(c[1]) - 0.5, rng, rng.randint(2, 3), spread=(0.16, 0.14), wagons=False)
     mb.to_object("clutter", "world")
+    global CLUTTER_CELLS
+    CLUTTER_CELLS = sorted(placed)
+
+
+CLUTTER_CELLS = []
 
 
 # ======================================================================= repères (éolienne, château d'eau, puits)
-def windmill(mb, cx, cy, s=1.0):
+VEG_PROPS = ("shrub", "tumbleweed", "grass", "tree", "joshua", "dead_tree")
+
+
+def windmill(mb, cx, cy, s=1.0, trough=True):
     Ht = 4.6 * s
     b0, b1 = 0.75 * s, 0.18 * s
     corners = [(-1, -1), (1, -1), (1, 1), (-1, 1)]
@@ -1904,6 +2053,8 @@ def windmill(mb, cx, cy, s=1.0):
              tuple(tv + Vector((0, 0.15 * s, 0.4 * s))), tuple(tv + Vector((0, -0.6 * s, 0.35 * s)))], "tin_red")
     mb.poly([tuple(tv + Vector((0, -0.6 * s, 0.35 * s))), tuple(tv + Vector((0, 0.15 * s, 0.4 * s))),
              tuple(tv + Vector((0, 0.15 * s, -0.4 * s))), tuple(tv + Vector((0, -0.6 * s, -0.35 * s)))], "tin_red")
+    if not trough:
+        return
     # bac + tuyau au pied
     mb.cyl(cx + 0.9 * s, cy - 0.6 * s, 0, 0.45, 0.55 * s, "wood", 16)
     mb.cyl(cx + 0.9 * s, cy - 0.6 * s, 0.38, 0.42, 0.5 * s, "water", 16)
@@ -2291,16 +2442,24 @@ def build_world():
             tree(sh, 0, 0, 1.3, rng, "agave")
             sh.offset(cx, -cy, float(rf["height"]) * 1.02)
             o = sh.to_object("topbush_%d" % i, "world")
-    # props
+    # props : obstacles ramenés dans leur emprise (cases du spawn) ; végétation à part (traversable
+    # en jeu, hors masque d'emprise)
     pm = MB()
+    pv = MB()
     for p in LAYOUT["props"]:
         rng = random.Random(hash((p["cell"][0], p["cell"][1], p["kind"])) & 0xffffff)
         off = p.get("off", [0, 0])
         x = p["cell"][0] + 0.5 + off[0] / 64.0
         y = Y(p["cell"][1]) - 0.5 - off[1] / 64.0
         sz = p.get("size", [1, 1])
+        if p["kind"] in VEG_PROPS:
+            prop(pv, p["kind"], x, y, sz[0], sz[1], rng, float(p.get("rot", 0.0)))
+            continue
+        st = len(pm.V)
         prop(pm, p["kind"], x, y, sz[0], sz[1], rng, float(p.get("rot", 0.0)))
+        cells_fit(pm, st, _rect_of_spawn(p))
     pm.to_object("props", "world")
+    pv.to_object("veg_props", "world")
     # clôtures
     fm = MB()
     for i, fl in enumerate(LAYOUT["fences"]):
@@ -2312,14 +2471,18 @@ def build_world():
         x, y, w, h = l["rect"]
         cx, cy = x + w / 2, Y(y) - h / 2
         k = l["kind"]
+        st = len(lm.V)
         if k == "windmill":
-            windmill(lm, cx, cy, 1.55)
+            windmill(lm, cx, cy, 1.55, trough=False)
         elif k == "windmill_small":
-            windmill(lm, cx, cy, 1.0)
+            windmill(lm, cx, cy, 1.0, trough=False)
         elif k == "water_tower":
             water_tower(lm, cx, cy, max(w, h) / 2.2)
         elif k == "well":
             well(lm, cx, cy, 1.4)
+        # éolienne / château d'eau : pieds en tubes (sommets seulement en bas et en haut) → zlo bas ;
+        # puits : la couronne de pavés plats (z < 0,06) reste hors emprise.
+        cells_fit(lm, st, l["rect"], zlo=0.12 if k == "well" else -1.0)
     lm.to_object("landmarks", "world")
     build_clutter()
     build_rails()
@@ -2331,6 +2494,7 @@ def build_world():
         yc = Y(y) - h / 2
         ks = min(TRAIN_S, h * 1.0 / 1.6)
         scale_verts(tm, st, (None, yc, 0.0), (1.0, ks, 1.15))
+        cells_fit(tm, st, c["rect"], margin=0.02)
     tm.to_object("train", "world")
     build_ground()
 
@@ -2465,7 +2629,7 @@ def set_mode(mode):
             lc.exclude = (mode != "int")
 
 
-def render_chunked(path, chunk=1024, ov=24):
+def render_chunked(path, chunk=1024, ov=24, grade_=True):
     """Rendu par morceaux (bordure + recadrage, recouvrement ov px) puis assemblage : mémoire
     bornée (2 cœurs, 7 Go)."""
     from PIL import Image
@@ -2474,20 +2638,234 @@ def render_chunked(path, chunk=1024, ov=24):
     scene.render.use_border = True
     scene.render.use_crop_to_border = True
     tmp = os.path.join(OUT, "_chunk.png")
+    # Reprise : chaque morceau est gardé dans _chunks_<nom>/ ; une relance (process interrompu)
+    # ne refait que les morceaux manquants.
+    cdir = os.path.join(OUT, "_chunks_" + os.path.splitext(os.path.basename(path))[0])
+    os.makedirs(cdir, exist_ok=True)
     dt = 0.0
     for y0 in range(0, ph, chunk):
         for x0 in range(0, pw, chunk):
             x1, y1 = min(x0 + chunk, pw), min(y0 + chunk, ph)
-            ex0, ey0, ex1, ey1 = max(x0 - ov, 0), max(y0 - ov, 0), min(x1 + ov, pw), min(y1 + ov, ph)
-            scene.render.border_min_x, scene.render.border_max_x = ex0 / pw, ex1 / pw
-            scene.render.border_min_y, scene.render.border_max_y = 1 - ey1 / ph, 1 - ey0 / ph
-            dt += render(tmp)
-            im = Image.open(tmp).convert("RGB")
-            canvas.paste(im.crop((x0 - ex0, y0 - ey0, x0 - ex0 + (x1 - x0), y0 - ey0 + (y1 - y0))), (x0, y0))
+            cp = os.path.join(cdir, "c_%d_%d.png" % (x0, y0))
+            if not os.path.exists(cp):
+                ex0, ey0, ex1, ey1 = max(x0 - ov, 0), max(y0 - ov, 0), min(x1 + ov, pw), min(y1 + ov, ph)
+                scene.render.border_min_x, scene.render.border_max_x = ex0 / pw, ex1 / pw
+                scene.render.border_min_y, scene.render.border_max_y = 1 - ey1 / ph, 1 - ey0 / ph
+                dt += render(tmp, grade_)
+                im = Image.open(tmp).convert("RGB")
+                im.crop((x0 - ex0, y0 - ey0, x0 - ex0 + (x1 - x0), y0 - ey0 + (y1 - y0))).save(cp + ".tmp.png")
+                os.replace(cp + ".tmp.png", cp)
+            canvas.paste(Image.open(cp).convert("RGB"), (x0, y0))
             print("  chunk", x0, y0, round(dt, 1), flush=True)
     scene.render.use_border = False
     canvas.save(path)
     os.remove(tmp)
+    return dt
+
+
+# ======================================================================= masque d'emprise (zénithal)
+# Classes d'objets du masque : R = obstacle adossé au layout (murs, rochers, train, clôtures,
+# repères, props du layout), G = fouillis décoratif (clutter, mobilier), B = végétation / divers.
+MASK_SOLID = ("walls_", "front_", "ruin_", "rocks", "train", "fences", "landmarks", "props")
+MASK_DECOR = ("clutter", "furn_")
+MASK_SKIP = ("ground", "scatter", "rails", "floor_", "porch_", "cut_", "roof_", "awning_", "rocks_margin", "topbush_",
+             "ladder_", "veg_props", "_")
+
+
+def mask_class(name):
+    if name.startswith(MASK_SKIP):
+        return None
+    if name.startswith(MASK_SOLID):
+        return (1.0, 0.0, 0.0)
+    if name.startswith(MASK_DECOR):
+        return (0.0, 1.0, 0.0)
+    return (0.0, 0.0, 1.0)
+
+
+def render_mask(path, ppc=4, zmin=0.16, zmax=1.0, ss=4):
+    """Emprise au sol RÉELLE des objets solides, vue zénithale (projection orthographique
+    verticale), même cadrage au sol que « full » : px = (cx + M) * ppc, py = (cy + M) * ppc.
+    Seule la tranche zmin < z < zmax compte (ce qui gêne un personnage : pas les toits, auvents,
+    linteaux, ni les planches au sol). Rastérisation directe des triangles (numpy + PIL) : chaque
+    triangle est découpé à la tranche puis projeté ; un triangle vertical (mur) se projette en
+    segment, dessiné d'un pixel (sur-échantillonnage ss). Résultat RGB 8 bits, couverture par
+    pixel : R = obstacle adossé au plan, G = fouillis décoratif, B = autre (info)."""
+    import numpy as np
+    from PIL import Image, ImageDraw
+    tw, th = W + 2 * MARGIN, H + 2 * MARGIN
+    q = ppc * ss
+    layers = {c: Image.new("L", (tw * q, th * q), 0) for c in "RGB"}
+    draws = {c: ImageDraw.Draw(im) for c, im in layers.items()}
+    t = time.time()
+    ntri = 0
+    for o in bpy.data.objects:
+        if o.type != "MESH" or o.hide_render:
+            continue
+        cl = mask_class(o.name)
+        if cl is None:
+            continue
+        ch = "R" if cl[0] else ("G" if cl[1] else "B")
+        dr = draws[ch]
+        me = o.data
+        me.calc_loop_triangles()
+        nv = len(me.vertices)
+        if nv == 0 or len(me.loop_triangles) == 0:
+            continue
+        co = np.zeros(nv * 3)
+        me.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        mw = np.array(o.matrix_world)
+        co = co @ mw[:3, :3].T + mw[:3, 3]
+        tri = np.zeros(len(me.loop_triangles) * 3, dtype=np.int64)
+        me.loop_triangles.foreach_get("vertices", tri)
+        P = co[tri.reshape(-1, 3)]                      # (n, 3, 3)
+        z = P[:, :, 2]
+        keep = ~((z.max(1) <= zmin) | (z.min(1) >= zmax))
+        P = P[keep]
+        inside = (P[:, :, 2].min(1) >= zmin) & (P[:, :, 2].max(1) <= zmax)
+        # pixels : x = (X + M) * q ; y = (-Y + M) * q
+        def px(pt):
+            return ((pt[0] + MARGIN) * q, (-pt[1] + MARGIN) * q)
+        for k in range(len(P)):
+            tr = P[k]
+            if inside[k]:
+                pts = [px(tr[0]), px(tr[1]), px(tr[2])]
+            else:
+                poly = [tuple(v) for v in tr]
+                for (zc, keep_above) in ((zmin, True), (zmax, False)):
+                    out = []
+                    n = len(poly)
+                    for i in range(n):
+                        a, b_ = poly[i], poly[(i + 1) % n]
+                        ina = a[2] >= zc if keep_above else a[2] <= zc
+                        inb = b_[2] >= zc if keep_above else b_[2] <= zc
+                        if ina:
+                            out.append(a)
+                        if ina != inb:
+                            tt = (zc - a[2]) / (b_[2] - a[2])
+                            out.append((a[0] + (b_[0] - a[0]) * tt, a[1] + (b_[1] - a[1]) * tt, zc))
+                    poly = out
+                    if not poly:
+                        break
+                if len(poly) < 2:
+                    continue
+                pts = [px(v) for v in poly]
+            dr.polygon(pts, fill=255, outline=255)
+            ntri += 1
+    out = []
+    for c in "RGB":
+        a = np.asarray(layers[c], dtype=np.float32) / 255.0
+        a = a.reshape(th * ppc, ss, tw * ppc, ss).mean(axis=(1, 3))
+        out.append((a * 255.0 + 0.5).astype(np.uint8))
+    Image.fromarray(np.stack(out, -1), "RGB").save(path)
+    dt = time.time() - t
+    print("  mask triangles", ntri, flush=True)
+    return dt
+
+
+# ======================================================================= occultation (ids par pixel)
+# Objets qui n'occultent jamais un personnage (sol, rails, porches / auvents : on passe dessous,
+# échelles : on y grimpe ; floor/cut : invisibles depuis la caméra « full »).
+OCC_SKIP = ("ground", "rails", "porch_", "awning_", "ladder_", "floor_", "cut_", "_")
+
+
+def render_occ(path, zmin=0.3):
+    """Passe d'ids d'occultation, MÊME caméra et cadrage que « full » (pixels alignés) :
+    pour chaque pixel, la surface visible donne
+      R = rangée + 1 du point de la surface (floor(-y), 1..254) si sa hauteur z > zmin et que
+          l'objet peut masquer un personnage (sinon 0 = sol / non occultant) ;
+      G = id + 1 du bâtiment auquel appartient la surface (0 = aucun).
+    compose.py en tire, par tuile, des « tranches » (rangée, bâtiment) que le jeu trie en Y avec
+    les personnages : un personnage plus au nord qu'une surface haute passe DERRIÈRE (wagon,
+    rocher, maison), au lieu d'être dessiné par-dessus (« marcher sur le wagon »).
+    Cycles émissif, 1 échantillon, filtre ponctuel, sortie brute (vue Raw), PNG 8 bits."""
+    sc = scene
+    for o in bpy.data.objects:
+        if o.type != "MESH":
+            continue
+        cap = 0.0 if o.name.startswith(OCC_SKIP) else 1.0
+        bid = 0
+        for pre in ("walls_", "front_", "roof_", "awning_", "porch_", "floor_", "furn_", "ruin_", "ladder_"):
+            if o.name.startswith(pre):
+                try:
+                    bid = int(o.name[len(pre):]) + 1
+                except ValueError:
+                    bid = 0
+        o.pass_index = bid
+        o.color = (cap, 0.0, 0.0, 1.0)
+    mat = bpy.data.materials.get("_occ_emit")
+    if mat is None:
+        mat = bpy.data.materials.new("_occ_emit")
+        mat.use_nodes = True
+        nt = mat.node_tree
+        nt.nodes.clear()
+        geo = nt.nodes.new("ShaderNodeNewGeometry")
+        oi = nt.nodes.new("ShaderNodeObjectInfo")
+        sep = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(geo.outputs["Position"], sep.inputs[0])
+        sepc = nt.nodes.new("ShaderNodeSeparateColor")
+        nt.links.new(oi.outputs["Color"], sepc.inputs[0])
+
+        def math_(op, a, b=None, v=None):
+            n = nt.nodes.new("ShaderNodeMath")
+            n.operation = op
+            for i, x in enumerate((a, b)):
+                if x is None:
+                    continue
+                if isinstance(x, (int, float)):
+                    n.inputs[i].default_value = x
+                else:
+                    nt.links.new(x, n.inputs[i])
+            return n.outputs[0]
+        row = math_("FLOOR", math_("MULTIPLY", sep.outputs["Y"], -1.0))
+        code = math_("MINIMUM", math_("MAXIMUM", math_("ADD", row, 1.0), 0.0), 254.0)
+        # rangées hors carte au nord (< 0) : non occultant
+        code = math_("MULTIPLY", code, math_("GREATER_THAN", row, -0.5))
+        high = math_("GREATER_THAN", sep.outputs["Z"], zmin)
+        r = math_("DIVIDE", math_("MULTIPLY", math_("MULTIPLY", code, high), sepc.outputs[0]), 255.0)
+        g = math_("DIVIDE", oi.outputs["Object Index"], 255.0)
+        comb = nt.nodes.new("ShaderNodeCombineColor")
+        nt.links.new(r, comb.inputs[0])
+        nt.links.new(g, comb.inputs[1])
+        em = nt.nodes.new("ShaderNodeEmission")
+        nt.links.new(comb.outputs[0], em.inputs["Color"])
+        out = nt.nodes.new("ShaderNodeOutputMaterial")
+        nt.links.new(em.outputs[0], out.inputs["Surface"])
+    vl = sc.view_layers[0]
+    saved = {"engine": sc.render.engine, "samples": sc.cycles.samples, "den": sc.cycles.use_denoising,
+             "vt": sc.view_settings.view_transform, "look": sc.view_settings.look, "exp": sc.view_settings.exposure,
+             "world": sc.world, "dither": sc.render.dither_intensity, "fw": sc.cycles.filter_width}
+    hidden = []
+    for o in bpy.data.objects:
+        if o.type == "LIGHT" and not o.hide_render:
+            o.hide_render = True
+            hidden.append(o)
+    vl.material_override = mat
+    wm = bpy.data.worlds.get("_mask_w") or bpy.data.worlds.new("_mask_w")
+    wm.use_nodes = True
+    wm.node_tree.nodes["Background"].inputs[1].default_value = 0.0
+    sc.world = wm
+    sc.cycles.samples = 1
+    sc.cycles.use_denoising = False
+    sc.cycles.use_adaptive_sampling = False
+    sc.cycles.filter_width = 0.01
+    sc.view_settings.view_transform = "Raw"
+    sc.view_settings.look = "None"
+    sc.view_settings.exposure = 0.0
+    sc.render.dither_intensity = 0.0
+    dt = render_chunked(path, grade_=False)
+    vl.material_override = None
+    for o in hidden:
+        o.hide_render = False
+    sc.cycles.samples = saved["samples"]
+    sc.cycles.use_denoising = saved["den"]
+    sc.cycles.use_adaptive_sampling = True
+    sc.cycles.filter_width = saved["fw"]
+    sc.view_settings.view_transform = saved["vt"]
+    sc.view_settings.look = saved["look"]
+    sc.view_settings.exposure = saved["exp"]
+    sc.world = saved["world"]
+    sc.render.dither_intensity = saved["dither"]
     return dt
 
 
@@ -2503,11 +2881,20 @@ if __name__ == "__main__":
     info = {"tiles_md5": hashlib.md5("".join(TILES).encode()).hexdigest(), "seed": SEED, "ppc": PPC, "tilt_deg": TILT_DEG, "projection": "ground_square", "margin": MARGIN,
             "size": [W, H], "samples": SAMPLES, "build_s": round(t_build, 1), "renders": {}, "buildings": []}
     scene.render.use_persistent_data = True
+    if "mask" in PASSES:
+        dt = render_mask(os.path.join(OUT, "mask.png"))
+        info["renders"]["mask"] = {"ppc": 4, "s": round(dt, 1)}
+        print("MASK", round(dt, 1), "s", flush=True)
     if "full" in PASSES:
         pw, ph = frame(cam, -MARGIN, W + MARGIN, -MARGIN, H + MARGIN)
         dt = render_chunked(os.path.join(OUT, "full.png"))
         info["renders"]["full"] = {"px": [pw, ph], "s": round(dt, 1)}
         print("FULL", pw, ph, round(dt, 1), "s", flush=True)
+    if "occ" in PASSES:
+        pw, ph = frame(cam, -MARGIN, W + MARGIN, -MARGIN, H + MARGIN)
+        dt = render_occ(os.path.join(OUT, "occ.png"))
+        info["renders"]["occ"] = {"px": [pw, ph], "s": round(dt, 1)}
+        print("OCC", round(dt, 1), "s", flush=True)
     for p_ in PASSES:
         if p_.startswith("crop:"):
             a_ = [float(v) for v in p_[5:].split(";")]
@@ -2559,5 +2946,9 @@ if __name__ == "__main__":
         scene.render.use_border = False
         info["renders"]["interiors_s"] = round(tb, 1)
         print("INT", round(tb, 1), "s", flush=True)
+    info["roofs"] = {str(k): v for k, v in sorted(ROOF_INFO.items())}
+    info["ladders"] = LAYOUT.get("ladders", [])
+    info["clutter_cells"] = [list(c) for c in CLUTTER_CELLS]
     json.dump(info, open(os.path.join(OUT, "render.json"), "w"), indent=1)
+    json.dump(LAYOUT, open(os.path.join(OUT, "layout.json"), "w"))   # pour compose.py (collisions)
     print("DONE total", round(time.time() - t0, 1), "s", flush=True)

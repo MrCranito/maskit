@@ -1,0 +1,135 @@
+{
+  "kind": "shotgun_brute",
+  "name": "Brute au fusil",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    143
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 128,
+  "head_px": 35,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      151.8,
+      68.4
+    ],
+    "se": [
+      133.6,
+      97.1
+    ],
+    "s": [
+      93.4,
+      107.9
+    ],
+    "sw": [
+      54.7,
+      94.4
+    ],
+    "w": [
+      40.2,
+      64.5
+    ],
+    "nw": [
+      58.4,
+      35.7
+    ],
+    "n": [
+      98.6,
+      24.9
+    ],
+    "ne": [
+      137.3,
+      38.5
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      13,
+      95,
+      159,
+      175
+    ],
+    "se": [
+      13,
+      95,
+      159,
+      175
+    ],
+    "s": [
+      35,
+      91,
+      179,
+      179
+    ],
+    "sw": [
+      35,
+      91,
+      179,
+      179
+    ],
+    "w": [
+      35,
+      91,
+      179,
+      179
+    ],
+    "nw": [
+      33,
+      93,
+      179,
+      183
+    ],
+    "n": [
+      33,
+      93,
+      179,
+      183
+    ],
+    "ne": [
+      13,
+      93,
+      157,
+      180
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/shotgun_brute/shotgun_brute_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la lame (image attack 3)."
+}

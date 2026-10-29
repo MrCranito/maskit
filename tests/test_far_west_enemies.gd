@@ -1,7 +1,11 @@
 extends GutTest
-## Ennemis du monde 1 (Far West) : données, visuels, tir en éventail, coup de zone.
+## Ennemis du monde 1 (Far West) : données, visuels (planches 3D), tir en éventail, coup de zone.
 
-const KINDS: Array[StringName] = [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"sandstone_colossus"]
+const KINDS: Array[StringName] = [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"sandstone_colossus",
+	&"rifleman", &"dynamiter", &"gang_boss"]
+## Archétypes rendus en 3D (art/blender/build_enemies.py).
+const SHEET_KINDS: Array[StringName] = [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"rifleman",
+	&"dynamiter", &"gang_boss"]
 
 
 class FakePlayer extends CharacterBody2D:
@@ -30,6 +34,7 @@ class FakePlayer extends CharacterBody2D:
 var _world: Node2D
 var _player: FakePlayer
 var _saved_player: Node2D
+var _saved_difficulty: int = 1
 
 
 func before_each() -> void:
@@ -40,10 +45,13 @@ func before_each() -> void:
 	_world.add_child(_player)
 	_saved_player = GameState.player
 	GameState.player = _player
+	_saved_difficulty = GameState.difficulty
+	GameState.difficulty = 1
 
 
 func after_each() -> void:
 	GameState.player = _saved_player
+	GameState.difficulty = _saved_difficulty
 	var pool := get_tree().get_first_node_in_group(EnemyProjectilePool.GROUP)
 	if pool != null:
 		pool.queue_free()
@@ -105,8 +113,13 @@ func test_kinds_setup_in_visual() -> void:
 		add_child_autofree(v)
 		v.setup(k)
 		assert_eq(v.kind, k, "%s setup sans repli" % k)
-		var sprite := v.get_node("Body/Sprite") as Sprite2D
-		assert_not_null(sprite.texture, "%s : texture chargée" % k)
+		if SHEET_KINDS.has(k):
+			assert_true(v.uses_sheet, "%s : planches 3D" % k)
+			var anim := v.get_node("Body/Anim") as AnimatedSprite2D
+			assert_true(anim.visible and anim.sprite_frames != null, "%s : AnimatedSprite2D" % k)
+		else:
+			var sprite := v.get_node("Body/Sprite") as Sprite2D
+			assert_not_null(sprite.texture, "%s : texture chargée" % k)
 		assert_lt(v.get_head_offset().y, -40.0)
 		v.set_attack_cone(50.0, 120.0)
 		v.set_attack_area(80.0)
@@ -180,3 +193,56 @@ func test_colossus_area_misses_player_out_of_range() -> void:
 	var hp0 := _player.hp
 	assert_false(e.perform_attack())
 	assert_eq(_player.hp, hp0)
+
+
+func test_sheets_have_all_directions_and_animations() -> void:
+	for k: StringName in SHEET_KINDS:
+		var e := EnemyArt.entry(k)
+		assert_false(e.is_empty(), "%s : planches" % k)
+		if e.is_empty():
+			continue
+		var sf: SpriteFrames = e["frames"]
+		var meta: Dictionary = e["meta"]
+		assert_true(sf.has_meta(&"enemy_meta"), "%s : méta embarquée (exports)" % k)
+		for an: String in ["idle", "run", "attack", "hit", "death"]:
+			for d: String in EnemyArt.DIR_NAMES:
+				assert_true(sf.has_animation("%s_%s" % [an, d]), "%s : %s_%s" % [k, an, d])
+		assert_eq(sf.get_frame_count("death_s"), int(meta["frames"]["death"]))
+		assert_not_null(EnemyArt.corpse_texture(k, "e"), "%s : cadavre (dernière image de la mort)" % k)
+		assert_ne(EnemyArt.muzzle_local(k, "e"), Vector2.INF, "%s : bout du canon" % k)
+		# Même échelle que le héros (≈ 64 unités monde de haut).
+		var h := float(meta["height_px"]) * float(e["scale"])
+		assert_between(h, 50.0, 90.0, "%s : hauteur %.0f" % [k, h])
+	assert_true(EnemyArt.has_anim(&"gang_boss", "throw"), "le chef lance aussi de la dynamite")
+
+
+func test_dir_index_with_hysteresis() -> void:
+	assert_eq(EnemyArt.dir_name(Vector2.RIGHT), "e")
+	assert_eq(EnemyArt.dir_name(Vector2.DOWN), "s")
+	assert_eq(EnemyArt.dir_name(Vector2(-1, -1)), "nw")
+	var cur := EnemyArt.dir_index(Vector2.RIGHT)
+	assert_eq(EnemyArt.dir_index_sticky(Vector2.RIGHT.rotated(deg_to_rad(25.0)), cur), cur, "pas de bascule à 25°")
+	assert_ne(EnemyArt.dir_index_sticky(Vector2.RIGHT.rotated(deg_to_rad(40.0)), cur), cur, "bascule à 40°")
+
+
+func test_new_archetypes_roles() -> void:
+	var rifle := _load(&"rifleman")
+	var dyn := _load(&"dynamiter")
+	var boss := _load(&"gang_boss")
+	var gun := _load(&"gunslinger")
+	assert_eq(rifle.get_pattern(), &"aimed")
+	assert_true(rifle.telegraph_line, "ligne de visée")
+	assert_gt(rifle.attack_range, gun.attack_range, "tireur embusqué : longue portée")
+	assert_eq(dyn.get_pattern(), &"lob")
+	assert_gt(dyn.throw_radius, 0.0)
+	assert_true(boss.elite)
+	assert_gt(boss.max_hp, _load(&"shotgun_brute").max_hp, "élite robuste")
+	assert_eq(boss.phase2_alt_pattern, &"lob")
+	assert_eq(gun.get_pattern(), &"burst")
+	assert_eq(gun.burst_count, 3)
+	assert_eq(_load(&"outlaw_knife").get_pattern(), &"lunge")
+	assert_gt(_load(&"outlaw_knife").zigzag_amplitude, 0.0, "course en zigzag")
+	assert_eq(_load(&"shotgun_brute").get_tactic(), &"heavy")
+	# Autres biomes : tactique déduite (pas de régression).
+	assert_eq((load("res://data/enemies/masked_archer.tres") as EnemyData).get_tactic(), &"gunner")
+	assert_eq((load("res://data/enemies/golem.tres") as EnemyData).get_pattern(), &"melee")

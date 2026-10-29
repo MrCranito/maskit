@@ -131,6 +131,9 @@ var _oy: int = 0
 var _r2: int = 0
 var _peek2: int = 0
 var _restrict_indoor: bool = false
+## (Toits) Emprise (cases) du bâtiment sur le toit duquel est le joueur ; vide = au sol.
+var _roof_rect: Rect2i = Rect2i()
+var _base_view_radius: int = -1
 var _new_vis: PackedInt32Array = PackedInt32Array()
 var _new_count: int = 0
 var _cast_ms: float = 0.0
@@ -267,10 +270,51 @@ func get_cell_state(c: Vector2i) -> int:
 	return 1 if is_cell_explored(c) else 0
 
 
+## (Toits) Joueur sur le toit du bâtiment d'emprise `rect` (cases) : ses murs et portes ne
+## bloquent plus la vue (on voit par-dessus), son intérieur reste caché (on voit le toit), portée
+## de vue + `bonus` cases (avantage de hauteur). rect vide = retour au sol (état normal).
+func set_roof_mode(rect: Rect2i, bonus: int = 0) -> void:
+	if layout == null:
+		return
+	if _base_view_radius < 0:
+		_base_view_radius = view_radius
+	var old := _roof_rect
+	_roof_rect = rect
+	view_radius = _base_view_radius + (bonus if rect.size.x > 0 else 0)
+	for r: Rect2i in [old, rect]:
+		if r.size.x <= 0:
+			continue
+		for y in range(maxi(r.position.y, 0), mini(r.end.y, _h)):
+			for x in range(maxi(r.position.x, 0), mini(r.end.x, _w)):
+				var i := y * _w + x
+				_opaque[i] = 0 if rect.has_point(Vector2i(x, y)) else (1 if FloorLayout.is_opaque_tile(layout.tiles[i]) else 0)
+	_door_open.fill(255)  # portes : recalcul forcé (_refresh_doors respecte _roof_rect)
+	for r2: Rect2i in [old, rect]:
+		if r2.size.x <= 0:
+			continue
+		for vy in range(r2.position.y - 1, r2.end.y + 2):
+			for vx in range(r2.position.x - 1, r2.end.x + 2):
+				_update_corner(vx, vy)
+	_apply_shader_params()
+	invalidate()
+
+
+func get_roof_rect() -> Rect2i:
+	return _roof_rect
+
+
+func _in_roof_interior(i: int) -> bool:
+	return _roof_rect.size.x > 0 and _indoor[i] == 1 and _roof_rect.has_point(Vector2i(i % _w, i / _w))
+
+
 ## Vrai si le point monde est dans le champ de vision (polygone + rayon de vue).
 func is_world_point_visible(p: Vector2) -> bool:
 	if _reveal_all:
 		return true
+	if _roof_rect.size.x > 0 and layout != null:
+		var pc := FloorLayout.world_to_cell(p)
+		if layout.in_bounds(pc) and _in_roof_interior(pc.y * _w + pc.x):
+			return false
 	if _poly.size() < 3:
 		return false
 	var r := float(view_radius) * TS
@@ -442,6 +486,8 @@ func _refresh_doors() -> void:
 		else:
 			var d := layout.get_door_at(c)
 			open = d == null or d.state == FloorLayout.DoorState.OPEN
+		if _roof_rect.has_point(c):
+			open = true  # (toits) on voit par-dessus les portes du bâtiment sous le joueur
 		var v := 1 if open else 0
 		if _door_open[k] == v:
 			continue
@@ -466,7 +512,7 @@ func _recompute(origin: Vector2i) -> void:
 		_peek2 = outdoor_interior_peek * outdoor_interior_peek + outdoor_interior_peek
 		# Joueur dehors (rue) : les intérieurs ne sont visibles qu'à courte portée.
 		var oi := _oy * _w + _ox
-		_restrict_indoor = _indoor[oi] == 0 and layout.tiles[oi] != FloorLayout.Tile.DOOR
+		_restrict_indoor = (_indoor[oi] == 0 and layout.tiles[oi] != FloorLayout.Tile.DOOR) or _roof_rect.size.x > 0
 		_mark(_ox, _oy, 0)
 		for o in OCTANTS:
 			_cast(1, 1.0, 0.0, o.x, o.y, o.z, o.w)
@@ -497,6 +543,8 @@ func _mark(x: int, y: int, d2: int) -> void:
 	if _stamp[i] == _gen:
 		return  # déjà marquée (axes et diagonales partagés entre octants)
 	if _restrict_indoor and _indoor[i] == 1 and d2 > _peek2:
+		return
+	if _roof_rect.size.x > 0 and _in_roof_interior(i):
 		return
 	_stamp[i] = _gen
 	_new_vis[_new_count] = i
@@ -645,7 +693,7 @@ func _cast_ray(ox: float, oy: float, dx: float, dy: float, max_len: float) -> Ve
 		var i := cy * _w + cx
 		if _opaque[i] == 1:
 			break  # arrêt sur la face du mur ; la case est ajoutée par _collect_walls
-		if _restrict_indoor and _indoor[i] == 1 and t > peek:
+		if _restrict_indoor and _indoor[i] == 1 and t > peek and not _in_roof_interior(i):
 			break
 	return Vector2(ox + dx * t * TS, oy + dy * t * TS)
 

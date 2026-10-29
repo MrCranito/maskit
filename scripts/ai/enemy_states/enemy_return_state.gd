@@ -1,7 +1,6 @@
 extends EnemyState
 ## Retour : rentre au point d'apparition en régénérant progressivement ses PV, puis Patrol.
 ## Après une poursuite perdue, la jauge redescend à lost_awareness (re-repérage plus rapide).
-## Le joueur perçu en chemin fait remonter la jauge (Investigate / Alert via Enemy).
 
 var _timeout_left: float = 0.0
 
@@ -13,6 +12,7 @@ func _init() -> void:
 func enter(_msg: Dictionary = {}) -> void:
 	var e := get_enemy()
 	_timeout_left = e.return_timeout
+	e._release_cover()
 	if e.awareness > e.lost_awareness:
 		e.set_awareness(e.lost_awareness)
 

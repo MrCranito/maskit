@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_drop"
+display_name = "Butin tombé"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.0
+search_time = 0.5
+entries = {
+&"bandage": 5.0,
+&"canned_beans": 2.0,
+&"gold_nugget": 1.5,
+&"pocket_watch": 0.3,
+&"revolver_ammo": 8.0,
+&"rifle_ammo": 4.0,
+&"silver_dollars": 7.0,
+&"snake_oil": 0.5,
+&"whisky": 2.0
+}

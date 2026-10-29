@@ -38,7 +38,23 @@ static func spawn_for_floor(layout: FloorLayout, world_root: Node2D, run_seed: i
 	_connect_doors(world_root, lm)
 	if lm != null:
 		lm.call("register_floor", layout, root, run_seed, difficulty)
+		# Cadavres et butin au sol d'un étage déjà visité.
+		if lm.has_method("restore_floor"):
+			lm.call("restore_floor", layout.floor_index, root)
+	EnemyVariants.apply_to_floor(layout, _enemies_of(world_root), run_seed)
 	return root
+
+
+## Ennemis de l'étage (nœud « Enemies », frère du décor dans le nœud d'étage de Raid).
+static func _enemies_of(world_root: Node2D) -> Array[Node]:
+	var out: Array[Node] = []
+	var floor_root := world_root.get_parent()
+	if floor_root == null:
+		return out
+	var box := floor_root.get_node_or_null(^"Enemies")
+	if box != null:
+		out.assign(box.get_children())
+	return out
 
 
 static func make_container(layout: FloorLayout, s: FloorLayout.Spawn, run_seed: int, difficulty: int) -> LootContainer:

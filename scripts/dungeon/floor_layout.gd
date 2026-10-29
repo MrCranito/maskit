@@ -155,6 +155,10 @@ var rails: Array = []
 ## Train à l'arrêt : Array de {"kind": StringName (pièce lm_loco, lm_boxcar…), "rect": Rect2i}
 ## dans l'ordre de la locomotive à la queue. Cases murées (obstacle) ; passages entre wagons.
 var train: Array = []
+## (Ajout toits) Échelles vers les toits : Array de {"cell": Vector2i (pied de l'échelle, case de rue
+## praticable au sud de la façade), "building_id": int, "top_cell": Vector2i (case du mur sud sous le
+## sommet de l'échelle, au bord du toit)}. Vide hors village Far West (étage 0).
+var ladders: Array = []
 
 
 func _init(p_size: Vector2i = Vector2i.ZERO) -> void:

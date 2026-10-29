@@ -272,6 +272,8 @@ func _on_hit(other: Node) -> void:
 		return
 	if other.is_in_group("enemies") or other.is_in_group("player"):
 		return  # Ennemi mort ou non damageable : on le traverse.
+	if other.is_in_group(&"roof_ghost"):
+		return  # (Toits) murs du bâtiment sous le joueur perché : on tire par-dessus.
 	# Tout le reste (murs de la couche world, TileMapLayer compris).
 	if style == STYLE_GRENADE:
 		_bounce_off_wall()

@@ -1,6 +1,6 @@
 class_name MenuKit
 extends RefCounted
-## Boîte à outils des menus d'Exfil Rush :
+## Boîte à outils des menus de RaidersGo :
 ## police Nunito (titres en Black, texte en Bold), panneaux bleu nuit aux coins arrondis, gros boutons tactiles
 ## (retour de pression, survol PC, focus manette/clavier), transitions en fondu,
 ## marges de sécurité (encoche), réglages joueur (volumes, vibrations).

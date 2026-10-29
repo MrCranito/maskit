@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"rifleman"
+display_name = "Tireur embusqué"
+max_hp = 32.0
+move_speed = 115.0
+body_radius = 18.0
+detection_radius = 560.0
+detection_angle_deg = 120.0
+lose_sight_time = 3.5
+alert_duration = 0.5
+alert_neighbors_radius = 340.0
+patrol_radius = 80.0
+sight_gain = 2.4
+hearing_radius = 360.0
+hearing_gain = 1.8
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 620.0
+attack_damage = 18.0
+attack_cooldown = 2.8
+attack_windup = 1.1
+projectile_speed = 1000.0
+retreat_distance = 320.0
+projectile_lifetime = 0.75
+projectile_style = &"bullet"
+tactic = &"sniper"
+preferred_range_min = 360.0
+preferred_range_max = 560.0
+use_cover = true
+can_flank = false
+retreat_hp_ratio = 0.35
+strafe_ratio = 0.45
+attack_pattern = &"aimed"
+telegraph_line = true
+stagger_ratio = 0.3
+stagger_time = 0.5
+knockback = 100.0
+ground_drop_chance = 0.35
+corpse_name = "Tireur abattu"

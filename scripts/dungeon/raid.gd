@@ -63,6 +63,8 @@ var run_seed: int = 0
 ## sort, 0 = pas de pré-rendu (structure = run_seed). Ennemis et butin restent sur run_seed.
 var map_seed: int = 0
 var prerender: PrerenderBackdrop = null
+## (Toits) Échelles et état « sur le toit » de l'étage courant (null si aucune échelle).
+var roof_walk: RoofWalk = null
 var difficulty: int = 1
 ## WorldData chargé (null si le module Monde n'existe pas encore).
 var world: Resource = null
@@ -240,6 +242,7 @@ func _build_floor(index: int) -> void:
 	if state != null:
 		_restore_door_nodes(state)
 	_build_navigation()
+	_build_roof_walk()
 
 	enemies_container = Node2D.new()
 	enemies_container.name = "Enemies"
@@ -256,6 +259,8 @@ func _build_floor(index: int) -> void:
 	LootSpawner.spawn_for_floor(layout, world_root, run_seed, difficulty)
 	_build_extraction_marker()
 	_build_fog(state)
+	if roof_walk != null:
+		roof_walk.set_fog(fog)
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_cancel_extraction(false)
@@ -387,11 +392,28 @@ func _build_navigation() -> void:
 	source.add_traversable_outline(_rect_outline(full))
 	for r: Rect2i in FallbackBuilder.merge_cells(layout, FallbackBuilder.is_solid_tile):
 		source.add_obstruction_outline(_rect_outline(FallbackBuilder.cell_rect_world(r)))
+	# Couche « emprise rendue » du fond pré-calculé (rochers, wagons, fouillis…).
+	if prerender != null:
+		for r2: Rect2 in prerender.collision_rects():
+			source.add_obstruction_outline(_rect_outline(r2))
 	NavigationServer2D.bake_from_source_geometry_data(poly, source)
 	nav_region = NavigationRegion2D.new()
 	nav_region.name = "NavigationRegion2D"
 	nav_region.navigation_polygon = poly
 	floor_root.add_child(nav_region)
+
+
+## (Toits) Échelles du plan → RoofWalk (pieds / sommets interactifs, état perché).
+func _build_roof_walk() -> void:
+	roof_walk = null
+	if layout == null or layout.ladders.is_empty() or not bool(Balance.get_value("roofs", "enabled", true)):
+		return
+	roof_walk = RoofWalk.create(layout, world_root, prerender)
+	floor_root.add_child(roof_walk)
+
+
+func is_player_on_roof() -> bool:
+	return is_instance_valid(player) and player.has_method("is_on_roof") and bool(player.call("is_on_roof"))
 
 
 static func _rect_outline(r: Rect2) -> PackedVector2Array:
@@ -544,6 +566,11 @@ func go_to_floor(index: int, arrival_cell: Vector2i) -> bool:
 
 
 func _free_current_floor() -> void:
+	if roof_walk != null and is_instance_valid(roof_walk):
+		roof_walk.exit_roof(player)
+		if is_instance_valid(player) and player.has_method("set_climbing") and bool(player.call("is_climbing")):
+			player.call("set_climbing", false)
+	roof_walk = null
 	if floor_root != null and is_instance_valid(floor_root):
 		level.remove_child(floor_root)
 		floor_root.queue_free()
@@ -569,7 +596,7 @@ func _arrival_offset(cell: Vector2i) -> Vector2i:
 
 
 func _on_stairs_entered(stairs: Variant) -> void:
-	if _transitioning or _stairs_cooldown > 0.0 or stairs == null:
+	if _transitioning or _stairs_cooldown > 0.0 or stairs == null or is_player_on_roof():
 		return
 	var target_floor := int(stairs.get("target_floor"))
 	var target_cell: Vector2i = stairs.get("target_cell")
@@ -766,7 +793,7 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 	if _raid_over or _transitioning:
 		return
 	var alive := not player.has_method("is_alive") or bool(player.call("is_alive"))
-	var on_zone := alive and layout.extraction_cells.has(cell)
+	var on_zone := alive and layout.extraction_cells.has(cell) and not is_player_on_roof()
 	if not on_zone:
 		if is_extracting():
 			_cancel_extraction(alive)
@@ -962,6 +989,10 @@ func get_banner_text() -> String:
 func get_current_room_name() -> String:
 	if layout == null:
 		return ""
+	if is_player_on_roof():
+		var bid := int(player.get("roof_building_id"))
+		if bid >= 0 and bid < layout.buildings.size():
+			return "Toit — %s" % layout.buildings[bid].name
 	var r := layout.room_at(get_player_cell())
 	return r.name if r != null else ""
 
@@ -1299,6 +1330,7 @@ func _build_debug_world_draw() -> void:
 	add_child(debug_world_draw)
 	debug_world_draw.call("register_drawer", _draw_debug_rooms)
 	debug_world_draw.call("register_drawer", _draw_debug_doors)
+	debug_world_draw.call("register_drawer", _draw_debug_roofs)
 	debug_world_draw.call("register_drawer", _draw_debug_info)
 
 
@@ -1320,6 +1352,18 @@ func _draw_debug_rooms(canvas: Node2D) -> void:
 		var txt := "→ %s%s" % [world_floor_name(st.target_floor), "" if floors.has(st.target_floor) else " (absent)"]
 		canvas.draw_string_outline(font, p + Vector2(-40, -36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, 5, Color(0.07, 0.1, 0.18))
 		canvas.draw_string(font, p + Vector2(-40, -36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.6, 0.9, 1.0))
+
+
+## (Toits) Zones praticables des toits à échelle (cyan) et couche « emprise rendue » (orange).
+func _draw_debug_roofs(canvas: Node2D) -> void:
+	if roof_walk != null and is_instance_valid(roof_walk):
+		for r: Rect2 in roof_walk.debug_rects():
+			canvas.draw_rect(r, Color(0.2, 0.95, 1.0, 0.9), false, 3.0)
+		for l: Ladder in roof_walk.ladders:
+			canvas.draw_circle(l.global_position, 10.0, Color(0.2, 1.0, 0.4, 0.9))
+	if prerender != null and is_instance_valid(prerender):
+		for r2: Rect2 in prerender.collision_rects():
+			canvas.draw_rect(r2, Color(1.0, 0.55, 0.0, 0.35))
 
 
 ## Portes : vert ouverte, jaune fermée, rouge verrouillée.

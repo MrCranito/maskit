@@ -1,0 +1,17 @@
+{
+  "hero_px": 363,
+  "frame_size": [
+    320,
+    400
+  ],
+  "cols": 4,
+  "rows": 2,
+  "frames": 8,
+  "fps": 7,
+  "feet": [
+    160,
+    373
+  ],
+  "unit_px": 186.0,
+  "notes": "Planche <skin>.png : images d'idle de gauche à droite puis de haut en bas. feet = pieds (px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender (le héros mesure ~1,05 unité, casque compris)."
+}

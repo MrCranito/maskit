@@ -12,9 +12,9 @@ const TOWN_NEAR: Texture2D = preload("res://assets/ui/menu/town_near.png")
 const VIGNETTE: Texture2D = preload("res://assets/ui/menu/vignette.png")
 const GLOW: Texture2D = preload("res://assets/ui/menu/glow.png")
 
-## Assombrit l'image (0 = aucun) pour les écrans chargés (sélection du masque).
+## Assombrit l'image (0 = aucun) pour les écrans chargés (écrans secondaires).
 @export_range(0.0, 1.0) var dim: float = 0.0
-## Teinte du halo derrière le soleil (modifiable : aura du masque).
+## Teinte du halo derrière le soleil (modifiable).
 var sun_glow: TextureRect = null
 
 var _strips: Array[Control] = []
@@ -150,7 +150,7 @@ func _build_dust() -> void:
 	add_child(_dust)
 
 
-## Teinte le halo du soleil (couleur d'aura du masque sélectionné).
+## Teinte le halo du soleil (couleur au choix).
 func set_glow_color(c: Color) -> void:
 	var tw := create_tween()
 	tw.tween_property(sun_glow, "self_modulate", Color(c.lightened(0.2), 1.0), 0.4)

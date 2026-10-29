@@ -71,9 +71,147 @@ enum AttackType { MELEE, RANGED }
 ## Teinte d'aura de masque (alpha 0 = aucune).
 @export var aura_color: Color = Color(1, 1, 1, 0)
 
+@export_group("Tactique")
+## Comportement de combat : &"rusher" (fonce, mêlée), &"gunner" (tireur, garde ses distances),
+## &"sniper" (longue portée, très à couvert), &"grenadier" (lance des explosifs), &"heavy"
+## (avance droit, encaisse), &"elite" (chef à 2 phases). &"" = déduit du type d'attaque.
+@export var tactic: StringName = &""
+## Distance (px) de combat souhaitée [min, max]. 0 = déduite de attack_range / retreat_distance.
+@export var preferred_range_min: float = 0.0
+@export var preferred_range_max: float = 0.0
+## Cherche un couvert (case libre voisine d'un obstacle : rocher, chariot, caisse, mur).
+@export var use_cover: bool = false
+## Peut contourner le joueur quand plusieurs alliés l'engagent.
+@export var can_flank: bool = true
+## Course en zigzag (px d'écart latéral, 0 = ligne droite) et période (s) d'un aller-retour.
+@export var zigzag_amplitude: float = 0.0
+@export var zigzag_period: float = 0.6
+## Sous cette fraction de PV, bat en retraite une fois (0 = jamais).
+@export_range(0.0, 1.0) var retreat_hp_ratio: float = 0.0
+## Vitesse de déplacement latéral pendant l'échange de tirs (fraction de move_speed).
+@export_range(0.0, 1.5) var strafe_ratio: float = 0.55
+
+@export_group("Schéma d'attaque")
+## &"single", &"burst" (rafale), &"fan" (éventail), &"aimed" (tir précis avec ligne de visée),
+## &"lob" (explosif en cloche), &"lunge" (ruée + combo), &"slam" (zone au sol), &"melee".
+## &"" = déduit (projectile_count > 1 → fan, aoe → slam, distance → single, sinon melee).
+@export var attack_pattern: StringName = &""
+## Rafale : nombre de tirs et intervalle (s).
+@export_range(1, 12) var burst_count: int = 1
+@export var burst_interval: float = 0.14
+## Imprécision (degrés, ± aléatoire) de chaque tir.
+@export var aim_spread_deg: float = 0.0
+## Ligne de visée rouge pendant le télégraphe (tireur embusqué).
+@export var telegraph_line: bool = false
+## Ruée (mêlée) : distance (px) et vitesse (px/s) ; combo : nombre de coups et intervalle (s).
+@export var lunge_distance: float = 0.0
+@export var lunge_speed: float = 0.0
+@export_range(1, 5) var combo_hits: int = 1
+@export var combo_interval: float = 0.28
+## Explosif lancé : rayon (px), dégâts (0 = attack_damage), temps de vol (s), mèche au sol (s).
+@export var throw_radius: float = 0.0
+@export var throw_damage: float = 0.0
+@export var throw_flight_time: float = 0.7
+@export var throw_fuse: float = 0.9
+
+@export_group("Élite")
+## Élite (chef de bande) : barre de vie dorée, meilleur butin, phase 2 sous phase2_hp_ratio.
+@export var elite: bool = false
+@export_range(0.0, 1.0) var phase2_hp_ratio: float = 0.0
+@export var phase2_speed_mult: float = 1.25
+@export var phase2_cooldown_mult: float = 0.7
+## Phase 2 : alterne avec ce schéma (ex. &"lob") une attaque sur deux.
+@export var phase2_alt_pattern: StringName = &""
+
+@export_group("Réactions")
+## Un coup ≥ stagger_ratio × max_hp étourdit brièvement (stagger_time s). 0 = jamais.
+@export_range(0.0, 1.0) var stagger_ratio: float = 0.25
+@export var stagger_time: float = 0.45
+## Recul (px/s) imprimé par un coup reçu.
+@export var knockback: float = 90.0
+
+@export_group("Butin")
+## Table du cadavre (data/loot_tables). &"" = enemy_<kind> si elle existe, sinon celle du biome.
+@export var loot_table: StringName = &""
+## Chance de faire tomber du butin au sol à la mort (-1 = [enemy_loot] ground_drop_chance).
+@export_range(-1.0, 1.0) var ground_drop_chance: float = -1.0
+## Sons (AudioManager) : tir / coup, blessure, mort. &"" = déduit du schéma et du kind.
+@export var sfx_attack: StringName = &""
+@export var sfx_hurt: StringName = &""
+@export var sfx_death: StringName = &""
+## Nom du cadavre dans l'interface (« Pistolero abattu »). Vide = « <nom> abattu ».
+@export var corpse_name: String = ""
+
 
 func is_ranged() -> bool:
 	return attack_type == AttackType.RANGED
+
+
+## Tactique effective (déduite si vide).
+func get_tactic() -> StringName:
+	if tactic != &"":
+		return tactic
+	if is_area_attack():
+		return &"heavy"
+	return &"gunner" if is_ranged() else &"rusher"
+
+
+## Schéma d'attaque effectif (déduit si vide).
+func get_pattern() -> StringName:
+	if attack_pattern != &"":
+		return attack_pattern
+	if is_area_attack():
+		return &"slam"
+	if is_ranged():
+		return &"fan" if projectile_count > 1 else &"single"
+	return &"melee"
+
+
+## Son d'attaque effectif.
+func get_sfx_attack() -> StringName:
+	if sfx_attack != &"":
+		return sfx_attack
+	match get_pattern():
+		&"fan":
+			return &"shotgun_blast"
+		&"aimed":
+			return &"rifle_shot"
+		&"burst", &"single":
+			return &"revolver_shot" if projectile_style == &"bullet" else &"enemy_attack"
+		&"lob":
+			return &"blade_swing_heavy"
+		&"slam":
+			return &"golem_stomp"
+	return &"blade_swing"
+
+
+func get_sfx_hurt() -> StringName:
+	return sfx_hurt if sfx_hurt != &"" else (&"outlaw_hurt" if projectile_style == &"bullet" or kind in [&"outlaw_knife", &"dynamiter"] else &"hit_flesh")
+
+
+func get_sfx_death() -> StringName:
+	if sfx_death != &"":
+		return sfx_death
+	var k := String(kind)
+	if k.contains("golem") or k.contains("colossus"):
+		return &"golem_crumble"
+	return &"outlaw_death" if get_sfx_hurt() == &"outlaw_hurt" else &"enemy_death_generic"
+
+
+## Distance de combat minimale souhaitée (px).
+func range_min() -> float:
+	if preferred_range_min > 0.0:
+		return preferred_range_min
+	if is_ranged():
+		return maxf(retreat_distance, attack_range * 0.4)
+	return 0.0
+
+
+## Distance de combat maximale souhaitée (px).
+func range_max() -> float:
+	if preferred_range_max > 0.0:
+		return preferred_range_max
+	return attack_range * 0.9 if is_ranged() else attack_range
 
 
 ## Coup de zone au sol (mêlée avec aoe_radius > 0).

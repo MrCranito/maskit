@@ -8,6 +8,7 @@ const SEEDS := 30
 const DIFFS := 5
 const MAX_MS_PER_FLOOR := 50.0
 const T := FloorLayout.Tile
+const Cfg := preload("res://scripts/dungeon/gen/gen_config.gd")
 
 var world: WorldData
 ## runs[seed][diff] = Array[FloorLayout]
@@ -769,3 +770,96 @@ func test_performances() -> void:
 	# Moyenne sous le budget ; pic toléré à 2x (machine de CI chargée, mesures bruitées).
 	assert_lt(total / maxf(1.0, float(n)), MAX_MS_PER_FLOOR, "génération moyenne d'un étage < 50 ms")
 	assert_lt(worst, MAX_MS_PER_FLOOR * 2.0, "pire génération d'un étage < 100 ms")
+
+
+# --- Correctif « portes sur les toits » / échelles / train (rendu pré-calculé) -------------
+
+## Côté (N/S/E/W) d'une porte du mur d'enceinte, "" pour une porte intérieure.
+func _door_side(b: FloorLayout.Building, d: FloorLayout.Door) -> String:
+	var r := b.rect
+	if d.cell.y == r.end.y - 1 and not d.vertical:
+		return "S"
+	if d.cell.y == r.position.y and not d.vertical:
+		return "N"
+	if d.cell.x == r.position.x and d.vertical:
+		return "W"
+	if d.cell.x == r.end.x - 1 and d.vertical:
+		return "E"
+	return ""
+
+
+## Toutes les portes extérieures du village sont sur la façade SUD (seule visible avec la caméra
+## inclinée vers le nord) : aucune sur une façade nord (cachée sous le toit projeté) ni est / ouest
+## (vue par la tranche), et la case devant chaque porte est une rue atteignable depuis l'apparition.
+func test_portes_exterieures_facade_sud_et_atteignables() -> void:
+	for per_diff: Array in runs:
+		var g := _floor(per_diff[0], 0)
+		var reach := _reach(g, _blocked(g))
+		for b in g.buildings:
+			var n_s := 0
+			for di in b.door_ids:
+				var d := g.doors[di]
+				var side := _door_side(b, d)
+				if side == "":
+					continue
+				assert_eq(side, "S", "%s : porte extérieure %s côté %s (façade nord/est/ouest interdite)" % [b.name, d.cell, side])
+				n_s += 1
+				var out := d.cell + Vector2i.DOWN
+				assert_eq(g.get_tile(out), T.STREET, "%s : rue devant la porte %s" % [b.name, d.cell])
+				assert_true(reach.has(out), "%s : porte %s atteignable" % [b.name, d.cell])
+			assert_gte(n_s, 1, "%s : au moins une porte sur la façade sud" % b.name)
+			assert_eq(b.porch_side, Vector2i.DOWN, "%s : façade au sud" % b.name)
+
+
+## Échelles : 2 à 5 par carte (bornes de balance.cfg), contre la façade SUD (pied = rue au sud du
+## mur, sommet = case du mur sud), loin des portes, pied libre de tout décor et atteignable.
+func test_echelles_facade_visible_et_accessibles() -> void:
+	var lo := Cfg.geti("village_ladders_min", 2)
+	var hi := Cfg.geti("village_ladders_max", 5)
+	for per_diff: Array in runs:
+		var g := _floor(per_diff[0], 0)
+		assert_between(g.ladders.size(), mini(lo, 1), hi, "%d échelle(s)" % g.ladders.size())
+		var blocked := _blocked(g)
+		var reach := _reach(g, blocked)
+		var seen := {}
+		for e: Dictionary in g.ladders:
+			var bid := int(e["building_id"])
+			assert_false(seen.has(bid), "une échelle par bâtiment")
+			seen[bid] = true
+			var b := g.buildings[bid]
+			var foot: Vector2i = e["cell"]
+			var top: Vector2i = e["top_cell"]
+			assert_eq(foot.y, b.rect.end.y, "pied au sud de la façade")
+			assert_eq(top, foot + Vector2i.UP, "sommet sur le mur sud")
+			assert_between(foot.x, b.rect.position.x + 1, b.rect.end.x - 2, "échelle sur la façade (hors angles)")
+			assert_eq(g.get_tile(foot), T.STREET, "pied praticable")
+			assert_eq(g.get_tile(foot + Vector2i.DOWN), T.STREET, "accès au pied")
+			for dx in range(-1, 2):
+				assert_eq(g.get_tile(Vector2i(foot.x + dx, top.y)), T.WALL, "pas de porte contre l'échelle")
+			assert_false(blocked.has(foot), "pied libre de décor / conteneur")
+			assert_true(reach.has(foot), "pied atteignable")
+		# La seconde graine donne le même résultat (déterminisme).
+	var a := DungeonGenerator.generate_floor(_seed(0), world, 1, 0)
+	var b2 := DungeonGenerator.generate_floor(_seed(0), world, 1, 0)
+	assert_eq(str(a.ladders), str(b2.ladders), "échelles déterministes")
+
+
+## Passages entre les wagons : franchissables (rue, sans décor) et reliant le nord au sud de la voie.
+func test_passages_du_train_franchissables() -> void:
+	for per_diff: Array in runs:
+		var g := _floor(per_diff[0], 0)
+		var blocked := _blocked(g)
+		var reach := _reach(g, blocked)
+		var gaps := 0
+		for i in range(g.train.size() - 1):
+			var ra: Rect2i = g.train[i]["rect"]
+			var rb: Rect2i = g.train[i + 1]["rect"]
+			if rb.position.x <= ra.end.x:
+				continue
+			gaps += 1
+			for x in range(ra.end.x, rb.position.x):
+				for y in range(ra.position.y, ra.end.y):
+					var c := Vector2i(x, y)
+					assert_true(FloorLayout.is_walkable_tile(g.get_tile(c)) and not blocked.has(c), "passage %s libre" % c)
+					assert_true(reach.has(c), "passage %s atteignable" % c)
+		assert_gte(gaps, 2, "au moins deux passages entre les wagons")

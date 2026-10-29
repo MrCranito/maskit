@@ -1,5 +1,5 @@
 extends GutTest
-## Menus d'Exfil Rush : les scènes s'instancient, menu principal (boutons, options), plus de
+## Menus de RaidersGo : les scènes s'instancient, menu principal (boutons, options), plus de
 ## masques, arsenal de départ (vide = bouton désactivé, validation → Profile + raid), arsenal
 ## en consultation (skins), boutique (achat avec/sans gemmes, équiper, pack simulé), skins
 ## d'armes (shader), pause (abandon avec confirmation). La sauvegarde est isolée.
@@ -99,33 +99,63 @@ func test_scenes_instantiate() -> void:
 	assert_true(true)
 
 
-func test_splash_has_exfil_logo() -> void:
+func test_splash_continues_boot_image() -> void:
+	# Le boot splash natif et le splash animé partagent la même image : fond sans logo + logo seul.
+	for f: String in ["boot.png", "splash_bg.png", "splash_logo.png", "splash.json"]:
+		assert_true(FileAccess.file_exists("res://assets/ui/splash/" + f), f)
+	var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/ui/splash/boot.png"))
+	assert_eq(img.get_size(), Vector2i(1920, 1080), "boot.png en 1920 x 1080")
 	var s := (load(SCENES[0]) as PackedScene).instantiate() as SplashScreen
 	s.auto_advance = false
 	add_child_autofree(s)
 	await wait_frames(2)
-	assert_eq(s.title_label.text, "EXFIL RUSH")
-	assert_eq(s.subtitle.text, "Tire. Pille. Tire-toi.")
-	assert_not_null(s.emblem)
+	assert_not_null(s.background.texture, "Fond du splash")
+	assert_not_null(s.logo.texture, "Logo du splash")
 	assert_eq(s.next_scene, "res://scenes/ui/menus/main_menu.tscn")
+	# même cadrage « cover » que le boot splash : l'image couvre tout l'écran
+	assert_gte(s.frame_scale * 1920.0, s.size.x - 0.5)
+	assert_gte(s.frame_scale * 1080.0, s.size.y - 0.5)
+
+
+func test_game_name_is_raidersgo() -> void:
+	for f: String in ["res://scripts/ui/menus/splash_screen.gd", "res://scripts/ui/menus/main_menu.gd",
+			"res://scripts/ui/menus/raiders_logo.gd", "res://scripts/ui/menus/credits_panel.gd",
+			"res://art/blender/build_menu_2d.py"]:
+		var src := FileAccess.get_file_as_string(f).to_lower()
+		assert_false(src.contains("royaume"), "Plus de « Royaumes des Masques » : " + f)
+		assert_false(src.contains("exfil"), "Plus d'« Exfil Rush » : " + f)
+	assert_eq(RaidersLogo.GAME_NAME, "RaidersGo")
+	assert_string_contains(CreditsPanel.build_text(), "RaidersGo")
+
+
+func _menu() -> MainMenu:
+	var m := (load(SCENES[1]) as PackedScene).instantiate() as MainMenu
+	add_child_autofree(m)
+	return m
 
 
 func test_main_menu_buttons() -> void:
-	var m := (load(SCENES[1]) as PackedScene).instantiate() as MainMenu
-	add_child_autofree(m)
-	await wait_frames(2)
+	_test_profile(42)
+	var m := _menu()
+	await wait_frames(3)
 	var labels: Array[String] = []
 	for b: Button in m.buttons:
-		labels.append(b.text)
+		labels.append(MainMenu.button_label(b))
 		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
-	assert_eq(labels, ["Jouer", "Arsenal", "Boutique", "Options", "Crédits"] as Array[String])
+		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
+	assert_eq(labels, ["JOUER", "Arsenal", "Personnages", "Boutique", "Options", "Crédits"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
-	assert_eq(m.gem_counter.value_label.text, str(Profile.gems))
-	assert_not_null(m.hero, "Aperçu du héros")
-	assert_eq(m.logo.title_label.text, "EXFIL RUSH")
+	assert_eq(m.gem_counter.value_label.text, "42")
+	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
+	assert_gt(m.gear_button.pressed.get_connections().size(), 0, "Bouton réglages")
+	assert_not_null(m.hero, "Héros dans le décor")
+	assert_not_null(m.lobby, "Fond vivant")
+	assert_eq(m.logo.title_label.text, "RAIDERS")
+	assert_eq(m.logo.go_label.text, "GO")
 	var src := FileAccess.get_file_as_string("res://scripts/ui/menus/main_menu.gd")
 	assert_string_contains(src, "MenuKit.go_to(self, MenuKit.MAP_SELECT_SCENE)", "« Jouer » → choix de la carte")
+	assert_string_contains(src, "MenuKit.go_to(self, MenuKit.ARSENAL_SCENE)", "Arsenal → écran d'arsenal")
 	var opts := m.open_options() as OptionsPanel
 	await wait_frames(2)
 	opts.music_slider.value = 0.35
@@ -133,6 +163,135 @@ func test_main_menu_buttons() -> void:
 	opts.vibration_toggle.button_pressed = false
 	assert_false(bool(MenuKit.get_setting(&"vibration", true)))
 	opts.close()
+
+
+func test_main_menu_buttons_navigate() -> void:
+	_test_profile(0)
+	var m := _menu()
+	await wait_frames(3)
+	# Bloque le vrai changement de scène (MenuKit.go_to ne part qu'une fois) : on vérifie les effets.
+	m.set_meta(&"_leaving", true)
+	ShopScreen.last_tab = &"weapon"
+	m.characters_button.pressed.emit()
+	assert_eq(ShopScreen.last_tab, &"character", "Personnages → onglet Personnages")
+	m.gem_plus.pressed.emit()
+	assert_eq(ShopScreen.last_tab, &"gems", "+ → onglet Gemmes")
+	m.lobby.hero_pressed.emit()
+	assert_eq(ShopScreen.last_tab, &"character", "Tap sur le héros → Personnages")
+	m.credits_button.pressed.emit()
+	await wait_frames(2)
+	assert_true(m.get_children().any(func(c: Node) -> bool: return c is CreditsPanel), "Crédits ouverts")
+	m.options_button.pressed.emit()
+	await wait_frames(2)
+	assert_true(m.get_children().any(func(c: Node) -> bool: return c is OptionsPanel), "Options ouvertes")
+
+
+func test_main_menu_stats_and_currencies() -> void:
+	_test_profile(5)
+	Profile.dollars = 12345
+	Profile.stats = {"raids": 8, "extractions": 6, "deaths": 2}
+	var m := _menu()
+	await wait_frames(2)
+	assert_eq((m.stat_values[&"raids"] as Label).text, "8")
+	assert_eq((m.stat_values[&"extractions"] as Label).text, "6")
+	assert_eq((m.stat_values[&"rate"] as Label).text, "75 %")
+	assert_eq(m.dollar_label.text, MainMenu.format_thousands(12345))
+	assert_eq(MainMenu.format_thousands(1234567), "1\u202f234\u202f567")
+
+
+func test_lobby_hero_reflects_skin() -> void:
+	_test_profile(0)
+	Profile.skin_character = &""
+	var m := _menu()
+	await wait_frames(2)
+	assert_eq(m.hero.sheet_id, "default", "Skin par défaut")
+	assert_eq(m.hero.get_current_animation(), &"idle", "Idle, plus de rotation")
+	assert_not_null(m.hero.sprite.sprite_frames)
+	var other: SkinData = null
+	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
+		if s.id != HeroSkin.DEFAULT_SKIN_ID and LobbyHero.has_sheet(s):
+			other = s
+			break
+	assert_not_null(other, "Un autre skin de personnage avec sa planche de menu")
+	if other == null:
+		return
+	Profile.skins_owned.append(other.id)
+	assert_true(Profile.equip_character_skin(other.id))
+	await wait_frames(1)
+	assert_eq(m.hero.sheet_id, String(other.id).trim_prefix("char_"), "Le héros du menu suit le skin porté")
+	assert_eq(m.hero.skin, other)
+
+
+func test_lobby_assets_and_layout() -> void:
+	for f: String in ["back.jpg", "camp.png", "front.png", "flag.png", "flame.png", "smoke.png", "lobby.json"]:
+		assert_true(FileAccess.file_exists("res://assets/ui/menu/lobby/" + f), f)
+	for f: String in ["back.jpg", "camp.png", "front.png", "flag.png"]:
+		var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/ui/menu/lobby/" + f))
+		assert_lte(maxi(img.get_width(), img.get_height()), 2048, "Texture ≤ 2048 : " + f)
+	var l := LobbyScene.new()
+	add_child_autofree(l)
+	await wait_frames(1)
+	l.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	l.size = Vector2(1280, 720)   # paysage 16:9 (le viewport des tests peut avoir un autre format)
+	await wait_frames(1)
+	assert_not_null(l.flag, "Drapeau animé")
+	assert_not_null(l.flames, "Flammes animées")
+	assert_true(l.flag.is_playing())
+	# le héros est au centre-gauche et entièrement dans l'écran
+	var feet := l.hero_screen_position()
+	assert_between(feet.x / l.size.x, 0.3, 0.5, "Héros au centre-gauche")
+	assert_between(feet.y / l.size.y, 0.6, 0.97, "Pieds du héros visibles")
+	l.stop_loops()
+
+
+func test_loadout_summary_shows_loadout() -> void:
+	_test_profile(0)
+	var uids: Array[int] = []
+	for e: Dictionary in Profile.get_stash_weapons():
+		if String(e["id"]) in ["rifle_ak47", "smg_mp5", "gadget_frag"]:
+			uids.append(int(e["uid"]))
+	Profile.set_loadout(uids)
+	var ls := LoadoutSummary.new()
+	add_child_autofree(ls)
+	await wait_frames(1)
+	assert_eq(ls.slots.size(), Profile.loadout_slots() + Profile.gadget_slots())
+	var names: Array[String] = []
+	for s: Dictionary in ls.slots:
+		if s["weapon"] != null:
+			names.append((s["weapon"] as WeaponData).display_name)
+	assert_eq(names.size(), 3, "2 armes + 1 équipement affichés")
+	assert_true(ls.slots[Profile.loadout_slots()]["weapon"] != null and (ls.slots[Profile.loadout_slots()]["weapon"] as WeaponData).is_gadget(),
+		"Dernier emplacement = équipement")
+	assert_string_contains((ls.slots[2]["name"] as Label).text, "libre", "3e emplacement vide")
+	Profile.set_loadout([] as Array[int])
+	await wait_frames(1)
+	assert_null(ls.slots[0]["weapon"], "Mise à jour sur Profile.changed")
+
+
+func test_play_card_shows_map() -> void:
+	var card := MapCard.find(&"perm_dust_creek")
+	GameState.current_map = card
+	var p := PlayCard.new()
+	add_child_autofree(p)
+	await wait_frames(1)
+	assert_eq(p.title_label.text, "JOUER")
+	assert_eq(p.map_label.text, card.display_name)
+	assert_eq((p.diff_pill.get_node("Text") as Label).text, card.difficulty_name())
+	assert_not_null(p.thumb.texture, "Vignette de la carte")
+	GameState.current_map = null
+	assert_not_null(PlayCard.displayed_card(), "Sans carte choisie : première carte de la rotation")
+
+
+func test_info_banner_messages() -> void:
+	var ib := InfoBanner.new()
+	add_child_autofree(ib)
+	await wait_frames(1)
+	assert_gt(ib.messages.size(), 1)
+	assert_false(ib.text_label.text.is_empty())
+	var first := ib.index
+	ib.next()
+	await wait_seconds(0.7)
+	assert_ne(ib.index, first, "Les messages défilent")
 
 
 func test_gem_counter_follows_profile() -> void:

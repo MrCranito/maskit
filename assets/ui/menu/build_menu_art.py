@@ -9,7 +9,7 @@ Sorties :
     assets/ui/menu/town_near.png  silhouettes proches (façades Far West), bande 2560x340
     assets/ui/menu/glow.png       halo radial blanc (à teinter via modulate), 256x256
     assets/ui/menu/vignette.png   vignettage doux, 640x360 (étiré)
-    assets/ui/splash/boot.png     image du boot splash natif, 1920x1080
+    (l'image de démarrage boot.png est désormais produite par art/blender/build_menu_2d.py)
 
 Tout est dessiné en code (PIL + numpy), couleurs de la planche de référence :
 ciel orange / rose / violet, ombres bleu nuit (#121a2e).
@@ -346,5 +346,6 @@ def build_boot_splash() -> None:
 
 if __name__ == "__main__":
     build_menu_layers()
-    build_boot_splash()
+    # L'image de démarrage n'est plus produite ici (ancien titre) : voir
+    # art/blender/build_menu_2d.py splash (RaidersGo). build_boot_splash() est conservée pour mémoire.
     print("ok")

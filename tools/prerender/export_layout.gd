@@ -187,6 +187,13 @@ func _initialize() -> void:
 		ex.append([c2.x, c2.y])
 	d["extraction"] = ex
 	d["player_spawn"] = [L.player_spawn.x, L.player_spawn.y]
+	# Échelles vers les toits (fw_scene.py les rend contre la façade sud).
+	var lad: Array = []
+	for e: Dictionary in L.ladders:
+		var c: Vector2i = e["cell"]
+		var tc: Vector2i = e["top_cell"]
+		lad.append({"cell": [c.x, c.y], "building_id": int(e["building_id"]), "top_cell": [tc.x, tc.y]})
+	d["ladders"] = lad
 	_export_contract(L, d)
 	var f := FileAccess.open(a[1], FileAccess.WRITE)
 	f.store_string(JSON.stringify(d))
