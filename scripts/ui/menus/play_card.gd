@@ -1,14 +1,11 @@
 class_name PlayCard
 extends Button
-## Grand bouton « JOUER » du lobby (bas droite) : bouton d'action principal net, sans vignette
-## de carte ni rouge. Gros « JOUER » incliné + flèche, une ligne discrète en dessous
-## (« Dust Creek · Facile »). Fond lumineux (variante `style`) avec reflet haut, lueur douce,
-## reflet qui passe de temps en temps ; à l'appui le contenu s'enfonce (bordure basse épaisse
-## → fine). Mène au choix des cartes. Carte : GameState.current_map, sinon la rotation.
-## Le bouton Coop du lobby reprend la même forme en version secondaire (secondary_styles()).
+## Bouton d'action principal du lobby (direction « D ») : posé dans le bandeau violet, sans fond,
+## un énorme « DÉPLOYER » en Anton aligné à droite, la carte en cours au-dessus (« Dust Creek ·
+## Facile »). Survol : léger voile blanc à coins coupés ; focus : contour blanc. Mène au choix des
+## cartes. Carte : GameState.current_map, sinon la rotation.
+## STYLES / palette() / secondary_styles() restent pour les écrans qui reprennent l'ancienne forme.
 
-## Variantes de couleur : « go » (vert-jaune lumineux, retenue : ressort le mieux sur le camp au
-## coucher du soleil, distinct de l'or des monnaies) ou « amber » (or/ambre chaud).
 const STYLES := {
 	&"amber": {"base": Color(0.98, 0.72, 0.2), "deep": Color(0.62, 0.34, 0.05), "ink": Color(0.2, 0.1, 0.01),
 		"glow": Color(1.0, 0.7, 0.25)},
@@ -35,104 +32,47 @@ static func palette() -> Dictionary:
 
 func _init() -> void:
 	focus_mode = Control.FOCUS_ALL
-	custom_minimum_size = Vector2(340, 124)
+	custom_minimum_size = Vector2(Balance.get_float("menu", "deploy_width", 210.0), 110)
 	text = ""
-	var p := palette()
-	var base: Color = p["base"]
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = base
-	normal.set_corner_radius_all(RADIUS)
-	normal.border_color = (p["deep"] as Color)
-	normal.border_width_bottom = DEPTH
-	normal.shadow_color = Color(p["glow"] as Color, 0.4)
-	normal.shadow_size = 16
-	normal.anti_aliasing = true
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = base.lightened(0.08)
-	hover.shadow_color = Color(p["glow"] as Color, 0.55)
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = base.darkened(0.06)
-	pressed.border_width_bottom = 2
-	pressed.expand_margin_top = -(DEPTH - 2)   # le bouton s'enfonce
-	pressed.shadow_size = 8
-	var focus := StyleBoxFlat.new()
+	var normal := CutBox.make(Color(0, 0, 0, 0), 14.0)
+	var hover := CutBox.make(Color(1, 1, 1, 0.1), 14.0)
+	var pressed := CutBox.make(Color(0, 0, 0, 0.18), 14.0)
+	var focus := CutBox.new()
 	focus.draw_center = false
-	focus.border_color = Color(MenuKit.TEXT, 0.55)
-	focus.set_border_width_all(2)
-	focus.set_corner_radius_all(RADIUS + 3)
-	focus.set_expand_margin_all(4)
+	focus.border_color = Color(MenuKit.TEXT, 0.45)
+	focus.border_width = 1.5
+	focus.cut = 14.0
+	focus.grow = 2.0
 	add_theme_stylebox_override("normal", normal)
 	add_theme_stylebox_override("hover", hover)
 	add_theme_stylebox_override("pressed", pressed)
 	add_theme_stylebox_override("hover_pressed", pressed)
 	add_theme_stylebox_override("focus", focus)
-	clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-
-	# reflet haut (verre) : dégradé blanc → transparent sur la moitié haute
-	var g := Gradient.new()
-	g.set_color(0, Color(1, 1, 1, 0.38))
-	g.set_color(1, Color(1, 1, 1, 0.0))
-	var gt := GradientTexture2D.new()
-	gt.gradient = g
-	gt.fill_from = Vector2(0, 0)
-	gt.fill_to = Vector2(0, 1)
-	gt.width = 4
-	gt.height = 32
-	var sheen := TextureRect.new()
-	sheen.name = "Sheen"
-	sheen.texture = gt
-	sheen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sheen.stretch_mode = TextureRect.STRETCH_SCALE
-	sheen.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sheen.anchor_right = 1.0
-	sheen.anchor_bottom = 0.5
-	add_child(sheen)
 
 	_content = VBoxContainer.new()
 	_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_content.offset_bottom = -DEPTH
+	_content.offset_right = -6
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	(_content as VBoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
-	(_content as VBoxContainer).add_theme_constant_override("separation", -4)
+	(_content as VBoxContainer).alignment = BoxContainer.ALIGNMENT_END
+	(_content as VBoxContainer).add_theme_constant_override("separation", -6)
 	add_child(_content)
-	var top := HBoxContainer.new()
-	top.alignment = BoxContainer.ALIGNMENT_CENTER
-	top.add_theme_constant_override("separation", 12)
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_content.add_child(top)
-	var ink: Color = p["ink"]
-	title_label = MenuKit.label("JOUER", 52, ink, RaidersLogo.slant_font(), 0)
-	title_label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.35))
-	title_label.add_theme_constant_override("shadow_offset_y", 2)
-	title_label.add_theme_constant_override("shadow_offset_x", 0)
-	top.add_child(title_label)
-	arrow = MenuGlyph.new(&"play", ink, 30)
-	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(arrow)
-	map_label = MenuKit.label("", 16, Color(ink, 0.72), MenuKit.nunito(900), 0)
-	map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	map_label = MenuKit.label("", 15, Color(MenuKit.TEXT, 0.9), MenuKit.nunito(600), 0)
+	map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	map_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_content.add_child(map_label)
-
-	# reflet qui balaie le bouton de temps en temps (doux)
-	_glint = ColorRect.new()
-	_glint.color = Color(1, 1, 1, 0.22)
-	_glint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_glint.size = Vector2(38, custom_minimum_size.y * 1.8)
-	_glint.rotation = 0.42
-	_glint.position = Vector2(-120, -40)
-	add_child(_glint)
-	button_down.connect(func() -> void: _content.position.y = DEPTH - 2)
+	title_label = MenuKit.label("DÉPLOYER", 56, MenuKit.TEXT, MenuKit.display(), 0)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_content.add_child(title_label)
+	arrow = MenuGlyph.new(&"play", MenuKit.TEXT, 30)
+	arrow.visible = false
+	add_child(arrow)
+	button_down.connect(func() -> void: _content.position.y = 2)
 	button_up.connect(func() -> void: _content.position.y = 0)
 
 
 func _ready() -> void:
 	MenuKit.add_feedback(self, 1.03)
 	refresh()
-	var tw := create_tween().set_loops()
-	tw.tween_interval(Balance.get_float("menu", "play_glint_interval", 4.5))
-	tw.tween_property(_glint, "position:x", custom_minimum_size.x + 80.0, 0.8).from(-120.0) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 ## Carte affichée : celle choisie (GameState.current_map), sinon la première de la rotation.

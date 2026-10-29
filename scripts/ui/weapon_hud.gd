@@ -355,14 +355,14 @@ class WeaponSlotView extends Control:
 			for k in 2:
 				var g := StyleBoxFlat.new()
 				g.bg_color = Color(rc, 0.12 + 0.06 * k)
-				g.set_corner_radius_all(16 + (2 - k) * 2)
+				g.set_corner_radius_all(2)
 				g.anti_aliasing = true
 				draw_style_box(g, r.grow(float(2 - k) * 2.5))
 		var bg := StyleBoxFlat.new()
 		bg.bg_color = InventoryStyle.NIGHT_BLUE.lerp(rc, 0.14) if weapon != null else Color(InventoryStyle.NIGHT_BLUE, 0.55)
 		bg.border_color = InventoryStyle.GOLD if current else Color(rc, 0.9 if weapon != null else 0.4)
 		bg.set_border_width_all(3 if current else 2)
-		bg.set_corner_radius_all(14)
+		bg.set_corner_radius_all(2)
 		bg.anti_aliasing = true
 		bg.shadow_color = Color(0, 0, 0, 0.35)
 		bg.shadow_size = 5 if current else 3
@@ -379,8 +379,8 @@ class WeaponSlotView extends Control:
 		# Liseré de rareté en bas.
 		var strip := StyleBoxFlat.new()
 		strip.bg_color = Color(rc, 0.9)
-		strip.corner_radius_bottom_left = 11
-		strip.corner_radius_bottom_right = 11
+		strip.corner_radius_bottom_left = 0
+		strip.corner_radius_bottom_right = 0
 		draw_style_box(strip, Rect2(Vector2(3, size.y - 7), Vector2(size.x - 6, 4)))
 		if gadget:
 			var a := 1.0 if ammo > 0 else 0.35

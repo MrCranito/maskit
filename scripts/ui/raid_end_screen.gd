@@ -15,9 +15,9 @@ extends CanvasLayer
 signal menu_requested
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
-const NIGHT := Color(0.071, 0.102, 0.18, 0.97)
-const SUCCESS := Color(0.36, 0.86, 0.5)
-const DEATH := Color(0.9, 0.26, 0.24)
+const NIGHT := Color(0.024, 0.027, 0.05, 0.94)
+const SUCCESS := Color(0.718, 0.608, 1.0)
+const DEATH := Color(1.0, 0.3, 0.43)
 const CARD_H := 104.0
 
 ## true = extraction, false = mort.
@@ -107,7 +107,7 @@ func _build() -> void:
 
 	_add_pass_xp(root)
 
-	_menu_btn = InventoryStyle.button("Retour au menu", InventoryStyle.GOLD, 22, Vector2(300, 62))
+	_menu_btn = InventoryStyle.button("Retour au menu", InventoryStyle.VIOLET, 24, Vector2(300, 62))
 	_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_menu_btn.pressed.connect(go_to_menu)
 	root.add_child(_menu_btn)
@@ -203,7 +203,7 @@ func _build_death(root: VBoxContainer) -> void:
 		gs.bg_color = Color(InventoryStyle.GOLD, 0.14)
 		gs.border_color = Color(InventoryStyle.GOLD, 0.7)
 		gs.set_border_width_all(1)
-		gs.set_corner_radius_all(12)
+		gs.set_corner_radius_all(2)
 		gs.set_content_margin_all(10)
 		gift.add_theme_stylebox_override("panel", gs)
 		var gl := InventoryStyle.label("Un petit pistolet t'attend au camp.", 19, InventoryStyle.GOLD, 800)
@@ -244,7 +244,7 @@ func _add_kills(root: VBoxContainer) -> void:
 	st.bg_color = Color(InventoryStyle.GOLD, 0.12 if unlocked else 0.06)
 	st.border_color = Color(InventoryStyle.GOLD, 0.75 if unlocked else 0.35)
 	st.set_border_width_all(1)
-	st.set_corner_radius_all(12)
+	st.set_corner_radius_all(2)
 	st.content_margin_left = 14
 	st.content_margin_right = 14
 	st.content_margin_top = 5
@@ -338,7 +338,7 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	st.bg_color = InventoryStyle.NIGHT_BLUE_DEEP.lerp(rc, 0.12)
 	st.border_color = Color(rc, 0.4 if lost else 0.9)
 	st.set_border_width_all(2)
-	st.set_corner_radius_all(12)
+	st.set_corner_radius_all(2)
 	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
 	card.custom_minimum_size = Vector2(176, CARD_H)
@@ -414,7 +414,7 @@ func _stat_chip(label_text: String, value_text: String, color: Color) -> Control
 	var p := PanelContainer.new()
 	var st := StyleBoxFlat.new()
 	st.bg_color = InventoryStyle.NIGHT_BLUE_LIGHT
-	st.set_corner_radius_all(12)
+	st.set_corner_radius_all(2)
 	st.content_margin_left = 16
 	st.content_margin_right = 16
 	st.content_margin_top = 6

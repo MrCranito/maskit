@@ -13,7 +13,7 @@ Le code du jeu reste sous la licence du dépôt (voir `LICENSE`).
 À reprendre tel quel dans l'écran « Crédits » (obligatoire pour les icônes, qui sont sous CC-BY 3.0) :
 
 > **Icônes** : Icons made by Lorc, Delapouite, Skoll, Sbed, Carl Olsen, John Colburn, Guard13007 and Willdabeast, from game-icons.net — licensed under CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). Icons modified (background removed).
-> **Polices** : « Rye » © 2011 Sorkin Type Co ; « Nunito » © 2014 The Nunito Project Authors — SIL Open Font License 1.1.
+> **Polices** : « Rye » © 2011 Sorkin Type Co ; « Nunito » © 2014 The Nunito Project Authors ; « Anton » © 2020 The Anton Project Authors ; « Space Grotesk » © 2020 The Space Grotesk Project Authors — SIL Open Font License 1.1.
 > **Sons et musiques** : Pixel-boy / Sparklin Labs (Superpowers Asset Packs, CC0) ; Kenney (www.kenney.nl, CC0).
 
 (Les mentions des sons CC0 ne sont pas obligatoires, mais les auteurs l'apprécient.)
@@ -53,6 +53,8 @@ Le code du jeu reste sous la licence du dépôt (voir `LICENSE`).
 |---|---|---|---|---|
 | Rye | Titres style western | `assets/fonts/rye/Rye-Regular.ttf` | Sorkin Type Co (Nicole Fally) | https://github.com/google/fonts/tree/main/ofl/rye |
 | Nunito (variable, graisses 200-1000) | Texte courant, lisible sur mobile | `assets/fonts/nunito/Nunito-Variable.ttf` | The Nunito Project Authors (Vernon Adams, Cyreal, Jacques Le Bailly) | https://github.com/google/fonts/tree/main/ofl/nunito |
+| Anton | Titres, boutons et gros chiffres de l'interface (direction D) | `assets/fonts/anton/Anton-Regular.ttf` | The Anton Project Authors (Vernon Adams) | https://github.com/google/fonts/tree/main/ofl/anton |
+| Space Grotesk (variable, graisses 300-700) | Texte courant de l'interface (direction D) | `assets/fonts/space_grotesk/SpaceGrotesk-Variable.ttf` | The Space Grotesk Project Authors (Florian Karsten) | https://github.com/google/fonts/tree/main/ofl/spacegrotesk |
 
 Le texte de la licence est fourni dans chaque dossier (`OFL.txt`). Licence vérifiée dans `OFL.txt` et `METADATA.pb` (`license: "OFL"`) du dépôt google/fonts. Nom réservé : « Rye » (la police ne doit pas être renommée « Rye » si on la modifie).
 

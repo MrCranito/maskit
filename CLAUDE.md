@@ -28,7 +28,7 @@ Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaum
 - Décor : cours et remparts de château en pierre ocre, tours, grandes bannières rouges à emblème blanc, ciel de coucher de soleil (orange, rose, violet), lumière chaude rasante, ombres bleu nuit.
 - Héros : personnage simple de shooter d'extraction, sans masque (visage visible, gilet tactique, sac à dos), qui tient une arme à feu. Son apparence ne change que par les skins cosmétiques.
 - Effets de combat : éclairs de bouche, douilles, traçantes, explosions, impacts ; ennemis massifs type golem de pierre.
-- Interface : panneaux bleu nuit (#121a2e environ) aux coins arrondis, bordures fines claires, titres blancs en gras, texte secondaire gris clair.
+- Interface (direction « D », maquette validée : https://claude.ai/artifact/FTXHPHfN5wZRxSQDW8oaDq) : fond encre (#06070D) translucide, angles vifs et coins biseautés (`CutBox`), accent violet électrique (#7C4DFF, clair #B79BFF) pour l'action principale et les grands bandeaux translucides en biais, titres et gros chiffres en Anton capitales, texte en Space Grotesk, texte secondaire blanc à 60-70 %. Pas de « // » ni de libellés façon terminal. Tout passe par `MenuKit` / `InventoryStyle`.
 - Placeholders au début (formes dessinées en code dans cette palette), organisés pour être remplacés facilement.
 - Codes couleur de rareté partout : Commun gris, Peu commun vert, Rare bleu, Épique violet, Légendaire orange (lueur pour Épique et Légendaire).
 
