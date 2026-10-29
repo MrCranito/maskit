@@ -53,6 +53,9 @@ var shop_mode: bool = false
 var buy_button: Button = null
 var consumables_label: Label = null
 var consumables_toggle: Button = null
+## Arsenal de départ : clefs de la réserve emportées (ligne visible seulement s'il y en a).
+var keys_label: Label = null
+var keys_toggle: Button = null
 var _tab_collection: Button = null
 var _tab_shop: Button = null
 var _sub_label: Label = null
@@ -332,6 +335,16 @@ func _build_loadout() -> void:
 	consumables_toggle.pressed.connect(toggle_consumables)
 	risk.add_child(consumables_toggle)
 	_refresh_consumables()
+	keys_label = MenuKit.label("", 17, MenuKit.GOLD, MenuKit.nunito(600), 0)
+	keys_label.name = "Keys"
+	keys_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	risk.add_child(keys_label)
+	keys_toggle = MenuKit.button("Clefs : non", MenuKit.Style.GHOST, 15, Vector2(118, 44))
+	MenuKit.tighten(keys_toggle, 8)
+	keys_toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	keys_toggle.pressed.connect(toggle_keys)
+	risk.add_child(keys_toggle)
+	_refresh_keys()
 
 	# Grille des armes
 	_scroll = ScrollContainer.new()
@@ -1162,6 +1175,30 @@ func _refresh_consumables() -> void:
 	else:
 		consumables_label.text = "Consommables emportés : " + ", ".join(parts)
 	consumables_toggle.text = "Soins : oui" if Profile.pack_consumables else "Soins : non"
+
+
+## Ligne « Clefs » : nombre de clefs en réserve et choix de les emporter (masquée sans clef).
+func _refresh_keys() -> void:
+	if keys_label == null:
+		return
+	var keys: Array[Dictionary] = Profile.keys_in_reserve()
+	var n := 0
+	for e: Dictionary in keys:
+		n += int(e["count"])
+	keys_label.visible = n > 0
+	keys_toggle.visible = n > 0
+	keys_label.text = "· %d clef%s en réserve" % [n, "s" if n > 1 else ""]
+	keys_toggle.text = "Clefs : oui" if Profile.pack_keys else "Clefs : non"
+	var names: PackedStringArray = []
+	for e: Dictionary in keys:
+		names.append((e["item"] as ItemData).display_name)
+	keys_label.tooltip_text = ", ".join(names)
+
+
+func toggle_keys() -> void:
+	Profile.set_pack_keys(not Profile.pack_keys)
+	MenuKit.sfx(&"click_soft", -4.0)
+	_refresh_keys()
 
 
 func toggle_consumables() -> void:

@@ -539,6 +539,24 @@ func test_loadout_duplicate_takes_one_copy() -> void:
 	assert_eq(a.selected_uids.size(), 1, "Un seul exemplaire emporté")
 
 
+func test_loadout_keys_toggle() -> void:
+	_test_profile()
+	var a := _loadout()
+	await wait_frames(2)
+	assert_false(a.keys_label.visible, "Sans clef en réserve : pas de ligne « Clefs »")
+	a.queue_free()
+	Profile.items["key_bank_vault"] = 1
+	Profile.pack_keys = false
+	var b := _loadout()
+	await wait_frames(2)
+	assert_true(b.keys_label.visible, "Clef en réserve : ligne visible")
+	assert_eq(b.keys_toggle.text, "Clefs : non")
+	b.toggle_keys()
+	assert_true(Profile.pack_keys, "Choix enregistré")
+	assert_eq(b.keys_toggle.text, "Clefs : oui")
+	Profile.pack_keys = false
+
+
 func test_loadout_restores_previous_choice() -> void:
 	_test_profile()
 	var first: int = -1
