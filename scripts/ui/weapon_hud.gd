@@ -468,13 +468,14 @@ class WeaponSwitchButton extends Control:
 			queue_redraw())
 
 	func _draw() -> void:
+		# Maquette Hud : carré encre translucide, coin haut gauche coupé, sans contour.
 		var c := size * 0.5
 		var r := radius * (0.93 if _down else 1.0)
 		var a := 1.0 if enabled else 0.45
-		draw_circle(c + Vector2(0, 3), r + 2.0, Color(0.02, 0.03, 0.07, 0.4 * a))
-		draw_circle(c, r, Color(InventoryStyle.NIGHT_BLUE_LIGHT if _down else InventoryStyle.NIGHT_BLUE, 0.94 * a))
-		draw_arc(c, r - 1.0, 0.0, TAU, 48, Color(InventoryStyle.BORDER_LIGHT, 0.85 * a), 1.5, true)
-		draw_arc(c, r - 5.0, 0.0, TAU, 48, Color(InventoryStyle.GOLD, 0.5 * a), 2.0, true)
+		var cut := r * 0.42
+		var box := PackedVector2Array([c + Vector2(-r + cut, -r), c + Vector2(r, -r), c + Vector2(r, r),
+			c + Vector2(-r, r), c + Vector2(-r, -r + cut)])
+		draw_colored_polygon(box, Color(MenuKit.VIOLET, 0.8 * a) if _down else Color(MenuKit.NIGHT_DEEP, 0.72 * a))
 		var font := LootVisuals.text_font(800)
 		if mode_gadget:
 			if gadget_weapon != null:
@@ -483,11 +484,11 @@ class WeaponSwitchButton extends Control:
 				LootVisuals.draw_weapon_glyph(self, Rect2(c - Vector2(r, r) * 0.62, Vector2(r, r) * 1.24), &"frag", Color(InventoryStyle.TEXT_SECONDARY, 0.5))
 			var gt := "Équip."
 			var gw := font.get_string_size(gt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-			draw_string_outline(font, Vector2(c.x - gw * 0.5, size.y + 12.0), gt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, InventoryStyle.NIGHT_BLUE_DEEP)
-			draw_string(font, Vector2(c.x - gw * 0.5, size.y + 12.0), gt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(Color.WHITE, a))
+			draw_string_outline(font, Vector2(c.x - gw * 0.5, size.y + 12.0), gt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, MenuKit.NIGHT_DEEP)
+			draw_string(font, Vector2(c.x - gw * 0.5, size.y + 12.0), gt, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.7 * a))
 			return
 		# Deux flèches courbes (cycle).
-		var col := Color(InventoryStyle.GOLD.lightened(0.15), a)
+		var col := Color(Color.WHITE, a)
 		var ar := r * 0.42
 		for k in 2:
 			var start := -PI * 0.15 + PI * k
@@ -500,5 +501,5 @@ class WeaponSwitchButton extends Control:
 				tip + tangent * 8.0, tip - normal * 6.5, tip + normal * 6.5]), col)
 		var t := "Arme"
 		var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
-		draw_string_outline(font, Vector2(c.x - tw * 0.5, size.y + 12.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, InventoryStyle.NIGHT_BLUE_DEEP)
-		draw_string(font, Vector2(c.x - tw * 0.5, size.y + 12.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(Color.WHITE, a))
+		draw_string_outline(font, Vector2(c.x - tw * 0.5, size.y + 12.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, 4, MenuKit.NIGHT_DEEP)
+		draw_string(font, Vector2(c.x - tw * 0.5, size.y + 12.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(1, 1, 1, 0.7 * a))
