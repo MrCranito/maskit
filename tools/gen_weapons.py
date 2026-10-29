@@ -373,6 +373,9 @@ def main() -> int:
         if f.endswith(".tres"):
             patch_table(os.path.join(TABLE_DIR, f), f[:-5])
     print("%d entrées générées." % len(WEAPONS))
+    # Plafonds de taux de drop (Épique < 4 %, Légendaire < 1 % par source) : voir tools/cap_drop_rates.py
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(ROOT, "tools", "cap_drop_rates.py")], check=True)
     return 0
 
 

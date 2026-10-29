@@ -11,10 +11,15 @@ rolls_max = 3
 empty_chance = 0.0
 search_time = 1.2
 entries = {
-&"black_powder": 3.0,
-&"gold_bar": 0.8,
-&"gold_nugget": 5.0,
-&"pearl_necklace": 0.5,
-&"raw_diamond": 0.5,
-&"treasure_map": 0.4
+&"bandage": 2,
+&"black_powder": 3,
+&"gold_bar": 0.010117,
+&"gold_nugget": 5,
+&"mat_scrap": 3,
+&"pearl_necklace": 0.010117,
+&"raw_diamond": 0.001349,
+&"revolver_ammo": 4,
+&"rifle_ammo": 3,
+&"silver_dollars": 4,
+&"treasure_map": 0.010117
 }

@@ -11,10 +11,10 @@ rolls_max = 2
 empty_chance = 0.2
 search_time = 1.5
 entries = {
-&"mat_scrap": 3.0,
-&"space_circuit": 4.0,
-&"space_data_chip": 6.0,
-&"space_encrypted_core": 0.4,
-&"space_energy_cell": 2.0,
+&"mat_scrap": 3,
+&"space_circuit": 4,
+&"space_data_chip": 6,
+&"space_encrypted_core": 0.013264,
+&"space_energy_cell": 2,
 &"space_star_map": 1.5
 }

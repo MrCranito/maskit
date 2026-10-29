@@ -11,12 +11,12 @@ rolls_max = 2
 empty_chance = 0.2
 search_time = 1.5
 entries = {
-&"mat_chemicals": 2.0,
-&"mat_scrap": 4.0,
-&"uw_ambergris": 0.8,
-&"uw_bio_sample": 4.0,
-&"uw_black_pearl": 0.4,
-&"uw_brass_valve": 3.0,
-&"uw_pearl": 6.0,
-&"uw_rare_coral": 2.0
+&"mat_chemicals": 2,
+&"mat_scrap": 4,
+&"uw_ambergris": 0.019693,
+&"uw_bio_sample": 4,
+&"uw_black_pearl": 0.019693,
+&"uw_brass_valve": 3,
+&"uw_pearl": 6,
+&"uw_rare_coral": 2
 }
