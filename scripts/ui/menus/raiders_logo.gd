@@ -25,6 +25,8 @@ static var _slant_font: FontVariation = null
 func _init(title_size: int = 96, with_emblem: bool = true, with_slogan: bool = true) -> void:
 	_title_size = title_size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if title_size < 0:
+		return
 	add_theme_constant_override("separation", int(title_size * 0.16))
 	alignment = BoxContainer.ALIGNMENT_CENTER
 	if with_emblem:
@@ -70,6 +72,19 @@ func _init(title_size: int = 96, with_emblem: bool = true, with_slogan: bool = t
 	slogan_label.position = Vector2(title_size * 0.32, 0)
 	slogan_band.custom_minimum_size.x = slogan_label.get_minimum_size().x + title_size * 0.64
 	slogan_label.size = Vector2(slogan_label.get_minimum_size().x, title_size * 0.42)
+
+
+## Logotype plat de la direction « D » (lobby) : « RAIDERS » en Anton blanc, « GO » en violet
+## clair, sans emblème, étiquette ni slogan.
+static func wordmark(title_size: int) -> RaidersLogo:
+	var l := RaidersLogo.new(-1)
+	l._title_size = title_size
+	l.add_theme_constant_override("separation", 0)
+	l.title_label = MenuKit.label(TITLE, title_size, MenuKit.TEXT, MenuKit.display(), 0)
+	l.add_child(l.title_label)
+	l.go_label = MenuKit.label(GO, title_size, MenuKit.VIOLET_LIGHT, MenuKit.display(), 0)
+	l.add_child(l.go_label)
+	return l
 
 
 ## Nunito Black incliné (italique synthétique, effet de vitesse).

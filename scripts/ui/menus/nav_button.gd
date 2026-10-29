@@ -1,9 +1,12 @@
 class_name NavButton
 extends Button
 ## Entrée du menu texte du lobby (direction « D ») : libellé en Anton capitales, aligné à gauche,
-## barre violette à gauche au survol / focus, retours tactiles MenuKit. Le pictogramme reste
+## blanc atténué au repos ; au survol / focus, blanc plein + barre violette à gauche (maquette).
+## Retours tactiles MenuKit. Le pictogramme reste
 ## disponible (`glyph`) mais n'est pas affiché.
 ## Option : pastille de notification (set_badge) et état « Bientôt » (écran pas encore livré).
+
+const IDLE := Color(1, 1, 1, 0.55)
 
 var glyph: MenuGlyph = null
 var caption: Label = null
@@ -21,33 +24,31 @@ func _init(label_text: String, glyph_kind: StringName, accent: Color = MenuKit.T
 	custom_minimum_size = Vector2(Balance.get_float("menu", "nav_row_width", 280.0),
 		Balance.get_float("menu", "nav_row_height", 64.0))
 	var n := StyleBoxEmpty.new()
-	var h := CutBox.make(Color(1, 1, 1, 0.06), 10.0)
-	var p := CutBox.make(Color(0, 0, 0, 0.25), 10.0)
 	add_theme_stylebox_override("normal", n)
-	add_theme_stylebox_override("hover", h)
-	add_theme_stylebox_override("pressed", p)
-	add_theme_stylebox_override("hover_pressed", p)
+	add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+	add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
+	add_theme_stylebox_override("hover_pressed", StyleBoxEmpty.new())
 	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	_bar = ColorRect.new()
 	_bar.color = MenuKit.VIOLET
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bar.anchor_bottom = 1.0
 	_bar.offset_left = 0
-	_bar.offset_right = 4
-	_bar.offset_top = 14
-	_bar.offset_bottom = -14
+	_bar.offset_right = 5
+	_bar.offset_top = 15
+	_bar.offset_bottom = -15
 	_bar.visible = false
 	add_child(_bar)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 12)
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 16
+	row.offset_left = 17
 	add_child(row)
 	glyph = PassGlyph.new(glyph_kind, accent, 26)
 	glyph.visible = false
 	row.add_child(glyph)
-	caption = MenuKit.label(label_text, 40, MenuKit.TEXT, MenuKit.display())
+	caption = MenuKit.label(label_text, int(Balance.get_value("menu", "nav_font_size", 48)), IDLE, MenuKit.display())
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	caption.size_flags_vertical = Control.SIZE_FILL
 	row.add_child(caption)
@@ -58,9 +59,14 @@ func _init(label_text: String, glyph_kind: StringName, accent: Color = MenuKit.T
 func _ready() -> void:
 	MenuKit.add_feedback(self, 1.03)
 	for sig: Signal in [mouse_entered, focus_entered]:
-		sig.connect(func() -> void: _bar.visible = true)
+		sig.connect(func() -> void: _set_active(true))
 	for sig: Signal in [mouse_exited, focus_exited]:
-		sig.connect(func() -> void: _bar.visible = has_focus() or is_hovered())
+		sig.connect(func() -> void: _set_active(has_focus() or is_hovered()))
+
+
+func _set_active(on: bool) -> void:
+	_bar.visible = on
+	caption.add_theme_color_override("font_color", MenuKit.TEXT if on else IDLE)
 
 
 ## Pastille (nombre) à droite du libellé ; 0 = masquée.

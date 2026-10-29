@@ -1,9 +1,10 @@
 class_name PlayCard
 extends Button
 ## Bouton d'action principal du lobby (direction « D ») : posé dans le bandeau violet, sans fond,
-## un énorme « DÉPLOYER » en Anton aligné à droite, la carte en cours au-dessus (« Dust Creek ·
-## Facile »). Survol : léger voile blanc à coins coupés ; focus : contour blanc. Mène au choix des
-## cartes. Carte : GameState.current_map, sinon la rotation.
+## un énorme « DÉPLOYER » en Anton aligné à droite. La carte en cours (`map_label`, « Dust Creek ·
+## Facile ») n'est plus affichée ici : le lobby la montre en haut du bandeau (maquette) ; le
+## libellé reste tenu à jour. Survol : léger voile blanc à coins coupés ; focus : contour blanc.
+## Mène au choix des cartes. Carte : GameState.current_map, sinon la rotation.
 ## STYLES / palette() / secondary_styles() restent pour les écrans qui reprennent l'ancienne forme.
 
 const STYLES := {
@@ -32,7 +33,7 @@ static func palette() -> Dictionary:
 
 func _init() -> void:
 	focus_mode = Control.FOCUS_ALL
-	custom_minimum_size = Vector2(Balance.get_float("menu", "deploy_width", 210.0), 110)
+	custom_minimum_size = Vector2(Balance.get_float("menu", "deploy_width", 210.0), 92)
 	text = ""
 	var normal := CutBox.make(Color(0, 0, 0, 0), 14.0)
 	var hover := CutBox.make(Color(1, 1, 1, 0.1), 14.0)
@@ -59,10 +60,14 @@ func _init() -> void:
 	map_label = MenuKit.label("", 15, Color(MenuKit.TEXT, 0.9), MenuKit.nunito(600), 0)
 	map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	map_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	map_label.visible = false
 	_content.add_child(map_label)
-	title_label = MenuKit.label("DÉPLOYER", 56, MenuKit.TEXT, MenuKit.display(), 0)
+	title_label = MenuKit.label("DÉPLOYER", int(Balance.get_value("menu", "deploy_font_size", 84)), MenuKit.TEXT, MenuKit.display(), 0)
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_content.add_child(title_label)
+	var fs: int = title_label.get_theme_font_size("font_size")
+	custom_minimum_size.x = maxf(custom_minimum_size.x,
+		MenuKit.display().get_string_size(title_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 16.0)
 	arrow = MenuGlyph.new(&"play", MenuKit.TEXT, 30)
 	arrow.visible = false
 	add_child(arrow)
