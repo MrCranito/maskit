@@ -104,8 +104,6 @@ le bestiaire utilise les planches d'EnemyArt).
 
 ## Changements partagés
 Aucun fichier partagé modifié. Points d'attention pour le chef de projet :
-- `tests/test_enemy_tactics.gd` (ligne ~437) charge encore `data/enemies/mall_guard.tres` (supprimé) :
-  remplacer par `mall_security_bot.tres` (même vérification de table de butin du biome `enemy_mall`).
 - Opacité des compétences (`set_modulate` sur le visuel) : non relayée en coop (pas dans
   `NetProtocol.fx_index`) — l'invité voit la Nuit blanche / le Clone / le Violent opaques.
 - Les illusions (`*_illusion.tres`) sont libérées sans mourir côté hôte ; en coop, vérifier que la
