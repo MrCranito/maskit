@@ -74,15 +74,11 @@ func _fire() -> void:
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	var st := InventoryStyle.panel(18, 0, InventoryStyle.NIGHT_BLUE_LIGHT if _down else InventoryStyle.NIGHT_BLUE)
-	st.shadow_size = 6
+	# maquette Hud : encre translucide, coin haut gauche coupé, sans contour
+	var st := CutBox.make(Color(MenuKit.VIOLET, 0.8) if _down else Color(MenuKit.NIGHT_DEEP, 0.72), size.x * 0.2,
+		Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+	st.corners = CutBox.CUT_TOP_LEFT
 	draw_style_box(st, r)
-	var inner := StyleBoxFlat.new()
-	inner.draw_center = false
-	inner.border_color = Color(InventoryStyle.GOLD, 0.5)
-	inner.set_border_width_all(2)
-	inner.set_corner_radius_all(2)
-	draw_style_box(inner, r.grow(-5.0))
 	if _icon != null:
 		draw_texture_rect(_icon, Rect2(Vector2(15, 10), Vector2(48, 48)), false, Color(1.0, 0.93, 0.8))
 	if inventory != null:
@@ -92,4 +88,4 @@ func _draw() -> void:
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		var at := Vector2((size.x - w) * 0.5, size.y - 9.0)
 		draw_string_outline(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 5, InventoryStyle.NIGHT_BLUE_DEEP)
-		draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, InventoryStyle.GOLD if inventory.used_slots() > 0 else InventoryStyle.TEXT_SECONDARY)
+		draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, MenuKit.GOLD if inventory.used_slots() > 0 else Color(1, 1, 1, 0.7))
