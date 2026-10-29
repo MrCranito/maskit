@@ -1,0 +1,135 @@
+{
+  "kind": "ss_security_droid",
+  "name": "Droïde de sécurité",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    143
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 132,
+  "head_px": 26,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      156.8,
+      65.4
+    ],
+    "se": [
+      137.8,
+      97.0
+    ],
+    "s": [
+      94.3,
+      109.3
+    ],
+    "sw": [
+      51.8,
+      95.2
+    ],
+    "w": [
+      35.2,
+      62.8
+    ],
+    "nw": [
+      54.2,
+      31.2
+    ],
+    "n": [
+      97.7,
+      18.9
+    ],
+    "ne": [
+      140.2,
+      33.0
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      1,
+      88,
+      155,
+      171
+    ],
+    "se": [
+      1,
+      88,
+      155,
+      171
+    ],
+    "s": [
+      36,
+      79,
+      192,
+      159
+    ],
+    "sw": [
+      36,
+      79,
+      192,
+      159
+    ],
+    "w": [
+      36,
+      79,
+      192,
+      159
+    ],
+    "nw": [
+      37,
+      95,
+      191,
+      183
+    ],
+    "n": [
+      37,
+      95,
+      191,
+      183
+    ],
+    "ne": [
+      0,
+      85,
+      156,
+      182
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_security_droid/ss_security_droid_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

@@ -1,0 +1,135 @@
+{
+  "kind": "ss_detector",
+  "name": "Détecteur",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    120
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 104,
+  "head_px": 54,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      130.6,
+      84.7
+    ],
+    "se": [
+      120.5,
+      102.9
+    ],
+    "s": [
+      96.0,
+      110.5
+    ],
+    "sw": [
+      71.5,
+      102.9
+    ],
+    "w": [
+      61.4,
+      84.7
+    ],
+    "nw": [
+      71.5,
+      66.6
+    ],
+    "n": [
+      96.0,
+      59.0
+    ],
+    "ne": [
+      120.5,
+      66.6
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      54,
+      62,
+      138,
+      148
+    ],
+    "se": [
+      48,
+      58,
+      143,
+      150
+    ],
+    "s": [
+      53,
+      61,
+      140,
+      148
+    ],
+    "sw": [
+      50,
+      67,
+      144,
+      150
+    ],
+    "w": [
+      55,
+      65,
+      138,
+      148
+    ],
+    "nw": [
+      50,
+      72,
+      144,
+      151
+    ],
+    "n": [
+      52,
+      70,
+      139,
+      144
+    ],
+    "ne": [
+      48,
+      65,
+      142,
+      151
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_detector/ss_detector_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

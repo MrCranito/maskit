@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"fw_sharpshooter"
+display_name = "Tireur d'élite"
+max_hp = 36.0
+move_speed = 100.0
+body_radius = 17.0
+detection_radius = 640.0
+detection_angle_deg = 110.0
+lose_sight_time = 4.0
+alert_duration = 0.4
+alert_neighbors_radius = 340.0
+patrol_radius = 70.0
+sight_gain = 2.6
+hearing_radius = 340.0
+hearing_gain = 1.6
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 680.0
+attack_damage = 22.0
+attack_cooldown = 3.0
+attack_windup = 1.15
+projectile_speed = 1050.0
+retreat_distance = 340.0
+projectile_lifetime = 0.8
+projectile_style = &"bullet"
+tactic = &"sniper"
+preferred_range_min = 380.0
+preferred_range_max = 620.0
+use_cover = true
+can_flank = false
+retreat_hp_ratio = 0.4
+strafe_ratio = 0.4
+attack_pattern = &"aimed"
+telegraph_line = true
+stagger_ratio = 0.3
+stagger_time = 0.5
+knockback = 100.0
+ground_drop_chance = 0.35
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"outlaw_hurt"
+sfx_death = &"outlaw_death"
+corpse_name = "Tireur d'élite abattu"
+skills = [{"id": &"relocate", "trap": false, "min_move": 150.0, "priority": 3.0}, {"id": &"piercing", "passive": true}]

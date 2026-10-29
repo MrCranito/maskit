@@ -14,6 +14,8 @@ const Fur := preload("res://scripts/dungeon/gen/furnisher.gd")
 const Tpl := preload("res://scripts/biomes/space_station/ss_templates.gd")
 const PropScript := preload("res://scripts/biomes/space_station/ss_prop.gd")
 const T := FloorLayout.Tile
+## Section de balance.cfg du bestiaire de la station (poids de la 2e rangée par pont).
+const BESTIARY := "bestiary_space_station"
 
 ## Rôle → [kind, min, max, placement] ; placement : wall, center, any.
 const PROPS := {
@@ -557,6 +559,7 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 		var tmp := cells[i]
 		cells[i] = cells[j]
 		cells[j] = tmp
+	roster = roster_weights(roster, c.L.floor_index)
 	var kinds: Array[StringName] = []
 	var keys: Array = roster.keys()
 	keys.sort_custom(func(a: Variant, b: Variant) -> bool: return String(a) < String(b))
@@ -590,6 +593,22 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	for i2 in mini(n, cells.size()):
 		c.enemy_cells[cells[i2]] = true
 		c.L.add_spawn(c.L.enemy_spawns, cells[i2], kinds[i2], room.id)
+
+
+## Poids du roster pour un pont : les monstres de la 2e rangée du bestiaire (plus durs) sont
+## rares sur le pont principal et fréquents aux ponts profonds ([bestiary_space_station]).
+static func roster_weights(roster: Dictionary, floor_index: int) -> Dictionary:
+	var cfg := Cfg.cfg()
+	var row2: Array = cfg.get_value(BESTIARY, "row2_kinds", [])
+	var mults: Dictionary = cfg.get_value(BESTIARY, "row2_floor_mult", {})
+	var m := float(mults.get(str(floor_index), 1.0))
+	if row2.is_empty() or is_equal_approx(m, 1.0):
+		return roster
+	var out := {}
+	for k: Variant in roster:
+		var w := float(roster[k])
+		out[k] = w * m if row2.has(String(k)) else w
+	return out
 
 
 static func _weighted(w: Dictionary, rng: RandomNumberGenerator) -> StringName:

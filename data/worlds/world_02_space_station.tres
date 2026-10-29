@@ -28,46 +28,59 @@ palette = {
 }
 enemy_roster = {
 &"boss": {
-&"space_brute": 1.0,
-&"space_drone": 2.0,
-&"space_soldier": 1.0
+&"ss_security_droid": 1.0,
+&"ss_spectre": 2.0,
+&"ss_station_guardian": 0.5
 },
 &"combat": {
-&"space_android": 4.0,
-&"space_brute": 1.0,
-&"space_drone": 3.0,
-&"space_soldier": 3.0
+&"ss_alien": 1.0,
+&"ss_detector": 1.5,
+&"ss_security_droid": 3.0,
+&"ss_spectre": 3.0,
+&"ss_station_guardian": 1.0,
+&"ss_teleporter": 2.0
 },
 &"corridor": {
-&"space_android": 2.0,
-&"space_drone": 4.0,
-&"space_soldier": 2.0
+&"ss_detector": 0.5,
+&"ss_security_droid": 3.0,
+&"ss_spectre": 3.0,
+&"ss_teleporter": 1.5
 },
 &"extraction": {
-&"space_android": 2.0,
-&"space_brute": 1.0,
-&"space_soldier": 2.0
+&"ss_alien": 1.2,
+&"ss_detector": 1.0,
+&"ss_security_droid": 2.0,
+&"ss_spectre": 2.0,
+&"ss_station_guardian": 1.5,
+&"ss_teleporter": 2.0
 },
 &"loot": {
-&"space_android": 2.0,
-&"space_drone": 1.0,
-&"space_soldier": 2.0
+&"ss_detector": 0.5,
+&"ss_security_droid": 2.0,
+&"ss_spectre": 2.0,
+&"ss_teleporter": 1.5
 },
 &"rest": {
-&"space_drone": 1.0
+&"ss_security_droid": 1.0,
+&"ss_spectre": 1.0
 },
 &"spawn": {
-&"space_drone": 1.0
+&"ss_security_droid": 1.0,
+&"ss_spectre": 1.0
 },
 &"super_loot": {
-&"space_android": 1.0,
-&"space_brute": 3.0,
-&"space_soldier": 2.0
+&"ss_alien": 1.0,
+&"ss_detector": 0.5,
+&"ss_security_droid": 2.0,
+&"ss_station_guardian": 2.0,
+&"ss_teleporter": 1.0
 },
 &"trap": {
-&"space_android": 2.0,
-&"space_brute": 1.0,
-&"space_drone": 3.0
+&"ss_alien": 0.5,
+&"ss_detector": 1.0,
+&"ss_security_droid": 1.0,
+&"ss_spectre": 2.0,
+&"ss_teleporter": 2.0
 }
 }
 building_archetypes = Array[StringName]([])

@@ -494,16 +494,21 @@ func test_conteneurs_et_cachettes_du_biome_apres_spawn() -> void:
 # --- Ennemis, conteneurs, butin ---------------------------------------------------------------------------
 
 func test_ennemis_setup_enemy_visual() -> void:
-	var kinds: Dictionary = Kinds.KINDS
-	assert_eq(kinds.size(), 5)
-	var extra := BiomeRegistry.extra_enemy_kinds()
+	# Bestiaire de la station : planches 3D (EnemyArt), plus de sprite unique dans enemy_kinds.gd.
+	assert_eq((Kinds.KINDS as Dictionary).size(), 0, "planches uniquement")
+	var kinds := {}
+	for room_type: Variant in world.enemy_roster:
+		for k: Variant in world.enemy_roster[room_type]:
+			kinds[StringName(str(k))] = true
+	assert_eq(kinds.size(), 6, "les 6 monstres classiques de la planche")
 	for k: StringName in kinds:
-		assert_true(extra.has(k), "BiomeRegistry charge %s" % k)
+		assert_true(String(k).begins_with("ss_"), "préfixe ss_ : %s" % k)
+		assert_true(EnemyArt.has_sheet(k), "planches %s" % k)
 		var v := EnemyVisual.new()
 		add_child_autofree(v)
 		v.setup(k)
 		assert_eq(v.kind, k, "setup %s" % k)
-		assert_not_null(load(kinds[k]["path"]) as Texture2D, "texture %s" % k)
+		assert_true(v.uses_sheet, "mode planches %s" % k)
 		var d := load("res://data/enemies/%s.tres" % k) as EnemyData
 		assert_not_null(d, "EnemyData %s" % k)
 		if d != null:
@@ -512,12 +517,10 @@ func test_ennemis_setup_enemy_visual() -> void:
 			assert_gt(d.sight_gain, 0.0)
 			assert_gt(d.hearing_radius, 0.0)
 			assert_gt(d.awareness_decay, 0.0)
-	var drone := load("res://data/enemies/space_drone.tres") as EnemyData
-	assert_true(drone.is_ranged(), "drone : tir laser")
-	assert_true((load("res://data/enemies/space_soldier.tres") as EnemyData).is_ranged(), "soldat : distance")
-	assert_false((load("res://data/enemies/space_android.tres") as EnemyData).is_ranged(), "androïde : mêlée")
-	assert_true((load("res://data/enemies/space_brute.tres") as EnemyData).is_area_attack(), "brute : zone")
-	assert_true((load("res://data/enemies/space_reactor_colossus.tres") as EnemyData).is_area_attack(), "boss : zone")
+	assert_true((load("res://data/enemies/ss_security_droid.tres") as EnemyData).is_ranged(), "droïde : tir en rafale")
+	assert_true((load("res://data/enemies/ss_spectre.tres") as EnemyData).is_ranged(), "spectre : projectiles")
+	assert_false((load("res://data/enemies/ss_teleporter.tres") as EnemyData).is_ranged(), "téléporteur : mêlée")
+	assert_false((load("res://data/enemies/ss_alien.tres") as EnemyData).is_ranged(), "alien : mêlée")
 
 
 func test_chaque_conteneur_a_table_et_sprites() -> void:

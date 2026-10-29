@@ -28,45 +28,61 @@ palette = {
 }
 enemy_roster = {
 &"boss": {
-&"gunslinger": 1.0,
-&"outlaw_knife": 1.0,
-&"sandstone_colossus": 2.0,
-&"shotgun_brute": 1.0
+&"fw_bandit": 2.0,
+&"fw_bruiser": 2.0,
+&"fw_marauder": 1.0,
+&"fw_raider": 1.5,
+&"fw_sharpshooter": 1.0
 },
 &"combat": {
-&"gunslinger": 3.0,
-&"outlaw_knife": 5.0,
-&"shotgun_brute": 1.5
+&"fw_bandit": 5.0,
+&"fw_bruiser": 1.0,
+&"fw_guard_dog": 1.2,
+&"fw_marauder": 1.6,
+&"fw_raider": 3.5,
+&"fw_sharpshooter": 1.5
 },
 &"corridor": {
-&"gunslinger": 2.0,
-&"outlaw_knife": 4.0,
-&"shotgun_brute": 1.0
+&"fw_bandit": 4.0,
+&"fw_guard_dog": 0.6,
+&"fw_marauder": 0.5,
+&"fw_raider": 3.0,
+&"fw_sharpshooter": 1.0
 },
 &"extraction": {
-&"gunslinger": 2.0,
-&"outlaw_knife": 3.0,
-&"shotgun_brute": 1.0
+&"fw_bandit": 3.0,
+&"fw_bruiser": 1.2,
+&"fw_guard_dog": 1.2,
+&"fw_marauder": 2.0,
+&"fw_raider": 3.0,
+&"fw_sharpshooter": 1.5
 },
 &"loot": {
-&"gunslinger": 2.0,
-&"outlaw_knife": 3.0
+&"fw_bandit": 3.0,
+&"fw_guard_dog": 0.5,
+&"fw_raider": 2.0,
+&"fw_sharpshooter": 1.0
 },
 &"rest": {
-&"outlaw_knife": 1.0
+&"fw_bandit": 1.0,
+&"fw_raider": 0.5
 },
 &"spawn": {
-&"outlaw_knife": 1.0
+&"fw_bandit": 1.0
 },
 &"super_loot": {
-&"gunslinger": 1.0,
-&"sandstone_colossus": 2.0,
-&"shotgun_brute": 3.0
+&"fw_bandit": 1.0,
+&"fw_bruiser": 3.0,
+&"fw_guard_dog": 1.5,
+&"fw_marauder": 1.0,
+&"fw_raider": 1.0,
+&"fw_sharpshooter": 1.0
 },
 &"trap": {
-&"gunslinger": 1.0,
-&"outlaw_knife": 3.0,
-&"shotgun_brute": 1.0
+&"fw_bandit": 2.0,
+&"fw_marauder": 1.0,
+&"fw_raider": 3.0,
+&"fw_sharpshooter": 1.0
 }
 }
 building_archetypes = Array[StringName]([&"saloon", &"bank", &"sheriff", &"store", &"hotel", &"stable", &"church", &"mine"])
@@ -84,4 +100,4 @@ container_kinds = Array[StringName]([&"crate", &"barrel", &"chest", &"cupboard",
 prop_kinds = Array[StringName]([&"cactus", &"hitching_post", &"water_trough", &"wagon_wheel", &"saloon_bar", &"piano", &"poker_table", &"bed", &"desk", &"jail_bars", &"rail_track", &"mine_cart", &"lantern", &"wanted_poster", &"bench", &"altar", &"hay_bale", &"safe", &"shelf", &"counter", &"tumbleweed", &"water_tower", &"pew", &"ore_pile", &"support_beam", &"bottle_shelf", &"stage", &"dresser", &"washstand", &"nightstand", &"gun_rack", &"bookcase", &"crate_stack", &"sacks", &"dining_table", &"table_chairs", &"candelabra", &"settee", &"stove", &"bucket", &"tool_rack", &"shrub", &"cart", &"fence", &"barrel", &"tree"])
 floors_min = -1
 floors_max = 1
-boss_kind = &"sandstone_colossus"
+boss_kind = &""
