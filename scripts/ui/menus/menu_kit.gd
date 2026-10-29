@@ -92,6 +92,23 @@ static func title(text: String, size: int, color: Color = TEXT) -> Label:
 
 # --- Styles -----------------------------------------------------------------------
 
+const FROSTED_SHADER: Shader = preload("res://assets/shaders/frosted_panel.gdshader")
+static var _frosted_mat: ShaderMaterial = null
+
+
+## Verre dépoli : le fond derrière `ci` est flouté puis teinté de sa couleur (alpha = force de la
+## teinte). Menus seulement ([menu] blur_enabled, blur_radius, blur_lod) ; rien si désactivé.
+static func frosted(ci: CanvasItem) -> void:
+	if ci == null or not bool(Balance.get_value("menu", "blur_enabled", true)):
+		return
+	if _frosted_mat == null:
+		_frosted_mat = ShaderMaterial.new()
+		_frosted_mat.shader = FROSTED_SHADER
+		_frosted_mat.set_shader_parameter("radius", Balance.get_float("menu", "blur_radius", 10.0))
+		_frosted_mat.set_shader_parameter("lod", Balance.get_float("menu", "blur_lod", 2.5))
+	ci.material = _frosted_mat
+
+
 static func panel_style(bg: Color = NIGHT_PANEL, border: Color = BORDER, radius: int = 18,
 		border_w: int = 1, margin: int = 18) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

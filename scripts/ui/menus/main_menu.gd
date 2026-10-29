@@ -126,6 +126,7 @@ func _build() -> void:
 	sl.anchor_bottom = 1.0
 	sl.offset_left = -slab_w
 	ui.add_child(sl)
+	MenuKit.frosted(sl)
 	slab = sl
 
 	# Barre du haut (s'arrête avant le bandeau) : logo, statistiques, or, gemmes, crédits, réglages
