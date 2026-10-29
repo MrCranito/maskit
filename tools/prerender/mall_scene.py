@@ -1585,7 +1585,7 @@ import zlib
 
 # ======================================================================= décors (prop_spawns)
 # Emprise des grands décors (= mall_populator.gd BIG) : l'export ne donne que size = 1×1.
-BIG = {"fountain": (5, 3), "car_wreck": (2, 1), "store_shelf": (2, 1), "cinema_seats": (2, 1)}
+BIG = {"fountain": (7, 5), "car_wreck": (2, 1), "store_shelf": (2, 1), "cinema_seats": (2, 1)}
 
 
 def _rect_of_spawn(s):
@@ -2067,7 +2067,8 @@ def build_floor_details():
     for p in LAYOUT.get("prop_spawns", []):
         if p["kind"] == "fountain":
             x, y = p["cell"]
-            x0, y0, x1, y1 = x - 3.5, y - 4.0, x + 4.5, y + 2.0
+            fw_, fh_ = BIG["fountain"]
+            x0, y0, x1, y1 = x - (fw_ - 1) // 2 - 1.5, y - fh_ - 0.5, x + fw_ - (fw_ - 1) // 2 + 1.5, y + 2.5
             det.box(x0, Y(y1), 0.0, x1, Y(y0), 0.02, "stone_dark")
             det.box(x0 + 0.2, Y(y1 - 0.2), 0.02, x1 - 0.2, Y(y0 + 0.2), 0.025, "tiles_dark")
     det.to_object("_floordet", "world")
@@ -2237,6 +2238,8 @@ def build_lights():
                 py = y + (j + 0.5) * h / ny + lrng.uniform(-0.6, 0.6)
                 if not walk(int(px), int(py)) or (int(px), int(py)) in ESC_CELLS:
                     continue
+                if CELL_ROOM.get((int(px), int(py))) != rid:
+                    continue   # (galerie englobante : pas de plafonnier de galerie dans une boutique)
                 if lrng.random() < 0.2 and role == "gallery":
                     continue
                 L_ = bpy.data.lights.new("l%d" % n, "AREA")
@@ -2307,7 +2310,7 @@ FIX = []
 LIGHT_E = float(os.environ.get("MALL_LIGHT", "75"))
 LIGHT_Z = float(os.environ.get("MALL_LIGHT_Z", "2.1"))
 LIGHT_SIZE = float(os.environ.get("MALL_LIGHT_SIZE", "2.6"))
-GAL_STEP = float(os.environ.get("MALL_GAL_STEP", "5.0"))
+GAL_STEP = float(os.environ.get("MALL_GAL_STEP", "4.2"))
 GAL_K = float(os.environ.get("MALL_GAL_K", "0.68"))
 NEON_GLOW = float(os.environ.get("MALL_NEON_GLOW", "0.4"))
 
