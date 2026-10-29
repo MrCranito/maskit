@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_station_guardian"
+display_name = "Gardien de station"
+max_hp = 200.0
+move_speed = 72.0
+body_radius = 30.0
+detection_radius = 440.0
+detection_angle_deg = 200.0
+lose_sight_time = 5.0
+alert_duration = 0.6
+alert_neighbors_radius = 420.0
+patrol_radius = 50.0
+sight_gain = 1.4
+hearing_radius = 380.0
+hearing_gain = 1.6
+awareness_decay = 0.1
+attack_type = 1
+attack_range = 430.0
+attack_damage = 8.0
+attack_cooldown = 2.0
+attack_windup = 0.7
+projectile_speed = 420.0
+retreat_distance = 0.0
+projectile_count = 3
+projectile_spread_deg = 20.0
+projectile_style = &"laser"
+aura_color = Color(0.3, 0.8, 1, 1)
+tactic = &"heavy"
+preferred_range_min = 160.0
+preferred_range_max = 380.0
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"fan"
+stagger_ratio = 0.5
+stagger_time = 0.35
+knockback = 20.0
+skills = [{"id": &"ss_zone_barrage", "cooldown": 8.0, "initial_cooldown": 3.0, "windup": 1.0, "min_range": 120.0, "max_range": 640.0, "count": 4, "spread": 120.0, "radius": 80.0, "damage": 15.0, "interval": 0.18, "priority": 1.5}, {"id": &"shockwave", "cooldown": 10.0, "windup": 0.9, "max_range": 160.0, "radius": 210.0, "damage": 14.0, "priority": 2.0}, {"id": &"ss_drone_launch", "cooldown": 24.0, "initial_cooldown": 6.0, "windup": 0.8, "count": 2, "max_total": 2, "kinds": ["ss_spectre"], "dist": 70.0}]
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"metal_impact"
+sfx_death = &"golem_crumble"
+corpse_name = "Carcasse de gardien"

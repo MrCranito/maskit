@@ -23,6 +23,8 @@ var _panel: PanelContainer
 var _hp: float = -1.0
 var _max_hp: float = -1.0
 var weapon_hud: WeaponHud = null
+## Barre de vie du boss (haut centre), visible pendant le combat contre le boss.
+var boss_bar: BossBar = null
 
 
 func _ready() -> void:
@@ -36,6 +38,8 @@ func _ready() -> void:
 	_place_safe.call_deferred()
 	weapon_hud = WeaponHud.new()
 	add_child(weapon_hud)
+	boss_bar = BossBar.new()
+	add_child(boss_bar)
 	EventBus.player_spawned.connect(_on_player_spawned)
 	EventBus.player_damaged.connect(_on_player_damaged)
 	EventBus.player_died.connect(_on_player_died)

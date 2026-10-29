@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_alien_brood"
+display_name = "Larve d'alien"
+max_hp = 14.0
+move_speed = 215.0
+body_radius = 12.0
+detection_radius = 360.0
+detection_angle_deg = 360.0
+lose_sight_time = 3.0
+alert_duration = 0.15
+alert_neighbors_radius = 200.0
+patrol_radius = 80.0
+sight_gain = 2.4
+hearing_radius = 360.0
+hearing_gain = 2.4
+awareness_decay = 0.15
+attack_type = 0
+attack_range = 40.0
+attack_damage = 4.0
+attack_cooldown = 0.8
+attack_windup = 0.25
+aura_color = Color(0.85, 0.4, 1, 1)
+tactic = &"rusher"
+zigzag_amplitude = 30.0
+attack_pattern = &"lunge"
+lunge_distance = 60.0
+lunge_speed = 520.0
+stagger_ratio = 0.2
+knockback = 140.0
+skills = [{"id": &"rush", "cooldown": 6.0, "initial_cooldown": 1.0, "windup": 0.45, "min_range": 90.0, "max_range": 240.0, "speed": 460.0, "damage": 6.0}]
+ground_drop_chance = 0.0
+sfx_attack = &"blade_swing"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"enemy_death_generic"
+corpse_name = "Larve écrasée"

@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_spectre"
+display_name = "Spectre"
+max_hp = 24.0
+move_speed = 185.0
+body_radius = 16.0
+detection_radius = 420.0
+detection_angle_deg = 220.0
+lose_sight_time = 2.2
+alert_duration = 0.25
+alert_neighbors_radius = 360.0
+patrol_radius = 170.0
+sight_gain = 2.4
+hearing_radius = 320.0
+hearing_gain = 1.6
+awareness_decay = 0.2
+attack_type = 1
+attack_range = 330.0
+attack_damage = 4.0
+attack_cooldown = 1.05
+attack_windup = 0.35
+projectile_speed = 470.0
+retreat_distance = 170.0
+projectile_count = 2
+projectile_spread_deg = 14.0
+projectile_style = &"laser"
+aura_color = Color(0.3, 0.85, 1, 1)
+tactic = &"gunner"
+use_cover = false
+zigzag_amplitude = 42.0
+zigzag_period = 0.7
+strafe_ratio = 0.95
+attack_pattern = &"fan"
+stagger_ratio = 0.35
+knockback = 110.0
+skills = [{"id": &"dodge_roll", "cooldown": 3.0, "chance": 0.55, "distance": 130.0, "duration": 0.25}, {"id": &"kamikaze", "hp_below": 0.4, "windup": 0.7, "max_range": 280.0, "speed": 440.0, "radius": 85.0, "damage": 20.0, "priority": 2.0}]
+sfx_attack = &"pistol_shot_light"
+sfx_hurt = &"metal_impact"
+sfx_death = &"enemy_destroy"
+corpse_name = "Épave de spectre"

@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_night_spider"
+display_name = "Nuit blanche"
+max_hp = 80.0
+move_speed = 205.0
+body_radius = 20.0
+detection_radius = 230.0
+detection_angle_deg = 120.0
+lose_sight_time = 3.0
+alert_duration = 0.25
+alert_neighbors_radius = 300.0
+patrol_radius = 200.0
+sight_gain = 0.8
+hearing_radius = 700.0
+hearing_gain = 3.6
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 62.0
+attack_damage = 12.0
+attack_cooldown = 1.2
+attack_windup = 0.38
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 56.0
+zigzag_period = 0.5
+strafe_ratio = 1.0
+attack_pattern = &"lunge"
+lunge_distance = 100.0
+lunge_speed = 600.0
+combo_hits = 1
+stagger_ratio = 0.25
+stagger_time = 0.35
+knockback = 100.0
+ground_drop_chance = 0.35
+corpse_name = "Nuit blanche écrasée"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"mall_shadow_skin", "passive": true, "alpha": 0.3, "reveal_time": 1.4}, {"id": &"mall_pounce", "cooldown": 4.5, "windup": 0.45, "min_range": 130.0, "max_range": 360.0, "flight": 0.32, "radius": 58.0, "damage": 14.0, "status": "root", "status_time": 0.6, "lead": 0.3, "priority": 1.4}]

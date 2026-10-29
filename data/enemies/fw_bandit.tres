@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"fw_bandit"
+display_name = "Bandit"
+max_hp = 42.0
+move_speed = 135.0
+body_radius = 18.0
+detection_radius = 440.0
+detection_angle_deg = 160.0
+lose_sight_time = 3.0
+alert_duration = 0.35
+alert_neighbors_radius = 340.0
+patrol_radius = 110.0
+sight_gain = 2.1
+hearing_radius = 380.0
+hearing_gain = 2.0
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 400.0
+attack_damage = 8.0
+attack_cooldown = 1.9
+attack_windup = 0.55
+projectile_speed = 520.0
+retreat_distance = 190.0
+projectile_style = &"bullet"
+tactic = &"gunner"
+preferred_range_min = 200.0
+preferred_range_max = 340.0
+use_cover = true
+can_flank = true
+retreat_hp_ratio = 0.3
+strafe_ratio = 0.6
+attack_pattern = &"burst"
+burst_count = 2
+burst_interval = 0.18
+aim_spread_deg = 4.0
+stagger_ratio = 0.3
+stagger_time = 0.45
+knockback = 90.0
+ground_drop_chance = 0.3
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"outlaw_hurt"
+sfx_death = &"outlaw_death"
+corpse_name = "Bandit abattu"
+skills = [{"id": &"cover_roll", "cooldown": 5.0, "chance": 0.5, "to_cover": true, "distance": 170.0, "duration": 0.32}, {"id": &"whistle", "cooldown": 32.0, "initial_cooldown": 6.0, "hp_below": 0.7, "chance": 0.6, "count": 1, "max_total": 2, "kinds": ["fw_bandit", "fw_raider"], "priority": 1.5}]

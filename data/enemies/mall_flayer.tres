@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_flayer"
+display_name = "Écorcheur"
+max_hp = 70.0
+move_speed = 182.0
+body_radius = 17.0
+detection_radius = 400.0
+detection_angle_deg = 170.0
+lose_sight_time = 3.5
+alert_duration = 0.3
+alert_neighbors_radius = 340.0
+patrol_radius = 140.0
+sight_gain = 2.0
+hearing_radius = 420.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 60.0
+attack_damage = 9.0
+attack_cooldown = 1.3
+attack_windup = 0.42
+projectile_speed = 0.0
+retreat_distance = 0.0
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 46.0
+zigzag_period = 0.55
+strafe_ratio = 0.8
+attack_pattern = &"lunge"
+lunge_distance = 110.0
+lunge_speed = 560.0
+combo_hits = 2
+combo_interval = 0.22
+stagger_ratio = 0.3
+stagger_time = 0.4
+knockback = 90.0
+ground_drop_chance = 0.3
+corpse_name = "Écorcheur abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"mall_pounce", "cooldown": 5.5, "windup": 0.5, "min_range": 120.0, "max_range": 340.0, "flight": 0.36, "radius": 62.0, "damage": 15.0, "lead": 0.35, "priority": 1.5}]

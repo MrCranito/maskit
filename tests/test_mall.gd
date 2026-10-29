@@ -7,10 +7,10 @@ const SEEDS := 20
 const DIFFS := 5
 const MAX_MS_PER_FLOOR := 50.0
 const T := FloorLayout.Tile
-const KINDS := [&"mall_guard", &"mall_clown", &"mall_sniper", &"mall_mannequin", &"mall_director"]
+## Bestiaire du centre commercial (classiques ; élites et boss : tests/test_bestiary_mall.gd).
+const KINDS := [&"mall_zombie", &"mall_flayer", &"mall_security_bot", &"mall_clone", &"mall_brute", &"mall_night_spider"]
 const KEYS := [&"key_mall_jewelry", &"key_mall_offices"]
 const Pop := preload("res://scripts/biomes/mall/mall_populator.gd")
-const EnemyKinds := preload("res://scripts/biomes/mall/enemy_kinds.gd")
 const Plan := preload("res://scripts/biomes/mall/mall_plan.gd")
 
 var world: WorldData
@@ -73,7 +73,8 @@ func test_monde_charge() -> void:
 	assert_eq(world.display_name, "Galeries Lumière")
 	assert_true(ResourceLoader.exists(world.generator_path), "générateur")
 	assert_true(ResourceLoader.exists(world.builder_path), "constructeur")
-	assert_eq(world.boss_kind, &"mall_director")
+	if world.boss_kind != &"":
+		assert_true(ResourceLoader.exists("res://data/enemies/%s.tres" % world.boss_kind), "boss du monde")
 	assert_eq(world.floors_min, -1)
 	assert_eq(world.floors_max, 2)
 	for i in range(-1, 3):
@@ -120,17 +121,19 @@ func test_types_de_salles_presents() -> void:
 		assert_gt(_floor(per[2], 2).extraction_cells.size(), 0, "héliport")
 
 
-func test_boss_unique_sur_le_toit() -> void:
+func test_boss_unique_dans_la_salle_boss() -> void:
+	if world.boss_kind == &"":
+		pass_test("pas encore de boss déclaré")
+		return
 	for per: Array in runs:
 		for d in DIFFS:
 			var bosses := 0
 			for f: FloorLayout in per[d]:
 				for e in f.enemy_spawns:
-					if e.kind == &"mall_director":
+					if e.kind == world.boss_kind:
 						bosses += 1
-						assert_eq(f.floor_index, 2, "le Directeur est dans les bureaux")
-						assert_eq(f.get_room(e.room_id).type, FloorLayout.ROOM_BOSS)
-			assert_eq(bosses, 1, "un seul Directeur")
+						assert_eq(f.get_room(e.room_id).type, FloorLayout.ROOM_BOSS, "boss dans la salle boss")
+			assert_eq(bosses, 1, "un seul boss généré")
 
 
 func test_super_loot_verrouillees_et_gardees() -> void:
@@ -393,10 +396,7 @@ func test_conteneurs_du_biome_gardent_leur_kind() -> void:
 # --- Ennemis, conteneurs, objets ----------------------------------------------------------
 
 func test_ennemis_visuels_et_donnees() -> void:
-	var extra := BiomeRegistry.extra_enemy_kinds()
 	for k: StringName in KINDS:
-		assert_true(EnemyKinds.KINDS.has(k), "KINDS %s" % k)
-		assert_true(extra.has(k), "chargé par BiomeRegistry : %s" % k)
 		var data := load("res://data/enemies/%s.tres" % k) as EnemyData
 		assert_not_null(data, "EnemyData %s" % k)
 		assert_eq(data.kind, k)
@@ -404,17 +404,22 @@ func test_ennemis_visuels_et_donnees() -> void:
 		assert_gt(data.sight_gain, 0.0)
 		assert_gt(data.hearing_radius, 0.0)
 		assert_gt(data.awareness_decay, 0.0)
+		assert_true(EnemyArt.has_sheet(k), "planches 8 directions %s" % k)
 		var v := EnemyVisual.new()
 		add_child_autofree(v)
 		v.setup(k)
 		assert_eq(v.kind, k, "EnemyVisual accepte %s" % k)
-		var tex := load(EnemyKinds.KINDS[k]["path"]) as Texture2D
-		assert_not_null(tex, "sprite %s" % k)
-		assert_eq(Vector2(tex.get_size()), EnemyKinds.KINDS[k]["svg_size"], "svg_size = taille du PNG")
-	var sniper := load("res://data/enemies/mall_sniper.tres") as EnemyData
-	assert_true(sniper.is_ranged(), "sniper à distance")
-	var boss := load("res://data/enemies/mall_director.tres") as EnemyData
-	assert_true(boss.is_area_attack(), "Directeur : coup de zone")
+		assert_true(v.uses_sheet, "mode planches %s" % k)
+	var bot := load("res://data/enemies/mall_security_bot.tres") as EnemyData
+	assert_true(bot.is_ranged(), "Sécurité robot : tir à distance")
+	var brute := load("res://data/enemies/mall_brute.tres") as EnemyData
+	assert_true(brute.is_area_attack(), "Gros brute : coup de zone")
+	# Plus aucune trace des anciens ennemis du centre commercial.
+	for old: String in ["mall_clown", "mall_director", "mall_guard", "mall_mannequin", "mall_sniper"]:
+		assert_false(ResourceLoader.exists("res://data/enemies/%s.tres" % old), "ancien ennemi supprimé : %s" % old)
+	for role: Variant in Pop.ROLE_ROSTER:
+		for k2: Variant in Pop.ROLE_ROSTER[role]:
+			assert_true(ResourceLoader.exists("res://data/enemies/%s.tres" % k2), "roster de rôle %s : %s" % [role, k2])
 
 
 func test_conteneurs_tables_et_sprites() -> void:

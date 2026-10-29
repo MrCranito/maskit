@@ -78,6 +78,8 @@ const FX_METHODS: Array[StringName] = [
 	&"use_throw_anim", &"set_aim_direction", &"set_elite", &"play_hit",
 	# Compétences ennemies (EnemySkills) : télégraphes/effets, dangers au sol, renforts.
 	&"play_skill_fx", &"spawn_hazard", &"spawn_reinforcement",
+	# Bestiaire : animation de course de remplacement (charge à cheval du shérif).
+	&"set_run_anim",
 ]
 
 

@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_drone_tieur"
+display_name = "Le Drone Tieur"
+max_hp = 150.0
+move_speed = 150.0
+body_radius = 24.0
+detection_radius = 600.0
+detection_angle_deg = 360.0
+lose_sight_time = 5.0
+alert_duration = 0.3
+alert_neighbors_radius = 500.0
+patrol_radius = 120.0
+sight_gain = 2.6
+hearing_radius = 480.0
+hearing_gain = 2.2
+awareness_decay = 0.08
+attack_type = 1
+attack_range = 540.0
+attack_damage = 14.0
+attack_cooldown = 1.8
+attack_windup = 0.8
+projectile_speed = 800.0
+retreat_distance = 260.0
+projectile_style = &"laser_red"
+aura_color = Color(1, 0.23, 0.14, 1)
+tactic = &"sniper"
+preferred_range_min = 260.0
+preferred_range_max = 500.0
+use_cover = false
+strafe_ratio = 0.15
+attack_pattern = &"aimed"
+burst_count = 4
+burst_interval = 0.08
+telegraph_line = true
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.2
+phase2_cooldown_mult = 0.7
+phase2_alt_pattern = &"burst"
+stagger_ratio = 0.35
+knockback = 50.0
+skills = [{"id": &"fan_volley", "cooldown": 7.0, "initial_cooldown": 3.0, "windup": 0.6, "min_range": 120.0, "max_range": 480.0, "count": 8, "arc_deg": 24.0, "interval": 0.05, "speed": 640.0, "damage": 5.0, "style": "laser_red", "lifetime": 1.0, "priority": 1.5}, {"id": &"dodge_roll", "cooldown": 4.0, "chance": 0.5, "distance": 140.0, "duration": 0.28}]
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"metal_impact"
+sfx_death = &"enemy_destroy"
+corpse_name = "Épave du Drone Tieur"

@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_omnistore"
+display_name = "Mirage de l'Omnistore"
+max_hp = 1.0
+move_speed = 120.0
+body_radius = 40.0
+detection_radius = 800.0
+detection_angle_deg = 360.0
+lose_sight_time = 8.0
+alert_duration = 0.1
+alert_neighbors_radius = 0.0
+patrol_radius = 30.0
+sight_gain = 4.0
+hearing_radius = 800.0
+hearing_gain = 4.0
+awareness_decay = 0.0
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 110.0
+attack_damage = 8.0
+attack_cooldown = 1.8
+attack_windup = 0.8
+aoe_radius = 130.0
+tactic = &"heavy"
+can_flank = true
+attack_pattern = &"slam"
+stagger_ratio = 0.0
+knockback = 0.0
+ground_drop_chance = 0.0
+corpse_name = "Mirage"
+skills = [{"id": &"mall_illusion_body", "passive": true, "lifetime": 10.0, "hits": 2, "tint": Color(1, 0.55, 0.9, 0.6)}, {"id": &"rush", "status": "", "cooldown": 7.0, "windup": 0.8, "min_range": 120.0, "max_range": 360.0, "speed": 380.0, "damage": 8.0, "self_stun": 0.2}]

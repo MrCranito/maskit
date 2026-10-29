@@ -65,7 +65,7 @@ func test_all_cards_load_and_are_valid() -> void:
 		count[c.category] += 1
 		if c.category == MapCard.CATEGORY_PERMANENT:
 			biomes_perm[c.get_biome()] = true
-	assert_eq(biomes_perm.size(), 4, "Une carte permanente par biome")
+	assert_eq(biomes_perm.size(), BiomeRegistry.BIOMES.size(), "Une carte permanente par biome")
 	assert_gte(count[&"permanent"], 5)
 	assert_between(count[&"weekly"], 6, 8, "Pool hebdomadaire")
 	assert_between(count[&"monthly"], 4, 6, "Pool mensuel")
@@ -240,7 +240,7 @@ func test_set_current_map() -> void:
 
 
 func test_enemy_apply_modifiers() -> void:
-	var data := load("res://data/enemies/outlaw_knife.tres") as EnemyData
+	var data := load("res://data/enemies/fw_raider.tres") as EnemyData
 	var base_hp: float = data.max_hp
 	var base_dmg: float = data.attack_damage
 	var base_speed: float = data.move_speed

@@ -98,6 +98,35 @@ func _data(kind: StringName) -> EnemyData:
 	return d
 
 
+## Données de test : un kind du jeu (base) dont on remplace les compétences. Sert aux mécaniques
+## qu'aucun monstre actuel ne porte plus (lancer de couteau, éventail, bouclier, molotov,
+## dynamite à rebond, piège à ours…) : la mécanique reste couverte sans dépendre du bestiaire.
+func _custom(base: StringName, skills: Array, fields: Dictionary = {}) -> EnemyData:
+	var d := _data(base)
+	d.skills = skills.duplicate(true)
+	for k: String in fields:
+		d.set(k, fields[k])
+	return d
+
+
+## Ancien « bandit au couteau » : roulade + lancer de couteau (sur la base du Pillard).
+func _knife_data() -> EnemyData:
+	return _custom(&"fw_raider", [
+		{"id": &"dodge_roll", "cooldown": 3.5, "chance": 0.55, "distance": 150.0, "duration": 0.3},
+		{"id": &"knife_throw", "cooldown": 5.5, "windup": 0.45, "min_range": 150.0, "max_range": 400.0,
+			"speed": 640.0, "damage": 10.0, "style": "knife", "priority": 1.2}])
+
+
+## Ancien « dynamiteur » : molotov + dynamite à rebond (sur la base du Bandit).
+func _dynamite_data() -> EnemyData:
+	return _custom(&"fw_bandit", [
+		{"id": &"molotov", "kind": "fire", "cooldown": 8.5, "windup": 0.6, "min_range": 140.0, "max_range": 360.0,
+			"radius": 72.0, "flight": 0.6, "duration": 4.5, "dps": 10.0, "priority": 1.2},
+		{"id": &"bounce_dynamite", "kind": "dynamite", "bounce": true, "cooldown": 11.0, "windup": 0.65,
+			"min_range": 200.0, "max_range": 400.0, "radius": 85.0, "damage": 22.0, "flight": 0.55, "fuse": 0.75,
+			"bounce_flight": 0.35}])
+
+
 func _spawn(kind: StringName, pos: Vector2, data: EnemyData = null) -> Enemy:
 	var e := Enemy.spawn(data if data != null else _data(kind))
 	e.position = pos
@@ -146,16 +175,18 @@ func test_every_enemy_declares_known_skills() -> void:
 		assert_gt(active, 0, "%s : au moins une compétence active" % f)
 
 
-func test_far_west_archetypes_have_two_skills() -> void:
-	for k: StringName in [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"rifleman", &"dynamiter", &"gang_boss"]:
+func test_far_west_archetypes_have_skills() -> void:
+	for k: StringName in [&"fw_bandit", &"fw_raider", &"fw_sharpshooter", &"fw_marauder", &"fw_bruiser", &"fw_guard_dog"]:
 		var d := load("res://data/enemies/%s.tres" % k) as EnemyData
-		assert_gte(d.skills.size(), 2, "%s : 1 à 2 compétences (et plus pour le chef)" % k)
+		assert_gte(d.skills.size(), 1, "%s : au moins une compétence" % k)
+	var elite := load("res://data/enemies/fw_deserter.tres") as EnemyData
+	assert_gte(elite.skills.size(), 2, "élite : plusieurs compétences")
 
 
 # --- Recharge, conditions, télégraphe -----------------------------------------------------
 
 func test_cooldown_and_conditions() -> void:
-	var e := await _engaged(&"outlaw_knife", Vector2.ZERO, Vector2(260, 0))
+	var e := await _engaged(&"fw_raider", Vector2.ZERO, Vector2(260, 0), _knife_data())
 	var s := e.get_skill(&"knife_throw")
 	assert_not_null(s)
 	s.cooldown_left = 0.0
@@ -171,7 +202,7 @@ func test_cooldown_and_conditions() -> void:
 
 
 func test_knife_throw_telegraph_before_projectile() -> void:
-	var e := await _engaged(&"outlaw_knife", Vector2.ZERO, Vector2(260, 0))
+	var e := await _engaged(&"fw_raider", Vector2.ZERO, Vector2(260, 0), _knife_data())
 	var fired: Array = []
 	var cb := func(p: Node) -> void: fired.append([p, Time.get_ticks_msec()])
 	EventBus.projectile_fired.connect(cb)
@@ -189,7 +220,10 @@ func test_knife_throw_telegraph_before_projectile() -> void:
 
 
 func test_fan_volley_fires_six_in_an_arc() -> void:
-	var e := await _engaged(&"gunslinger", Vector2.ZERO, Vector2(250, 0))
+	var d := _custom(&"fw_bandit", [{"id": &"fan_volley", "cooldown": 8.0, "windup": 0.8, "min_range": 0.0,
+		"max_range": 360.0, "count": 6, "arc_deg": 70.0, "interval": 0.07, "speed": 480.0, "damage": 6.0,
+		"style": "bullet", "lifetime": 1.0, "priority": 1.3}])
+	var e := await _engaged(&"fw_bandit", Vector2.ZERO, Vector2(250, 0), d)
 	var fired: Array = []
 	var cb := func(p: Node) -> void: fired.append((p as EnemyProjectile).direction.angle())
 	EventBus.projectile_fired.connect(cb)
@@ -205,7 +239,7 @@ func test_fan_volley_fires_six_in_an_arc() -> void:
 
 
 func test_brute_charge_knocks_down_after_lane_telegraph() -> void:
-	var e := await _engaged(&"shotgun_brute", Vector2.ZERO, Vector2(280, 0))
+	var e := await _engaged(&"fw_bruiser", Vector2.ZERO, Vector2(280, 0))
 	e.force_skill(&"charge")
 	await wait_physics_frames(3)
 	assert_true(bool(e.visual.call("has_skill_fx", &"lane")), "couloir au sol")
@@ -217,16 +251,19 @@ func test_brute_charge_knocks_down_after_lane_telegraph() -> void:
 
 
 func test_hard_skin_and_shield_block_frontal_hits() -> void:
-	var brute := await _engaged(&"shotgun_brute", Vector2.ZERO, Vector2(100, 0))
+	var brute := await _engaged(&"fw_bruiser", Vector2.ZERO, Vector2(100, 0))
+	var red := float(brute.get_skill(&"hard_skin").f("reduction"))
 	brute.face(Vector2.RIGHT)
 	var hp0 := brute.hp
 	brute.take_damage(10.0, _player)
-	assert_almost_eq(hp0 - brute.hp, 5.0, 0.01, "peau dure : moitié des dégâts de face au contact")
+	assert_almost_eq(hp0 - brute.hp, 10.0 * (1.0 - red), 0.01, "peau dure : dégâts réduits de face")
 	brute.face(Vector2.LEFT)
 	hp0 = brute.hp
 	brute.take_damage(10.0, _player)
 	assert_almost_eq(hp0 - brute.hp, 10.0, 0.01, "de dos : dégâts pleins")
-	var boss := await _engaged(&"gang_boss", Vector2(0, 400), Vector2(300, 400))
+	var shd := _custom(&"fw_deserter", [{"id": &"shield", "style": 0.0, "duration": 3.5, "block": 1.0,
+		"cooldown": 12.0, "windup": 0.35, "max_range": 520.0}])
+	var boss := await _engaged(&"fw_deserter", Vector2(0, 400), Vector2(300, 400), shd)
 	var sh := boss.get_skill(&"shield")
 	boss.force_skill(&"shield")
 	await wait_until(func() -> bool: return bool(sh.call("is_shield_up")), 2.0)
@@ -239,7 +276,7 @@ func test_hard_skin_and_shield_block_frontal_hits() -> void:
 # --- Objets lancés et dangers ---------------------------------------------------------
 
 func test_molotov_leaves_burning_fire() -> void:
-	var e := await _engaged(&"dynamiter", Vector2.ZERO, Vector2(220, 0))
+	var e := await _engaged(&"fw_bandit", Vector2.ZERO, Vector2(220, 0), _dynamite_data())
 	e.force_skill(&"molotov")
 	await wait_physics_frames(3)
 	assert_gt(float(e.visual.get("_marker_t")), -0.5, "cercle au sol avant le lancer")
@@ -250,7 +287,7 @@ func test_molotov_leaves_burning_fire() -> void:
 
 
 func test_bouncing_dynamite_lands_at_final_target() -> void:
-	var e := await _engaged(&"dynamiter", Vector2.ZERO, Vector2(300, 0))
+	var e := await _engaged(&"fw_bandit", Vector2.ZERO, Vector2(300, 0), _dynamite_data())
 	e.force_skill(&"bounce_dynamite")
 	await wait_until(func() -> bool: return not get_tree().get_nodes_in_group(&"enemy_dynamite").is_empty(), 2.0)
 	var dyn := get_tree().get_first_node_in_group(&"enemy_dynamite") as EnemyDynamite
@@ -262,7 +299,7 @@ func test_bouncing_dynamite_lands_at_final_target() -> void:
 
 
 func test_flash_grenade_blinds_only_in_sight() -> void:
-	var e := await _engaged(&"space_soldier", Vector2.ZERO, Vector2(250, 0))
+	var e := await _engaged(&"ss_security_droid", Vector2.ZERO, Vector2(250, 0))
 	e.force_skill(&"flash_grenade")
 	await wait_until(func() -> bool: return _player.has_status_kind(&"blind"), 2.5)
 	assert_true(_player.has_status_kind(&"blind"), "aveuglé")
@@ -277,7 +314,7 @@ func test_flash_grenade_blinds_only_in_sight() -> void:
 
 
 func test_kamikaze_drone_explodes_on_player() -> void:
-	var e := await _engaged(&"space_drone", Vector2.ZERO, Vector2(200, 0))
+	var e := await _engaged(&"ss_spectre", Vector2.ZERO, Vector2(200, 0))
 	var eid := e.get_instance_id()
 	e.force_skill(&"kamikaze")
 	await wait_physics_frames(3)
@@ -290,7 +327,7 @@ func test_kamikaze_drone_explodes_on_player() -> void:
 
 
 func test_android_teleports_after_marker() -> void:
-	var e := await _engaged(&"space_android", Vector2.ZERO, Vector2(380, 0))
+	var e := await _engaged(&"ss_teleporter", Vector2.ZERO, Vector2(380, 0))
 	var s := e.get_skill(&"teleport")
 	s.cooldown_left = 0.0
 	assert_true(s.can_use(380.0, true), "destination trouvée")
@@ -303,7 +340,7 @@ func test_android_teleports_after_marker() -> void:
 
 
 func test_soldier_deploys_turret_that_shoots() -> void:
-	var e := await _engaged(&"space_soldier", Vector2.ZERO, Vector2(260, 0))
+	var e := await _engaged(&"ss_security_droid", Vector2.ZERO, Vector2(260, 0))
 	e.force_skill(&"deploy_turret")
 	await wait_until(func() -> bool: return not get_tree().get_nodes_in_group(EnemyHazard.GROUP).is_empty(), 2.0)
 	var t := get_tree().get_first_node_in_group(EnemyHazard.GROUP) as EnemyHazard
@@ -315,7 +352,7 @@ func test_soldier_deploys_turret_that_shoots() -> void:
 
 
 func test_shockwave_knocks_down_when_ring_passes() -> void:
-	var e := await _engaged(&"space_reactor_colossus", Vector2.ZERO, Vector2(150, 0))
+	var e := await _engaged(&"ss_station_guardian", Vector2.ZERO, Vector2(150, 0))
 	e.force_skill(&"shockwave")
 	await wait_physics_frames(3)
 	assert_true(bool(e.visual.call("has_skill_fx", &"ring")), "anneau de danger")
@@ -327,7 +364,7 @@ func test_shockwave_knocks_down_when_ring_passes() -> void:
 # --- Chef, tireur, réactions ---------------------------------------------------------------
 
 func test_boss_whistle_calls_two_reinforcements() -> void:
-	var boss := await _engaged(&"gang_boss", Vector2.ZERO, Vector2(300, 0))
+	var boss := await _engaged(&"fw_deserter", Vector2.ZERO, Vector2(300, 0))
 	var before := get_tree().get_nodes_in_group(&"enemy_units").size()
 	boss.force_skill(&"whistle")
 	await wait_seconds(1.4)
@@ -339,7 +376,7 @@ func test_boss_whistle_calls_two_reinforcements() -> void:
 
 
 func test_boss_rage_under_thirty_percent() -> void:
-	var boss := await _engaged(&"gang_boss", Vector2.ZERO, Vector2(300, 0))
+	var boss := await _engaged(&"fw_deserter", Vector2.ZERO, Vector2(300, 0))
 	boss.data.stagger_ratio = 0.0
 	var v := boss.run_speed()
 	boss.take_damage(boss.max_hp * 0.75, null)
@@ -347,8 +384,11 @@ func test_boss_rage_under_thirty_percent() -> void:
 	assert_lt(boss.rage_cooldown_mult, 1.0, "cadence accrue")
 
 
-func test_rifleman_relocates_and_drops_trap_after_shot() -> void:
-	var e := await _engaged(&"rifleman", Vector2.ZERO, Vector2(420, 0))
+func test_sharpshooter_relocates_and_drops_trap_after_shot() -> void:
+	# Le Tireur d'élite se replace sans piège : le piège à ours reste une option de `relocate`.
+	var d := _custom(&"fw_sharpshooter", [{"id": &"relocate", "trap": true, "trap_cooldown": 9.0, "trap_damage": 12.0,
+		"root_time": 1.5, "max_traps": 2, "min_move": 140.0, "priority": 3.0}, {"id": &"piercing", "passive": true}])
+	var e := await _engaged(&"fw_sharpshooter", Vector2.ZERO, Vector2(420, 0), d)
 	var s := e.get_skill(&"relocate")
 	e.notify_attack_done()
 	assert_true(bool(s.get("pending")))
@@ -373,7 +413,7 @@ func test_bear_trap_roots_player() -> void:
 func test_piercing_shot_passes_through_crates() -> void:
 	var crate := LootContainer.create(&"crate", Vector2(150, 0))
 	_world.add_child(crate)
-	var e := await _engaged(&"rifleman", Vector2.ZERO, Vector2(300, 0))
+	var e := await _engaged(&"fw_sharpshooter", Vector2.ZERO, Vector2(300, 0))
 	var fired: Array = []
 	var cb := func(p: Node) -> void: fired.append(p)
 	EventBus.projectile_fired.connect(cb)
@@ -386,11 +426,11 @@ func test_piercing_shot_passes_through_crates() -> void:
 
 
 func test_knife_bandit_rolls_when_aimed_at() -> void:
-	var d := _data(&"outlaw_knife")
+	var d := _knife_data()
 	for entry: Variant in d.skills:
 		if (entry as Dictionary)["id"] == &"dodge_roll":
 			(entry as Dictionary)["chance"] = 1.0
-	var e := await _engaged(&"outlaw_knife", Vector2.ZERO, Vector2(320, 0), d)
+	var e := await _engaged(&"fw_raider", Vector2.ZERO, Vector2(320, 0), d)
 	e.get_skill(&"dodge_roll").cooldown_left = 0.0
 	e.get_skill(&"knife_throw").cooldown_left = 99.0
 	_player.aiming = true
@@ -441,7 +481,7 @@ func test_skill_fx_relayed_and_played_by_guest_puppet() -> void:
 	NetHooks.is_host = true
 	NetHooks.coop = coop
 	NetHooks.targets.assign([_player])
-	var e := await _engaged(&"dynamiter", Vector2.ZERO, Vector2(220, 0))
+	var e := await _engaged(&"fw_bandit", Vector2.ZERO, Vector2(220, 0), _dynamite_data())
 	e.force_skill(&"molotov")
 	await wait_seconds(1.0)
 	var methods := coop.log.map(func(x: Array) -> StringName: return x[0])
@@ -449,7 +489,7 @@ func test_skill_fx_relayed_and_played_by_guest_puppet() -> void:
 	assert_has(methods, &"spawn_hazard", "zone de feu relayée")
 	# Invité : la marionnette rejoue les messages (sérialisés comme sur le réseau).
 	NetHooks.reset()
-	var puppet := _spawn(&"dynamiter", Vector2(0, 500))
+	var puppet := _spawn(&"fw_bandit", Vector2(0, 500), _dynamite_data())
 	await wait_physics_frames(2)
 	puppet.net_puppet = true
 	var hp0 := _player.hp
@@ -480,7 +520,7 @@ func test_reinforcements_registered_for_coop() -> void:
 	NetHooks.is_host = true
 	NetHooks.coop = coop
 	NetHooks.targets.assign([_player])
-	var boss := await _engaged(&"gang_boss", Vector2.ZERO, Vector2(300, 0))
+	var boss := await _engaged(&"fw_deserter", Vector2.ZERO, Vector2(300, 0))
 	boss.force_skill(&"whistle")
 	await wait_seconds(1.4)
 	var regs := coop.log.filter(func(x: Array) -> bool: return x[0] == &"register")

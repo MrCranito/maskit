@@ -4,7 +4,7 @@ Usage (depuis la racine du projet ; ordre complet de régénération du biome) :
     python3 art/blender/space_station/build_tiles.py       # textures + décalques temporaires
     python3 art/blender/space_station/build_props.py       # décors 3D + atlas (décalques compris)
     python3 art/blender/space_station/build_containers.py  # conteneurs et cachettes
-    python3 art/blender/space_station/build_enemies.py     # ennemis masqués + boss
+    python3 art/blender/bestiary/space_station/build_ss_enemies.py  # bestiaire (planches 8 directions)
 
 Pas de Blender ici : peinture procédurale numpy (mêmes outils que art/blender/build_tiles.py :
 bruits périodiques par FFT, masques anticrénelés). Le métal est peint à partir d'une carte de

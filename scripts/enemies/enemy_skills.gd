@@ -33,11 +33,43 @@ const REGISTRY := {
 	&"shockwave": "shockwave_skill.gd",
 }
 
+## Registres par monde (bestiaire) : scripts/enemies/skills/<monde>/registry.gd, chacun avec
+## `const REGISTRY := {&"id": "res://chemin/complet.gd"}` (chemins complets). Un fichier par monde :
+## chaque monde ajoute ses compétences sans toucher à ce fichier.
+const WORLD_REGISTRIES: Array[String] = [
+	"res://scripts/enemies/skills/far_west/registry.gd",
+	"res://scripts/enemies/skills/space_station/registry.gd",
+	"res://scripts/enemies/skills/mall/registry.gd",
+]
+
 static var _scripts: Dictionary = {}
+static var _merged: Dictionary = {}
+static var _merged_ok: bool = false
+
+
+## id → chemin complet du script (registre commun + registres des mondes).
+static func registry() -> Dictionary:
+	if _merged_ok:
+		return _merged
+	_merged_ok = true
+	_merged.clear()
+	for k: Variant in REGISTRY:
+		_merged[k] = DIR + String(REGISTRY[k])
+	for rp: String in WORLD_REGISTRIES:
+		if not ResourceLoader.exists(rp):
+			continue
+		var scr := load(rp) as Script
+		if scr == null:
+			continue
+		var reg: Variant = scr.get_script_constant_map().get("REGISTRY", {})
+		if reg is Dictionary:
+			for k2: Variant in reg:
+				_merged[StringName(str(k2))] = String(reg[k2])
+	return _merged
 
 
 static func has_skill(id: StringName) -> bool:
-	return REGISTRY.has(id)
+	return registry().has(id)
 
 
 ## Instancie les compétences déclarées par `data.skills` (ids inconnus ignorés avec un avertissement).
@@ -60,10 +92,29 @@ static func build(e: Enemy, data: EnemyData) -> Array[EnemySkill]:
 	return out
 
 
+## Instancie une liste de compétences (format EnemyData.skills), ex. celles d'une phase de boss.
+static func build_entries(e: Enemy, entries: Array, kind: StringName = &"") -> Array[EnemySkill]:
+	var out: Array[EnemySkill] = []
+	for entry: Variant in entries:
+		if not (entry is Dictionary):
+			continue
+		var d: Dictionary = entry
+		var sid := StringName(str(d.get("id", "")))
+		var s := create(sid)
+		if s == null:
+			push_warning("EnemySkills : compétence inconnue « %s » (%s)." % [sid, kind])
+			continue
+		s.id = sid
+		s.setup(e, d)
+		out.append(s)
+	return out
+
+
 static func create(sid: StringName) -> EnemySkill:
-	if not REGISTRY.has(sid):
+	var reg := registry()
+	if not reg.has(sid):
 		return null
-	var path: String = DIR + String(REGISTRY[sid])
+	var path: String = String(reg[sid])
 	var scr: Script = _scripts.get(path) as Script
 	if scr == null:
 		scr = load(path) as Script

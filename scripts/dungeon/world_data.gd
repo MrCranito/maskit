@@ -28,8 +28,10 @@ extends Resource
 ## Étages possibles : -1 = sous-sol, 0 = rez-de-chaussée, 1 = étage.
 @export var floors_min: int = -1
 @export var floors_max: int = 1
-## Ennemi de boss du monde (salle boss du sous-sol).
+## Boss du monde : UN SEUL par raid (salle boss de l'étage le plus profond / dangereux).
 @export var boss_kind: StringName = &""
+## Les 2 élites du monde (gardes des salles au trésor, renforts du boss, rares ailleurs).
+@export var elite_kinds: Array[StringName] = []
 
 @export_group("Modules du biome")
 ## Générateur : script avec `static func generate_run(seed, world, difficulty) -> Array[FloorLayout]`.
