@@ -122,6 +122,7 @@ func _build() -> void:
 	_detail = _build_detail()
 	_body.add_child(_detail)
 	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)   # glisser au doigt partout (même sur les boutons)
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

@@ -2,7 +2,7 @@ class_name LoadoutSummary
 extends Button
 ## Panneau « Arsenal de départ » du lobby : les armes (Profile.loadout_slots(), 3 par défaut)
 ## et l'équipement actuellement choisis, en petites cartes à la couleur de rareté, + nombre
-## d'armes en réserve. Un tap ouvre l'écran d'arsenal. Se met à jour sur Profile.changed.
+## d'armes en réserve (version compacte : le pass de combat tient dessous). Un tap ouvre l'arsenal. Se met à jour sur Profile.changed.
 
 var title_label: Label = null
 var stash_label: Label = null
@@ -34,12 +34,12 @@ func _init() -> void:
 	add_theme_stylebox_override("focus", f)
 	var col := VBoxContainer.new()
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_theme_constant_override("separation", 8)
+	col.add_theme_constant_override("separation", 6)
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	col.offset_left = 12
-	col.offset_top = 10
+	col.offset_top = 8
 	col.offset_right = -12
-	col.offset_bottom = -12
+	col.offset_bottom = -10
 	add_child(col)
 	var head := HBoxContainer.new()
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -48,7 +48,7 @@ func _init() -> void:
 	var g := MenuGlyph.new(&"rifle", MenuKit.GOLD, 26)
 	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(g)
-	title_label = MenuKit.label("Arsenal de départ", 19, MenuKit.TEXT, MenuKit.nunito(900), 3)
+	title_label = MenuKit.label("Arsenal de départ", 18, MenuKit.TEXT, MenuKit.nunito(900), 3)
 	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title_label)
 	var chev := MenuGlyph.new(&"chevron", MenuKit.TEXT_DIM, 18)
@@ -56,11 +56,11 @@ func _init() -> void:
 	head.add_child(chev)
 	_rows = VBoxContainer.new()
 	_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rows.add_theme_constant_override("separation", 6)
+	_rows.add_theme_constant_override("separation", 5)
 	col.add_child(_rows)
 	for i: int in Profile.loadout_slots() + Profile.gadget_slots():
 		_rows.add_child(_make_slot(i >= Profile.loadout_slots()))
-	stash_label = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+	stash_label = MenuKit.label("", 13, MenuKit.TEXT_DIM, MenuKit.nunito(800))
 	col.add_child(stash_label)
 
 
@@ -70,19 +70,19 @@ func _ready() -> void:
 	refresh()
 	# hauteur = contenu (le Button ne se dimensionne pas sur ses enfants libres)
 	var c := get_child(0) as Control
-	custom_minimum_size.y = c.get_combined_minimum_size().y + 22
+	custom_minimum_size.y = c.get_combined_minimum_size().y + 18
 
 
 func _make_slot(gadget: bool) -> PanelContainer:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.custom_minimum_size = Vector2(0, 40 if gadget else 54)
+	p.custom_minimum_size = Vector2(0, 36 if gadget else 46)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 10)
 	p.add_child(row)
 	var icon := WeaponIcon.new()
-	icon.custom_minimum_size = Vector2(78 if not gadget else 52, 0)
+	icon.custom_minimum_size = Vector2(66 if not gadget else 46, 0)
 	row.add_child(icon)
 	var txt := VBoxContainer.new()
 	txt.mouse_filter = Control.MOUSE_FILTER_IGNORE

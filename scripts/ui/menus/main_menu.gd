@@ -8,9 +8,10 @@ extends Control
 ##    Gemmes), boutons Crédits et Réglages ;
 ##  - gauche, sous la barre du haut : résumé de l'arsenal de départ (LoadoutSummary → arsenal) ;
 ##  - droite, au-dessus de JOUER : bandeau d'info (événement, rotation, astuces) ;
-##  - bas gauche : barre de navigation (Arsenal, Atelier, Marchand, Boutique, Pass) ; un écran
+##  - gauche, sous l'arsenal : carte du pass de combat (PassCard → écran du pass) ;
+##  - bas gauche : barre de navigation (Arsenal, Atelier, Inventaire, Boutique) ; un écran
 ##    pas encore livré (scène absente) affiche « Bientôt » sans rien ouvrir ;
-##  - bas droite : bouton « Coop » puis grand bouton « JOUER » avec la carte (PlayCard → choix
+##  - bas droite : bouton « Coop » puis grand bouton « JOUER » ambre (PlayCard → choix
 ##    des cartes → arsenal de départ → raid).
 ## Animations d'entrée (glissements, fondus), retours tactiles et sons MenuKit, marges de
 ## sécurité (encoche / barre d'accueil). Aucun _process.
@@ -33,7 +34,9 @@ var arsenal_button: NavButton = null
 var crafting_button: NavButton = null
 var merchant_button: NavButton = null
 var shop_button: NavButton = null
-var pass_button: NavButton = null
+## Carte du pass de combat (colonne de gauche). L'entrée « Pass » de la barre de navigation est
+## retirée : la carte, plus visible, la remplace (moins d'entrées = barre plus lisible).
+var pass_card: PassCard = null
 var coop_button: Button = null
 ## Compatibilité : Options = bouton réglages, Crédits = bouton étoile de la barre du haut.
 var options_button: Button = null
@@ -45,6 +48,7 @@ var ui: Control = null
 var _modal: ModalPanel = null
 var _top: Control = null
 var _nav: Control = null
+var _left: VBoxContainer = null
 var _version: Label = null
 
 
@@ -132,12 +136,22 @@ func _build() -> void:
 	credits_button = credits_top_button
 
 	# Gauche : arsenal de départ
+	# Gauche : arsenal de départ (compact) puis carte du pass de combat, en colonne
+	_left = VBoxContainer.new()
+	_left.name = "LeftColumn"
+	_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_left.add_theme_constant_override("separation", 12)
+	# un peu plus bas que la barre du haut, pour qu'il respire ([menu] loadout_panel_drop)
+	_left.position = Vector2(m.x, m.y + 62 + gap + Balance.get_float("menu", "loadout_panel_drop", 22.0))
+	ui.add_child(_left)
 	loadout_summary = LoadoutSummary.new()
 	loadout_summary.name = "LoadoutSummary"
-	# un peu plus bas que la barre du haut, pour qu'il respire ([menu] loadout_panel_drop)
-	loadout_summary.position = Vector2(m.x, m.y + 62 + gap + Balance.get_float("menu", "loadout_panel_drop", 22.0))
 	loadout_summary.pressed.connect(_on_arsenal)
-	ui.add_child(loadout_summary)
+	_left.add_child(loadout_summary)
+	pass_card = PassCard.new()
+	pass_card.name = "PassCard"
+	pass_card.pressed.connect(func() -> void: _go_optional(pass_card, MenuKit.BATTLE_PASS_SCENE))
+	_left.add_child(pass_card)
 
 	# Droite, au-dessus de JOUER : bandeau d'information (le haut droit reste au drapeau du camp)
 	info_banner = InfoBanner.new()
@@ -148,9 +162,10 @@ func _build() -> void:
 	info_banner.anchor_bottom = 1.0
 	info_banner.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	info_banner.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	var play_h: float = Balance.get_float("menu", "play_card_height", 148.0)
+	var play_h: float = 124.0
 	info_banner.offset_right = -m.z
-	info_banner.offset_left = -m.z - Balance.get_float("menu", "play_card_width", 420.0)
+	var play_w: float = 340.0 + 12.0 + Balance.get_float("menu", "coop_button_width", 112.0)
+	info_banner.offset_left = -m.z - play_w
 	info_banner.offset_bottom = -m.w - play_h - 12.0
 	info_banner.offset_top = info_banner.offset_bottom - info_banner.custom_minimum_size.y
 	ui.add_child(info_banner)
@@ -202,21 +217,18 @@ func _build() -> void:
 	nav.add_child(row)
 	arsenal_button = NavButton.new("Arsenal", &"rifle", MenuKit.GOLD)
 	crafting_button = NavButton.new("Atelier", &"anvil", MenuKit.TEXT)
-	merchant_button = NavButton.new("Marchand", &"cart", MenuKit.GOLD)
+	merchant_button = NavButton.new("Inventaire", &"chest", MenuKit.GOLD)
 	shop_button = NavButton.new("Boutique", &"bag", MenuKit.GEM)
-	pass_button = NavButton.new("Pass", &"ticket", MenuKit.GOLD)
-	for b: NavButton in [arsenal_button, crafting_button, merchant_button, shop_button, pass_button]:
+	for b: NavButton in [arsenal_button, crafting_button, merchant_button, shop_button]:
 		row.add_child(b)
-	merchant_button.custom_minimum_size.x += 8
+	merchant_button.custom_minimum_size.x += 12
 	arsenal_button.pressed.connect(_on_arsenal)
 	crafting_button.pressed.connect(func() -> void: _go_optional(crafting_button, MenuKit.CRAFTING_SCENE))
 	merchant_button.pressed.connect(func() -> void: _go_optional(merchant_button, MenuKit.MERCHANT_SCENE))
 	shop_button.pressed.connect(func() -> void: _go_shop(&""))
-	pass_button.pressed.connect(func() -> void: _go_optional(pass_button, MenuKit.BATTLE_PASS_SCENE))
 	crafting_button.set_soon(not scene_exists(MenuKit.CRAFTING_SCENE))
 	merchant_button.set_soon(not scene_exists(MenuKit.MERCHANT_SCENE))
-	pass_button.set_soon(not scene_exists(MenuKit.BATTLE_PASS_SCENE))
-	buttons = [play_button, coop_button, arsenal_button, crafting_button, merchant_button, shop_button, pass_button]
+	buttons = [play_button, coop_button, pass_card, arsenal_button, crafting_button, merchant_button, shop_button]
 	nav.offset_top = -m.w - nav.get_combined_minimum_size().y
 
 	# Version (discrète, centrée en bas)
@@ -268,30 +280,24 @@ func _coop_button(h: float) -> Button:
 	b.focus_mode = Control.FOCUS_ALL
 	b.tooltip_text = "Jouer en coopération"
 	b.custom_minimum_size = Vector2(Balance.get_float("menu", "coop_button_width", 112.0), h)
-	var n := MenuKit.panel_style(Color(MenuKit.NIGHT, 0.88), Color(MenuKit.GEM, 0.55), 18, 2, 0)
-	n.shadow_size = 6
-	var hv := n.duplicate() as StyleBoxFlat
-	hv.bg_color = Color(0.12, 0.17, 0.3, 0.95)
-	var pr := n.duplicate() as StyleBoxFlat
-	pr.bg_color = Color(0.04, 0.06, 0.12, 0.95)
-	var f := StyleBoxFlat.new()
-	f.draw_center = false
-	f.border_color = MenuKit.GOLD
-	f.set_border_width_all(3)
-	f.set_corner_radius_all(21)
-	f.set_expand_margin_all(3)
-	b.add_theme_stylebox_override("normal", n)
-	b.add_theme_stylebox_override("hover", hv)
-	b.add_theme_stylebox_override("pressed", pr)
-	b.add_theme_stylebox_override("hover_pressed", pr)
-	b.add_theme_stylebox_override("focus", f)
+	# même forme que JOUER, version secondaire (bleu nuit, liseré de la couleur d'action)
+	var st: Dictionary = PlayCard.secondary_styles()
+	b.add_theme_stylebox_override("normal", st["normal"])
+	b.add_theme_stylebox_override("hover", st["hover"])
+	b.add_theme_stylebox_override("pressed", st["pressed"])
+	b.add_theme_stylebox_override("hover_pressed", st["pressed"])
+	b.add_theme_stylebox_override("focus", st["focus"])
+	var accent: Color = PlayCard.palette()["base"]
 	var col := VBoxContainer.new()
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_theme_constant_override("separation", 4)
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.offset_bottom = -PlayCard.DEPTH
 	b.add_child(col)
-	var g := PassGlyph.new(&"duo", MenuKit.GEM, 48)
+	b.button_down.connect(func() -> void: col.position.y = PlayCard.DEPTH - 2)
+	b.button_up.connect(func() -> void: col.position.y = 0)
+	var g := PassGlyph.new(&"duo", accent, 44)
 	g.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(g)
 	var l := MenuKit.label("Coop", 20, MenuKit.TEXT, MenuKit.nunito(1000), 4)
@@ -378,8 +384,6 @@ func _refresh_profile() -> void:
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"
 	gold_label.text = format_thousands(gold_amount())
-	if pass_button != null:
-		pass_button.set_badge(BattlePassSystem.get_instance().claimable_count())
 
 
 ## Or du joueur : Profile.gold (économie), sinon l'ancien compteur Profile.dollars.
@@ -406,7 +410,7 @@ static func format_thousands(n: int) -> String:
 
 func _intro() -> void:
 	# Chaque bloc glisse depuis son bord, en cascade ; le héros apparaît avec le zoom du décor.
-	var blocks: Array = [[_top, Vector2(0, -90), 0.15], [loadout_summary, Vector2(-340, 0), 0.3],
+	var blocks: Array = [[_top, Vector2(0, -90), 0.15], [_left, Vector2(-340, 0), 0.3],
 		[info_banner, Vector2(380, 0), 0.38], [_nav, Vector2(0, 120), 0.45], [coop_button, Vector2(0, 170), 0.5],
 		[play_button, Vector2(460, 0), 0.55]]
 	for b: Array in blocks:
@@ -484,6 +488,8 @@ func _open_modal(m: ModalPanel, return_focus: Control) -> ModalPanel:
 static func button_label(b: Button) -> String:
 	if b is NavButton:
 		return (b as NavButton).caption.text
+	if b is PassCard:
+		return "Pass"
 	if b.name == "CoopButton":
 		return "Coop"
 	if b is PlayCard:

@@ -96,8 +96,16 @@ const UNLOCK_DROP := &"drop"
 @export var projectile_count: int = 1
 ## Écart angulaire total entre le premier et le dernier projectile d'une salve.
 @export var spread_degrees: float = 0.0
-## Imprécision aléatoire (±°) appliquée à chaque tir.
+## Imprécision aléatoire (±°) appliquée à chaque tir (à l'arrêt, premier tir).
 @export var inaccuracy_deg: float = 0.0
+## Dispersion croissante en tir continu (« bloom ») : +° par tir, plafond (°), retour (°/s)
+## quand on cesse de tirer. Imprécision de déplacement : +° à pleine vitesse.
+## Imprécision effective = (inaccuracy_deg + bloom) + spread_move_deg × vitesse (0..1),
+## × [player] spread_bloom_mult / spread_move_mult (balance.cfg). Voir WeaponLoadout.
+@export var spread_bloom_per_shot: float = 0.0
+@export var spread_bloom_max: float = 0.0
+@export var spread_bloom_recovery: float = 12.0
+@export var spread_move_deg: float = 0.0
 ## Nombre de cibles supplémentaires traversées.
 @export var pierce: int = 0
 @export var projectile_color: Color = Color(1.0, 0.22, 0.15)
@@ -183,6 +191,12 @@ func is_explosive() -> bool:
 ## Identifiant du sprite tenu (sprite_id, sinon la catégorie).
 func get_sprite_id() -> StringName:
 	return sprite_id if not String(sprite_id).is_empty() else category
+
+
+## Imprécision effective (±°) pour une dispersion accumulée `bloom` (°) et une vitesse
+## relative `move_ratio` (0..1). Logique pure.
+func effective_inaccuracy(bloom: float, move_ratio: float, move_mult: float = 1.0) -> float:
+	return maxf(inaccuracy_deg + maxf(bloom, 0.0) + spread_move_deg * clampf(move_ratio, 0.0, 1.0) * move_mult, 0.0)
 
 
 ## Dégâts par seconde théoriques (affichage).

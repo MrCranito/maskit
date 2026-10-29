@@ -395,6 +395,7 @@ func _build_grid() -> Control:
 	labels.add_child(mid)
 	labels.add_child(_row_label("Gratuit", MenuKit.TEXT_DIM, &""))
 	track_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(track_scroll)   # glisser au doigt partout (même sur les boutons)
 	track_scroll.name = "Track"
 	track_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	track_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED

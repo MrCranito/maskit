@@ -150,7 +150,7 @@ func test_main_menu_buttons() -> void:
 		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
-	assert_eq(labels, ["JOUER", "Coop", "Arsenal", "Atelier", "Marchand", "Boutique", "Pass"] as Array[String])
+	assert_eq(labels, ["JOUER", "Coop", "Pass", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
 	assert_eq(m.gem_counter.value_label.text, "42")
 	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
@@ -255,9 +255,13 @@ func _check_lobby_layout(vp: Vector2) -> void:
 	var play: Rect2 = m.play_button.get_global_rect()
 	assert_lt(coop.end.x, play.position.x + 1.0, "Coop à gauche de JOUER")
 	assert_false(coop.intersects(nav))
-	assert_eq(m.pass_button.soon, not ResourceLoader.exists(MenuKit.BATTLE_PASS_SCENE))
-	assert_false(m.pass_button.soon, "Écran du pass livré")
-	assert_eq(m.merchant_button.soon, not ResourceLoader.exists(MenuKit.MERCHANT_SCENE), "Marchand : « Bientôt » si absent")
+	# Carte du pass sous l'arsenal, sans chevaucher la navigation ni le héros
+	var pc: Rect2 = m.pass_card.get_global_rect()
+	assert_gt(pc.position.y, ls.end.y, "Pass sous l'arsenal de départ")
+	assert_false(pc.intersects(nav), "Pass au-dessus de la navigation")
+	assert_false(pc.intersects(hero_rect.grow(-hero_rect.size.x * 0.15)), "Pass pas sur le héros")
+	assert_eq(m.merchant_button.caption.text, "Inventaire", "Marchand renommé Inventaire")
+	assert_eq(m.merchant_button.soon, not ResourceLoader.exists(MenuKit.MERCHANT_SCENE), "Inventaire : « Bientôt » si absent")
 	assert_eq(m.crafting_button.soon, not ResourceLoader.exists(MenuKit.CRAFTING_SCENE))
 	assert_eq(bool(m.coop_button.get_meta(&"soon")), not ResourceLoader.exists(MenuKit.COOP_SCENE))
 	# Un écran absent ne plante pas : aucun départ
@@ -335,6 +339,101 @@ func test_loadout_summary_shows_loadout() -> void:
 	assert_null(ls.slots[0]["weapon"], "Mise à jour sur Profile.changed")
 
 
+func test_pass_card_on_lobby() -> void:
+	_test_profile(0)
+	var bp := BattlePassSystem.get_instance()
+	var saved := bp.to_dict()
+	bp.from_dict({"xp": bp.get_season().xp_total_for(4) + 10})
+	var c := PassCard.new()
+	add_child_autofree(c)
+	await wait_frames(1)
+	assert_eq(c.badge.tier, 4, "Palier actuel")
+	assert_true(c.claim_pill.visible)
+	assert_string_contains((c.claim_pill.get_node("Text") as Label).text, "%d à récupérer" % bp.claimable_count())
+	assert_string_contains(c.next_label.text, "Prochaine")
+	assert_false(c.premium_pill.visible)
+	bp.premium = true
+	bp.claim_all()
+	await wait_frames(1)
+	assert_false(c.claim_pill.visible, "Rien à récupérer")
+	assert_true(c.premium_pill.visible, "Accent premium")
+	bp.from_dict(saved)
+
+
+func test_touch_scroll_drag_vs_tap() -> void:
+	# Glisser en commençant sur un bouton fait défiler sans le cliquer ; un tap = clic.
+	var root := Control.new()
+	root.size = Vector2(400, 300)
+	add_child_autofree(root)
+	var sc := ScrollContainer.new()
+	sc.size = Vector2(400, 300)
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	root.add_child(sc)
+	MenuKit.make_touch_scroll(sc)
+	var col := VBoxContainer.new()
+	sc.add_child(col)
+	var clicks := [0]
+	for i: int in 12:
+		var b := Button.new()
+		b.text = "Bouton %d" % i
+		b.custom_minimum_size = Vector2(380, 80)
+		b.pressed.connect(func() -> void: clicks[0] += 1)
+		col.add_child(b)
+	await wait_frames(2)
+	var p0 := sc.get_global_rect().position + Vector2(100, 120)
+	_touch(p0, true)
+	for k: int in 6:
+		_drag(p0 + Vector2(0, -20 * (k + 1)))
+	_touch(p0 + Vector2(0, -120), false)
+	await wait_frames(2)
+	assert_gt(sc.scroll_vertical, 80, "Le glisser fait défiler")
+	assert_eq(clicks[0], 0, "Pas de clic en faisant défiler")
+	var before := sc.scroll_vertical
+	_touch(p0, true)
+	_touch(p0, false)
+	await wait_frames(2)
+	assert_eq(clicks[0], 1, "Un tap reste un clic")
+	assert_almost_eq(float(sc.scroll_vertical), float(before), 2.0)
+	assert_not_null(sc.get_node_or_null(^"TouchScroller"))
+
+
+## Doigt simulé comme sur téléphone : événement tactile + souris émulée (emulate_mouse_from_touch).
+func _touch(vp_pos: Vector2, pressed: bool) -> void:
+	var p: Vector2 = get_viewport().get_final_transform() * vp_pos   # push_input attend des coordonnées fenêtre
+	var e := InputEventScreenTouch.new()
+	e.index = 0
+	e.position = p
+	e.pressed = pressed
+	get_viewport().push_input(e)
+	var m := InputEventMouseButton.new()
+	m.button_index = MOUSE_BUTTON_LEFT
+	m.position = p
+	m.global_position = p
+	m.pressed = pressed
+	m.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+	get_viewport().push_input(m)
+
+
+func _drag(vp_pos: Vector2) -> void:
+	var p: Vector2 = get_viewport().get_final_transform() * vp_pos
+	var e := InputEventScreenDrag.new()
+	e.index = 0
+	e.position = p
+	get_viewport().push_input(e)
+	var m := InputEventMouseMotion.new()
+	m.position = p
+	m.global_position = p
+	m.button_mask = MOUSE_BUTTON_MASK_LEFT
+	get_viewport().push_input(m)
+
+
+func test_menus_use_touch_scroll() -> void:
+	for f: String in ["arsenal_screen", "battle_pass_screen", "crafting_screen", "credits_panel", "map_select",
+			"merchant_screen", "shop_screen"]:
+		var src := FileAccess.get_file_as_string("res://scripts/ui/menus/%s.gd" % f)
+		assert_string_contains(src, "MenuKit.make_touch_scroll(", "Défilement tactile : " + f)
+
+
 func test_play_card_shows_map() -> void:
 	var card := MapCard.find(&"perm_dust_creek")
 	GameState.current_map = card
@@ -342,9 +441,14 @@ func test_play_card_shows_map() -> void:
 	add_child_autofree(p)
 	await wait_frames(1)
 	assert_eq(p.title_label.text, "JOUER")
-	assert_eq(p.map_label.text, card.display_name)
-	assert_eq((p.diff_pill.get_node("Text") as Label).text, card.difficulty_name())
-	assert_not_null(p.thumb.texture, "Vignette de la carte")
+	assert_eq(p.map_label.text, "%s · %s" % [card.display_name, card.difficulty_name()], "Ligne discrète : carte · difficulté")
+	assert_null(p.find_child("*", true, false) as TextureRect if p.find_children("*", "TextureRect", true, false).any(
+		func(t: Node) -> bool: return t.name != "Sheen") else null, "Plus de vignette de carte")
+	var n := p.get_theme_stylebox("normal") as StyleBoxFlat
+	assert_eq(n.bg_color, PlayCard.palette()["base"], "Couleur d'action (plus de rouge)")
+	assert_ne(n.bg_color, MenuKit.RED)
+	var pr := p.get_theme_stylebox("pressed") as StyleBoxFlat
+	assert_lt(pr.border_width_bottom, n.border_width_bottom, "L'appui s'enfonce")
 	GameState.current_map = null
 	assert_not_null(PlayCard.displayed_card(), "Sans carte choisie : première carte de la rotation")
 

@@ -47,6 +47,8 @@ const STATE_RETREAT := &"Retreat"
 const STATE_STUNNED := &"Stunned"
 const STATE_RETURN := &"Return"
 const STATE_DEAD := &"Dead"
+## Compétence active en cours (EnemySkill, cf. enemy_skill_state.gd).
+const STATE_SKILL := &"Skill"
 
 const STATE_SCRIPTS: Array[Script] = [
 	preload("res://scripts/ai/enemy_states/enemy_patrol_state.gd"),
@@ -59,6 +61,7 @@ const STATE_SCRIPTS: Array[Script] = [
 	preload("res://scripts/ai/enemy_states/enemy_stunned_state.gd"),
 	preload("res://scripts/ai/enemy_states/enemy_return_state.gd"),
 	preload("res://scripts/ai/enemy_states/enemy_dead_state.gd"),
+	preload("res://scripts/ai/enemy_states/enemy_skill_state.gd"),
 ]
 
 ## Couleurs debug par état (F3).
@@ -73,6 +76,7 @@ const DEBUG_STATE_COLORS := {
 	STATE_STUNNED: Color(1.0, 1.0, 1.0),
 	STATE_RETURN: Color(0.3, 0.6, 1.0),
 	STATE_DEAD: Color(0.5, 0.5, 0.5),
+	STATE_SKILL: Color(1.0, 0.3, 0.9),
 }
 
 ## Cris (bulle au-dessus de la tête), par situation.
@@ -146,12 +150,29 @@ var cover_position: Vector2 = Vector2.ZERO
 ## Butin du cadavre, tiré à la mort par LootManager (vide = pas de butin).
 var corpse_entries: Array[Dictionary] = []
 var corpse_placed: bool = false
+## Compétences (EnemyData.skills) ; `active_skill` = celle en cours d'exécution.
+var skills: Array[EnemySkill] = []
+var active_skill: EnemySkill = null
+## Invulnérabilité brève (roulade, téléportation).
+var invulnerable_left: float = 0.0
+## Rage (compétence « rage ») : multiplicateurs de vitesse et de recharge.
+var rage_speed_mult: float = 1.0
+var rage_cooldown_mult: float = 1.0
+## Étourdissement demandé par une compétence (charge contre un mur), appliqué à sa fin.
+var pending_stun: float = 0.0
+var _skill_check_left: float = 0.0
+var _skill_gap_left: float = 0.0
+var _reactive_left: float = 0.0
+var skill_check_interval: float = 0.3
+var reactive_check_interval: float = 0.12
+var skill_gap: float = 1.2
 ## Multiplicateurs de difficulté ([enemy_difficulty], GameState.difficulty 0..4).
 var diff_damage_mult: float = 1.0
 var diff_windup_mult: float = 1.0
 var diff_cooldown_mult: float = 1.0
 var diff_spread_mult: float = 1.0
 var diff_speed_mult: float = 1.0
+var diff_skill_cooldown_mult: float = 1.0
 
 # Réglages globaux [enemy_ai]
 var los_check_interval: float = 0.1
@@ -295,6 +316,7 @@ func _ready() -> void:
 	_build_visual()
 	_build_health_bar()
 	_build_awareness_bar()
+	skills = EnemySkills.build(self, data)
 	_build_state_machine()
 	_build_sleep_timer()
 	_register_active(true)
@@ -388,6 +410,10 @@ func _load_difficulty() -> void:
 	diff_cooldown_mult = _diff_at("cooldown_mult", d, [1.2, 1.0, 0.92, 0.85, 0.75])
 	diff_spread_mult = _diff_at("spread_mult", d, [1.4, 1.0, 0.9, 0.8, 0.65])
 	diff_speed_mult = _diff_at("speed_mult", d, [0.92, 1.0, 1.03, 1.06, 1.1])
+	diff_skill_cooldown_mult = _diff_at("skill_cooldown_mult", d, [1.3, 1.0, 0.92, 0.85, 0.75])
+	skill_check_interval = EnemySkills.cfg("check_interval", 0.3)
+	reactive_check_interval = EnemySkills.cfg("reactive_check_interval", 0.12)
+	skill_gap = EnemySkills.cfg("skill_gap", 1.2)
 
 
 static func _diff_at(key: String, index: int, def: Array) -> float:
@@ -533,6 +559,8 @@ func _physics_step(delta: float) -> void:
 		_shout_left -= delta
 	if _cover_search_left > 0.0:
 		_cover_search_left -= delta
+	if not skills.is_empty():
+		_tick_skills(delta)
 	if _alive:
 		_perception_left -= delta
 		_perception_elapsed += delta
@@ -552,6 +580,26 @@ func _physics_step(delta: float) -> void:
 		_integrate(delta)
 	else:
 		velocity = Vector2.ZERO
+
+
+## Recharges des compétences + contrôle (espacé) des compétences réactives en combat.
+func _tick_skills(delta: float) -> void:
+	if invulnerable_left > 0.0:
+		invulnerable_left -= delta
+	if _skill_gap_left > 0.0:
+		_skill_gap_left -= delta
+	for sk: EnemySkill in skills:
+		sk.tick_cooldown(delta)
+	_reactive_left -= delta
+	if _reactive_left > 0.0 or not _alive:
+		return
+	_reactive_left = reactive_check_interval
+	var s := current_state_name()
+	if s != STATE_CHASE:
+		return
+	var p := get_player()
+	if p != null:
+		try_use_skill(global_position.distance_to(p.global_position), can_see_player, true)
 
 
 ## Applique la vitesse souhaitée (accélération bornée), la séparation et le recul.
@@ -707,7 +755,8 @@ func distance_to_player() -> float:
 ## États « de combat » (perception sans cône, portée étendue, jauge à 1).
 func is_in_combat() -> bool:
 	var s := current_state_name()
-	return s == STATE_ALERT or s == STATE_CHASE or s == STATE_ATTACK or s == STATE_RETREAT or s == STATE_STUNNED
+	return s == STATE_ALERT or s == STATE_CHASE or s == STATE_ATTACK or s == STATE_RETREAT or s == STATE_STUNNED \
+		or s == STATE_SKILL
 
 
 ## Évalue vue + ouïe, met à jour `can_see_player`, `last_seen_position` et la jauge.
@@ -1002,7 +1051,7 @@ func is_at(pos: Vector2, tolerance: float = -1.0) -> bool:
 
 ## Vitesse de course effective (difficulté, phase d'élite).
 func run_speed() -> float:
-	var s := data.move_speed * diff_speed_mult
+	var s := data.move_speed * diff_speed_mult * rage_speed_mult
 	if phase >= 2:
 		s *= data.phase2_speed_mult
 	return s
@@ -1230,10 +1279,15 @@ func get_attack_damage() -> float:
 
 
 func _start_cooldown() -> void:
-	var cd := data.attack_cooldown * diff_cooldown_mult
+	var cd := data.attack_cooldown * diff_cooldown_mult * rage_cooldown_mult
 	if phase >= 2:
 		cd *= data.phase2_cooldown_mult
 	attack_cooldown_left = cd
+
+
+## Multiplicateur des temps de recharge des compétences (difficulté, rage).
+func skill_cooldown_mult() -> float:
+	return diff_skill_cooldown_mult * rage_cooldown_mult
 
 
 ## Exécute le coup à la fin du télégraphe (schéma simple, compatibilité). Renvoie vrai si un
@@ -1286,8 +1340,10 @@ func fire_volley(aim: Vector2, speed_mult: float = 1.0) -> int:
 	var muzzle := global_position + base * (data.body_radius + 6.0)
 	var n := 0
 	for shot_dir: Vector2 in get_shot_directions(base):
-		pool.spawn(muzzle, shot_dir, data.projectile_speed * speed_mult, get_attack_damage(), self,
+		var proj := pool.spawn(muzzle, shot_dir, data.projectile_speed * speed_mult, get_attack_damage(), self,
 			data.projectile_lifetime, data.projectile_style)
+		for sk: EnemySkill in skills:
+			sk.on_fire(proj)
 		n += 1
 	face(base)
 	var big := data.projectile_count > 1
@@ -1302,6 +1358,136 @@ func fire_volley(aim: Vector2, speed_mult: float = 1.0) -> int:
 		_knock += -base * Balance.get_float("enemy_tactics", "shotgun_recoil_push", 110.0)
 	_play_sfx(data.get_sfx_attack())
 	return n
+
+
+## Projectile de compétence (couteau lancé, éventail) : éclair de bouche, relais coop par le pool.
+func fire_special(dir: Vector2, speed: float, damage: float, style: StringName, lifetime: float, smoke: bool = true) -> void:
+	if not is_inside_tree():
+		return
+	var pool := EnemyProjectilePool.get_or_create(get_tree())
+	if pool == null:
+		return
+	var d := dir.normalized()
+	var proj := pool.spawn(global_position + d * (data.body_radius + 6.0), d, speed, damage, self, lifetime, style)
+	for sk: EnemySkill in skills:
+		sk.on_fire(proj)
+	face(d)
+	var gun := style != &"knife"
+	_visual_call(&"play_strike", [d, gun, false])
+	if gun and smoke:
+		var fx := CombatFx.get_or_create(get_tree())
+		if fx != null:
+			fx.shell(global_position + d * 8.0, 26.0, d, false)
+	_play_sfx(&"blade_swing" if not gun else data.get_sfx_attack())
+
+
+## Dynamite de compétence (rebond facultatif : `bounce_to` ≠ INF). Relayée au coéquipier
+## (visuel : un seul arc vers le point final).
+func throw_dynamite_custom(from: Vector2, to: Vector2, radius: float, damage: float, flight: float, fuse: float,
+		bounce_to: Vector2 = Vector2.INF, bounce_flight: float = 0.35) -> void:
+	if not is_inside_tree():
+		return
+	var parent: Node = get_parent() if get_parent() != null else get_tree().current_scene
+	var dyn := EnemyDynamite.throw(parent, from, to, radius, damage, flight, fuse, self)
+	if bounce_to != Vector2.INF:
+		dyn.set_bounce(bounce_to, bounce_flight)
+	if NetHooks.active:
+		var final_to := bounce_to if bounce_to != Vector2.INF else to
+		var total := flight + (bounce_flight if bounce_to != Vector2.INF else 0.0)
+		NetHooks.on_enemy_dynamite(from, final_to, radius, total, fuse)
+	face(to - from)
+
+
+## Danger au sol (EnemyHazard) créé par une compétence ; relayé au coéquipier (copie visuelle).
+func spawn_hazard(kind: StringName, pos: Vector2, params: Dictionary) -> EnemyHazard:
+	if not is_inside_tree():
+		return null
+	var parent: Node = get_parent() if get_parent() != null else get_tree().current_scene
+	var h := EnemyHazard.spawn(parent, kind, pos, params, self, true)
+	if NetHooks.active:
+		NetHooks.on_enemy_visual(self, &"spawn_hazard", [kind, pos, params])
+	return h
+
+
+## Renfort appelé (sifflet du chef) : nouvel ennemi déjà alerté, enregistré pour le coop.
+func spawn_reinforcement(kind: StringName, pos: Vector2) -> Enemy:
+	var path := "res://data/enemies/%s.tres" % kind
+	if not is_inside_tree() or not ResourceLoader.exists(path):
+		return null
+	var d := (load(path) as EnemyData).duplicate() as EnemyData
+	d.set_meta(&"variant_rolled", true)
+	var r := Enemy.spawn(d)
+	r.position = pos
+	r.set_meta(&"reinforcement", true)
+	if is_in_group(&"fog_hideable"):
+		r.add_to_group(&"fog_hideable")
+	get_parent().add_child(r)
+	r.global_position = pos
+	var target := get_player()
+	r.become_aware(target.global_position if target != null else last_seen_position, false)
+	if NetHooks.active:
+		var id := NetHooks.register_dynamic_enemy(r)
+		if id >= 0:
+			NetHooks.on_enemy_visual(self, &"spawn_reinforcement", [kind, pos, id])
+	return r
+
+
+## Autodestruction (drone kamikaze).
+func self_destruct() -> void:
+	if _alive:
+		invulnerable_left = 0.0
+		take_damage(hp + max_hp, null)
+
+
+## Fin d'une attaque de base : crochets des compétences (repositionnement du tireur…).
+func notify_attack_done() -> void:
+	for sk: EnemySkill in skills:
+		sk.on_attack_done()
+
+
+## Choisit et lance une compétence utilisable (priorité, puis hasard). `reactive_only` :
+## seulement les compétences réactives (roulade). Renvoie vrai si une compétence démarre.
+func try_use_skill(dist: float, sees: bool, reactive_only: bool = false) -> bool:
+	if skills.is_empty() or state_machine == null or not _alive:
+		return false
+	if not reactive_only and _skill_gap_left > 0.0:
+		return false
+	var best: EnemySkill = null
+	var best_score := -1.0
+	for sk: EnemySkill in skills:
+		if reactive_only != sk.is_reactive():
+			continue
+		if not sk.can_use(dist, sees):
+			continue
+		if randf() > sk.f("chance"):
+			continue
+		var score := sk.f("priority") + randf() * 0.5
+		if score > best_score:
+			best_score = score
+			best = sk
+	if best == null:
+		return false
+	_skill_gap_left = skill_gap
+	state_machine.transition_to(STATE_SKILL, {"skill": best})
+	return true
+
+
+## Compétence par id (tests, debug).
+func get_skill(sid: StringName) -> EnemySkill:
+	for sk: EnemySkill in skills:
+		if sk.id == sid:
+			return sk
+	return null
+
+
+## Lance une compétence par démarrage forcé (tests). Ignore conditions et recharge.
+func force_skill(sid: StringName) -> bool:
+	var sk := get_skill(sid)
+	if sk == null or sk.is_passive() or state_machine == null:
+		return false
+	sk.cooldown_left = 0.0
+	state_machine.transition_to(STATE_SKILL, {"skill": sk})
+	return true
 
 
 ## Lance un explosif vers `target` (borné à la portée). Renvoie vrai si lancé.
@@ -1396,6 +1582,7 @@ func set_variant(new_data: EnemyData) -> void:
 	if visual != null and visual.has_method("setup"):
 		visual.call("setup", d.kind)
 	_configure_visual_telegraphs()
+	skills = EnemySkills.build(self, d)
 	_visual_call(&"set_elite", [d.elite])
 	_visual_call(&"set_facing", [facing])
 	if _awareness_bar != null:
@@ -1409,7 +1596,15 @@ func set_variant(new_data: EnemyData) -> void:
 func take_damage(amount: float, source: Node) -> void:
 	if not _alive or amount <= 0.0 or net_puppet:
 		return
+	if invulnerable_left > 0.0 and source != null:
+		return
+	for sk: EnemySkill in skills:
+		amount = sk.modify_damage(amount, source)
+	if amount <= 0.0:
+		return
 	hp = maxf(hp - amount, 0.0)
+	for sk2: EnemySkill in skills:
+		sk2.on_damaged(amount)
 	damaged.emit(amount, hp)
 	if _health_bar != null:
 		_health_bar.queue_redraw()
@@ -1675,7 +1870,7 @@ class FallbackVisual extends Node2D:
 	func play_alert() -> void:
 		_alert = 0.8
 
-	func play_attack_windup(duration: float) -> void:
+	func play_attack_windup(duration: float, _special: bool = true) -> void:
 		_windup = duration
 		_windup_total = maxf(duration, 0.01)
 

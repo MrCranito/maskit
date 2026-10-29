@@ -30,6 +30,21 @@ var _landed: bool = false
 var _fuse_left: float = 0.0
 var _done: bool = false
 var _spin: float = 0.0
+## Rebond (dynamite à rebonds) : second point d'impact et durée du saut ; INF = aucun.
+var bounce_to: Vector2 = Vector2.INF
+var bounce_flight: float = 0.35
+var bounced: bool = false
+
+
+## Après le premier impact, la dynamite rebondit vers `to` en `flight` s avant la mèche.
+func set_bounce(to: Vector2, flight: float) -> void:
+	bounce_to = to
+	bounce_flight = maxf(flight, 0.1)
+
+
+## Point d'explosion final (après rebond éventuel).
+func final_target() -> Vector2:
+	return bounce_to if bounce_to != Vector2.INF and not bounced else target
 
 
 static func throw(parent: Node, from: Vector2, to: Vector2, p_radius: float, p_damage: float,
@@ -74,7 +89,16 @@ func _physics_process(delta: float) -> void:
 		var u := clampf(_t / flight_time, 0.0, 1.0)
 		global_position = start.lerp(target, u)
 		_spin += delta * 14.0
-		if u >= 1.0:
+		if u >= 1.0 and bounce_to != Vector2.INF and not bounced:
+			bounced = true
+			start = target
+			target = bounce_to
+			flight_time = bounce_flight
+			_t = 0.0
+			var fxb := CombatFx.get_or_create(get_tree())
+			if fxb != null:
+				fxb.dust_puff(global_position, Vector2(0, -10), 5.0, 0.4)
+		elif u >= 1.0:
 			_landed = true
 			var fx := CombatFx.get_or_create(get_tree())
 			if fx != null:
@@ -131,7 +155,7 @@ func _draw() -> void:
 	var total := flight_time + fuse_time
 	var elapsed := _t + (fuse_time - _fuse_left if _landed else 0.0)
 	var w := clampf(elapsed / total, 0.0, 1.0)
-	var local_target := target - global_position
+	var local_target := final_target() - global_position
 	var pulse := 0.5 + 0.5 * sin(elapsed * (10.0 + 20.0 * w))
 	draw_circle(local_target, radius, Color(DANGER, 0.07 + 0.08 * w))
 	draw_circle(local_target, radius * w, Color(DANGER, 0.10 + 0.12 * w))

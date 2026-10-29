@@ -20,7 +20,7 @@ extends RefCounted
 ## Version du protocole de transport (doit être égale à PROTOCOL_VERSION de server/relay.js).
 const VERSION := 1
 ## Version des messages de jeu (vérifiée entre les deux joueurs dans le salon).
-const GAME_VERSION := 1
+const GAME_VERSION := 2
 
 enum Msg {
 	STATE = 1,        ## état d'un joueur (20/s)
@@ -40,6 +40,7 @@ enum Msg {
 	TURRET = 15,      ## tourelle détruite
 	RAID_HELLO = 16,  ## le raid est chargé (seed de contrôle)
 	DYNAMITE = 17,    ## dynamite lancée par un ennemi (visuel chez l'invité)
+	STATUS = 18,      ## statut infligé à l'invité par une compétence ennemie (hôte → invité)
 }
 
 ## Drapeaux de STATE.
@@ -75,6 +76,8 @@ const FX_METHODS: Array[StringName] = [
 	&"play_alert", &"play_attack_windup", &"show_aim_line", &"show_ground_marker", &"lock_aim_line",
 	&"hide_telegraphs", &"play_strike", &"play_ground_slam", &"play_shout", &"play_stun",
 	&"use_throw_anim", &"set_aim_direction", &"set_elite", &"play_hit",
+	# Compétences ennemies (EnemySkills) : télégraphes/effets, dangers au sol, renforts.
+	&"play_skill_fx", &"spawn_hazard", &"spawn_reinforcement",
 ]
 
 

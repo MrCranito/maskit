@@ -107,6 +107,7 @@ func _build() -> void:
 		filter_chips[f] = b
 
 	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)   # glisser au doigt partout (même sur les boutons)
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER

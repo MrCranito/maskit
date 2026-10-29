@@ -79,7 +79,7 @@ func _build() -> void:
 	tcol.add_child(MenuKit.title("ATELIER", 38))
 	tcol.add_child(MenuKit.label("Fabrique soins et équipements avec les matériaux de ton butin.", 16,
 		MenuKit.TEXT_DIM, MenuKit.nunito(800)))
-	var shop := MenuKit.button("Marchand", MenuKit.Style.GHOST, 20, Vector2(160, 56))
+	var shop := MenuKit.button("Inventaire", MenuKit.Style.GHOST, 20, Vector2(170, 56))
 	MenuKit.tighten(shop)
 	shop.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	shop.pressed.connect(func() -> void:
@@ -114,6 +114,7 @@ func _build() -> void:
 	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(list_panel)
 	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)   # glisser au doigt partout (même sur les boutons)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.scroll_deadzone = 14
 	list_panel.add_child(_scroll)

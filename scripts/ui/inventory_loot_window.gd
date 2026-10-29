@@ -34,6 +34,19 @@ func _ready() -> void:
 	EventBus.container_opened.connect(_on_container_opened)
 	EventBus.interact_target_changed.connect(_on_target_changed)
 	EventBus.floor_changed.connect(func(_i: int) -> void: close())
+	get_viewport().size_changed.connect(_place_safe)
+	_place_safe()
+
+
+## Haut droite sous le sac, dans la zone sûre (encoche / coins arrondis).
+func _place_safe() -> void:
+	if _panel == null or not is_inside_tree():
+		return
+	var m := HudSafeArea.margins(self)
+	_panel.offset_right = -m.z
+	_panel.offset_left = -m.z - 430
+	_panel.offset_top = m.y + 92.0
+	_panel.offset_bottom = m.y + 92.0
 
 
 func _build() -> void:

@@ -53,6 +53,13 @@ func physics_update(delta: float) -> void:
 	if e.should_retreat():
 		request_transition(Enemy.STATE_RETREAT)
 		return
+	# Compétences actives (contrôle espacé : skill_check_interval).
+	if not e.skills.is_empty():
+		e._skill_check_left -= delta
+		if e._skill_check_left <= 0.0:
+			e._skill_check_left = e.skill_check_interval
+			if e.try_use_skill(e.global_position.distance_to(p.global_position), e.can_see_player):
+				return
 
 	if not e.can_see_player:
 		_unseen_time += delta

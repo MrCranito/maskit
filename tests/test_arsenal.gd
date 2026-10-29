@@ -414,3 +414,60 @@ func test_ecran_de_fin_trie_par_rarete_et_tient_a_l_ecran() -> void:
 		sc.queue_free()
 		await wait_process_frames(1)
 	get_tree().paused = false
+
+
+# --- Dispersion (retour iPhone : fusils d'assaut / mitraillettes imprécis) ------------------
+
+func test_dispersion_par_categorie() -> void:
+	for id: StringName in [&"rifle_ak47", &"rifle_m4a1", &"rifle_scarh", &"rifle_aug", &"smg_mp5", &"smg_vector", &"smg_p90", &"smg_uzi"]:
+		var w := WeaponCatalog.get_weapon(id)
+		assert_gte(w.inaccuracy_deg, 4.0, "%s : imprécision nette" % id)
+		assert_gt(w.spread_bloom_per_shot, 0.0, "%s : la dispersion grandit en rafale" % id)
+		assert_gte(w.spread_bloom_max, 8.0, "%s : plafond de rafale" % id)
+		assert_gt(w.spread_move_deg, 0.0)
+	for p: StringName in [&"pistol_p9", &"pistol_deagle", &"pistol_p320"]:
+		var wp := WeaponCatalog.get_weapon(p)
+		assert_lte(wp.inaccuracy_deg + wp.spread_bloom_max, 5.0, "%s : reste précis" % p)
+	for s: StringName in [&"sniper_m24", &"sniper_ax50", &"sniper_m82"]:
+		var ws := WeaponCatalog.get_weapon(s)
+		assert_eq(ws.inaccuracy_deg, 0.0, "%s : très précis à l'arrêt" % s)
+		assert_gt(ws.effective_inaccuracy(0.0, 1.0), 5.0, "%s : imprécis en courant" % s)
+
+
+func test_bloom_monte_en_rafale_et_redescend() -> void:
+	var lo := WeaponLoadout.new(3)
+	var ak := WeaponCatalog.get_weapon(&"rifle_ak47")
+	var list: Array = [ak, WeaponCatalog.get_weapon(&"pistol_p9")]
+	lo.set_weapons(list)
+	var base := lo.current_inaccuracy(0.0)
+	assert_almost_eq(base, ak.inaccuracy_deg, 0.001, "premier tir : imprécision de base")
+	for i in 30:
+		lo.consume_shot()
+		lo.tick(ak.get_fire_interval())
+	var full := lo.current_inaccuracy(0.0)
+	assert_gt(full, base + 5.0, "la dispersion grandit en tir continu")
+	assert_almost_eq(full - base, ak.spread_bloom_max * WeaponLoadout.bloom_mult(), 0.01, "plafonnée")
+	assert_gt(lo.current_inaccuracy(1.0), full, "plus imprécis en se déplaçant")
+	for i in 60:
+		lo.tick(0.1)
+	assert_almost_eq(lo.current_inaccuracy(0.0), base, 0.001, "retombe quand on arrête de tirer")
+	for i in 10:
+		lo.consume_shot()
+	assert_true(lo.switch_to(1))
+	assert_eq(lo.bloom, 0.0, "changement d'arme : dispersion remise à zéro")
+
+
+func test_tir_du_joueur_utilise_la_dispersion() -> void:
+	var p := (load("res://scenes/player/player.tscn") as PackedScene).instantiate() as Player
+	add_child_autofree(p)
+	await wait_physics_frames(2)
+	var vec := WeaponCatalog.get_weapon(&"smg_vector")
+	var list: Array[WeaponData] = [vec]
+	p.set_weapons(list)
+	await wait_physics_frames(1)
+	var s0 := p.get_current_spread()
+	assert_almost_eq(s0, vec.inaccuracy_deg, 0.01)
+	for i in 12:
+		p.loadout.cooldown = 0.0
+		p.fire(Vector2.RIGHT)
+	assert_gt(p.get_current_spread(), s0 + 5.0, "le cône s'élargit après une rafale")

@@ -148,6 +148,8 @@ var _lowg_recoil_push: float = 6.0
 @onready var camera: Camera2D = $Camera2D
 @onready var projectile_pool: ProjectilePool = $ProjectilePool
 var visual: PlayerVisual = null
+## Statuts infligés par les ennemis (étourdi, renversé, piégé, aveuglé, en feu) ; créé à la demande.
+var status: PlayerStatus = null
 
 
 func _ready() -> void:
@@ -482,6 +484,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var input_dir: Vector2 = get_move_input()
+	if status != null and status.blocks_move():
+		input_dir = Vector2.ZERO
 	if _hidden:
 		_hide_time += delta
 		velocity = Vector2.ZERO
@@ -657,7 +661,7 @@ func is_aiming() -> bool:
 
 func _update_fire() -> void:
 	var w: WeaponData = weapon
-	if w == null:
+	if w == null or (status != null and status.blocks_fire()):
 		return
 	var wants: bool = false
 	var dir: Vector2 = aim_direction
@@ -679,8 +683,10 @@ func _update_fire() -> void:
 		return
 	if not loadout.can_fire():
 		return
-	if _aim_stick_firing:
+	if _aim_stick_firing and not (status != null and status.has(&"blind")):
 		dir = apply_aim_assist(aim_direction)
+	if status != null:
+		dir = status.perturb_aim(dir)
 	_manual_fire_pending = false
 	fire(dir)
 
@@ -725,6 +731,8 @@ func fire(dir: Vector2) -> void:
 	if w == null or _hidden or not _alive or not loadout.can_fire():
 		return
 	var d0: Vector2 = dir.normalized() if dir != Vector2.ZERO else aim_direction
+	# Imprécision du tir : base + dispersion accumulée (rafale) + déplacement.
+	var inacc: float = get_current_spread()
 	loadout.consume_shot()
 	_fire_noise = 1.0
 	# Trajectoire au niveau du sol (hitbox des ennemis et murs aux pieds) ; la balle est
@@ -752,7 +760,7 @@ func fire(dir: Vector2) -> void:
 		count = 1
 	for i: int in count:
 		var p: Projectile = projectile_pool.spawn(origin,
-			spread_direction(d0, i, count, w.spread_degrees, w.inaccuracy_deg), w, self, height)
+			spread_direction(d0, i, count, w.spread_degrees, inacc), w, self, height)
 		if p != null and homing != null:
 			p.set_homing(homing, weapon_homing(w))
 	_on_fired_feel(w, d0)
@@ -962,6 +970,13 @@ func _update_camera(delta: float) -> void:
 
 # --- Bruit, cachettes --------------------------------------------------------
 
+## Imprécision effective (±°) du prochain tir : arme + rafale (bloom) + déplacement.
+func get_current_spread() -> float:
+	if loadout == null:
+		return 0.0
+	return loadout.current_inaccuracy(velocity.length() / maxf(move_speed, 1.0))
+
+
 func is_moving() -> bool:
 	return _is_moving
 
@@ -1049,6 +1064,33 @@ func take_damage(amount: float, _source: Node) -> void:
 
 func is_alive() -> bool:
 	return _alive
+
+
+## Statut infligé par un ennemi (PlayerStatus.KINDS) ; `from` = origine du coup (poussée du
+## renversement). Coop, invité : seuls les statuts envoyés par l'hôte comptent (comme les dégâts).
+func apply_status(kind: StringName, duration: float, strength: float = 1.0, from: Vector2 = Vector2.INF) -> void:
+	if not _alive or net_downed or duration <= 0.0:
+		return
+	if NetHooks.active and NetHooks.blocks_local_damage():
+		return
+	if status == null:
+		status = PlayerStatus.new()
+		status.name = "Status"
+		add_child(status)
+	if visual != null:
+		status.head_height = visual.body_height + 18.0
+	status.apply(kind, duration, strength)
+	if kind == &"knockdown" and from != Vector2.INF:
+		var away := global_position - from
+		if away.length_squared() > 1.0:
+			velocity = away.normalized() * Balance.get_float("player_status", "knockdown_push", 420.0) * strength
+			move_and_slide()
+	if kind == &"stun" or kind == &"knockdown":
+		add_shake(camera_shake_amount * 2.0, 0.2)
+
+
+func has_status(kind: StringName) -> bool:
+	return status != null and status.has(kind)
 
 
 func is_invulnerable() -> bool:

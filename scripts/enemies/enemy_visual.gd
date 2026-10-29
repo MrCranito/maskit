@@ -245,6 +245,13 @@ var _elite: bool = false
 var _font: Font = null
 var _stun_total: float = 0.5
 var _throw_anim: bool = false
+## Télégraphes et effets de compétences (play_skill_fx) : [kind, a, b, r, durée, âge].
+var _skill_fx: Array = []
+var _shield_left: float = 0.0
+var _shield_style: float = 0.0
+var _rage: bool = false
+## Faux : télégraphe d'élan sans le cône / l'anneau de l'attaque de base (compétences).
+var _windup_special: bool = true
 
 
 func _ready() -> void:
@@ -403,9 +410,10 @@ func play_shout(text: String) -> void:
 
 ## Télégraphe : lueur rouge qui monte sur `duration` secondes + tremblement ; planches : élan
 ## (images 0-2 de l'attaque, l'image d'élan est tenue jusqu'au coup).
-func play_attack_windup(duration: float) -> void:
+func play_attack_windup(duration: float, show_special: bool = true) -> void:
 	if _dying or _dead:
 		return
+	_windup_special = show_special
 	_windup_duration = maxf(duration, 0.05)
 	_windup_t = 0.0
 	if uses_sheet:
@@ -797,6 +805,16 @@ func _process(delta: float) -> void:
 		_stun_t += delta
 		if _stun_t > _stun_total:
 			_stun_t = -1.0
+	if not _skill_fx.is_empty():
+		for i: int in range(_skill_fx.size() - 1, -1, -1):
+			var fxe: Array = _skill_fx[i]
+			fxe[5] = float(fxe[5]) + delta
+			if float(fxe[5]) > float(fxe[4]):
+				_skill_fx.remove_at(i)
+		_fx_dirty_frames = 2
+	if _shield_left > 0.0:
+		_shield_left -= delta
+		_fx_dirty_frames = 2
 
 	if uses_sheet:
 		_update_sheet(delta)
@@ -864,6 +882,9 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, r * 0.7, Color(SHADOW_COLOR, SHADOW_COLOR.a * 0.6))
 	if _elite:
 		draw_arc(Vector2.ZERO, r * 1.25, 0.0, TAU, 40, Color(1.0, 0.75, 0.25, 0.75), 3.0, true)
+	if _rage:
+		draw_circle(Vector2.ZERO, r * 1.45, Color(1.0, 0.15, 0.08, 0.18))
+		draw_arc(Vector2.ZERO, r * 1.45, 0.0, TAU, 40, Color(1.0, 0.2, 0.1, 0.85), 3.5, true)
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -899,7 +920,8 @@ func _draw_fx() -> void:
 		_draw_marker()
 	if _windup_t >= 0.0 and _windup_duration > 0.0:
 		var w := clampf(_windup_t / _windup_duration, 0.0, 1.0)
-		_draw_special_telegraph(w)
+		if _windup_special:
+			_draw_special_telegraph(w)
 		var r: float = float(_data.get("shadow", 20.0)) * (1.0 + 0.25 * w)
 		_fx.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, SHADOW_FLATTEN))
 		_fx.draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, Color(WINDUP_COLOR, 0.25 + 0.55 * w), 3.0 + 3.0 * w, true)
@@ -916,6 +938,10 @@ func _draw_fx() -> void:
 		_draw_shout()
 	if _stun_t >= 0.0:
 		_draw_stun()
+	for fxe: Array in _skill_fx:
+		_draw_skill_fx(fxe)
+	if _shield_left > 0.0:
+		_draw_shield()
 
 
 ## Cône d'éventail ou anneau de zone qui se remplit pendant le télégraphe.
@@ -1040,3 +1066,183 @@ func _draw_stun() -> void:
 		var p := c + Vector2(cos(ang) * 14.0, sin(ang) * 5.0)
 		_fx.draw_circle(p, 3.2, Color(OUTLINE, 0.8))
 		_fx.draw_circle(p, 2.2, STUN_COLOR)
+
+
+# --- Compétences (EnemySkill) ------------------------------------------------------
+
+## Télégraphe / effet de compétence (relayé au coéquipier en coop). `a`, `b` en coordonnées
+## monde (positions) ou direction pour « arc » / « deflect » ; `r` rayon, largeur ou angle ;
+## `dur` durée d'affichage.
+##  lane : couloir de charge de a à b, largeur r      arc : cône (centre a, direction b, angle r°)
+##  ring : anneau de danger centré sur a, rayon r      blink : départ a → arrivée b (téléportation)
+##  beep : clignotement rouge (kamikaze), rayon r      whistle : ondes sonores (sifflet)
+##  shield : bouclier frontal (style r : 0 tôle, 1 énergie)   deflect : étincelle sur le bouclier
+##  rage : aura rouge permanente                       roll : traînée de poussière de a à b
+##  deploy : anneau de pose en a
+func play_skill_fx(kind: StringName, a: Vector2, b: Vector2, r: float, dur: float) -> void:
+	if _dying or _dead:
+		return
+	match kind:
+		&"rage":
+			_rage = true
+			queue_redraw()
+			return
+		&"shield":
+			_shield_left = dur
+			_shield_style = r
+		&"beep":
+			play_attack_windup(dur)
+	_skill_fx.append([kind, a, b, r, maxf(dur, 0.05), 0.0])
+	_fx_dirty_frames = 2
+
+
+func is_shield_shown() -> bool:
+	return _shield_left > 0.0
+
+
+func has_skill_fx(kind: StringName) -> bool:
+	for fxe: Array in _skill_fx:
+		if fxe[0] == kind:
+			return true
+	return false
+
+
+## Coop, invité : copie visuelle d'un danger créé par la compétence d'une marionnette.
+func spawn_hazard(kind: StringName, pos: Vector2, params: Dictionary) -> void:
+	var e := get_parent() as Enemy
+	if e == null or not e.net_puppet:
+		return
+	EnemyHazard.spawn(e.get_parent(), kind, pos, params, null, false)
+
+
+## Coop, invité : renfort appelé par le chef de l'hôte (créé en marionnette, même identité).
+func spawn_reinforcement(kind: StringName, pos: Vector2, net_id: int) -> void:
+	var e := get_parent() as Enemy
+	var path := "res://data/enemies/%s.tres" % kind
+	if e == null or not e.net_puppet or not ResourceLoader.exists(path):
+		return
+	var r := Enemy.spawn(load(path) as EnemyData)
+	r.position = pos
+	r.add_to_group(&"fog_hideable")
+	e.get_parent().add_child(r)
+	r.global_position = pos
+	NetHooks.register_dynamic_enemy(r, net_id)
+
+
+func _draw_skill_fx(fxe: Array) -> void:
+	var kind: StringName = fxe[0]
+	var a: Vector2 = fxe[1]
+	var b: Vector2 = fxe[2]
+	var r: float = fxe[3]
+	var dur: float = fxe[4]
+	var age: float = fxe[5]
+	var w := clampf(age / dur, 0.0, 1.0)
+	var pulse := 0.5 + 0.5 * sin(age * 18.0)
+	match kind:
+		&"lane":
+			var la := _fx.to_local(a)
+			var lb := _fx.to_local(b)
+			var d := (lb - la)
+			if d.length_squared() < 1.0:
+				return
+			var side := d.normalized().orthogonal() * r * 0.5
+			var pts := PackedVector2Array([la + side, lb + side, lb - side, la - side])
+			_fx.draw_colored_polygon(pts, Color(MARKER_COLOR, 0.14 + 0.1 * w))
+			var fill := PackedVector2Array([la + side, la + side + d * w, la - side + d * w, la - side])
+			_fx.draw_colored_polygon(fill, Color(WINDUP_COLOR, 0.18 + 0.12 * w))
+			var edge := pts.duplicate()
+			edge.append(pts[0])
+			_fx.draw_polyline(edge, Color(MARKER_COLOR, 0.55 + 0.4 * pulse), 2.5, true)
+			# Chevrons dans le sens de la charge.
+			for i: int in 3:
+				var c := la + d * (0.3 + 0.2 * float(i))
+				var fw := d.normalized() * 10.0
+				_fx.draw_polyline(PackedVector2Array([c - fw + side * 0.5, c + fw, c - fw - side * 0.5]),
+					Color(1.0, 0.85, 0.6, 0.5 + 0.4 * w), 3.0, true)
+		&"arc":
+			var dirv := b.normalized() if b.length_squared() > 0.0001 else _aim
+			var half := deg_to_rad(r) * 0.5
+			var length := 300.0
+			var cpts := PackedVector2Array([Vector2.ZERO])
+			var cfill := PackedVector2Array([Vector2.ZERO])
+			for i: int in 15:
+				var ang := dirv.angle() - half + 2.0 * half * float(i) / 14.0
+				cpts.append(Vector2.from_angle(ang) * length)
+				cfill.append(Vector2.from_angle(ang) * length * w)
+			_fx.draw_colored_polygon(cpts, Color(CONE_FILL, 0.12 + 0.08 * w))
+			_fx.draw_colored_polygon(cfill, Color(CONE_EDGE, 0.2 + 0.15 * w))
+			var cedge := cpts.duplicate()
+			cedge.append(Vector2.ZERO)
+			_fx.draw_polyline(cedge, Color(CONE_EDGE, 0.5 + 0.45 * pulse), 2.5, true)
+			for i2: int in 6:
+				var ang2 := dirv.angle() - half + 2.0 * half * float(i2) / 5.0
+				_fx.draw_circle(Vector2.from_angle(ang2) * length * 0.92, 3.0, Color(1.0, 0.9, 0.5, 0.6 + 0.4 * w))
+		&"ring":
+			var lc := _fx.to_local(a)
+			_fx.draw_circle(lc, r, Color(MARKER_COLOR, 0.07 + 0.07 * w))
+			_fx.draw_circle(lc, r * w, Color(WINDUP_COLOR, 0.10 + 0.12 * w))
+			_fx.draw_arc(lc, r, 0.0, TAU, 64, Color(MARKER_COLOR, 0.55 + 0.4 * pulse), 3.0, true)
+		&"blink":
+			var lo := _fx.to_local(a)
+			var ld := _fx.to_local(b)
+			_fx.draw_circle(lo, r * (1.0 - w * 0.6), Color(0.45, 0.85, 1.0, 0.25 * (1.0 - w)))
+			_fx.draw_arc(ld, r, 0.0, TAU, 32, Color(0.45, 0.85, 1.0, 0.5 + 0.4 * pulse), 3.0, true)
+			_fx.draw_circle(ld, r * w, Color(0.45, 0.85, 1.0, 0.25))
+			var seg := 10
+			for i3: int in seg:
+				if i3 % 2 == 0:
+					_fx.draw_line(lo.lerp(ld, float(i3) / seg), lo.lerp(ld, float(i3 + 1) / seg), Color(0.6, 0.9, 1.0, 0.6), 2.0, true)
+			_body.modulate = Color(1.0, 1.0, 1.0, 1.0 - 0.7 * w)
+			if age + 0.06 >= dur:
+				_body.modulate = Color.WHITE
+		&"beep":
+			var on := int(age * 8.0 * (1.0 + w * 2.0)) % 2 == 0
+			_fx.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, SHADOW_FLATTEN * 1.4))
+			_fx.draw_circle(Vector2.ZERO, r, Color(MARKER_COLOR, 0.08 + (0.12 if on else 0.0)))
+			_fx.draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, Color(MARKER_COLOR, 0.9 if on else 0.4), 3.0, true)
+			_fx.draw_set_transform(Vector2.ZERO)
+			if on:
+				_fx.draw_circle(get_head_offset() + Vector2(0, 10), 7.0, Color(1.0, 0.15, 0.1, 0.9))
+		&"whistle":
+			var head := get_head_offset() + Vector2(10, 4)
+			for i4: int in 3:
+				var k := fposmod(w * 2.0 + float(i4) / 3.0, 1.0)
+				_fx.draw_arc(head, 10.0 + 40.0 * k, -1.2, 0.6, 16, Color(1.0, 0.95, 0.7, 0.9 * (1.0 - k)), 3.0, true)
+		&"deflect":
+			var dv := b.normalized() if b.length_squared() > 0.0001 else Vector2.RIGHT
+			var c2 := dv * 26.0 + Vector2(0, -24)
+			var col := Color(1.0, 0.95, 0.6) if r < 0.5 else Color(0.5, 0.9, 1.0)
+			for i5: int in 5:
+				var ang3 := dv.angle() + (float(i5) - 2.0) * 0.45
+				_fx.draw_line(c2, c2 + Vector2.from_angle(ang3) * 12.0 * (1.0 - w), Color(col, 1.0 - w), 2.0, true)
+		&"roll":
+			var l1 := _fx.to_local(a)
+			var l2 := _fx.to_local(b)
+			_fx.draw_line(l1, l1.lerp(l2, minf(w * 1.5, 1.0)), Color(0.95, 0.88, 0.75, 0.45 * (1.0 - w)), 10.0, true)
+		&"deploy":
+			var lp := _fx.to_local(a)
+			_fx.draw_arc(lp, r, 0.0, TAU * w, 24, Color(0.45, 0.85, 1.0, 0.9), 3.0, true)
+
+
+func _draw_shield() -> void:
+	var dirv := _facing_vec
+	var center := Vector2(0, get_head_offset().y * 0.42) + dirv * 22.0
+	var energy := _shield_style >= 0.5
+	var col := Color(0.45, 0.85, 1.0, 0.55) if energy else Color(0.62, 0.6, 0.58, 0.95)
+	var a0 := dirv.angle() - 0.95
+	var a1 := dirv.angle() + 0.95
+	var rr := 26.0
+	var fade := clampf(_shield_left / 0.3, 0.0, 1.0)
+	var pivot := center - dirv * 14.0
+	if energy:
+		_fx.draw_arc(pivot, rr + 4.0, a0, a1, 18, Color(0.35, 0.8, 1.0, 0.42 * fade), 16.0, true)
+		_fx.draw_arc(pivot, rr + 11.0, a0, a1, 18, Color(0.8, 0.97, 1.0, 0.95 * fade), 3.5, true)
+		_fx.draw_arc(pivot, rr - 3.0, a0 + 0.1, a1 - 0.1, 18, Color(0.6, 0.92, 1.0, 0.7 * fade), 2.0, true)
+	else:
+		# Plaque de tôle rivetée : arc épais gris devant l'ennemi, contour sombre, rivets.
+		_fx.draw_arc(pivot, rr + 4.0, a0 - 0.05, a1 + 0.05, 18, Color(OUTLINE, 0.95 * fade), 15.0, true)
+		_fx.draw_arc(pivot, rr + 4.0, a0, a1, 18, Color(col, fade), 11.0, true)
+		_fx.draw_arc(pivot, rr + 7.0, a0 + 0.05, a1 - 0.05, 18, Color(0.85, 0.83, 0.78, 0.8 * fade), 2.0, true)
+		for i: int in 5:
+			var ang := lerpf(a0 + 0.15, a1 - 0.15, float(i) / 4.0)
+			_fx.draw_circle(pivot + Vector2.from_angle(ang) * (rr + 4.0), 1.8, Color(0.3, 0.28, 0.26, fade))

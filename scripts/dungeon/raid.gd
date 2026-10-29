@@ -1078,8 +1078,15 @@ func _setup_loot_ui() -> void:
 	var loot_hud := InventoryHud.new()
 	ui_layer.add_child(loot_hud)
 	# Mini-carte (haut droite, sous le sac) : extractions, zones explorées ; tap = plein écran.
+	# Insérée SOUS la couche de butin : fenêtre de fouille, fil des ramassages et inventaire
+	# passent au-dessus ; la mini-carte s'efface pendant la fouille / l'inventaire.
 	minimap = MiniMap.create(self)
 	ui_layer.add_child(minimap)
+	ui_layer.move_child(minimap, loot_hud.get_index())
+	loot_hud.loot_window.visibility_changed_for_action.connect(func(open: bool) -> void:
+		minimap.set_obscured(&"loot", open))
+	loot_hud.inventory_screen.opened_changed.connect(func(open: bool) -> void:
+		minimap.set_obscured(&"inventory", open))
 
 
 static func _make_panel_style(radius: int) -> StyleBoxFlat:

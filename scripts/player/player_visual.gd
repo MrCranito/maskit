@@ -36,6 +36,11 @@ var uses_sheets: bool = false
 var _shadow: Node2D = null
 var _aim_marker: Node2D = null
 var _aim_marker_rot: Node2D = null
+## Cône de dispersion : deux traits de part et d'autre de la flèche de visée, tournés de
+## ±imprécision effective (rotation seulement, dessinés une fois).
+var _cone_l: Node2D = null
+var _cone_r: Node2D = null
+var _cone_deg: float = -1.0
 var _root: Node2D = null
 var _body: Node2D = null
 var _anim: AnimatedSprite2D = null
@@ -113,6 +118,8 @@ func setup(p: Player) -> void:
 	_aim_marker.scale = Vector2(1.0, 0.6)  # perspective : flèche écrasée au sol
 	add_child(_aim_marker)
 	_aim_marker_rot = _make_drawn(_aim_marker, "Arrow", 0, _draw_aim_marker)
+	_cone_l = _make_drawn(_aim_marker_rot, "ConeL", 0, _draw_cone_edge.bind(0))
+	_cone_r = _make_drawn(_aim_marker_rot, "ConeR", 0, _draw_cone_edge.bind(1))
 
 	_root = Node2D.new()
 	_root.name = "Body"
@@ -579,6 +586,23 @@ func update_facing(force: bool) -> void:
 	_aim_marker_rot.rotation = a
 	if _aim_marker.visible != show:
 		_aim_marker.visible = show
+	_update_cone()
+
+
+## Écarte les traits du cône selon l'imprécision effective (pas de redessin, seuil 0,25°).
+func _update_cone() -> void:
+	if _cone_l == null or not player.has_method(&"get_current_spread"):
+		return
+	var deg: float = minf(float(player.call(&"get_current_spread")) * Balance.get_float("player", "spread_cone_visual_mult", 1.6),
+		Balance.get_float("player", "spread_cone_visual_max", 28.0))
+	if absf(deg - _cone_deg) < 0.25:
+		return
+	_cone_deg = deg
+	var show: bool = deg >= 0.5
+	_cone_l.visible = show
+	_cone_r.visible = show
+	_cone_l.rotation = -deg_to_rad(deg)
+	_cone_r.rotation = deg_to_rad(deg)
 
 
 ## Bout du canon (relatif aux pieds) pour une visée `dir` — calcul logique, sans recul.
@@ -600,6 +624,12 @@ func _draw_shadow() -> void:
 	_shadow.draw_set_transform(Vector2(0, 1), 0.0, Vector2(1.0, 0.42))
 	_shadow.draw_circle(Vector2.ZERO, 17.0, COL_SHADOW)
 	_shadow.draw_circle(Vector2.ZERO, 12.0, Color(COL_SHADOW, COL_SHADOW.a * 0.6))
+
+
+func _draw_cone_edge(_side: int) -> void:
+	var c: Node2D = _cone_l if _side == 0 else _cone_r
+	c.draw_line(Vector2(26, 0), Vector2(44, 0), Color(COL_AIM, 0.18), 5.0, true)
+	c.draw_line(Vector2(27, 0), Vector2(43, 0), Color(COL_AIM, 0.75), 2.0, true)
 
 
 func _draw_aim_marker() -> void:

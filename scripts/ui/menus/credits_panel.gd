@@ -17,6 +17,7 @@ func _init() -> void:
 
 func _build_body() -> void:
 	var scroll := ScrollContainer.new()
+	MenuKit.make_touch_scroll(scroll)   # glisser au doigt partout (même sur les boutons)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.focus_mode = Control.FOCUS_ALL

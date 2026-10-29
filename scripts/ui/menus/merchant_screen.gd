@@ -1,7 +1,7 @@
 class_name MerchantScreen
 extends Control
-## Marchand (scenes/ui/menus/merchant.tscn) : réserve d'objets extraits (Profile.items) et
-## vente contre des pièces d'or.
+## Inventaire (scenes/ui/menus/merchant.tscn, ancien « Marchand ») : réserve d'objets extraits
+## (Profile.items) et vente au marchand contre des pièces d'or.
 ##  - Puces de filtre : Tout · Valeurs · Matériaux · Soins · Clefs · Armes en double.
 ##  - Grille d'objets (case de rareté + prix unitaire) ; marqueur « atelier » sur les objets qui
 ##    servent à une recette (RecipeBook.usage_text).
@@ -88,7 +88,7 @@ func _build() -> void:
 	tcol.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tcol.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(tcol)
-	tcol.add_child(MenuKit.title("MARCHAND", 38))
+	tcol.add_child(MenuKit.title("INVENTAIRE", 38))
 	_total_label = MenuKit.label("", 16, MenuKit.TEXT_DIM, MenuKit.nunito(800))
 	tcol.add_child(_total_label)
 	var craft := MenuKit.button("Atelier", MenuKit.Style.GHOST, 20, Vector2(150, 56))
@@ -129,6 +129,7 @@ func _build() -> void:
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	list_panel.add_child(stack)
 	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)   # glisser au doigt partout (même sur les boutons)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.scroll_deadzone = 14
 	_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

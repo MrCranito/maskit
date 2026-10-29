@@ -212,6 +212,7 @@ func _build() -> void:
 	list_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(list_panel)
 	_scroll = ScrollContainer.new()
+	MenuKit.make_touch_scroll(_scroll)   # glisser au doigt partout (même sur les boutons)
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.scroll_deadzone = 14
 	list_panel.add_child(_scroll)

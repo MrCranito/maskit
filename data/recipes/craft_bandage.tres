@@ -14,6 +14,6 @@ result_count = 2
 ingredients = {
 "mat_cloth": 3
 }
-gold_cost = 0
+gold_cost = 20
 craft_time = 0.0
 sort_order = 10

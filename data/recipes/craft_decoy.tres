@@ -16,6 +16,6 @@ ingredients = {
 "@scrap": 1,
 "mat_cloth": 1
 }
-gold_cost = 10
+gold_cost = 60
 craft_time = 0.0
 sort_order = 50

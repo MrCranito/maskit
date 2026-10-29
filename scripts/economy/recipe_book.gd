@@ -28,7 +28,40 @@ static func _load_all() -> void:
 			continue
 		if String(r.id).is_empty():
 			r.id = StringName(f.get_basename())
+		_apply_cost(r)
 		_cache[r.id] = r
+
+
+## Coût en or effectif (balance [crafting] gold_cost_mult, min_gold_cost) écrit dans
+## r.gold_cost : Profile.craft et l'écran de l'atelier lisent directement ce champ. La valeur du
+## .tres est gardée en méta (base_gold_cost) pour ne jamais multiplier deux fois (reload).
+static func _apply_cost(r: RecipeData) -> void:
+	if not r.has_meta(&"base_gold_cost"):
+		r.set_meta(&"base_gold_cost", r.gold_cost)
+	r.gold_cost = cost_of(int(r.get_meta(&"base_gold_cost")))
+
+
+## Coût effectif d'une valeur de base (.tres).
+static func cost_of(base: int) -> int:
+	var mult := float(_balance(SECTION, "gold_cost_mult", 1.0))
+	var mn := int(_balance(SECTION, "min_gold_cost", 5))
+	return maxi(int(round(float(maxi(base, 0)) * mult)), mn)
+
+
+## Raison du refus d'une fabrication ("" = possible) : ingrédients manquants d'abord,
+## puis « Il te manque 35 or ».
+static func refusal(r: RecipeData, stock: Dictionary, gold: int) -> String:
+	if r == null or not _result_valid(r):
+		return "Recette inconnue"
+	var miss := missing(r, stock)
+	if not miss.is_empty():
+		var parts: PackedStringArray = []
+		for k: Variant in miss:
+			parts.append("%d %s" % [int(miss[k]), key_name(str(k)).to_lower()])
+		return "Manque : " + ", ".join(parts)
+	if gold < r.gold_cost:
+		return "Il te manque %d or" % (r.gold_cost - gold)
+	return ""
 
 
 static func reload() -> void:

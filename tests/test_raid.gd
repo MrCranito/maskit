@@ -355,3 +355,22 @@ func test_zone_sure_simulee() -> void:
 	assert_gte(m.w, 63.0 * vp.y / win.y)
 	assert_gte(m.y, Balance.get_float("hud", "safe_min_margin", 16.0))
 	HudSafeArea.debug_insets = saved
+
+
+func test_popups_de_butin_au_dessus_de_la_minimap() -> void:
+	var mm := _raid.minimap
+	var lh := _raid.ui_layer.get_node(^"InventoryHud") as InventoryHud
+	assert_lt(mm.get_index(), lh.get_index(), "mini-carte dessinée sous la fenêtre de fouille, le fil et l'inventaire")
+	lh.loot_window.visibility_changed_for_action.emit(true)
+	assert_true(mm.is_obscured(), "mini-carte effacée pendant la fouille")
+	mm.open_full_map()
+	assert_false(mm.is_full_map_open(), "pas de carte plein écran pendant la fouille")
+	lh.loot_window.visibility_changed_for_action.emit(false)
+	assert_false(mm.is_obscured())
+	mm.open_full_map()
+	await wait_process_frames(2)
+	assert_lt(mm.full_map.get_index(), lh.get_index(), "carte plein écran sous l'inventaire")
+	lh.inventory_screen.open()
+	assert_false(mm.is_full_map_open(), "ouvrir l'inventaire ferme la carte plein écran")
+	lh.inventory_screen.close()
+	assert_false(get_tree().paused)

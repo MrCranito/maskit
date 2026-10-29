@@ -2,7 +2,7 @@ class_name PassGlyph
 extends MenuGlyph
 ## Pictogrammes supplémentaires (pass de combat, marchand, atelier, coop), même style que
 ## MenuGlyph (aplats + contour sombre) : ticket (pass), lock, check, cart (marchand),
-## anvil (atelier), duo (coop). Les autres noms sont dessinés par MenuGlyph.
+## anvil (atelier), duo (coop), chest (inventaire). Les autres noms sont dessinés par MenuGlyph.
 
 
 func _draw() -> void:
@@ -36,6 +36,12 @@ func _draw() -> void:
 				_poly([Vector2(x0, 0.2), Vector2(x0 + 0.12, 0.2), Vector2(x0 + 0.1, 0.42), Vector2(x0 - 0.02, 0.42)], MenuKit.RED, false)
 			_poly([Vector2(0.18, 0.42), Vector2(0.82, 0.42), Vector2(0.82, 0.84), Vector2(0.18, 0.84)], dark)
 			_circle(Vector2(0.5, 0.63), 0.11, Color(0.96, 0.74, 0.22))
+		&"chest":
+			# coffre (inventaire / réserve)
+			_poly([Vector2(0.1, 0.42), Vector2(0.9, 0.42), Vector2(0.9, 0.88), Vector2(0.1, 0.88)])
+			_poly([Vector2(0.1, 0.42), Vector2(0.16, 0.2), Vector2(0.84, 0.2), Vector2(0.9, 0.42)], dark)
+			_line(Vector2(0.1, 0.52), Vector2(0.9, 0.52), 0.06, Color(0.62, 0.42, 0.24))
+			_poly([Vector2(0.42, 0.44), Vector2(0.58, 0.44), Vector2(0.58, 0.64), Vector2(0.42, 0.64)], MenuKit.GOLD)
 		&"anvil":
 			# enclume + marteau (atelier)
 			_poly([Vector2(0.06, 0.48), Vector2(0.78, 0.48), Vector2(0.94, 0.4), Vector2(0.94, 0.56),

@@ -446,6 +446,41 @@ static func pill(txt: String, bg: Color, font_size: int = 14, fg: Color = TEXT, 
 	return p
 
 
+## Défilement au doigt partout dans la liste (TouchScroller : glisser sur un bouton = défiler sans
+## cliquer, inertie ; tap = clic) + barres de défilement fines et discrètes. Idempotent.
+static func make_touch_scroll(scroll: ScrollContainer) -> TouchScroller:
+	if scroll == null:
+		return null
+	var existing := scroll.get_node_or_null(^"TouchScroller") as TouchScroller
+	if existing != null:
+		return existing
+	var ts := TouchScroller.new()
+	ts.name = "TouchScroller"
+	scroll.add_child(ts, false, Node.INTERNAL_MODE_BACK)
+	scroll.scroll_deadzone = 0   # le seuil est géré par TouchScroller
+	for bar: ScrollBar in [scroll.get_v_scroll_bar(), scroll.get_h_scroll_bar()]:
+		var track := StyleBoxFlat.new()
+		track.bg_color = Color(1, 1, 1, 0.05)
+		track.set_corner_radius_all(3)
+		var grab := StyleBoxFlat.new()
+		grab.bg_color = Color(1, 1, 1, 0.28)
+		grab.set_corner_radius_all(3)
+		var grab_h := grab.duplicate() as StyleBoxFlat
+		grab_h.bg_color = Color(MenuKit.GOLD, 0.6)
+		if bar is VScrollBar:
+			track.content_margin_left = 3
+			track.content_margin_right = 3
+		else:
+			track.content_margin_top = 3
+			track.content_margin_bottom = 3
+		bar.add_theme_stylebox_override("scroll", track)
+		bar.add_theme_stylebox_override("scroll_focus", track)
+		bar.add_theme_stylebox_override("grabber", grab)
+		bar.add_theme_stylebox_override("grabber_highlight", grab_h)
+		bar.add_theme_stylebox_override("grabber_pressed", grab_h)
+	return ts
+
+
 ## Restyle d'un bouton existant (marges horizontales réduites : petits boutons).
 static func tighten(b: Button, h_margin: int = 14) -> void:
 	for st: String in ["normal", "hover", "pressed", "hover_pressed", "disabled"]:

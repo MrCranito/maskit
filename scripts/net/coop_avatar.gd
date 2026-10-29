@@ -261,6 +261,21 @@ func take_damage(amount: float, source: Node) -> void:
 	coop.on_avatar_damaged(amount, source)
 
 
+## Statut infligé chez l'hôte (compétence ennemie) : affiché sur l'avatar et transmis au
+## coéquipier, qui l'applique à son joueur.
+func apply_status(kind: StringName, duration: float, strength: float = 1.0, from: Vector2 = Vector2.INF) -> void:
+	if not _alive or net_downed or duration <= 0.0 or has_meta(&"coop_gone"):
+		return
+	if coop == null or not NetHooks.is_host:
+		return
+	if status == null:
+		status = PlayerStatus.new()
+		status.name = "Status"
+		add_child(status)
+	status.apply(kind, duration, strength)
+	coop.on_avatar_status(kind, duration, strength, from)
+
+
 ## Spectateur : la caméra suit ce coéquipier.
 func set_spectated(on: bool) -> void:
 	camera.enabled = on

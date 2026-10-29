@@ -12,6 +12,10 @@ var current: int = 0
 var cooldown: float = 0.0
 var reload_left: float = 0.0
 var reload_total: float = 0.0
+## Dispersion accumulée en tir continu (°) de l'arme courante, et temps depuis le dernier tir.
+## Remise à 0 au changement d'arme. Voir WeaponData.spread_bloom_*.
+var bloom: float = 0.0
+var since_shot: float = 999.0
 ## Emplacement d'équipement (grenade, mine, C4, drone) et charges restantes.
 var gadget: WeaponData = null
 var gadget_charges: int = 0
@@ -85,6 +89,7 @@ func switch_to(slot: int) -> bool:
 	cancel_reload()
 	current = slot
 	cooldown = 0.0
+	bloom = 0.0
 	return true
 
 
@@ -221,6 +226,8 @@ func consume_shot() -> void:
 	if w == null:
 		return
 	cooldown = w.get_fire_interval()
+	since_shot = 0.0
+	bloom = minf(bloom + w.spread_bloom_per_shot * bloom_mult(), w.spread_bloom_max * bloom_mult())
 	if magazine_of(w) > 0:
 		ammo[current] = maxi(ammo[current] - 1, 0)
 
@@ -228,6 +235,15 @@ func consume_shot() -> void:
 ## Avance le temps. Renvoie true si un rechargement vient de se terminer.
 func tick(delta: float) -> bool:
 	cooldown = maxf(cooldown - delta, 0.0)
+	since_shot += delta
+	if bloom > 0.0:
+		var w0: WeaponData = current_weapon()
+		# La dispersion redescend dès qu'on cesse de tirer (un peu plus d'un intervalle de tir).
+		var hold: float = Balance.get_float("player", "spread_recovery_delay", 0.08)
+		if w0 == null:
+			bloom = 0.0
+		elif since_shot > w0.get_fire_interval() + hold:
+			bloom = maxf(bloom - w0.spread_bloom_recovery * delta, 0.0)
 	if reload_left > 0.0:
 		reload_left -= delta
 		if reload_left <= 0.0:
@@ -236,3 +252,16 @@ func tick(delta: float) -> bool:
 			ammo[current] = magazine_of(current_weapon())
 			return true
 	return false
+
+
+## Multiplicateur global du bloom ([player] spread_bloom_mult).
+static func bloom_mult() -> float:
+	return maxf(Balance.get_float("player", "spread_bloom_mult", 1.0), 0.0)
+
+
+## Imprécision effective (±°) de l'arme courante pour une vitesse relative `move_ratio`.
+func current_inaccuracy(move_ratio: float) -> float:
+	var w: WeaponData = current_weapon()
+	if w == null:
+		return 0.0
+	return w.effective_inaccuracy(bloom, move_ratio, maxf(Balance.get_float("player", "spread_move_mult", 1.0), 0.0))

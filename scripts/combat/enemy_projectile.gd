@@ -25,6 +25,13 @@ var lifetime_left: float = 0.0
 var source: Node = null
 var style: StringName = &""
 var _pulse: float = 0.0
+## Balle perforante (compétence « piercing ») : traverse caisses, tonneaux et chariots
+## (conteneurs, décors), pas les murs. Remis à faux à chaque tir.
+var pierce_props: bool = false
+## Style « knife » : couteau lancé (lame qui tournoie).
+const STYLE_KNIFE := &"knife"
+const KNIFE_BLADE := Color(0.85, 0.87, 0.92)
+const KNIFE_HANDLE := Color(0.45, 0.28, 0.16)
 ## Hauteur d'affichage (px monde) : trajectoire au sol (hitbox du joueur aux pieds), dessin surélevé.
 var visual_height: float = 0.0
 const DEFAULT_VISUAL_HEIGHT := 28.0
@@ -49,6 +56,7 @@ func launch(pos: Vector2, dir: Vector2, proj_speed: float, proj_damage: float, f
 	damage = proj_damage
 	lifetime_left = lifetime
 	source = from
+	pierce_props = false
 	_set_active(true)
 	queue_redraw()
 
@@ -87,13 +95,33 @@ func _on_hit(other: Node) -> void:
 		return
 	if other.is_in_group(&"enemies") or other.is_in_group(&"enemy_units"):
 		return
+	if pierce_props and is_pierceable(other):
+		return
 	deactivate()  # Mur.
+
+
+## Obstacle traversable par une balle perforante : conteneur (caisse, tonneau, chariot…) ou décor.
+static func is_pierceable(other: Node) -> bool:
+	if other == null:
+		return false
+	if other.name == &"PropBodies":
+		return true
+	var par := other.get_parent()
+	return par is LootContainer or par is WorldProp
 
 
 func _draw() -> void:
 	var k := 1.0
 	if visual_height != 0.0:
 		draw_set_transform(Vector2(0.0, -visual_height).rotated(-rotation))
+	if style == STYLE_KNIFE:
+		# Couteau : lame claire + manche, petite traînée.
+		draw_line(Vector2(-22, 0), Vector2(-6, 0), Color(KNIFE_BLADE, 0.25), 6.0, true)
+		draw_set_transform(Vector2(0.0, -visual_height).rotated(-rotation) if visual_height != 0.0 else Vector2.ZERO,
+			0.0)
+		draw_colored_polygon(PackedVector2Array([Vector2(-2, -3), Vector2(12, 0), Vector2(-2, 3)]), KNIFE_BLADE)
+		draw_rect(Rect2(-9, -2.5, 7, 5), KNIFE_HANDLE)
+		return
 	if style == STYLE_BULLET:
 		# Balle : longue traînée fine jaune-orangé, coeur blanc chaud.
 		draw_line(Vector2(-30, 0), Vector2(4, 0), Color(BULLET_GLOW, 0.18), 10.0 * k, true)

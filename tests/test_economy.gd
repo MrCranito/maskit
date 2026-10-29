@@ -261,12 +261,14 @@ func test_materiaux_dans_les_tables_de_chaque_biome() -> void:
 func test_fabrication_bandage_et_medkit() -> void:
 	assert_false(Profile.craft(&"craft_bandage"), "rien en réserve")
 	Profile.items = {"mat_cloth": 4, "mat_chemicals": 1}
-	assert_true(Profile.can_craft(&"craft_bandage"))
+	assert_false(Profile.can_craft(&"craft_bandage"), "fabriquer coûte de l'or")
+	Profile.gold = RecipeBook.get_recipe(&"craft_bandage").gold_cost
 	assert_true(Profile.craft(&"craft_bandage"))
+	assert_eq(Profile.gold, 0, "or dépensé")
 	assert_eq(Profile.item_count(&"bandage"), 2)
 	assert_eq(Profile.item_count(&"mat_cloth"), 1)
-	Profile.gold = 15
-	assert_true(Profile.craft(&"craft_medkit"), "2 bandages + chimie + tissu + 15 or")
+	Profile.gold = RecipeBook.get_recipe(&"craft_medkit").gold_cost
+	assert_true(Profile.craft(&"craft_medkit"), "2 bandages + chimie + tissu + or")
 	assert_eq(Profile.item_count(&"medkit"), 1)
 	assert_eq(Profile.item_count(&"bandage"), 0)
 	assert_eq(Profile.gold, 0)
@@ -438,6 +440,7 @@ func test_marchand_vente_et_confirmation() -> void:
 
 func test_atelier_fabrique() -> void:
 	Profile.items = {"mat_cloth": 3}
+	Profile.gold = RecipeBook.get_recipe(&"craft_bandage").gold_cost
 	var c := CraftingScreen.new()
 	c.back_scene = ""
 	add_child_autofree(c)
@@ -535,3 +538,36 @@ func test_leurre_emet_a_sa_position() -> void:
 	var d := DecoyDevice.spawn(world, Vector2(300, 120), WeaponCatalog.get_weapon(&"gadget_decoy"))
 	assert_eq(d.global_position, Vector2(300, 120))
 	assert_eq(NoiseSources.loudest_at(Vector2(300, 130)).get("pos"), Vector2(300, 120), "source au point de pose")
+
+
+
+func test_fabriquer_coute_de_l_or() -> void:
+	RecipeBook.reload()
+	var expected := {&"craft_bandage": 20, &"craft_medkit": 60, &"craft_frag": 50, &"craft_smoke": 70,
+		&"craft_decoy": 60, &"craft_mine": 180, &"craft_c4": 400}
+	var mult := Balance.get_float("crafting", "gold_cost_mult", 1.0)
+	for id: StringName in expected:
+		var r := RecipeBook.get_recipe(id)
+		assert_eq(r.gold_cost, RecipeBook.cost_of(int(expected[id])), "%s : coût × multiplicateur" % id)
+		assert_gt(r.gold_cost, 0, "%s : jamais gratuit" % id)
+	assert_eq(RecipeBook.cost_of(100), maxi(int(round(100.0 * mult)), int(Balance.get_value("crafting", "min_gold_cost", 5))))
+	# Pas de double multiplication au rechargement.
+	var before := RecipeBook.get_recipe(&"craft_c4").gold_cost
+	RecipeBook.reload()
+	assert_eq(RecipeBook.get_recipe(&"craft_c4").gold_cost, before)
+	# Refus clair quand l'or manque ; ingrédients intacts.
+	var r2 := RecipeBook.get_recipe(&"craft_bandage")
+	Profile.items = {"mat_cloth": 3}
+	Profile.gold = r2.gold_cost - 35
+	assert_eq(RecipeBook.refusal(r2, Profile.items, Profile.gold), "Il te manque 35 or")
+	assert_false(Profile.craft(&"craft_bandage"))
+	assert_eq(Profile.item_count(&"mat_cloth"), 3, "rien consommé")
+	assert_eq(Profile.gold, r2.gold_cost - 35)
+	Profile.items = {}
+	assert_string_contains(RecipeBook.refusal(r2, Profile.items, 999), "Manque : 3 bandes de tissu")
+	Profile.gold = 999
+	Profile.items = {"mat_cloth": 3}
+	assert_eq(RecipeBook.refusal(r2, Profile.items, Profile.gold), "")
+	# Ordre de grandeur : un raid moyen (~250 or) paie quelques soins, pas une C4.
+	assert_lt(RecipeBook.get_recipe(&"craft_bandage").gold_cost, 50)
+	assert_gt(RecipeBook.get_recipe(&"craft_c4").gold_cost, 250)

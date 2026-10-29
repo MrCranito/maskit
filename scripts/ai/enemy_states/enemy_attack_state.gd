@@ -202,5 +202,6 @@ func _slam(e: Enemy, p: Node2D) -> void:
 
 func _recover(e: Enemy) -> void:
 	e.stop()
+	e.notify_attack_done()
 	_step = Step.RECOVER
 	_left = e.attack_recovery

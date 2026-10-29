@@ -1,110 +1,129 @@
 class_name PlayCard
 extends Button
-## Grand bouton « JOUER » du lobby (bas droite) : vignette de la carte sélectionnée, nom,
-## difficulté (pastille colorée), catégorie ; flèche « lecture ». Mène au choix des cartes.
-## Carte affichée : GameState.current_map, sinon la première carte proposée par la rotation.
+## Grand bouton « JOUER » du lobby (bas droite) : bouton d'action principal net, sans vignette
+## de carte ni rouge. Gros « JOUER » incliné + flèche, une ligne discrète en dessous
+## (« Dust Creek · Facile »). Fond lumineux (variante `style`) avec reflet haut, lueur douce,
+## reflet qui passe de temps en temps ; à l'appui le contenu s'enfonce (bordure basse épaisse
+## → fine). Mène au choix des cartes. Carte : GameState.current_map, sinon la rotation.
+## Le bouton Coop du lobby reprend la même forme en version secondaire (secondary_styles()).
+
+## Variantes de couleur : « go » (vert-jaune lumineux, retenue : ressort le mieux sur le camp au
+## coucher du soleil, distinct de l'or des monnaies) ou « amber » (or/ambre chaud).
+const STYLES := {
+	&"amber": {"base": Color(0.98, 0.72, 0.2), "deep": Color(0.62, 0.34, 0.05), "ink": Color(0.2, 0.1, 0.01),
+		"glow": Color(1.0, 0.7, 0.25)},
+	&"go": {"base": Color(0.62, 0.9, 0.24), "deep": Color(0.22, 0.48, 0.1), "ink": Color(0.06, 0.18, 0.04),
+		"glow": Color(0.7, 1.0, 0.35)},
+}
+const RADIUS := 22
+const DEPTH := 7
+
+## Variante active (captures : changer avant de construire le menu).
+static var style: StringName = &"go"
 
 var card: MapCard = null
 var title_label: Label = null
 var map_label: Label = null
-var diff_pill: PanelContainer = null
-var cat_label: Label = null
-var thumb: TextureRect = null
+var arrow: MenuGlyph = null
+var _content: Control = null
 var _glint: ColorRect = null
+
+
+static func palette() -> Dictionary:
+	return STYLES.get(style, STYLES[&"amber"])
 
 
 func _init() -> void:
 	focus_mode = Control.FOCUS_ALL
-	custom_minimum_size = Vector2(Balance.get_float("menu", "play_card_width", 420.0),
-		Balance.get_float("menu", "play_card_height", 148.0))
-	clip_contents = false
+	custom_minimum_size = Vector2(340, 124)
 	text = ""
-	var r: int = 22
-	var normal := MenuKit._button_box(MenuKit.RED, Color(1.0, 0.62, 0.5, 0.95), 7, r)
-	normal.shadow_color = Color(0.4, 0.02, 0.05, 0.45)
-	normal.shadow_size = 14
-	normal.shadow_offset = Vector2(0, 5)
-	normal.set_content_margin_all(12)
+	var p := palette()
+	var base: Color = p["base"]
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = base
+	normal.set_corner_radius_all(RADIUS)
+	normal.border_color = (p["deep"] as Color)
+	normal.border_width_bottom = DEPTH
+	normal.shadow_color = Color(p["glow"] as Color, 0.4)
+	normal.shadow_size = 16
+	normal.anti_aliasing = true
 	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = MenuKit.RED.lightened(0.12)
+	hover.bg_color = base.lightened(0.08)
+	hover.shadow_color = Color(p["glow"] as Color, 0.55)
 	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = MenuKit.RED.darkened(0.18)
-	pressed.border_width_bottom = 3
+	pressed.bg_color = base.darkened(0.06)
+	pressed.border_width_bottom = 2
+	pressed.expand_margin_top = -(DEPTH - 2)   # le bouton s'enfonce
+	pressed.shadow_size = 8
 	var focus := StyleBoxFlat.new()
 	focus.draw_center = false
-	focus.border_color = MenuKit.GOLD
-	focus.set_border_width_all(3)
-	focus.set_corner_radius_all(r + 4)
-	focus.set_expand_margin_all(5)
+	focus.border_color = Color(MenuKit.TEXT, 0.55)
+	focus.set_border_width_all(2)
+	focus.set_corner_radius_all(RADIUS + 3)
+	focus.set_expand_margin_all(4)
 	add_theme_stylebox_override("normal", normal)
 	add_theme_stylebox_override("hover", hover)
 	add_theme_stylebox_override("pressed", pressed)
 	add_theme_stylebox_override("hover_pressed", pressed)
 	add_theme_stylebox_override("focus", focus)
+	clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 
-	var row := HBoxContainer.new()
-	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.offset_left = 12
-	row.offset_top = 12
-	row.offset_right = -14
-	row.offset_bottom = -16
-	row.add_theme_constant_override("separation", 14)
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(row)
-	# vignette arrondie (panneau sombre + texture)
-	var frame := PanelContainer.new()
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var fs := MenuKit.panel_style(MenuKit.NIGHT_DEEP, Color(1, 0.85, 0.75, 0.6), 14, 2, 3)
-	fs.shadow_size = 0
-	frame.add_theme_stylebox_override("panel", fs)
-	frame.custom_minimum_size = Vector2(custom_minimum_size.y * 0.95, 0)
-	frame.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-	row.add_child(frame)
-	thumb = TextureRect.new()
-	thumb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	thumb.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	thumb.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.add_child(thumb)
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 2)
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(col)
+	# reflet haut (verre) : dégradé blanc → transparent sur la moitié haute
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 0.38))
+	g.set_color(1, Color(1, 1, 1, 0.0))
+	var gt := GradientTexture2D.new()
+	gt.gradient = g
+	gt.fill_from = Vector2(0, 0)
+	gt.fill_to = Vector2(0, 1)
+	gt.width = 4
+	gt.height = 32
+	var sheen := TextureRect.new()
+	sheen.name = "Sheen"
+	sheen.texture = gt
+	sheen.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sheen.stretch_mode = TextureRect.STRETCH_SCALE
+	sheen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sheen.anchor_right = 1.0
+	sheen.anchor_bottom = 0.5
+	add_child(sheen)
+
+	_content = VBoxContainer.new()
+	_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_content.offset_bottom = -DEPTH
+	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	(_content as VBoxContainer).alignment = BoxContainer.ALIGNMENT_CENTER
+	(_content as VBoxContainer).add_theme_constant_override("separation", -4)
+	add_child(_content)
 	var top := HBoxContainer.new()
-	top.add_theme_constant_override("separation", 8)
+	top.alignment = BoxContainer.ALIGNMENT_CENTER
+	top.add_theme_constant_override("separation", 12)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(top)
-	title_label = MenuKit.label("JOUER", 46, MenuKit.TEXT, RaidersLogo.slant_font(), 7)
-	title_label.add_theme_color_override("font_outline_color", Color(0.3, 0.02, 0.05, 0.9))
-	title_label.add_theme_color_override("font_shadow_color", Color(0.25, 0.0, 0.03, 0.7))
-	title_label.add_theme_constant_override("shadow_offset_y", 4)
+	_content.add_child(top)
+	var ink: Color = p["ink"]
+	title_label = MenuKit.label("JOUER", 52, ink, RaidersLogo.slant_font(), 0)
+	title_label.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.35))
+	title_label.add_theme_constant_override("shadow_offset_y", 2)
+	title_label.add_theme_constant_override("shadow_offset_x", 0)
 	top.add_child(title_label)
-	var play := MenuGlyph.new(&"play", MenuKit.TEXT, 34)
-	play.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	top.add_child(play)
-	map_label = MenuKit.label("", 21, MenuKit.TEXT, MenuKit.nunito(900), 3)
+	arrow = MenuGlyph.new(&"play", ink, 30)
+	arrow.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	top.add_child(arrow)
+	map_label = MenuKit.label("", 16, Color(ink, 0.72), MenuKit.nunito(900), 0)
+	map_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	map_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	map_label.add_theme_color_override("font_outline_color", Color(0.25, 0.0, 0.04, 0.7))
-	col.add_child(map_label)
-	var info := HBoxContainer.new()
-	info.add_theme_constant_override("separation", 8)
-	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(info)
-	diff_pill = MenuKit.pill("", MenuKit.NIGHT_DEEP, 14)
-	info.add_child(diff_pill)
-	cat_label = MenuKit.label("", 15, Color(1, 0.88, 0.82), MenuKit.nunito(800))
-	cat_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	info.add_child(cat_label)
-	# reflet qui balaie le bouton de temps en temps (attire l'œil sur l'action principale)
+	_content.add_child(map_label)
+
+	# reflet qui balaie le bouton de temps en temps (doux)
 	_glint = ColorRect.new()
-	_glint.color = Color(1, 1, 1, 0.16)
+	_glint.color = Color(1, 1, 1, 0.22)
 	_glint.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_glint.size = Vector2(46, custom_minimum_size.y * 1.6)
-	_glint.rotation = 0.38
-	_glint.position = Vector2(-120, -30)
-	clip_contents = true
+	_glint.size = Vector2(38, custom_minimum_size.y * 1.8)
+	_glint.rotation = 0.42
+	_glint.position = Vector2(-120, -40)
 	add_child(_glint)
+	button_down.connect(func() -> void: _content.position.y = DEPTH - 2)
+	button_up.connect(func() -> void: _content.position.y = 0)
 
 
 func _ready() -> void:
@@ -112,7 +131,7 @@ func _ready() -> void:
 	refresh()
 	var tw := create_tween().set_loops()
 	tw.tween_interval(Balance.get_float("menu", "play_glint_interval", 4.5))
-	tw.tween_property(_glint, "position:x", custom_minimum_size.x + 80.0, 0.7).from(-120.0) \
+	tw.tween_property(_glint, "position:x", custom_minimum_size.x + 80.0, 0.8).from(-120.0) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
@@ -130,18 +149,32 @@ static func displayed_card() -> MapCard:
 
 func refresh() -> void:
 	card = displayed_card()
-	if card == null:
-		map_label.text = "Choisir une carte"
-		diff_pill.visible = false
-		cat_label.text = ""
-		return
-	map_label.text = card.display_name
-	thumb.texture = card.get_thumbnail()
-	var dc: Color = card.difficulty_color()
-	var pill_style := diff_pill.get_theme_stylebox("panel") as StyleBoxFlat
-	pill_style.bg_color = dc.darkened(0.25)
-	pill_style.border_color = dc.lightened(0.35)
-	pill_style.set_border_width_all(1)
-	(diff_pill.get_node("Text") as Label).text = card.difficulty_name()
-	diff_pill.visible = true
-	cat_label.text = card.category_name()
+	map_label.text = ("%s · %s" % [card.display_name, card.difficulty_name()]) if card != null else "Choisir une carte"
+
+
+## Styles du bouton secondaire assorti (Coop) : bleu nuit, liseré de la couleur d'action,
+## même rayon et même profondeur. Renvoie {normal, hover, pressed, focus}.
+static func secondary_styles() -> Dictionary:
+	var p := palette()
+	var n := StyleBoxFlat.new()
+	n.bg_color = Color(MenuKit.NIGHT, 0.94)
+	n.set_corner_radius_all(RADIUS)
+	n.border_color = Color(p["base"] as Color, 0.75)
+	n.set_border_width_all(2)
+	n.border_width_bottom = DEPTH
+	n.shadow_color = Color(0, 0, 0.05, 0.45)
+	n.shadow_size = 10
+	n.anti_aliasing = true
+	var h := n.duplicate() as StyleBoxFlat
+	h.bg_color = Color(0.12, 0.17, 0.3, 0.97)
+	var pr := n.duplicate() as StyleBoxFlat
+	pr.bg_color = Color(0.05, 0.07, 0.13, 0.97)
+	pr.border_width_bottom = 2
+	pr.expand_margin_top = -(DEPTH - 2)
+	var f := StyleBoxFlat.new()
+	f.draw_center = false
+	f.border_color = Color(MenuKit.TEXT, 0.55)
+	f.set_border_width_all(2)
+	f.set_corner_radius_all(RADIUS + 3)
+	f.set_expand_margin_all(4)
+	return {"normal": n, "hover": h, "pressed": pr, "focus": f}

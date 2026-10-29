@@ -130,6 +130,11 @@ enum AttackType { MELEE, RANGED }
 ## Recul (px/s) imprimé par un coup reçu.
 @export var knockback: float = 90.0
 
+@export_group("Compétences")
+## Compétences actives / passives (scripts/enemies/skills, registre EnemySkills) :
+## [{"id": &"knife_throw", "cooldown": 5.0, ...}] — les clés remplacent les valeurs par défaut.
+@export var skills: Array = []
+
 @export_group("Butin")
 ## Table du cadavre (data/loot_tables). &"" = enemy_<kind> si elle existe, sinon celle du biome.
 @export var loot_table: StringName = &""

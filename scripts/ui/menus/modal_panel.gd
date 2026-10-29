@@ -19,6 +19,7 @@ func _init(title_text: String = "", size_px: Vector2 = Vector2(640, 520)) -> voi
 
 
 func _ready() -> void:
+	add_to_group(&"menu_modals")   # TouchScroller : pas de défilement sous une fenêtre
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP

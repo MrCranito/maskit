@@ -16,6 +16,6 @@ ingredients = {
 "black_powder": 6,
 "mat_chemicals": 3
 }
-gold_cost = 250
+gold_cost = 400
 craft_time = 0.0
 sort_order = 70

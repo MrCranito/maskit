@@ -61,6 +61,8 @@ var _wait_left: float = WAIT_TIMEOUT
 var _sync_radius2: float = 1800.0 * 1800.0
 var _interp_delay_ms: float = 100.0
 var _fired: bool = false
+## Compteur des ennemis créés en cours de raid (renforts) : identités 30001, 30002…
+var _dynamic_ids: int = 0
 ## Ennemis de l'étage courant : net_id → Enemy.
 var _enemies: Dictionary = {}
 ## Hôte : dernière position envoyée par ennemi (filtre des ennemis immobiles).
@@ -394,6 +396,8 @@ func _handle(t: int) -> void:
 			_on_dynamite()
 		NetProtocol.Msg.DAMAGE:
 			_on_damage()
+		NetProtocol.Msg.STATUS:
+			_on_status()
 		NetProtocol.Msg.DOOR:
 			_on_door()
 		NetProtocol.Msg.CONTAINER:
@@ -581,6 +585,43 @@ func _on_damage() -> void:
 	damage_received += amount
 	if local != null and local_status == CoopRules.Status.ALIVE:
 		local.take_damage(amount, null)
+
+
+## Hôte : un statut (compétence ennemie) frappe l'avatar → l'invité l'applique à son joueur.
+func on_avatar_status(kind: StringName, duration: float, strength: float, from: Vector2) -> void:
+	_ev.begin(NetProtocol.Msg.STATUS)
+	_ev.text(String(kind))
+	_ev.u8(clampi(roundi(duration * 20.0), 1, 255))
+	_ev.u8(clampi(roundi(strength * 50.0), 0, 255))
+	_ev.pos(from if from != Vector2.INF else avatar.global_position)
+	_ev.end()
+
+
+func _on_status() -> void:
+	var kind := StringName(_r.text())
+	var duration := float(_r.u8()) / 20.0
+	var strength := float(_r.u8()) / 50.0
+	var from := _r.pos()
+	if local != null and local_status == CoopRules.Status.ALIVE:
+		local.apply_status(kind, duration, strength, from)
+
+
+## Ennemi créé en cours de raid (renforts) : enregistré sous une identité réseau commune.
+func register_dynamic_enemy(e: Node2D, id: int) -> int:
+	var en := e as Enemy
+	if en == null:
+		return -1
+	if id < 0:
+		_dynamic_ids += 1
+		id = 30000 + _dynamic_ids
+	en.set_meta(&"net_id", id)
+	_enemies[id] = en
+	if is_host:
+		if not en.died.is_connected(_on_host_enemy_died):
+			en.died.connect(_on_host_enemy_died)
+	else:
+		_make_puppet(en)
+	return id
 
 
 ## Joueur local à 0 PV (Player.take_damage) : à terre si le coéquipier peut le relever.

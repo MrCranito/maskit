@@ -16,6 +16,6 @@ ingredients = {
 "@scrap": 3,
 "black_powder": 5
 }
-gold_cost = 80
+gold_cost = 180
 craft_time = 0.0
 sort_order = 60

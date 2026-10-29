@@ -50,6 +50,9 @@ var _arrow_label: Label = null
 var _last_dist: int = -1
 var _scan_radius: int = 12
 var _box: float = 168.0
+## Raisons d'effacement en cours (fouille, inventaire) : mini-carte invisible et sans saisie.
+var _obscured: Dictionary = {}
+var _fade: Tween = null
 
 
 static func create(p_raid: Node) -> MiniMap:
@@ -281,14 +284,40 @@ func toggle_full_map() -> void:
 
 
 func open_full_map() -> void:
-	if layout == null:
+	if layout == null or is_obscured():
 		return
 	if full_map == null or not is_instance_valid(full_map):
 		full_map = FullMapOverlay.new()
 		full_map.closed.connect(func() -> void: full_map_toggled.emit(false))
 		get_parent().add_child(full_map)
+		# Juste au-dessus de la mini-carte, sous la couche de butin (inventaire au-dessus).
+		get_parent().move_child(full_map, get_index() + 1)
 	full_map.open_with(self)
 	full_map_toggled.emit(true)
+
+
+## Efface (fondu) la mini-carte tant qu'une fenêtre de butin / l'inventaire est ouvert ;
+## l'inventaire ferme aussi la carte plein écran.
+func set_obscured(reason: StringName, on: bool) -> void:
+	if on:
+		_obscured[reason] = true
+		if reason == &"inventory" and is_full_map_open():
+			full_map.close()
+	else:
+		_obscured.erase(reason)
+	var target := 0.0 if is_obscured() else 1.0
+	if _fade != null and _fade.is_valid():
+		_fade.kill()
+	if not is_inside_tree():
+		modulate.a = target
+		return
+	_fade = create_tween()
+	_fade.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+	_fade.tween_property(self, "modulate:a", target, 0.15)
+
+
+func is_obscured() -> bool:
+	return not _obscured.is_empty()
 
 
 func is_full_map_open() -> bool:
@@ -296,7 +325,7 @@ func is_full_map_open() -> bool:
 
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree() or is_full_map_open():
+	if not is_visible_in_tree() or is_full_map_open() or is_obscured():
 		return
 	if event is InputEventScreenTouch and (event as InputEventScreenTouch).pressed:
 		if get_global_rect().has_point((event as InputEventScreenTouch).position):
@@ -305,6 +334,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	if is_obscured():
+		return
 	if event is InputEventMouseButton and event.device != InputEvent.DEVICE_ID_EMULATION:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:

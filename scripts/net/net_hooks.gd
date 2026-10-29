@@ -108,6 +108,15 @@ static func on_enemy_dynamite(from: Vector2, to: Vector2, radius: float, flight:
 		coop.on_enemy_dynamite(from, to, radius, flight, fuse)
 
 
+## Ennemi créé en cours de raid (renforts appelés par un chef) : identité réseau.
+## Hôte : `id` < 0 → un identifiant est attribué et renvoyé. Invité : `id` = celui de l'hôte,
+## l'ennemi devient une marionnette. Hors coop : -1.
+static func register_dynamic_enemy(e: Node2D, id: int = -1) -> int:
+	if coop == null:
+		return -1
+	return coop.register_dynamic_enemy(e, id)
+
+
 ## Invité : retour visuel d'un impact (pas de dégâts locaux).
 static func guest_hit_feedback(other: Node) -> void:
 	if other is Enemy:

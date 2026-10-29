@@ -16,6 +16,6 @@ ingredients = {
 "mat_chemicals": 1,
 "mat_cloth": 1
 }
-gold_cost = 15
+gold_cost = 60
 craft_time = 0.0
 sort_order = 20
