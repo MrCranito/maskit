@@ -123,6 +123,23 @@ enum AttackType { MELEE, RANGED }
 ## Phase 2 : alterne avec ce schéma (ex. &"lob") une attaque sur deux.
 @export var phase2_alt_pattern: StringName = &""
 
+@export_group("Boss")
+## Boss du monde : barre de vie en haut de l'écran, phases successives, arène scellée.
+@export var boss: bool = false
+## Titre affiché sous le nom sur la barre de boss (« Maître des terres arides »).
+@export var boss_title: String = ""
+## Phases du boss, dans l'ordre. Chaque phase est un dictionnaire :
+##   "from": 1.0 / 0.7 / 0.3   fraction de PV à laquelle la phase COMMENCE (1.0 pour la première)
+##   "name": "Phase 2"          libellé (bandeau à l'écran)
+##   "skills": [...]            compétences actives pendant la phase (même format que `skills`) ;
+##                              absent = garde les compétences de la phase précédente
+##   "speed_mult", "cooldown_mult", "damage_mult" : multiplicateurs (1.0 par défaut)
+##   "attack_pattern": &"burst" schéma d'attaque de base pendant la phase (absent = inchangé)
+##   "on_enter": [ids]          compétences lancées immédiatement en entrant dans la phase
+##   "invuln": 1.2              invulnérabilité (s) pendant la transition (rugissement)
+## Vide = pas de phases (ennemi normal).
+@export var phases: Array = []
+
 @export_group("Réactions")
 ## Un coup ≥ stagger_ratio × max_hp étourdit brièvement (stagger_time s). 0 = jamais.
 @export_range(0.0, 1.0) var stagger_ratio: float = 0.25
