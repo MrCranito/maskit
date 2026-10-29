@@ -295,3 +295,18 @@ Far West : ville dispersée dans le désert, rochers, train à l'arrêt (obstacl
 
 ## Nom du jeu
 Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Slogan : « Tire. Pille. Tire-toi. ». Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.
+
+## Refonte n°3 « méta-jeu, coop, station » (CONTRAT, 29/10)
+Quatre agents en parallèle. Propriété des fichiers :
+| Agent | Fichiers |
+|---|---|
+| Économie | `scripts/core/profile.gd` (or, déblocages, matériaux), `data/weapons/*`, `tools/gen_weapons.py`, `data/items/*`, `data/loot_tables/*`, `data/recipes/*` (nouveau), `scripts/economy/*` (nouveau : marchand, armurerie, artisanat, déblocages), `scripts/ui/menus/arsenal_screen.gd`, `weapon_tile.gd`, nouveaux écrans `scenes/ui/menus/{merchant,crafting}.tscn` + scripts, `scripts/ui/inventory_*.gd`, `tests/test_arsenal.gd`, `tests/test_economy.gd` |
+| Pass & skins | `scripts/progression/*` (nouveau autoload `BattlePass`), `data/battle_pass/*`, `data/skins/*`, `scripts/cosmetics/*`, `assets/shaders/weapon_skin.gdshader`, `assets/sprites/weapons/skins/**`, `assets/ui/weapons/skins/**`, `art/blender/build_weapon_skins.py`, `scripts/ui/menus/{main_menu,shop_screen,lobby_*,hero_preview,loadout_summary,play_card,info_banner,nav_button,menu_kit}.gd`, `scenes/ui/menus/{main_menu,shop,battle_pass}.tscn`, `tests/test_menus.gd`, `tests/test_battle_pass.gd` |
+| Coop | `scripts/net/*` (nouveau), `server/` (nouveau, serveur relais), `scenes/ui/menus/coop_lobby.tscn` + script, `tests/test_net*.gd` ; modifications CIBLÉES (relire avant chaque édition) de `scripts/dungeon/raid.gd`, `scripts/player/player.gd`, `scripts/enemies/enemy.gd`, `scripts/combat/*`, `scripts/loot/*` |
+| Station spatiale | `scripts/biomes/space_station/*`, `tools/prerender/ss_*`, `tools/prerender/export_layout.gd` (ajouts), `assets/prerender/space_station/**`, `assets/sprites/space_station/**`, `art/blender/space_station/*`, `data/worlds/world_02_space_station.tres`, `data/maps/perm_station_kagami.tres`, `scripts/dungeon/prerender_backdrop.gd` (ajouts génériques), tests de la station |
+- `data/balance.cfg` : chacun AJOUTE ses propres sections (`[economy]`, `[crafting]`, `[battle_pass]`, `[net]`, `[space_prerender]`), jamais de modification des sections des autres.
+- `project.godot` : seul l'orchestrateur l'édite (nouveaux autoloads : demander dans le rapport).
+- Points de branchement entre agents :
+  - Marchand / Atelier : scènes `res://scenes/ui/menus/merchant.tscn` et `res://scenes/ui/menus/crafting.tscn` (agent Économie) ; l'agent Pass & skins ajoute leurs boutons dans la barre de navigation du lobby (icônes « Marchand », « Atelier », « Pass »), et le bouton « Coop » vers `res://scenes/ui/menus/coop_lobby.tscn`.
+  - Kill d'un ennemi : `EventBus.enemy_died(enemy)` existe ; l'agent Économie l'écoute pour les déblocages (`enemy.data.kind`), l'agent Pass & skins pour l'XP de pass (via les stats de fin de raid).
+  - XP de pass : `BattlePass.add_raid_xp(summary: Dictionary)` appelée par raid.gd en fin de raid (l'agent Pass & skins ajoute cet appel, une ligne, en relisant raid.gd juste avant).
