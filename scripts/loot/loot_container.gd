@@ -37,6 +37,10 @@ const DEFS := {
 }
 
 static var _tex_cache: Dictionary = {}
+## Rendus Blender (art/blender/build_containers.py) : 2 px par unité monde ; point d'appui
+## (feet, px) et taille lus dans containers.json, à côté des images.
+const RENDER_PX_PER_WORLD := 2.0
+static var _meta_cache: Dictionary = {}
 
 var kind: StringName = &"crate"
 var cell: Vector2i = Vector2i.ZERO
@@ -96,6 +100,20 @@ static func get_texture(k: StringName, open: bool) -> Texture2D:
 	return tex
 
 
+## Point d'appui et taille d'un rendu Blender ({feet: [x, y], size: [w, h]}), {} si l'image
+## n'en est pas un (dessin SVG, autres biomes).
+static func render_meta(tex: Texture2D) -> Dictionary:
+	if tex == null or tex.resource_path.is_empty() or not tex.resource_path.ends_with(".png"):
+		return {}
+	var dir := tex.resource_path.get_base_dir()
+	if not _meta_cache.has(dir):
+		var path := dir + "/containers.json"
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		_meta_cache[dir] = data if data is Dictionary else {}
+	var m: Variant = (_meta_cache[dir] as Dictionary).get(tex.resource_path.get_file().get_basename())
+	return m if m is Dictionary else {}
+
+
 func _init() -> void:
 	add_to_group(GROUP)
 	add_to_group(&"fog_hideable")
@@ -120,11 +138,9 @@ func _build() -> void:
 	if tex != null and sc > 0.0:
 		_sprite = Sprite2D.new()
 		_sprite.name = "Sprite"
-		_sprite.texture = tex
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		_sprite.scale = Vector2.ONE * sc
-		_sprite.offset = Vector2(0.0, -tex.get_height() * 0.5 + float(_def.get("foot", 0.0)))
 		add_child(_sprite)
+		_set_sprite_texture(tex)
 	var block: Vector2 = _def.get("block", Vector2.ZERO)
 	if block != Vector2.ZERO:
 		var body := StaticBody2D.new()
@@ -180,8 +196,25 @@ func get_interact_reach() -> float:
 
 func get_visual_height() -> float:
 	if _sprite != null and _sprite.texture != null:
+		var m := render_meta(_sprite.texture)
+		if not m.is_empty():
+			return float((m["feet"] as Array)[1]) * _sprite.scale.y
 		return _sprite.texture.get_height() * _sprite.scale.y - float(_def.get("foot", 0.0)) * _sprite.scale.y
 	return 24.0
+
+
+## Pose l'image (fermée / ouverte) : rendu Blender = échelle 1/2 et point d'appui du rendu sur
+## l'origine ; sinon dessin SVG avec l'échelle et la marge au sol de la définition.
+func _set_sprite_texture(tex: Texture2D) -> void:
+	_sprite.texture = tex
+	var m := render_meta(tex)
+	if not m.is_empty():
+		var feet := Vector2(float(m["feet"][0]), float(m["feet"][1]))
+		_sprite.scale = Vector2.ONE / RENDER_PX_PER_WORLD
+		_sprite.offset = tex.get_size() * 0.5 - feet
+	else:
+		_sprite.scale = Vector2.ONE * float(_def.get("scale", 0.55))
+		_sprite.offset = Vector2(0.0, -tex.get_height() * 0.5 + float(_def.get("foot", 0.0)))
 
 
 ## Appui sur « action » : lance la fouille, ou rouvre la fenêtre de butin.
@@ -424,8 +457,8 @@ func _save_state() -> void:
 func _refresh_visual() -> void:
 	if _sprite != null:
 		var tex := get_texture(kind, state >= State.OPENED)
-		if tex != null:
-			_sprite.texture = tex
+		if tex != null and tex != _sprite.texture:
+			_set_sprite_texture(tex)
 		_sprite.modulate = Color(0.78, 0.74, 0.78) if state == State.EMPTIED else Color.WHITE
 	var best := LootRoller.best_rarity(entries) if state == State.OPENED else -1
 	_glow_color = LootDB.rarity_color(best) if best >= LootDB.geti("glow_min_rarity", 2) else Color(0, 0, 0, 0)
@@ -438,7 +471,9 @@ func get_glow_color() -> Color:
 
 func _draw() -> void:
 	var r: float = float(_def.get("shadow", 16.0))
-	if r > 0.0:
+	# Les rendus Blender portent déjà leur ombre (soleil couchant) : pas d'ellipse en plus.
+	var baked := _sprite != null and not render_meta(_sprite.texture).is_empty()
+	if r > 0.0 and not baked:
 		draw_set_transform(Vector2(r * 0.35, 3.0), 0.0, Vector2(1.0, 0.32))
 		draw_circle(Vector2.ZERO, r, SHADOW_COLOR)
 		draw_circle(Vector2.ZERO, r * 0.7, Color(SHADOW_COLOR, SHADOW_COLOR.a * 0.5))
