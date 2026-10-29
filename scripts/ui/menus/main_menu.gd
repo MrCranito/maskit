@@ -314,6 +314,9 @@ func _build() -> void:
 
 ## Décor fixe de la maquette : repères d'angle violets à gauche + trame de lignes horizontales.
 class LobbyDeco extends Control:
+	## Couleur des repères d'angle (rose sur l'écran de mort).
+	var accent: Color = MenuKit.VIOLET
+
 	func _ready() -> void:
 		resized.connect(queue_redraw)
 
@@ -322,7 +325,7 @@ class LobbyDeco extends Control:
 			draw_line(Vector2(0, y + 0.5), Vector2(size.x, y + 0.5), Color(1, 1, 1, 0.03), 1.0)
 		var k := 33.0
 		var x := 30.0
-		var c := MenuKit.VIOLET
+		var c := accent
 		draw_polyline(PackedVector2Array([Vector2(x, 20 + k), Vector2(x, 20), Vector2(x + k, 20)]), c, 3.0)
 		var by := size.y - 20.0
 		draw_polyline(PackedVector2Array([Vector2(x, by - k), Vector2(x, by), Vector2(x + k, by)]), c, 3.0)
