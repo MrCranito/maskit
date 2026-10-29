@@ -63,8 +63,6 @@ var run_seed: int = 0
 ## sort, 0 = pas de pré-rendu (structure = run_seed). Ennemis et butin restent sur run_seed.
 var map_seed: int = 0
 var prerender: PrerenderBackdrop = null
-## (Toits) Échelles et état « sur le toit » de l'étage courant (null si aucune échelle).
-var roof_walk: RoofWalk = null
 var difficulty: int = 1
 ## WorldData chargé (null si le module Monde n'existe pas encore).
 var world: Resource = null
@@ -89,6 +87,7 @@ var enemies_container: Node2D = null
 var fog: Node2D = null
 var ui_layer: CanvasLayer = null
 var hud: Control = null
+var minimap: MiniMap = null
 var debug_world_draw: Node2D = null
 
 var _doors: Array[Node2D] = []
@@ -103,7 +102,9 @@ var _extraction_time: float = -1.0
 ## Raid terminé (extraction ou mort) : plus aucune fin ne peut se déclencher.
 var _raid_over: bool = false
 var _extraction_marker: Node2D = null
-var _channel_ring: ChannelRing = null
+## Zones d'extraction de l'étage (ExtractionZone) et zone en cours de canalisation.
+var extraction_zones: Array[ExtractionZone] = []
+var _active_zone: ExtractionZone = null
 var end_screen: RaidEndScreen = null
 ## Tourelles de l'étage courant (nœud → case) et cases des tourelles détruites.
 var turrets_container: Node2D = null
@@ -242,7 +243,6 @@ func _build_floor(index: int) -> void:
 	if state != null:
 		_restore_door_nodes(state)
 	_build_navigation()
-	_build_roof_walk()
 
 	enemies_container = Node2D.new()
 	enemies_container.name = "Enemies"
@@ -259,8 +259,6 @@ func _build_floor(index: int) -> void:
 	LootSpawner.spawn_for_floor(layout, world_root, run_seed, difficulty)
 	_build_extraction_marker()
 	_build_fog(state)
-	if roof_walk != null:
-		roof_walk.set_fog(fog)
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_cancel_extraction(false)
@@ -401,19 +399,6 @@ func _build_navigation() -> void:
 	nav_region.name = "NavigationRegion2D"
 	nav_region.navigation_polygon = poly
 	floor_root.add_child(nav_region)
-
-
-## (Toits) Échelles du plan → RoofWalk (pieds / sommets interactifs, état perché).
-func _build_roof_walk() -> void:
-	roof_walk = null
-	if layout == null or layout.ladders.is_empty() or not bool(Balance.get_value("roofs", "enabled", true)):
-		return
-	roof_walk = RoofWalk.create(layout, world_root, prerender)
-	floor_root.add_child(roof_walk)
-
-
-func is_player_on_roof() -> bool:
-	return is_instance_valid(player) and player.has_method("is_on_roof") and bool(player.call("is_on_roof"))
 
 
 static func _rect_outline(r: Rect2) -> PackedVector2Array:
@@ -566,11 +551,6 @@ func go_to_floor(index: int, arrival_cell: Vector2i) -> bool:
 
 
 func _free_current_floor() -> void:
-	if roof_walk != null and is_instance_valid(roof_walk):
-		roof_walk.exit_roof(player)
-		if is_instance_valid(player) and player.has_method("set_climbing") and bool(player.call("is_climbing")):
-			player.call("set_climbing", false)
-	roof_walk = null
 	if floor_root != null and is_instance_valid(floor_root):
 		level.remove_child(floor_root)
 		floor_root.queue_free()
@@ -596,7 +576,7 @@ func _arrival_offset(cell: Vector2i) -> Vector2i:
 
 
 func _on_stairs_entered(stairs: Variant) -> void:
-	if _transitioning or _stairs_cooldown > 0.0 or stairs == null or is_player_on_roof():
+	if _transitioning or _stairs_cooldown > 0.0 or stairs == null:
 		return
 	var target_floor := int(stairs.get("target_floor"))
 	var target_cell: Vector2i = stairs.get("target_cell")
@@ -793,7 +773,7 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 	if _raid_over or _transitioning:
 		return
 	var alive := not player.has_method("is_alive") or bool(player.call("is_alive"))
-	var on_zone := alive and layout.extraction_cells.has(cell) and not is_player_on_roof()
+	var on_zone := alive and layout.extraction_cells.has(cell)
 	if not on_zone:
 		if is_extracting():
 			_cancel_extraction(alive)
@@ -801,22 +781,18 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 	if not is_extracting():
 		_start_extraction()
 	_extraction_time += delta
-	if _channel_ring != null:
-		_channel_ring.set_progress(get_extraction_progress())
+	if _active_zone != null and is_instance_valid(_active_zone):
+		_active_zone.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
 	if _extraction_time >= extraction_channel_time():
 		_finish_extraction()
 
 
-## Début de canalisation : anneau au-dessus du joueur, ennemis proches alertés.
+## Début de canalisation : anneau de progression centré sur la zone, ennemis proches alertés.
 func _start_extraction() -> void:
 	_extraction_time = 0.0
-	if _channel_ring == null or not is_instance_valid(_channel_ring):
-		_channel_ring = ChannelRing.new()
-		_channel_ring.name = "ExtractionRing"
-		player.add_child(_channel_ring)
-	_channel_ring.position = Vector2(0, -Balance.get_float("extraction", "ring_height", 96.0))
-	_channel_ring.set_progress(0.0)
-	_channel_ring.visible = true
+	_active_zone = get_extraction_zone_at(get_player_cell())
+	if _active_zone != null:
+		_active_zone.show_progress(true)
 	var n := alert_enemies_near(player.global_position, Balance.get_float("extraction", "alert_radius", 520.0))
 	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
 
@@ -837,24 +813,51 @@ func alert_enemies_near(pos: Vector2, radius: float) -> int:
 func _cancel_extraction(notify: bool) -> void:
 	var was := is_extracting()
 	_extraction_time = -1.0
-	if _channel_ring != null and is_instance_valid(_channel_ring):
-		_channel_ring.visible = false
+	if _active_zone != null and is_instance_valid(_active_zone):
+		_active_zone.show_progress(false)
+	_active_zone = null
 	if notify and was and not _raid_over:
 		show_toast("Extraction interrompue")
 
 
-## Marqueur au sol bien visible sur les cases d'extraction (dessiné une fois, pulsation
-## par Tween sur l'opacité : aucun redessin par frame).
+## Marqueurs d'extraction (ExtractionZone : un par groupe de cases contiguës), dessinés une
+## fois et animés par Tween.
 func _build_extraction_marker() -> void:
 	_extraction_marker = null
+	extraction_zones.clear()
+	_active_zone = null
 	if layout == null or layout.extraction_cells.is_empty():
 		return
-	var m := ExtractionMarker.new()
-	m.name = "ExtractionMarker"
-	m.cells = layout.extraction_cells.duplicate()
+	_remove_builder_extraction_markers()
+	var m := Node2D.new()
+	m.name = "ExtractionZones"
 	m.z_index = 1
 	floor_root.add_child(m)
+	for z: ExtractionZone in ExtractionZone.create_all(layout.extraction_cells):
+		m.add_child(z)
+		extraction_zones.append(z)
 	_extraction_marker = m
+
+
+## Les constructeurs de décor posent leur propre lueur (ExtractionGlow, animée par _process) et
+## une fusée (groupe extraction_markers) : remplacées par ExtractionZone.
+func _remove_builder_extraction_markers() -> void:
+	if world_root == null or not is_instance_valid(world_root):
+		return
+	var old: Array[Node] = world_root.find_children("*ExtractionGlow*", "", true, false)
+	for n: Node in world_root.find_children("*", "", true, false):
+		if n.is_in_group(&"extraction_markers") and not old.has(n):
+			old.append(n)
+	for n: Node in old:
+		n.queue_free()
+
+
+## Zone d'extraction contenant la case (null si aucune).
+func get_extraction_zone_at(cell: Vector2i) -> ExtractionZone:
+	for z: ExtractionZone in extraction_zones:
+		if is_instance_valid(z) and z.has_cell(cell):
+			return z
+	return null
 
 
 # --- Tourelles -------------------------------------------------------------------
@@ -989,10 +992,6 @@ func get_banner_text() -> String:
 func get_current_room_name() -> String:
 	if layout == null:
 		return ""
-	if is_player_on_roof():
-		var bid := int(player.get("roof_building_id"))
-		if bid >= 0 and bid < layout.buildings.size():
-			return "Toit — %s" % layout.buildings[bid].name
 	var r := layout.room_at(get_player_cell())
 	return r.name if r != null else ""
 
@@ -1038,6 +1037,9 @@ func _build_ui() -> void:
 
 	_setup_loot_ui()
 	PauseMenu.attach(ui_layer)
+	var lh := ui_layer.get_node_or_null(^"InventoryHud")
+	if lh != null and lh.has_method("align_pause_button"):
+		lh.call_deferred("align_pause_button")
 
 	# Fondu au noir (changement d'étage), au-dessus de tout.
 	var fade_layer := CanvasLayer.new()
@@ -1057,6 +1059,9 @@ func _build_ui() -> void:
 func _setup_loot_ui() -> void:
 	var loot_hud := InventoryHud.new()
 	ui_layer.add_child(loot_hud)
+	# Mini-carte (haut droite, sous le sac) : extractions, zones explorées ; tap = plein écran.
+	minimap = MiniMap.create(self)
+	ui_layer.add_child(minimap)
 
 
 static func _make_panel_style(radius: int) -> StyleBoxFlat:
@@ -1090,7 +1095,7 @@ static func _make_label(size: int, color: Color, bold: bool) -> Label:
 ## Overlay F3 (paysage) : sous la barre de vie, à gauche, police compacte.
 func _layout_debug_overlay(overlay: Node) -> void:
 	var top := Balance.get_float("hud", "debug_overlay_top", 96.0)
-	var left := Balance.get_float("hud", "margin", 16.0)
+	var left := maxf(Balance.get_float("hud", "margin", 16.0), HudSafeArea.margins(ui_layer).x)
 	var font_size := int(Balance.get_value("hud", "debug_overlay_font_size", 15))
 	for c: Node in overlay.get_children():
 		if c is PanelContainer:
@@ -1108,7 +1113,7 @@ func _build_banner() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	center.anchor_left = 0.5
 	center.anchor_right = 0.5
-	var top := Balance.get_float("hud", "banner_top", 12.0)
+	var top := maxf(Balance.get_float("hud", "banner_top", 12.0), HudSafeArea.margins(ui_layer).y)
 	center.offset_left = -260
 	center.offset_right = 260
 	center.offset_top = top
@@ -1330,7 +1335,7 @@ func _build_debug_world_draw() -> void:
 	add_child(debug_world_draw)
 	debug_world_draw.call("register_drawer", _draw_debug_rooms)
 	debug_world_draw.call("register_drawer", _draw_debug_doors)
-	debug_world_draw.call("register_drawer", _draw_debug_roofs)
+	debug_world_draw.call("register_drawer", _draw_debug_footprint)
 	debug_world_draw.call("register_drawer", _draw_debug_info)
 
 
@@ -1354,13 +1359,8 @@ func _draw_debug_rooms(canvas: Node2D) -> void:
 		canvas.draw_string(font, p + Vector2(-40, -36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0.6, 0.9, 1.0))
 
 
-## (Toits) Zones praticables des toits à échelle (cyan) et couche « emprise rendue » (orange).
-func _draw_debug_roofs(canvas: Node2D) -> void:
-	if roof_walk != null and is_instance_valid(roof_walk):
-		for r: Rect2 in roof_walk.debug_rects():
-			canvas.draw_rect(r, Color(0.2, 0.95, 1.0, 0.9), false, 3.0)
-		for l: Ladder in roof_walk.ladders:
-			canvas.draw_circle(l.global_position, 10.0, Color(0.2, 1.0, 0.4, 0.9))
+## Couche « emprise rendue » du fond pré-calculé (orange).
+func _draw_debug_footprint(canvas: Node2D) -> void:
 	if prerender != null and is_instance_valid(prerender):
 		for r2: Rect2 in prerender.collision_rects():
 			canvas.draw_rect(r2, Color(1.0, 0.55, 0.0, 0.35))
@@ -1418,105 +1418,3 @@ func _draw_debug_info(canvas: Node2D) -> void:
 		var at := origin + Vector2(0, 20.0 * i)
 		canvas.draw_string_outline(font, at, lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, 5, Color(0.07, 0.1, 0.18))
 		canvas.draw_string(font, at, lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.WHITE)
-
-
-# =====================================================================================
-
-## Marqueur au sol des cases d'extraction : dalles vertes cerclées, chevrons et libellé
-## « EXTRACTION » par zone. Dessiné une seule fois ; pulsation par Tween (modulate).
-class ExtractionMarker extends Node2D:
-	const COL := Color(0.35, 1.0, 0.55)
-	var cells: Array[Vector2i] = []
-
-	func _ready() -> void:
-		var tw := create_tween().set_loops()
-		tw.tween_property(self, "modulate:a", 0.55, 0.9).set_trans(Tween.TRANS_SINE)
-		tw.tween_property(self, "modulate:a", 1.0, 0.9).set_trans(Tween.TRANS_SINE)
-
-	func _draw() -> void:
-		var ts := float(FloorLayout.TILE_SIZE)
-		var cell_set := {}
-		for c: Vector2i in cells:
-			cell_set[c] = true
-		for c: Vector2i in cells:
-			var r := Rect2(Vector2(c) * ts, Vector2(ts, ts))
-			draw_rect(r, Color(COL, 0.22))
-			# Bord de zone : uniquement les côtés sans case voisine d'extraction.
-			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-				if cell_set.has(c + d):
-					continue
-				var a := r.position
-				var b := r.position
-				match d:
-					Vector2i.LEFT:
-						b = r.position + Vector2(0, ts)
-					Vector2i.RIGHT:
-						a = r.position + Vector2(ts, 0)
-						b = r.end
-					Vector2i.UP:
-						b = r.position + Vector2(ts, 0)
-					Vector2i.DOWN:
-						a = r.position + Vector2(0, ts)
-						b = r.end
-				draw_line(a, b, Color(COL, 0.95), 4.0, true)
-			# Chevron vers le haut (sortie).
-			var cc := r.get_center()
-			var pts := PackedVector2Array([cc + Vector2(-14, 8), cc + Vector2(0, -8), cc + Vector2(14, 8)])
-			draw_polyline(pts, Color(COL, 0.8), 5.0, true)
-		# Libellé par zone (groupes de cases contiguës).
-		var seen := {}
-		var font := LootVisuals.text_font(900)
-		for c: Vector2i in cells:
-			if seen.has(c):
-				continue
-			var group: Array[Vector2i] = []
-			var stack: Array[Vector2i] = [c]
-			seen[c] = true
-			while not stack.is_empty():
-				var cur: Vector2i = stack.pop_back()
-				group.append(cur)
-				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-					var nb := cur + d
-					if cell_set.has(nb) and not seen.has(nb):
-						seen[nb] = true
-						stack.append(nb)
-			var sum := Vector2.ZERO
-			var top := INF
-			for g: Vector2i in group:
-				sum += FloorLayout.cell_to_world(g)
-				top = minf(top, float(g.y) * ts)
-			var cx := sum.x / group.size()
-			var label := "EXTRACTION"
-			var fs := 22
-			var w := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-			var at := Vector2(cx - w * 0.5, top - 10.0)
-			draw_string_outline(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 7, Color(0.03, 0.08, 0.06))
-			draw_string(font, at, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, COL)
-
-
-## Anneau de progression d'extraction au-dessus du joueur (redessiné seulement quand la
-## progression change, c.-à-d. pendant la canalisation).
-class ChannelRing extends Node2D:
-	const COL := Color(0.35, 1.0, 0.55)
-	var progress: float = 0.0
-
-	func _init() -> void:
-		z_as_relative = false
-		z_index = 95
-
-	func set_progress(p: float) -> void:
-		if is_equal_approx(p, progress):
-			return
-		progress = p
-		queue_redraw()
-
-	func _draw() -> void:
-		var r := 26.0
-		draw_circle(Vector2.ZERO, r + 7.0, Color(0.05, 0.07, 0.13, 0.82))
-		draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(COL, 0.25), 7.0, true)
-		draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 48, COL, 7.0, true)
-		var font := LootVisuals.text_font(900)
-		var remain := maxf(Raid.extraction_channel_time() * (1.0 - progress), 0.0)
-		var t := "%.1f" % remain
-		var w := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
-		draw_string(font, Vector2(-w * 0.5, 6.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)

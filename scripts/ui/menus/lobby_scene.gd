@@ -3,9 +3,11 @@ extends Control
 ## Fond vivant du menu principal : le camp de base à la lisière de Dust Creek au coucher du
 ## soleil, pré-rendu dans Blender (art/blender/build_menu.py → assets/ui/menu/lobby/) en
 ## couches (lointain, camp, premier plan) + le héros (LobbyHero) posé à sa place.
-## Animé en code, sans shader ni _process : drapeau (6 images), flammes (6 images, additif),
-## lueur du feu et de la lanterne qui vacillent (Tween), fumée et poussière (CPUParticles2D,
-## peu de particules), léger parallaxe en balancement lent (Tween), zoom d'entrée.
+## Animé en continu (fluide à 60 fps, sans animation image par image) : drapeau = maillage
+## subdivisé (Polygon2D, 17 x 7 sommets) ondulé par un petit shader de sommets ; flammes =
+## texture unique déformée par un petit shader (additif) ; lueurs du feu et de la lanterne qui
+## vacillent (Tween) ; fumée et poussière (CPUParticles2D, peu de particules) ; léger parallaxe
+## en balancement lent (Tween) ; zoom d'entrée. Aucun _process, aucun redessin par image.
 ## La scène (2048 x 1024 px) est mise à l'échelle « cover » : toutes les positions du JSON sont
 ## en pixels de l'image.
 
@@ -26,8 +28,8 @@ var camp_layer: Control = null
 var hero_layer: Control = null
 var front_layer: Control = null
 var hero: LobbyHero = null
-var flag: AnimatedSprite2D = null
-var flames: AnimatedSprite2D = null
+var flag: Polygon2D = null
+var flames: Sprite2D = null
 var fire_glow: Sprite2D = null
 var smoke: CPUParticles2D = null
 var dust: CPUParticles2D = null
@@ -64,6 +66,7 @@ func _ready() -> void:
 	add_child(bg)
 	stage = Control.new()
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	stage.size = image_size
 	add_child(stage)
 	back_layer = _layer("Back")
@@ -147,63 +150,45 @@ func _build_camp() -> void:
 	var tex := _tex("camp.png")
 	if tex != null:
 		_sprite_rect(tex, meta.get("camp"), camp_layer)
-	# drapeau (planche 3 x 2)
-	var ftex := _tex("flag.png")
-	var fm: Dictionary = meta.get("flag", {})
-	if ftex != null and fm.has("rect"):
-		var r: Array = fm["rect"]
-		var sf := SpriteFrames.new()
-		sf.remove_animation(&"default")
-		sf.add_animation(&"wave")
-		sf.set_animation_speed(&"wave", float(fm.get("fps", 8)))
-		var cols: int = int(fm.get("cols", 3))
-		for i: int in int(fm.get("frames", 6)):
-			var at := AtlasTexture.new()
-			at.atlas = ftex
-			at.region = Rect2((i % cols) * float(r[2]), (i / cols) * float(r[3]), float(r[2]), float(r[3]))
-			sf.add_frame(&"wave", at)
-		flag = AnimatedSprite2D.new()
-		flag.sprite_frames = sf
-		flag.centered = false
-		flag.position = Vector2(float(r[0]), float(r[1]))
+	# drapeau : texture plate haute résolution, maillage subdivisé ondulé par shader (60 fps)
+	var ftex := _tex("flag_cloth.png")
+	if ftex != null and meta.has("pole_top"):
+		flag = _make_flag(ftex)
 		camp_layer.add_child(flag)
-		flag.play(&"wave")
-	# flammes (6 images, additif) + fumée
+	# flammes : deux langues déformées en continu par shader (additif) + cœur lumineux + fumée
 	var fl := _tex("flame.png")
 	var fire: Dictionary = meta.get("fire", {})
 	if fl != null and not fire.is_empty():
 		var fu: float = float(fire.get("unit_px", 120.0))
-		var sf2 := SpriteFrames.new()
-		sf2.remove_animation(&"default")
-		sf2.add_animation(&"burn")
-		sf2.set_animation_speed(&"burn", 12.0)
-		var fw: float = fl.get_width() / 6.0
-		for i: int in 6:
-			var at2 := AtlasTexture.new()
-			at2.atlas = fl
-			at2.region = Rect2(i * fw, 0, fw, fl.get_height())
-			sf2.add_frame(&"burn", at2)
-		flames = AnimatedSprite2D.new()
-		flames.sprite_frames = sf2
-		flames.centered = false
+		var base_pos: Vector2 = _v("fire", "pos") + Vector2(0, -fu * 0.04)
 		var add := CanvasItemMaterial.new()
 		add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		flames.material = add
-		var k: float = fu * 0.62 / fl.get_height()
-		flames.scale = Vector2(k * 1.15, k)
-		flames.offset = Vector2(-fw * 0.5, -fl.get_height() * 0.94)
-		flames.position = _v("fire", "pos") + Vector2(0, -fu * 0.04)
-		camp_layer.add_child(flames)
-		flames.play(&"burn")
 		var core := Sprite2D.new()
 		core.texture = GLOW
 		core.material = add
 		core.modulate = Color(1.0, 0.6, 0.25, 0.75)
-		core.position = flames.position + Vector2(0, -fu * 0.2)
+		core.position = base_pos + Vector2(0, -fu * 0.2)
 		core.scale = Vector2(fu * 1.2 / 256.0, fu * 0.9 / 256.0)
 		camp_layer.add_child(core)
 		_flicker(core, 0.75, 0.2)
-		smoke = _make_smoke(flames.position + Vector2(0, -fu * 0.55), fu)
+		for i: int in 2:
+			var f := Sprite2D.new()
+			f.texture = fl
+			f.centered = false
+			f.offset = Vector2(-fl.get_width() * 0.5, -fl.get_height() * 0.95)
+			var k: float = fu * (0.82 if i == 0 else 0.58) / fl.get_height()
+			f.scale = Vector2(k * (1.15 if i == 0 else 1.3), k)
+			f.position = base_pos + Vector2(fu * (0.0 if i == 0 else 0.07), 0)
+			var mat := ShaderMaterial.new()
+			mat.shader = flame_shader()
+			mat.set_shader_parameter(&"seed", 3.7 * i)
+			mat.set_shader_parameter(&"speed", 1.0 if i == 0 else 1.27)
+			f.material = mat
+			f.modulate = Color(1, 1, 1, 1.0 if i == 0 else 0.8)
+			camp_layer.add_child(f)
+			if i == 0:
+				flames = f
+		smoke = _make_smoke(base_pos + Vector2(0, -fu * 0.55), fu)
 		camp_layer.add_child(smoke)
 	# lanterne de la table d'armes
 	if meta.has("lantern"):
@@ -217,6 +202,99 @@ func _build_camp() -> void:
 		lg.scale = Vector2(0.42, 0.42)
 		camp_layer.add_child(lg)
 		_flicker(lg, 0.55, 0.12)
+
+
+const FLAG_SHADER := """
+shader_type canvas_item;
+// Ondulation du drapeau : vague qui part du mât (u = 0, immobile) vers le bord libre.
+uniform float amp = 6.0;
+uniform float waves = 1.35;
+uniform float speed = 3.0;
+varying float shade;
+void vertex() {
+	float u = UV.x;
+	float ph = u * waves * 6.2831853 - TIME * speed;
+	VERTEX.y += (amp * sin(ph) + amp * 0.3 * sin(ph * 1.9 + UV.y * 2.5)) * u;
+	VERTEX.x -= amp * 0.35 * u * (1.0 - cos(ph)) * 0.5;
+	shade = cos(ph) * u;
+}
+void fragment() {
+	vec4 c = texture(TEXTURE, UV);
+	c.rgb *= 1.0 + 0.34 * shade;
+	COLOR = c * COLOR;
+}
+"""
+
+const FLAME_SHADER := """
+shader_type canvas_item;
+render_mode blend_add;
+// Flamme vivante : ondulations qui montent, étirement et scintillement (texture unique).
+uniform float speed = 1.0;
+uniform float seed = 0.0;
+void fragment() {
+	vec2 uv = UV;
+	float h = 1.0 - uv.y;
+	float t = TIME * speed + seed;
+	uv.x += (sin(uv.y * 9.0 + t * 7.1) * 0.035 + sin(uv.y * 17.0 - t * 11.3) * 0.018) * h;
+	uv.y += sin(t * 6.0 + uv.x * 5.0) * 0.02 * h;
+	uv.y = 1.0 - (1.0 - uv.y) * (1.0 + 0.07 * sin(t * 4.7) + 0.04 * sin(t * 9.3));
+	vec4 c = texture(TEXTURE, clamp(uv, vec2(0.0), vec2(1.0)));
+	c.a *= 0.9 + 0.1 * sin(t * 13.0);
+	COLOR = c * COLOR;
+}
+"""
+
+static var _flag_shader: Shader = null
+static var _flame_shader: Shader = null
+
+
+static func flag_shader() -> Shader:
+	if _flag_shader == null:
+		_flag_shader = Shader.new()
+		_flag_shader.code = FLAG_SHADER
+	return _flag_shader
+
+
+static func flame_shader() -> Shader:
+	if _flame_shader == null:
+		_flame_shader = Shader.new()
+		_flame_shader.code = FLAME_SHADER
+	return _flame_shader
+
+
+## Drapeau : grille de 17 x 7 sommets accrochée au haut du mât (taille en px de l'image).
+func _make_flag(tex: Texture2D) -> Polygon2D:
+	var fs: Variant = (meta.get("flag", {}) as Dictionary).get("size", [138, 86])
+	var w: float = float(fs[0])
+	var h: float = float(fs[1])
+	var nx: int = 16
+	var ny: int = 6
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for j: int in ny + 1:
+		for i: int in nx + 1:
+			var u: float = float(i) / nx
+			var v: float = float(j) / ny
+			pts.append(Vector2(u * w, v * h + 0.08 * h * u * u))   # léger affaissement du bord libre
+			uvs.append(Vector2(u * tex.get_width(), v * tex.get_height()))
+	var polys: Array = []
+	for j: int in ny:
+		for i: int in nx:
+			var k: int = j * (nx + 1) + i
+			polys.append(PackedInt32Array([k, k + 1, k + nx + 2, k + nx + 1]))
+	var p := Polygon2D.new()
+	p.texture = tex
+	p.polygon = pts
+	p.uv = uvs
+	p.polygons = polys
+	p.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	p.color = Color(1.0, 0.93, 0.86)   # lumière chaude du couchant
+	var mat := ShaderMaterial.new()
+	mat.shader = flag_shader()
+	mat.set_shader_parameter(&"amp", h * 0.075)
+	p.material = mat
+	p.position = _v("pole_top") + Vector2(1.5, 0)
+	return p
 
 
 func _build_hero() -> void:

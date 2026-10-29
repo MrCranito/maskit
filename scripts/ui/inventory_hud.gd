@@ -38,10 +38,6 @@ func _ready() -> void:
 	add_child(bag_button)
 	bag_button.anchor_left = 1.0
 	bag_button.anchor_right = 1.0
-	bag_button.offset_left = -16.0 - InventoryBagButton.SIZE.x
-	bag_button.offset_right = -16.0
-	bag_button.offset_top = 16.0
-	bag_button.offset_bottom = 16.0 + InventoryBagButton.SIZE.y
 
 	_feed = VBoxContainer.new()
 	_feed.name = "PickupFeed"
@@ -54,6 +50,7 @@ func _ready() -> void:
 	_feed.offset_top = 84.0
 	_feed.offset_bottom = 84.0 + FEED_MAX * 44.0
 	add_child(_feed)
+	_place_safe()
 
 	loot_window = InventoryLootWindow.new()
 	add_child(loot_window)
@@ -71,7 +68,44 @@ func _ready() -> void:
 		lm.connect("key_used", _on_key_used)
 
 
+## Sac (haut droite) et fil des ramassages (haut gauche, sous la vie) dans la zone sûre.
+func _place_safe() -> void:
+	var m := HudSafeArea.margins(self)
+	bag_button.offset_left = -m.z - InventoryBagButton.SIZE.x
+	bag_button.offset_right = -m.z
+	bag_button.offset_top = m.y
+	bag_button.offset_bottom = m.y + InventoryBagButton.SIZE.y
+	_feed.offset_left = m.x
+	_feed.offset_right = m.x + 360.0
+	_feed.offset_top = m.y + 68.0
+	_feed.offset_bottom = _feed.offset_top + FEED_MAX * 44.0
+	align_pause_button()
+
+
+## Bouton pause (menu pause, frère dans le CanvasLayer) : juste à gauche du sac, même haut,
+## dans la zone sûre. Recalé à chaque redimensionnement.
+func align_pause_button() -> void:
+	var parent := get_parent()
+	if parent == null or bag_button == null:
+		return
+	var pb := parent.get_node_or_null(^"PauseMenu/PauseButton") as Control
+	if pb == null:
+		return
+	var m := HudSafeArea.margins(self)
+	var s := maxf(pb.custom_minimum_size.x, 1.0)
+	var gap := Balance.get_float("hud", "pause_bag_gap", 10.0)
+	pb.anchor_left = 1.0
+	pb.anchor_right = 1.0
+	pb.offset_right = bag_button.offset_left - gap
+	pb.offset_left = pb.offset_right - s
+	var top := m.y + (InventoryBagButton.SIZE.y - s) * 0.5
+	pb.offset_top = top
+	pb.offset_bottom = top + s
+
+
 func _place_action_button() -> void:
+	if bag_button != null and _feed != null:
+		_place_safe()
 	var vp := get_viewport_rect().size
 	action_button.place_above_right_stick(vp,
 		Balance.get_float("joystick", "right_rest_x", 0.87),

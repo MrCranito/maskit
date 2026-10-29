@@ -52,8 +52,6 @@ pointing/emulate_touch_from_mouse=true
 2d_physics/layer_4="player_projectiles"
 2d_physics/layer_5="enemy_projectiles"
 2d_physics/layer_6="interactables"
-2d_physics/layer_7="roof_player"
-2d_physics/layer_8="roof_bounds"
 
 [physics]
 

@@ -9,11 +9,11 @@ Passes : full (carte entière, par morceaux, reprise possible : _chunks_full/) ;
          voir render_mask) ; occ (ids d'occultation par pixel, même caméra que full → occ.png, voir
          render_occ) ; crop:x0;x1;y0;y1 (zone en cases → crop.png) ;
          view:x0;x1;y0;y1;tilt;ppc (vue libre → view.png)
-Sorties : full.png, b<id>_in.png, mask.png, occ.png, render.json (géométrie, toits, échelles) et
+Sorties : full.png, b<id>_in.png, mask.png, occ.png, render.json (géométrie) et
           layout.json (copie du plan) pour compose.py.
 Cohérence rendu ↔ collisions (correctif « zones interdites ») : rochers rognés à leurs cases
 (slab clamp), props / repères / wagons ramenés dans leur emprise (fit_xy), fouillis tenant dans
-une case libre sans couper de passage, échelles contre la façade sud (seule visible).
+une case libre sans couper de passage.
 
 PROJECTION (documentée, vérifiée par test) :
   caméra orthographique inclinée de TILT (35°) vers le nord, pixel_aspect_x = 1/cos(TILT),
@@ -922,13 +922,6 @@ for lm in LAYOUT["landmarks"] + LAYOUT["train"]:
     for yy in range(y, y + h):
         for xx in range(x, x + w):
             occupied.add((xx, yy))
-# échelles (toits) : pied + case au sud réservés (pas de fouillis), infos de toit pour compose.py
-LADDERS = {int(l["building_id"]): l for l in LAYOUT.get("ladders", [])}
-for l_ in LAYOUT.get("ladders", []):
-    for dy_ in (0, 1):
-        for dx_ in (-1, 0, 1):
-            game_cells.add((l_["cell"][0] + dx_, l_["cell"][1] + dy_))
-ROOF_INFO = {}
 rock_cells = set()
 for rf in LAYOUT["rock_formations"]:
     for c in rf["cells"]:
@@ -1223,9 +1216,7 @@ def build_building(b):
     rise = min(0.32 * span + 0.15, 1.7)
     if style in ("plank", "shingle"):
         rise *= 1.1
-    lad = LADDERS.get(int(b["id"]))
-    # Bâtiment à échelle : pas de fausse façade (l'échelle doit atteindre le bord visible du toit).
-    has_ff = side == "S" and lad is None and (arch in FALSE_FRONT or rng.random() < 0.28)
+    has_ff = side == "S" and (arch in FALSE_FRONT or rng.random() < 0.28)
     top = gable(roof, mx0, my0, mx1, my1, H1, rmat, ridge_x, rise, 0.24, gm, rng, ov_s=(-0.02 if has_ff else None))
     # pignons/annexes
     if annex:
@@ -1307,13 +1298,6 @@ def build_building(b):
     pdepth = 1.0
     if side == "S" and (arch != "shack" or rng.random() < 0.5):
         xa, xb = X0 + (0.0 if rng.random() < 0.6 else 0.5), X1 - (0.0 if rng.random() < 0.6 else 0.5)
-        if lad is not None:
-            # porche raccourci : la colonne de l'échelle reste dégagée (auvent compris)
-            lc = lad["cell"][0]
-            if lc - X0 < X1 - lc:
-                xa = max(xa, lc + 1.08)
-            else:
-                xb = min(xb, lc - 0.08)
         ya, yb = YS - pdepth, YS
         porch.box(xa, ya, 0.0, xb, yb, 0.14, "deck")
         porch.box(xa, ya - 0.02, 0.0, xb, ya + 0.06, 0.12, "trim")
@@ -1347,9 +1331,6 @@ def build_building(b):
         for d in door_cells:
             if d[1] == y + h - 1:
                 porch.box(d[0] + 0.05, YS - 0.45, 0.0, d[0] + 0.95, YS, 0.12, "deck")
-    if lad is not None:
-        build_ladder(lad, H1, b["id"])
-    ROOF_INFO[int(b["id"])] = {"eave": round(H1, 3), "top": round(top, 3), "stories": stories}
     # ---------------- objets
     ob = walls.to_object("walls_%d" % b["id"], "world")
     floor.to_object("floor_%d" % b["id"], "world")
@@ -1360,25 +1341,6 @@ def build_building(b):
     co_ = cut.to_object("cut_%d" % b["id"], "world")
     co_.hide_render = True
     return H1, top
-
-
-def build_ladder(lad, H1, bid):
-    """Échelle en bois appuyée contre la façade sud (visible), du pied (case `cell`, au sud du mur)
-    jusqu'au-dessus de l'égout du toit (H1). Objet « ladder_<id> » (collection world, hors masque
-    d'emprise et hors occultation : le joueur y grimpe)."""
-    mb = MB()
-    cx = lad["cell"][0] + 0.5
-    ys = Y(lad["cell"][1])           # face sud du mur sud
-    yb, yt = ys - 0.62, ys - 0.30    # pied écarté du mur, sommet au-delà du débord du toit
-    zt = H1 + 0.42
-    for sg in (-1, 1):
-        mb.seg((cx + sg * 0.21, yb, 0.0), (cx + sg * 0.19, yt, zt), 0.035, "wood_dark", 6)
-    n = int(zt / 0.27)
-    for k in range(1, n + 1):
-        t = k / (n + 0.6)
-        yy = yb + (yt - yb) * t
-        mb.seg((cx - 0.21, yy, zt * t), (cx + 0.21, yy, zt * t), 0.022, "wood", 5)
-    mb.to_object("ladder_%d" % bid, "world")
 
 
 def build_interior_furniture(b, rng):
@@ -1939,7 +1901,7 @@ def build_clutter():
     sacs, foin, roues, bric-à-brac) comme sur la maquette.
     Cohérence rendu ↔ collisions : chaque grappe tient dans UNE case de rue (le masque d'emprise la
     rend bloquante en jeu, cf. compose.py), jamais sur un chemin, un porche, une voie, les abords
-    d'une porte / d'un conteneur / d'une échelle, et seulement si bloquer cette case garde le sable
+    d'une porte / d'un conteneur, et seulement si bloquer cette case garde le sable
     libre d'un seul tenant autour (même test d'anneau que le générateur). Pas de charrette."""
     mb = MB()
     rng = random.Random(SEED * 31 + 7)
@@ -2669,7 +2631,7 @@ def render_chunked(path, chunk=1024, ov=24, grade_=True):
 MASK_SOLID = ("walls_", "front_", "ruin_", "rocks", "train", "fences", "landmarks", "props")
 MASK_DECOR = ("clutter", "furn_")
 MASK_SKIP = ("ground", "scatter", "rails", "floor_", "porch_", "cut_", "roof_", "awning_", "rocks_margin", "topbush_",
-             "ladder_", "veg_props", "_")
+             "veg_props", "_")
 
 
 def mask_class(name):
@@ -2764,9 +2726,9 @@ def render_mask(path, ppc=4, zmin=0.16, zmax=1.0, ss=4):
 
 
 # ======================================================================= occultation (ids par pixel)
-# Objets qui n'occultent jamais un personnage (sol, rails, porches / auvents : on passe dessous,
-# échelles : on y grimpe ; floor/cut : invisibles depuis la caméra « full »).
-OCC_SKIP = ("ground", "rails", "porch_", "awning_", "ladder_", "floor_", "cut_", "_")
+# Objets qui n'occultent jamais un personnage (sol, rails, porches / auvents : on passe dessous ;
+# floor/cut : invisibles depuis la caméra « full »).
+OCC_SKIP = ("ground", "rails", "porch_", "awning_", "floor_", "cut_", "_")
 
 
 def render_occ(path, zmin=0.3):
@@ -2785,7 +2747,7 @@ def render_occ(path, zmin=0.3):
             continue
         cap = 0.0 if o.name.startswith(OCC_SKIP) else 1.0
         bid = 0
-        for pre in ("walls_", "front_", "roof_", "awning_", "porch_", "floor_", "furn_", "ruin_", "ladder_"):
+        for pre in ("walls_", "front_", "roof_", "awning_", "porch_", "floor_", "furn_", "ruin_"):
             if o.name.startswith(pre):
                 try:
                     bid = int(o.name[len(pre):]) + 1
@@ -2946,8 +2908,6 @@ if __name__ == "__main__":
         scene.render.use_border = False
         info["renders"]["interiors_s"] = round(tb, 1)
         print("INT", round(tb, 1), "s", flush=True)
-    info["roofs"] = {str(k): v for k, v in sorted(ROOF_INFO.items())}
-    info["ladders"] = LAYOUT.get("ladders", [])
     info["clutter_cells"] = [list(c) for c in CLUTTER_CELLS]
     json.dump(info, open(os.path.join(OUT, "render.json"), "w"), indent=1)
     json.dump(LAYOUT, open(os.path.join(OUT, "layout.json"), "w"))   # pour compose.py (collisions)

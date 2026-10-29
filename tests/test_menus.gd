@@ -206,7 +206,7 @@ func test_lobby_hero_reflects_skin() -> void:
 	await wait_frames(2)
 	assert_eq(m.hero.sheet_id, "default", "Skin par défaut")
 	assert_eq(m.hero.get_current_animation(), &"idle", "Idle, plus de rotation")
-	assert_not_null(m.hero.sprite.sprite_frames)
+	assert_not_null(m.hero.sprite.texture, "Pose haute résolution du skin")
 	var other: SkinData = null
 	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
 		if s.id != HeroSkin.DEFAULT_SKIN_ID and LobbyHero.has_sheet(s):
@@ -223,9 +223,9 @@ func test_lobby_hero_reflects_skin() -> void:
 
 
 func test_lobby_assets_and_layout() -> void:
-	for f: String in ["back.jpg", "camp.png", "front.png", "flag.png", "flame.png", "smoke.png", "lobby.json"]:
+	for f: String in ["back.jpg", "camp.png", "front.png", "flag_cloth.png", "flame.png", "smoke.png", "lobby.json"]:
 		assert_true(FileAccess.file_exists("res://assets/ui/menu/lobby/" + f), f)
-	for f: String in ["back.jpg", "camp.png", "front.png", "flag.png"]:
+	for f: String in ["back.jpg", "camp.png", "front.png", "flag_cloth.png"]:
 		var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/ui/menu/lobby/" + f))
 		assert_lte(maxi(img.get_width(), img.get_height()), 2048, "Texture ≤ 2048 : " + f)
 	var l := LobbyScene.new()
@@ -234,14 +234,38 @@ func test_lobby_assets_and_layout() -> void:
 	l.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	l.size = Vector2(1280, 720)   # paysage 16:9 (le viewport des tests peut avoir un autre format)
 	await wait_frames(1)
-	assert_not_null(l.flag, "Drapeau animé")
-	assert_not_null(l.flames, "Flammes animées")
-	assert_true(l.flag.is_playing())
+	assert_not_null(l.flag, "Drapeau")
+	assert_true(l.flag.material is ShaderMaterial, "Drapeau ondulé par shader (fluide), plus d'images")
+	assert_gte(l.flag.polygon.size(), 60, "Maillage subdivisé")
+	assert_gte(l.flag.texture.get_width(), 256, "Texture du drapeau haute résolution")
+	assert_not_null(l.flames, "Flammes")
+	assert_true(l.flames.material is ShaderMaterial, "Flammes déformées par shader")
 	# le héros est au centre-gauche et entièrement dans l'écran
 	var feet := l.hero_screen_position()
 	assert_between(feet.x / l.size.x, 0.3, 0.5, "Héros au centre-gauche")
 	assert_between(feet.y / l.size.y, 0.6, 0.97, "Pieds du héros visibles")
 	l.stop_loops()
+
+
+func test_lobby_hero_is_sharp_and_smooth() -> void:
+	# Net sur Retina : pose ≥ 600 px de haut, import sans perte avec mipmaps ; idle continue.
+	var meta: Variant = JSON.parse_string(FileAccess.get_file_as_string(LobbyHero.META_PATH))
+	assert_gte(float((meta as Dictionary).get("hero_px", 0)), 600.0, "Héros rendu en haute résolution")
+	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
+		var id := String(s.id).trim_prefix("char_")
+		assert_true(ResourceLoader.exists(LobbyHero.DIR + id + ".png"), "Pose du skin " + id)
+		var imp := FileAccess.get_file_as_string(LobbyHero.DIR + id + ".png.import")
+		assert_string_contains(imp, "compress/mode=0", "Import sans perte : " + id)
+		assert_string_contains(imp, "mipmaps/generate=true", "Mipmaps : " + id)
+	var h := LobbyHero.new(false)
+	add_child_autofree(h)
+	await wait_frames(1)
+	var samples: Dictionary = {}
+	for i: int in 10:
+		await wait_frames(1)
+		samples[h.body.scale.y] = true
+	assert_gte(samples.size(), 8, "L'idle change à chaque image (pas d'animation saccadée)")
+	assert_false(h.has_node("AnimatedSprite2D"))
 
 
 func test_loadout_summary_shows_loadout() -> void:

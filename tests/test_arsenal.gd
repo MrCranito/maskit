@@ -385,3 +385,26 @@ func test_ecran_de_fin_separe_les_equipements() -> void:
 	var split := RaidEndScreen.split_gadgets([&"smg_mp5", &"gadget_drone"])
 	assert_eq(split[0], [&"smg_mp5"])
 	assert_eq(split[1], [&"gadget_drone"])
+
+
+func test_ecran_de_fin_trie_par_rarete_et_tient_a_l_ecran() -> void:
+	var ids: Array = [&"smg_mp5", &"gadget_frag", &"rifle_aug", &"sniper_m24", &"pistol_deagle", &"rocket_javelin",
+		&"gadget_c4", &"rifle_m4a1", &"smg_p90"]
+	var sorted := RaidEndScreen.sort_by_rarity(ids)
+	var prev := 99
+	for id: Variant in sorted:
+		var r := WeaponCatalog.get_weapon(StringName(str(id))).rarity
+		assert_lte(r, prev, "rareté décroissante")
+		prev = r
+	assert_eq(sorted[0], &"rifle_aug", "Légendaire d'abord, puis ordre des catégories")
+	for ok: bool in [true, false]:
+		var key := "weapons" if ok else "lost_weapons"
+		var sc := RaidEndScreen.create(ok, {key: ids, "items": {&"gold_nugget": 2, &"bandage": 1}, "value": 99, "gems": 3,
+			"starter_given": true, "lost_items": 4, "lost_value": 80})
+		add_child_autofree(sc)
+		await wait_process_frames(3)
+		assert_eq(sc.get_card_ids(), sorted, "cartes dans l'ordre trié")
+		assert_true(sc.fits_on_screen(), "tout tient sans défilement vertical (%s)" % sc.get_title_text())
+		sc.queue_free()
+		await wait_process_frames(1)
+	get_tree().paused = false

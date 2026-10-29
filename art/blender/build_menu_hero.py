@@ -8,8 +8,11 @@ Usage (depuis la racine du projet) :
     python3 art/blender/build_menu_hero.py --bust <out.png> [skin]  # buste (icône d'application)
     python3 art/blender/build_menu_hero.py --hero-shot <out.png> [skin] # pied, contre-plongée (splash)
 
-Sorties : assets/ui/menu/hero/<skin>.png (planche 4 x 2 images d'idle, FRAME_W x FRAME_H)
-          assets/ui/menu/hero/hero_menu.json (taille des cadres, pieds, fps).
+Sorties : assets/ui/menu/hero/<skin>.png (pose fixe haute résolution FRAME_W x FRAME_H, ≥ 800 px
+          de héros : net sur un écran Retina 2532 x 1170 / 2778 x 1284 où il fait ~45 % de la hauteur)
+          assets/ui/menu/hero/hero_menu.json (taille du cadre, pieds, hauteur du héros).
+L'idle (respiration, balancement) est procédurale, dans le jeu (scripts/ui/menus/lobby_hero.gd) :
+fluide à 60 fps, une seule texture par skin.
 Caméra orthographique basse (ELEV degrés) : le héros est vu presque de face, légèrement de
 3/4 (tourné vers la droite de l'écran, vers le bouton Jouer).
 """
@@ -30,11 +33,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "assets", "ui", "menu", "hero")
 TMP = os.environ.get("RDM_TMP", "/tmp/rdm_menu_hero")
 
-FRAME_W, FRAME_H = 320, 400   # cadre final (px) ; planche 4 x 2 = 1280 x 800
-COLS, ROWS = 4, 2
-N_FRAMES = 8
-FPS = 7
+FRAME_W, FRAME_H = 720, 900   # cadre final (px), une pose par skin
+N_FRAMES = 8                  # (pose_menu : cycle de référence ; seule l'image 0 est rendue)
 SS = 2
+OUTLINE = 11.0                # contour à la résolution de rendu (FRAME x SS)
 ELEV = 9.0                    # plongée de la caméra (degrés) : presque de face
 TURN = 24.0                   # rotation du héros (degrés) vers la droite de l'écran
 ORTHO_H = 2.12
@@ -107,16 +109,6 @@ def render(path_big: str, path: str, size: tuple[int, int]) -> None:
     C.downscale(path_big, path, size)
 
 
-def build_sheet(frames: list[str], out: str) -> None:
-    from PIL import Image
-    sheet = Image.new("RGBA", (FRAME_W * COLS, FRAME_H * ROWS), (0, 0, 0, 0))
-    for k, p in enumerate(frames):
-        sheet.paste(Image.open(p), ((k % COLS) * FRAME_W, (k // COLS) * FRAME_H))
-    a = sheet.getchannel("A").point(lambda v: 0 if v < 4 else v)
-    sheet.putalpha(a)
-    sheet.save(out, optimize=True)
-
-
 def main() -> None:
     args = sys.argv[1:]
     os.makedirs(TMP, exist_ok=True)
@@ -138,7 +130,7 @@ def main() -> None:
         print("OUT", out)
         return
     if "--test" in args:
-        hero, cam = setup((FRAME_W * SS, FRAME_H * SS), ORTHO_H, TARGET_Z)
+        hero, cam = setup((FRAME_W * SS, FRAME_H * SS), ORTHO_H, TARGET_Z, outline=OUTLINE)
         sid = args[args.index("--test") + 1] if len(args) > args.index("--test") + 1 else "default"
         apply(hero, sid)
         pose_menu(hero, 0)
@@ -148,36 +140,34 @@ def main() -> None:
         return
     skins = args[args.index("--skins") + 1].split(",") if "--skins" in args else list(H.SKINS)
     os.makedirs(OUT, exist_ok=True)
-    hero, cam = setup((FRAME_W * SS, FRAME_H * SS), ORTHO_H, TARGET_Z)
+    hero, cam = setup((FRAME_W * SS, FRAME_H * SS), ORTHO_H, TARGET_Z, outline=OUTLINE)
     bpy.context.view_layer.update()
     feet = C.world_to_px(cam, (0, 0, 0))
     feet = [round(feet[0] / SS), round(feet[1] / SS)]
     top = C.world_to_px(cam, (0, 0, 1.0))
     unit_px = round((feet[1] - top[1] / SS), 1)
-    for sid in skins:
-        frames = []
-        apply(hero, sid)
-        for i in range(N_FRAMES):
-            pose_menu(hero, i)
-            p = os.path.join(TMP, "%s_%d.png" % (sid, i))
-            render(p + ".big.png", p, (FRAME_W, FRAME_H))
-            frames.append(p)
-        build_sheet(frames, os.path.join(OUT, "%s.png" % sid))
-        print("SKIN", sid, flush=True)
     from PIL import Image
+    for sid in skins:
+        apply(hero, sid)
+        pose_menu(hero, 0)
+        p = os.path.join(TMP, "%s_pose.png" % sid)
+        render(p + ".big.png", p, (FRAME_W, FRAME_H))
+        im = Image.open(p).convert("RGBA")
+        im.putalpha(im.getchannel("A").point(lambda v: 0 if v < 4 else v))
+        im.save(os.path.join(OUT, "%s.png" % sid), optimize=True)
+        print("SKIN", sid, flush=True)
     ref = os.path.join(OUT, "default.png")
     hero_px = 0
     if os.path.exists(ref):
-        bb = Image.open(ref).crop((0, 0, FRAME_W, FRAME_H)).getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
+        bb = Image.open(ref).getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
         hero_px = bb[3] - bb[1] if bb else 0
     meta = {
         "hero_px": hero_px,
-        "frame_size": [FRAME_W, FRAME_H], "cols": COLS, "rows": ROWS, "frames": N_FRAMES, "fps": FPS,
+        "frame_size": [FRAME_W, FRAME_H], "frames": 1,
         "feet": feet, "unit_px": unit_px,
-        "notes": "Planche <skin>.png : images d'idle de gauche à droite puis de haut en bas. feet = pieds "
-                 "(px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender "
-                 "du modèle. hero_px = hauteur visible du héros (skin par défaut, image 0) : elle correspond à "
-                 "une case de la carte (64 unités monde), comme en jeu.",
+        "notes": "<skin>.png : pose fixe (idle procédurale dans lobby_hero.gd). feet = pieds (px depuis le "
+                 "coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender du modèle. hero_px = "
+                 "hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte.",
     }
     with open(os.path.join(OUT, "hero_menu.json"), "w") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)

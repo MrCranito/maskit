@@ -1412,7 +1412,8 @@ func take_damage(amount: float, source: Node) -> void:
 	if now - _hurt_sfx_msec > 350:
 		_hurt_sfx_msec = now
 		_play_sfx(data.get_sfx_hurt())
-	# Recul dans le sens du coup.
+	# Aucun recul au coup par défaut ([enemy_tactics] hit_knockback_mult = 0 : retour testeur) ;
+	# le flash, l'animation « hit » sur place et l'étourdissement immobile restent.
 	var from := global_position
 	var p := get_player()
 	if source is Node2D and is_instance_valid(source):
@@ -1420,8 +1421,9 @@ func take_damage(amount: float, source: Node) -> void:
 	elif p != null:
 		from = p.global_position
 	var push_dir := global_position - from
-	if push_dir.length_squared() > 1.0 and data.knockback > 0.0:
-		_knock += push_dir.normalized() * data.knockback * clampf(amount / maxf(max_hp * 0.2, 1.0), 0.4, 1.6)
+	var kb_mult := hit_knockback_mult()
+	if push_dir.length_squared() > 1.0 and data.knockback > 0.0 and kb_mult > 0.0:
+		_knock += push_dir.normalized() * data.knockback * kb_mult * clampf(amount / maxf(max_hp * 0.2, 1.0), 0.4, 1.6)
 	# Élite : phase 2.
 	if data.elite and data.phase2_hp_ratio > 0.0 and phase < 2 and hp <= max_hp * data.phase2_hp_ratio:
 		enter_phase2()
@@ -1431,6 +1433,11 @@ func take_damage(amount: float, source: Node) -> void:
 	elif data.stagger_ratio > 0.0 and amount >= max_hp * data.stagger_ratio \
 			and current_state_name() != STATE_STUNNED and state_machine != null:
 		state_machine.transition_to(STATE_STUNNED, {"time": data.stagger_time})
+
+
+## Multiplicateur du recul imprimé par un coup reçu (balles, plombs, explosions). 0 = aucun.
+static func hit_knockback_mult() -> float:
+	return maxf(Balance.get_float("enemy_tactics", "hit_knockback_mult", 0.0), 0.0)
 
 
 func is_alive() -> bool:

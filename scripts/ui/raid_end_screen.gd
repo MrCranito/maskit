@@ -5,6 +5,9 @@ extends CanvasLayer
 ##   - « Tu es mort » : armes perdues, butin perdu, « Un petit pistolet t'attend au camp »
 ##     si un pistolet de départ a été offert.
 ## Le jeu est en pause derrière (ce nœud tourne en PROCESS_MODE_ALWAYS).
+## Mise en page : tout tient à l'écran SANS défilement vertical (1280×720 et téléphones larges) ;
+## armes et équipements = une rangée horizontale défilable, triée par rareté décroissante
+## (Légendaire d'abord, puis catégorie, puis nom) ; « Retour au menu » toujours visible.
 ## Bouton « Retour au menu » → menu principal.
 
 signal menu_requested
@@ -13,6 +16,7 @@ const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
 const NIGHT := Color(0.071, 0.102, 0.18, 0.97)
 const SUCCESS := Color(0.36, 0.86, 0.5)
 const DEATH := Color(0.9, 0.26, 0.24)
+const CARD_H := 104.0
 
 ## true = extraction, false = mort.
 var success: bool = false
@@ -61,10 +65,14 @@ func _build() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 
+	var safe := MarginContainer.new()
+	safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	safe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(safe)
 	var center := CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
+	safe.add_child(center)
+	_apply_safe_margins(safe)
 
 	var accent := SUCCESS if success else DEATH
 	_panel = PanelContainer.new()
@@ -73,14 +81,14 @@ func _build() -> void:
 	st.set_border_width_all(2)
 	st.shadow_size = 18
 	_panel.add_theme_stylebox_override("panel", st)
-	_panel.custom_minimum_size = Vector2(640, 0)
+	_panel.custom_minimum_size = Vector2(panel_width(), 0)
 	center.add_child(_panel)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 14)
+	root.add_theme_constant_override("separation", 10)
 	_panel.add_child(root)
 
-	var title := InventoryStyle.title(get_title_text(), 44, accent.lightened(0.15))
+	var title := InventoryStyle.title(get_title_text(), 40, accent.lightened(0.15))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title)
 	var sub := InventoryStyle.label(
@@ -107,14 +115,48 @@ func _build() -> void:
 	tw.tween_property(_panel, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
+## Largeur du panneau : 900 px max, dans la zone sûre.
+func panel_width() -> float:
+	var vp := get_viewport().get_visible_rect().size if is_inside_tree() else Vector2(1280, 720)
+	var m := HudSafeArea.margins(get_viewport()) if is_inside_tree() else Vector4(16, 16, 16, 16)
+	return minf(900.0, vp.x - m.x - m.z - 24.0)
+
+
+func _apply_safe_margins(mc: MarginContainer) -> void:
+	var m := HudSafeArea.margins(get_viewport()) if is_inside_tree() else Vector4(16, 16, 16, 16)
+	mc.add_theme_constant_override("margin_left", int(m.x))
+	mc.add_theme_constant_override("margin_top", int(m.y))
+	mc.add_theme_constant_override("margin_right", int(m.z))
+	mc.add_theme_constant_override("margin_bottom", int(m.w))
+
+
+## Ids triés : rareté décroissante, puis ordre des catégories (équipements en dernier), puis nom.
+static func sort_by_rarity(ids: Array) -> Array:
+	var out: Array = []
+	for id: Variant in ids:
+		if WeaponCatalog.get_weapon(StringName(str(id))) != null:
+			out.append(id)
+	out.sort_custom(func(a: Variant, b: Variant) -> bool:
+		var wa := WeaponCatalog.get_weapon(StringName(str(a)))
+		var wb := WeaponCatalog.get_weapon(StringName(str(b)))
+		if wa.rarity != wb.rarity:
+			return wa.rarity > wb.rarity
+		var ca := WeaponData.CATEGORIES.find(wa.category)
+		var cb := WeaponData.CATEGORIES.find(wb.category)
+		if ca != cb:
+			return ca < cb
+		return wa.display_name < wb.display_name)
+	return out
+
+
 func _build_success(root: VBoxContainer) -> void:
 	var split := split_gadgets(summary.get("weapons", []))
-	var weapons: Array = split[0]
-	root.add_child(_section("Armes récupérées (%d)" % weapons.size()))
-	root.add_child(_weapon_grid(weapons, false))
+	var all_ids: Array = sort_by_rarity(summary.get("weapons", []))
+	var title := "Armes récupérées (%d)" % (split[0] as Array).size()
 	if not (split[1] as Array).is_empty():
-		root.add_child(_section("Équipement récupéré"))
-		root.add_child(_weapon_grid(split[1], false))
+		title += " · équipement (%d)" % (split[1] as Array).size()
+	root.add_child(_section(title))
+	root.add_child(_weapon_row(all_ids, false))
 
 	var items: Dictionary = summary.get("items", {})
 	var n_items := 0
@@ -133,12 +175,11 @@ func _build_success(root: VBoxContainer) -> void:
 
 func _build_death(root: VBoxContainer) -> void:
 	var split := split_gadgets(summary.get("lost_weapons", []))
-	var lost: Array = split[0]
-	root.add_child(_section("Armes perdues (%d)" % lost.size()))
-	root.add_child(_weapon_grid(lost, true))
+	var title := "Armes perdues (%d)" % (split[0] as Array).size()
 	if not (split[1] as Array).is_empty():
-		root.add_child(_section("Équipement perdu"))
-		root.add_child(_weapon_grid(split[1], true))
+		title += " · équipement perdu (%d)" % (split[1] as Array).size()
+	root.add_child(_section(title))
+	root.add_child(_weapon_row(sort_by_rarity(summary.get("lost_weapons", [])), true))
 	var n := int(summary.get("lost_items", 0))
 	var v := int(summary.get("lost_value", 0))
 	var loot := InventoryStyle.label(
@@ -179,25 +220,55 @@ func _section(text: String) -> Label:
 	return l
 
 
-## Grille de cartes d'armes (icône + nom couleur de rareté). Barrées si perdues.
-func _weapon_grid(ids: Array, lost: bool) -> Control:
+## Rangée HORIZONTALE défilable de cartes d'armes (icône + nom couleur de rareté), déjà
+## triée. Barrées si perdues. Défilement au doigt (glisser) ou à la molette.
+func _weapon_row(ids: Array, lost: bool) -> Control:
 	if ids.is_empty():
 		var none := InventoryStyle.label("Aucune.", 16, InventoryStyle.TEXT_SECONDARY, 600)
 		return none
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
+	var scroll := ScrollContainer.new()
+	scroll.name = "WeaponRow"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.custom_minimum_size = Vector2(0, CARD_H + 14.0)
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	var row := HBoxContainer.new()
+	row.name = "Cards"
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.add_child(row)
 	for id: Variant in ids:
 		var w := WeaponCatalog.get_weapon(StringName(str(id)))
 		if w != null:
-			grid.add_child(_weapon_card(w, lost))
-	return grid
+			row.add_child(_weapon_card(w, lost))
+	return scroll
+
+
+## Ids des cartes affichées, dans l'ordre (tests).
+func get_card_ids() -> Array:
+	var out: Array = []
+	var row := find_child("Cards", true, false)
+	if row == null:
+		return out
+	for c: Node in row.get_children():
+		out.append(c.get_meta(&"weapon_id", &""))
+	return out
+
+
+## Le panneau tient-il à l'écran sans défilement vertical ?
+func fits_on_screen() -> bool:
+	if _panel == null or not is_inside_tree():
+		return false
+	var vp := get_viewport().get_visible_rect()
+	return vp.encloses(_panel.get_global_rect().grow(-1.0)) and _menu_btn != null \
+		and vp.encloses(_menu_btn.get_global_rect())
 
 
 func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	var rc := w.get_rarity_color()
 	var card := PanelContainer.new()
+	card.set_meta(&"weapon_id", w.id)
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	var st := StyleBoxFlat.new()
 	st.bg_color = InventoryStyle.NIGHT_BLUE_DEEP.lerp(rc, 0.12)
 	st.border_color = Color(rc, 0.4 if lost else 0.9)
@@ -205,12 +276,12 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	st.set_corner_radius_all(12)
 	st.set_content_margin_all(8)
 	card.add_theme_stylebox_override("panel", st)
-	card.custom_minimum_size = Vector2(190, 0)
+	card.custom_minimum_size = Vector2(176, CARD_H)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 2)
 	card.add_child(v)
 	var pic := Control.new()
-	pic.custom_minimum_size = Vector2(170, 52)
+	pic.custom_minimum_size = Vector2(160, 48)
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pic.draw.connect(func() -> void:
 		LootVisuals.draw_weapon(pic, Rect2(Vector2(10, 2), pic.size - Vector2(20, 4)), w, Color(1, 1, 1, 0.45) if lost else Color.WHITE)
@@ -219,7 +290,7 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	v.add_child(pic)
 	var nm := InventoryStyle.label(w.display_name, 15, rc.lightened(0.25) if not lost else Color(rc, 0.7), 800)
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	nm.custom_minimum_size = Vector2(170, 0)
+	nm.custom_minimum_size = Vector2(160, 0)
 	v.add_child(nm)
 	var cat := ("Équipement ×%d" % w.charges) if w.is_gadget() else w.get_category_name()
 	v.add_child(InventoryStyle.label("%s · %s" % [cat, w.get_rarity_name()], 12, InventoryStyle.TEXT_SECONDARY, 700))

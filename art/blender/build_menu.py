@@ -33,7 +33,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "assets", "ui", "menu", "lobby")
 ARGS = sys.argv[1:]
 QUICK = "--quick" in ARGS
-ONLY = ARGS[ARGS.index("--only") + 1].split(",") if "--only" in ARGS else ["back", "camp", "front", "flag", "mist"]
+# « flag » (ancienne animation à 6 images) n'est plus rendu par défaut : le drapeau est une
+# texture plate (build_menu_2d.py fx) ondulée par un shader dans le jeu.
+ONLY = ARGS[ARGS.index("--only") + 1].split(",") if "--only" in ARGS else ["back", "camp", "front", "mist"]
 TMP = os.environ.get("RDM_TMP", os.path.join(tempfile.gettempdir(), "rdm_menu"))
 os.makedirs(TMP, exist_ok=True)
 os.makedirs(OUT, exist_ok=True)
@@ -760,7 +762,7 @@ def crop_layer(src: str, dst: str) -> list[int]:
     """Rogne une couche transparente à sa boîte englobante ; renvoie [x, y, w, h]."""
     from PIL import Image
     im = Image.open(src).convert("RGBA")
-    a = im.getchannel("A").point(lambda v: 0 if v < 3 else v)
+    a = im.getchannel("A").point(lambda v: 0 if v < 12 else v)   # bruit de l'attrape-ombres
     im.putalpha(a)
     bb = a.getbbox() or (0, 0, 1, 1)
     im.crop(bb).save(dst, optimize=True)
@@ -830,6 +832,9 @@ def main() -> None:
     meta["fire"] = {"pos": [round(fp[0], 1), round(fp[1], 1)], "unit_px": round(fp[1] - fp1[1], 2)}
     pole = FLAG["pole"]
     meta["pole_top"] = [round(v, 1) for v in project(cam, pole)]
+    p_end = project(cam, (pole[0] + 1.25, pole[1], pole[2]))
+    p_low = project(cam, (pole[0], pole[1], pole[2] - 0.78))
+    meta["flag"] = {"size": [round(p_end[0] - meta["pole_top"][0], 1), round(p_low[1] - meta["pole_top"][1], 1)]}
     lan = project(cam, FLAG["lantern"])
     meta["lantern"] = [round(lan[0], 1), round(lan[1], 1)]
     meta["sun"] = [round(sun_xy[0], 1), round(sun_xy[1], 1)]

@@ -811,39 +811,6 @@ func test_portes_exterieures_facade_sud_et_atteignables() -> void:
 			assert_eq(b.porch_side, Vector2i.DOWN, "%s : façade au sud" % b.name)
 
 
-## Échelles : 2 à 5 par carte (bornes de balance.cfg), contre la façade SUD (pied = rue au sud du
-## mur, sommet = case du mur sud), loin des portes, pied libre de tout décor et atteignable.
-func test_echelles_facade_visible_et_accessibles() -> void:
-	var lo := Cfg.geti("village_ladders_min", 2)
-	var hi := Cfg.geti("village_ladders_max", 5)
-	for per_diff: Array in runs:
-		var g := _floor(per_diff[0], 0)
-		assert_between(g.ladders.size(), mini(lo, 1), hi, "%d échelle(s)" % g.ladders.size())
-		var blocked := _blocked(g)
-		var reach := _reach(g, blocked)
-		var seen := {}
-		for e: Dictionary in g.ladders:
-			var bid := int(e["building_id"])
-			assert_false(seen.has(bid), "une échelle par bâtiment")
-			seen[bid] = true
-			var b := g.buildings[bid]
-			var foot: Vector2i = e["cell"]
-			var top: Vector2i = e["top_cell"]
-			assert_eq(foot.y, b.rect.end.y, "pied au sud de la façade")
-			assert_eq(top, foot + Vector2i.UP, "sommet sur le mur sud")
-			assert_between(foot.x, b.rect.position.x + 1, b.rect.end.x - 2, "échelle sur la façade (hors angles)")
-			assert_eq(g.get_tile(foot), T.STREET, "pied praticable")
-			assert_eq(g.get_tile(foot + Vector2i.DOWN), T.STREET, "accès au pied")
-			for dx in range(-1, 2):
-				assert_eq(g.get_tile(Vector2i(foot.x + dx, top.y)), T.WALL, "pas de porte contre l'échelle")
-			assert_false(blocked.has(foot), "pied libre de décor / conteneur")
-			assert_true(reach.has(foot), "pied atteignable")
-		# La seconde graine donne le même résultat (déterminisme).
-	var a := DungeonGenerator.generate_floor(_seed(0), world, 1, 0)
-	var b2 := DungeonGenerator.generate_floor(_seed(0), world, 1, 0)
-	assert_eq(str(a.ladders), str(b2.ladders), "échelles déterministes")
-
-
 ## Passages entre les wagons : franchissables (rue, sans décor) et reliant le nord au sud de la voie.
 func test_passages_du_train_franchissables() -> void:
 	for per_diff: Array in runs:
@@ -863,3 +830,177 @@ func test_passages_du_train_franchissables() -> void:
 					assert_true(FloorLayout.is_walkable_tile(g.get_tile(c)) and not blocked.has(c), "passage %s libre" % c)
 					assert_true(reach.has(c), "passage %s atteignable" % c)
 		assert_gte(gaps, 2, "au moins deux passages entre les wagons")
+
+
+# --- Paquet pré-rendu (seed 642439) : plan, collisions « emprise rendue », occultation ----------
+
+const PACK_SEED := 642439
+
+
+func _pk_meta() -> Dictionary:
+	var f := FileAccess.open(PrerenderBackdrop.PACK_ROOT + str(PACK_SEED) + "/map.json", FileAccess.READ)
+	return JSON.parse_string(f.get_as_text()) if f != null else {}
+
+
+func _pk_layout(seed_value: int) -> FloorLayout:
+	var world: WorldData = load("res://data/worlds/world_01_far_west.tres")
+	return DungeonGenerator.generate_floor(seed_value, world, 1, 0)
+
+
+func test_paquet_correspond_au_plan() -> void:
+	var m := _pk_meta()
+	assert_false(m.is_empty(), "paquet présent")
+	var L := _pk_layout(PACK_SEED)
+	assert_eq(String(m.get("tiles_md5", "")), PrerenderBackdrop.layout_md5(L), "empreinte du plan identique (le jeu utilise le paquet)")
+	assert_true(m.has("collision"), "couche « emprise rendue »")
+	assert_true(m.has("occluders"), "tranches d'occultation")
+	var n_sl := 0
+	for e: Dictionary in m.get("occluders", []):
+		assert_true(ResourceLoader.exists(PrerenderBackdrop.PACK_ROOT + str(PACK_SEED) + "/" + String(e["ids"])), "ids %s" % e["ids"])
+		n_sl += (e["slices"] as Array).size()
+	assert_gt(n_sl, 100, "tranches d'occultation (maisons, wagons, rochers)")
+	# Chaque wagon a des tranches d'occultation sur ses rangées (on passe derrière).
+	var rows := {}
+	for e2: Dictionary in m.get("occluders", []):
+		for sl: Array in e2["slices"]:
+			rows[int(sl[0])] = true
+	for t: Dictionary in L.train:
+		var r: Rect2i = t["rect"]
+		assert_true(rows.has(r.position.y) or rows.has(r.end.y - 1), "wagon %s occultant" % r)
+
+
+## Obstacles rendus = cases bloquantes : chaque case praticable que le masque zénithal montre
+## occupée (≥ 50 %) est couverte par la couche de collision (sauf cases rendues libres pour la
+## connexité / abords protégés) ; chaque case murée d'obstacle (rocher, wagon, clôture) a un rendu.
+func test_obstacles_rendus_egal_cases_bloquantes() -> void:
+	var m := _pk_meta()
+	var L := _pk_layout(PACK_SEED)
+	var tex := load(PrerenderBackdrop.PACK_ROOT + str(PACK_SEED) + "/footprint.png") as Texture2D
+	assert_not_null(tex, "masque d'emprise dans le paquet")
+	if tex == null:
+		return
+	var img := tex.get_image()
+	img.decompress()
+	var M := int(m["margin"])
+	var cov := _pk_collision_cov(m, L)
+	var freed := {}
+	for c: Array in (m.get("collision_stats", {}) as Dictionary).get("freed", []):
+		freed[Vector2i(int(c[0]), int(c[1]))] = true
+	var prot := _pk_protected(L)
+	var bad: Array = []
+	for y in L.size.y:
+		for x in L.size.x:
+			var c := Vector2i(x, y)
+			if not FloorLayout.is_walkable_tile(L.get_tile(c)) or freed.has(c) or prot.has(c):
+				continue
+			var mc := _pk_mask_cov(img, c, M)
+			if mc >= 0.5 and float(cov.get(c, 0.0)) < 0.4:
+				bad.append(c)
+	assert_eq(bad, [], "obstacle rendu sans collision")
+	var empty: Array = []
+	var cells := {}
+	for rf: Dictionary in L.rock_formations:
+		for c2: Vector2i in rf["cells"]:
+			cells[c2] = true
+	for t: Dictionary in L.train:
+		for c3 in PkCells.of(t["rect"]):
+			cells[c3] = true
+	for fl: Array in L.fences:
+		for c4: Vector2i in fl:
+			cells[c4] = true
+	for c5: Vector2i in cells:
+		if _pk_mask_cov(img, c5, M) <= 0.0:
+			empty.append(c5)
+	assert_lte(empty.size(), 2, "cases murées sans rien de rendu : %s" % [empty])
+
+
+## Passages entre wagons et abords (portes, escaliers, extraction) jamais couverts ; toutes les cases
+## atteignables restent atteignables avec la couche de collision.
+func test_collision_rendue_garde_les_passages() -> void:
+	var m := _pk_meta()
+	var L := _pk_layout(PACK_SEED)
+	var cov := _pk_collision_cov(m, L)
+	for c: Vector2i in _pk_protected(L):
+		assert_lt(float(cov.get(c, 0.0)), 0.01, "abord protégé %s libre" % c)
+	for k in range(L.train.size() - 1):
+		var ra: Rect2i = L.train[k]["rect"]
+		var rb: Rect2i = L.train[k + 1]["rect"]
+		for x in range(ra.end.x, rb.position.x):
+			for y in range(ra.position.y, ra.end.y):
+				assert_lt(float(cov.get(Vector2i(x, y), 0.0)), 0.3, "passage du train %s franchissable" % Vector2i(x, y))
+	var base := _pk_flood(L, {})
+	var blocked := {}
+	for c2: Vector2i in cov:
+		if float(cov[c2]) >= 0.5:
+			blocked[c2] = true
+	var with := _pk_flood(L, blocked)
+	var lost: Array = []
+	for c3: Vector2i in base:
+		if not blocked.has(c3) and not with.has(c3):
+			lost.append(c3)
+	assert_eq(lost, [], "cases devenues inaccessibles")
+
+
+## Abords jamais bloqués par la couche « emprise rendue » (mêmes règles que compose.py).
+static func _pk_protected(L: FloorLayout) -> Dictionary:
+	var out := {}
+	var around := func(c: Vector2i, r: int) -> void:
+		for dy in range(-r, r + 1):
+			for dx in range(-r, r + 1):
+				out[c + Vector2i(dx, dy)] = true
+	for d in L.doors:
+		around.call(d.cell, 1)
+		if not d.vertical:
+			out[d.cell + Vector2i(0, 2)] = true
+			out[d.cell + Vector2i(0, -2)] = true
+	for st in L.stairs:
+		around.call(st.cell, 1)
+	for c: Vector2i in L.extraction_cells:
+		around.call(c, 1)
+	around.call(L.player_spawn, 1)
+	return out
+
+
+static func _pk_mask_cov(img: Image, c: Vector2i, M: int) -> float:
+	var n := 0
+	for dy in 4:
+		for dx in 4:
+			var px := img.get_pixel((c.x + M) * 4 + dx, (c.y + M) * 4 + dy)
+			if px.r > 0.5 or px.g > 0.5:
+				n += 1
+	return n / 16.0
+
+
+## Fraction de chaque case couverte par les rectangles de collision du paquet.
+static func _pk_collision_cov(m: Dictionary, L: FloorLayout) -> Dictionary:
+	var out := {}
+	for r: Array in m.get("collision", []):
+		var rr := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+		for y in range(floori(rr.position.y / 64.0), ceili(rr.end.y / 64.0)):
+			for x in range(floori(rr.position.x / 64.0), ceili(rr.end.x / 64.0)):
+				var cr := Rect2(x * 64.0, y * 64.0, 64.0, 64.0).intersection(rr)
+				out[Vector2i(x, y)] = float(out.get(Vector2i(x, y), 0.0)) + cr.get_area() / 4096.0
+	return out
+
+
+static func _pk_flood(L: FloorLayout, blocked: Dictionary) -> Dictionary:
+	var seen := {L.player_spawn: true}
+	var st: Array[Vector2i] = [L.player_spawn]
+	while not st.is_empty():
+		var c: Vector2i = st.pop_back()
+		for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var n := c + d
+			if seen.has(n) or blocked.has(n) or not FloorLayout.is_walkable_tile(L.get_tile(n)):
+				continue
+			seen[n] = true
+			st.append(n)
+	return seen
+
+
+class PkCells:
+	static func of(r: Rect2i) -> Array[Vector2i]:
+		var out: Array[Vector2i] = []
+		for y in range(r.position.y, r.end.y):
+			for x in range(r.position.x, r.end.x):
+				out.append(Vector2i(x, y))
+		return out

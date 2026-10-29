@@ -94,7 +94,8 @@ func _place() -> void:
 	var vp := get_viewport_rect().size
 	var total_w := CURRENT_SIZE.x + OTHER_SIZE.x * (SLOT_COUNT - 1) + GAP * (SLOT_COUNT + 1) + 6.0 + GADGET_SIZE.x
 	_row.size = Vector2(total_w, CURRENT_SIZE.y)
-	_row.position = Vector2((vp.x - total_w) * 0.5, vp.y - BOTTOM_MARGIN - CURRENT_SIZE.y)
+	var safe := HudSafeArea.margins(self)
+	_row.position = Vector2((vp.x - total_w) * 0.5, vp.y - maxf(BOTTOM_MARGIN, safe.w) - CURRENT_SIZE.y)
 	var rest := Vector2(vp.x * Balance.get_float("joystick", "right_rest_x", 0.87),
 		vp.y * Balance.get_float("joystick", "rest_y", 0.77))
 	var stick_r := Balance.get_float("joystick", "radius", 90.0)

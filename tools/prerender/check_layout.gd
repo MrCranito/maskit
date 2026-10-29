@@ -7,7 +7,7 @@ extends SceneTree
 ##   (sol z = 0 exactement sur la grille, cf. prerender_backdrop.gd) ;
 ## - superpose : cases bloquantes du layout (WALL / VOID, rouge translucide ; props, conteneurs,
 ##   cachettes : rouge clair), portes (bleu ; magenta = porte cachée sous un toit), escaliers
-##   (jaune), échelles (vert), contour de l'emprise RÉELLE des objets rendus (masque zénithal de
+##   (jaune), contour de l'emprise RÉELLE des objets rendus (masque zénithal de
 ##   fw_scene.py « mask », 4 px/case : blanc = obstacle du plan, vert = fouillis décoratif) ;
 ## - compare par case : « rendu bloquant mais praticable » (orange plein) et « bloquant mais rien
 ##   de rendu » (cyan) ; liste les cases dans out.json (et un résumé sur la sortie standard) ;
@@ -255,9 +255,3 @@ static func _draw(img: Image, L: FloorLayout, mask: Image, rep: Dictionary, M: i
 		_fill(img, cr.call(d.cell), Color(1, 0, 1, 0.75) if hid.has(d.cell) else Color(0.15, 0.4, 1, 0.7))
 	for s in L.stairs:
 		_fill(img, cr.call(s.cell), Color(1, 0.9, 0.1, 0.7))
-	var lad: Variant = L.get("ladders")
-	if lad is Array:
-		for e3: Dictionary in lad:
-			var c3: Vector2i = e3["cell"]
-			_fill(img, cr.call(c3), Color(0.1, 0.9, 0.2, 0.8))
-			_frame(img, cr.call(e3["top_cell"]), Color(0.1, 0.9, 0.2, 1), 3)

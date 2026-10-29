@@ -1,17 +1,14 @@
 {
-  "hero_px": 363,
+  "hero_px": 815,
   "frame_size": [
-    320,
-    400
+    720,
+    900
   ],
-  "cols": 4,
-  "rows": 2,
-  "frames": 8,
-  "fps": 7,
+  "frames": 1,
   "feet": [
-    160,
-    373
+    360,
+    840
   ],
-  "unit_px": 186.0,
-  "notes": "Planche <skin>.png : images d'idle de gauche à droite puis de haut en bas. feet = pieds (px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender (le héros mesure ~1,05 unité, casque compris)."
+  "unit_px": 419.4,
+  "notes": "<skin>.png : pose fixe (idle procédurale dans lobby_hero.gd). feet = pieds (px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender du modèle. hero_px = hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte."
 }

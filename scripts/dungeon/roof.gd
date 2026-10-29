@@ -81,9 +81,6 @@ func _process(delta: float) -> void:
 	if _player == null or not is_instance_valid(_player) or not _player.is_inside_tree():
 		_player = get_tree().get_first_node_in_group(&"player") as Node2D
 	var inside := _player != null and contains_world(_player.global_position)
-	# (Toits) Joueur perché sur un toit : il est AU-DESSUS, aucun toit ne s'efface.
-	if inside and _player.has_method("is_on_roof") and bool(_player.call("is_on_roof")):
-		inside = false
 	if inside == _player_inside:
 		return
 	_player_inside = inside

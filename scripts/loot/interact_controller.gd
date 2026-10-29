@@ -64,8 +64,6 @@ static func pick_target(player: Node2D, candidates: Array, max_range: float) -> 
 			if c is HidingSpot and (c as HidingSpot).occupant == player:
 				return c
 		return null
-	# (Toits) Joueur perché : seules les cibles « de toit » (haut d'échelle) sont proposées.
-	var on_roof := player.has_method("is_on_roof") and bool(player.call("is_on_roof"))
 	var best: Node2D = null
 	var best_d := INF
 	var origin := player.global_position
@@ -76,8 +74,6 @@ static func pick_target(player: Node2D, candidates: Array, max_range: float) -> 
 		if not n.is_inside_tree() or not n.is_visible_in_tree():
 			continue
 		if n.has_method("can_interact") and not bool(n.call("can_interact")):
-			continue
-		if on_roof != (n.has_method("is_roof_target") and bool(n.call("is_roof_target"))):
 			continue
 		var reach := float(n.call("get_interact_reach")) if n.has_method("get_interact_reach") else 0.0
 		var d := origin.distance_to(n.global_position)

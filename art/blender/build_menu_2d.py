@@ -7,7 +7,8 @@
 Entrées du splash : assets/ui/menu/lobby/back.jpg, camp.png, lobby.json (build_menu.py) et la
 pose « contre-plongée » du héros (build_menu_hero.py --hero-shot, fichier temporaire).
 Sorties :
-    assets/ui/menu/lobby/flame.png   6 images 96 x 160 (planche 6 x 1), à mélanger en additif
+    assets/ui/menu/lobby/flame.png   flamme 192 x 320 (additif, déformée par shader dans le jeu)
+    assets/ui/menu/lobby/flag_cloth.png  drapeau plat 512 x 320 (ondulé par shader dans le jeu)
     assets/ui/menu/lobby/smoke.png   bouffée douce 128 x 128 (blanc, alpha)
     assets/ui/splash/boot.png        image de démarrage moteur 1920 x 1080 (logo + slogan)
     assets/ui/splash/splash_bg.png   même image SANS le logo (fond du splash animé)
@@ -45,7 +46,9 @@ NIGHT = (18, 26, 46)
 
 # ----------------------------------------------------------------------------- effets
 def flames() -> None:
-    w, h, n = 96, 160, 6
+    """Flamme unique haute résolution (192 x 320) : le jeu la déforme en continu par un petit
+    shader (ondulation + scintillement), fluide à 60 fps (plus d'animation image par image)."""
+    w, h, n = 192, 320, 1
     sheet = Image.new("RGBA", (w * n, h), (0, 0, 0, 0))
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     u = (xx - w / 2) / (w / 2)            # -1..1
@@ -68,9 +71,29 @@ def flames() -> None:
         rgba = np.zeros((h, w, 4), np.float32)
         for c in range(4):
             rgba[..., c] = np.interp(t, [s[0] for s in stops], [s[1][c] for s in stops])
-        im = Image.fromarray(rgba.astype(np.uint8), "RGBA").filter(ImageFilter.GaussianBlur(1.2))
+        im = Image.fromarray(rgba.astype(np.uint8), "RGBA").filter(ImageFilter.GaussianBlur(2.4))
         sheet.paste(im, (k * w, 0))
     sheet.save(os.path.join(LOBBY, "flame.png"), optimize=True)
+
+
+def flag_cloth() -> None:
+    """Drapeau plat haute résolution (512 x 320) : rouge, emblème blanc, trame et ourlet ; l'ondulation
+    et l'ombrage des plis sont faits par le shader du jeu (lobby_scene.gd)."""
+    W, H = 512, 320
+    rng = np.random.default_rng(11)
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    base = np.array([176, 22, 30], np.float32)
+    weave = (np.sin(xx * 1.7) * np.sin(yy * 1.7)) * 4 + rng.normal(0, 3, (H, W))
+    shade = 1.0 - 0.10 * (yy / H) + 0.04 * np.sin(yy / H * 3.1)
+    arr = np.clip(base[None, None, :] * shade[..., None] + weave[..., None], 0, 255)
+    im = Image.fromarray(arr.astype(np.uint8)).convert("RGBA")
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, 18, H], fill=(236, 226, 210, 255))          # gaine du mât
+    d.rectangle([0, 0, W, 6], fill=(120, 12, 20, 255))
+    d.rectangle([0, H - 6, W, H], fill=(120, 12, 20, 255))
+    em = emblem(250, ring=(246, 240, 230), arrow=(246, 240, 230), outline=False)
+    im.alpha_composite(em, (W // 2 - 125 + 8, H // 2 - 125))
+    im.save(os.path.join(LOBBY, "flag_cloth.png"), optimize=True)
 
 
 def smoke() -> None:
@@ -355,6 +378,7 @@ def main() -> None:
     if what in ("fx", "all"):
         flames()
         smoke()
+        flag_cloth()
     if what in ("splash", "all"):
         splash()
     if what == "icon":

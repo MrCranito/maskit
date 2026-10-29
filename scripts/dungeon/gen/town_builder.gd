@@ -194,9 +194,6 @@ static func build(seed_value: int, world: WorldData) -> TownResult:
 	# --- Formations rocheuses au milieu (couverts) -------------------------------------------
 	_inner_rocks(x)
 
-	# --- Échelles vers les toits (façade sud, visible) ---------------------------------------
-	_ladders(x, seed_value, spawn, ex)
-
 	# --- Salles des cours / enclos, portes rattachées à la bonne salle extérieure -----------
 	for y: Dictionary in x.yards:
 		var yr := L.add_room(y["inner"], true, FloorLayout.ROOM_LOOT if rng.randf() < 0.5 else FloorLayout.ROOM_COMBAT,
@@ -1299,60 +1296,6 @@ static func _rail_fences(x: Ctx) -> void:
 			_mark(x.occ, x.W, x.H, r)
 			x.L.fences.append(pl)
 			break
-
-
-# --- Échelles -----------------------------------------------------------------------------------
-
-## 2 à 5 bâtiments (déterministe, tirage propre aux échelles : n'altère pas le reste du plan) reçoivent
-## une échelle appuyée contre la façade SUD (seule visible), sur la 2e colonne depuis un angle :
-## pied = case de rue au sud du mur (porche), sommet = case du mur sud (bord du toit).
-## Conditions : pied praticable et libre (aucune structure), pas de porte sur la colonne ni ses
-## voisines, case au sud du pied praticable (accès), loin de l'apparition et de l'extraction.
-## Le pied est réservé (keep) : ni cour, ni rocher, ni décor (populator : abords réservés).
-static func _ladders(x: Ctx, seed_value: int, spawn: Vector2i, ex: Vector2i) -> void:
-	var L := x.L
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash([seed_value, "ladders"])
-	var want := Cfg.range_i(rng, "village_ladders_min", "village_ladders_max", 2, 5)
-	var skip: Array = Cfg.get_arr("village_ladder_skip", ["mine", "shed", "ruin"])
-	var order: Array[int] = []
-	for b in L.buildings:
-		order.append(b.id)
-	_shuffle(order, rng)
-	for bid in order:
-		if L.ladders.size() >= want:
-			break
-		var b := L.buildings[bid]
-		if skip.has(String(b.archetype)) or b.rect.size.x < 4 or b.rect.size.y < 4:
-			continue
-		var cols: Array[int] = [b.rect.position.x + 1, b.rect.end.x - 2]
-		if rng.randf() < 0.5:
-			cols.reverse()
-		for col in cols:
-			var foot := Vector2i(col, b.rect.end.y)
-			if _ladder_ok(x, b, foot, spawn, ex):
-				L.ladders.append({"cell": foot, "building_id": b.id, "top_cell": Vector2i(col, b.rect.end.y - 1)})
-				for c in [foot, foot + Vector2i.DOWN]:
-					x.keep[x.i(c)] = 1
-				break
-
-
-static func _ladder_ok(x: Ctx, b: FloorLayout.Building, foot: Vector2i, spawn: Vector2i, ex: Vector2i) -> bool:
-	var L := x.L
-	if x.facing.get(b.id, Vector2i.DOWN) != Vector2i.DOWN:
-		return false
-	for c in [foot, foot + Vector2i.DOWN]:
-		if not x.inb(c) or L.get_tile(c) != T.STREET or x.is_occ(c):
-			return false
-	for dx in range(-1, 2):
-		if L.get_tile(Vector2i(foot.x + dx, b.rect.end.y - 1)) != T.WALL:
-			return false
-	if (foot - spawn).length_squared() < 16 or (foot - ex).length_squared() < 16:
-		return false
-	for e: Dictionary in L.ladders:
-		if (e["building_id"] as int) == b.id:
-			return false
-	return true
 
 
 # --- Rochers -----------------------------------------------------------------------------------

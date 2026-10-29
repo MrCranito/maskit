@@ -23,7 +23,6 @@ extends Node2D
 ##   shader prerender_occluder) triée en Y à la limite sud de sa rangée avec les personnages
 ##   (z 10) : derrière un wagon / rocher / maison, le personnage est masqué. Tranches d'un
 ##   bâtiment effacées avec son toit (joueur dedans) ; tranche devant le joueur semi-transparente.
-## - map.json « roofs » (hauteur d'égout par bâtiment, cases) : décalage des toits (RoofWalk).
 
 const PACK_ROOT := "res://assets/prerender/far_west/"
 const TS := float(FloorLayout.TILE_SIZE)
@@ -131,12 +130,6 @@ func _bal(key: String, def: Variant) -> Variant:
 ## tan(inclinaison) de la caméra du rendu (une hauteur z cases remonte de z·tan cases à l'écran).
 func tan_tilt() -> float:
 	return tan(deg_to_rad(float(meta.get("tilt_deg", 38.0))))
-
-
-## Hauteur d'égout (cases) du bâtiment `bid` dans le rendu (map.json roofs), ou `def`.
-func roof_eave(bid: int, def: float = 2.0) -> float:
-	var r: Variant = (meta.get("roofs", {}) as Dictionary).get(str(bid))
-	return float((r as Dictionary).get("eave", def)) if r is Dictionary else def
 
 
 ## Rectangles (monde) de la couche « emprise rendue » (vide si le paquet n'en a pas).
@@ -322,7 +315,7 @@ func _make_slices(t: Dictionary, tex: Texture2D) -> void:
 
 ## Opacité des tranches : bâtiment dont le toit s'efface (joueur dedans) → tranches effacées.
 ## Silhouette du joueur derrière une tranche : gérée par le shader (pieds du joueur passés à
-## chaque matériau de tuile ; désactivé quand il est perché, il est alors au-dessus de tout).
+## chaque matériau de tuile).
 func _update_occluders() -> void:
 	if _occ_holder == null:
 		return
@@ -350,7 +343,7 @@ func _update_player_feet() -> void:
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group(&"player") as Node2D
 	var feet := Vector2(-100000.0, -100000.0)
-	if _player != null and not (_player.has_method("is_on_roof") and bool(_player.call("is_on_roof"))):
+	if _player != null:
 		feet = _player.global_position
 	for t: Dictionary in _tiles:
 		if t.get("mat") is ShaderMaterial and not (t["slices"] as Array).is_empty():

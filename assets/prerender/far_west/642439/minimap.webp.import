@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bs4y16ijeecoj"
-path="res://.godot/imported/flag.png-a42f105ac13a77bb97e34efc3866002d.ctex"
+uid="uid://b6adjde1xu7dy"
+path="res://.godot/imported/minimap.webp-1b16d9d9d3b4ce4fd442f5adcc654750.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/menu/lobby/flag.png"
-dest_files=["res://.godot/imported/flag.png-a42f105ac13a77bb97e34efc3866002d.ctex"]
+source_file="res://assets/prerender/far_west/642439/minimap.webp"
+dest_files=["res://.godot/imported/minimap.webp-1b16d9d9d3b4ce4fd442f5adcc654750.ctex"]
 
 [params]
 

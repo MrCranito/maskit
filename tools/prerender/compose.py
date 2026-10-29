@@ -6,7 +6,7 @@ Sorties : pack_dir/t_<col>_<row>.webp  (tuiles du fond, ≤ tile px)
           pack_dir/in_<id>.webp        (intérieur sans toit d'un bâtiment, alpha = masque emprise)
           pack_dir/o_<col>_<row>.png   (ids d'occultation par tuile, voir build_occluders)
           pack_dir/map.json            (géométrie : px/case, inclinaison, marge, tuiles, intérieurs,
-                                        collision (rectangles monde), occluders, roofs, ladders)
+                                        collision (rectangles monde), occluders)
 Projection (render.json "projection": "ground_square", fw_scene.py) : caméra orthographique
   inclinée de tilt°, pixel_aspect_x = 1/cos(tilt) → le SOL (z = 0) se projette en
   px_x = (cx + margin) * ppc ; px_y = (cy + margin) * ppc        (carré, sans étirement)
@@ -65,7 +65,7 @@ def build_collision():
     """Couche de collision « emprise rendue » : pixels du masque zénithal (mask.png, 4 px/case,
     fw_scene.py « mask ») couverts à ≥ 50 % (obstacle du plan R ou fouillis G) sur des cases
     PRATICABLES du plan (les cases murées ont déjà leur collision). Cases protégées (portes et leur
-    abord, escaliers, échelles, apparition, extraction) jamais bloquées. Connexité vérifiée sur la
+    abord, escaliers, apparition, extraction) jamais bloquées. Connexité vérifiée sur la
     grille fine (dégagement d'un pixel autour du centre du joueur) : une case praticable du plan qui
     deviendrait inaccessible fait retirer la collision de son voisinage. Rectangles fusionnés,
     unités monde (64 / case), repère du plan (case (0,0) en (0,0))."""
@@ -94,9 +94,6 @@ def build_collision():
             protect(x, y - 2, 0)
     for st in L.get("stairs", []):
         protect(*st["cell"], 1)
-    for la in L.get("ladders", []):
-        x, y = la["cell"]
-        protect(x, y, 0); protect(x, y + 1, 0)
     for c in L.get("extraction", []):
         protect(*c, 1)
     protect(*L["player_spawn"], 1)
@@ -209,9 +206,7 @@ occl = build_occluders()
 meta = {"tiles_md5": info.get("tiles_md5", ""), "seed": info["seed"], "ppc": ppc, "tilt_deg": info["tilt_deg"], "margin": M,
         "projection": info.get("projection", "stretch_y"),
         "size": info["size"], "image_px": [W, H], "tiles": tiles, "interiors": interiors,
-        "render_s": info["renders"],
-        # (toits) hauteur d'égout par bâtiment (cases) et échelles : RoofWalk (jeu)
-        "roofs": info.get("roofs", {}), "ladders": info.get("ladders", [])}
+        "render_s": info["renders"]}
 if coll is not None:
     meta["collision"] = coll
     meta["collision_stats"] = cstats

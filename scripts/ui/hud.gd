@@ -30,6 +30,8 @@ func _ready() -> void:
 	set_process(false)
 	set_physics_process(false)
 	_build_ui()
+	get_viewport().size_changed.connect(_place_safe)
+	_place_safe.call_deferred()
 	weapon_hud = WeaponHud.new()
 	add_child(weapon_hud)
 	EventBus.player_spawned.connect(_on_player_spawned)
@@ -118,6 +120,14 @@ func _draw_heart(c: Control) -> void:
 	c.draw_colored_polygon(PackedVector2Array([
 		Vector2(cx - r * 1.9, cy - r * 0.15), Vector2(cx + r * 1.9, cy - r * 0.15), Vector2(cx, cy + r * 2.1)]), HP_FILL)
 	c.draw_circle(Vector2(cx - r * 1.1, cy - r * 0.7), r * 0.32, Color(1, 1, 1, 0.55), true, -1.0, true)
+
+
+## Barre de vie dans la zone sûre (encoche / coins arrondis), recalée au redimensionnement.
+func _place_safe() -> void:
+	if not is_inside_tree() or _panel == null:
+		return
+	var m := HudSafeArea.margins(self)
+	_panel.position = Vector2(m.x, m.y)
 
 
 ## Met à jour l'affichage (public pour les tests et d'autres systèmes).

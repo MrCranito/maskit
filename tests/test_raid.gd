@@ -278,3 +278,80 @@ func test_tourelles_detruites_memorisees_dans_floor_state() -> void:
 	assert_eq(s.destroyed_turrets.size(), _raid.get_destroyed_turret_cells().size())
 	_raid._on_turret_destroyed(Vector2i(3, 4))
 	assert_true(_raid.capture_floor_state().destroyed_turrets.has(Vector2i(3, 4)))
+
+
+# --- Retour iPhone : recul, extraction, mini-carte, zone sûre -----------------------------
+
+func test_ennemi_sans_recul_quand_on_le_touche() -> void:
+	assert_eq(Enemy.hit_knockback_mult(), 0.0, "[enemy_tactics] hit_knockback_mult = 0 par défaut")
+	var enemies := _raid.get_alive_enemies()
+	if enemies.is_empty():
+		pending("Aucun ennemi")
+		return
+	var e: Node2D = enemies[0]
+	e.set("_knock", Vector2.ZERO)
+	e.call("take_damage", 3.0, _raid.player)
+	assert_eq(e.get("_knock"), Vector2.ZERO, "aucune poussée après un coup")
+
+
+func test_zones_d_extraction_et_progression() -> void:
+	if _raid.layout.extraction_cells.is_empty():
+		pending("Pas de case d'extraction")
+		return
+	assert_gt(_raid.extraction_zones.size(), 0, "une zone par groupe de cases")
+	var cell: Vector2i = _raid.layout.extraction_cells[0]
+	var z := _raid.get_extraction_zone_at(cell)
+	assert_not_null(z)
+	assert_eq(get_tree().get_nodes_in_group(&"extraction_markers").filter(
+		func(n: Node) -> bool: return not n.is_queued_for_deletion()).size(), 0, "anciens marqueurs du décor retirés")
+	_raid.place_player(cell)
+	_raid._update_extraction(cell, 0.1)
+	assert_true(z.is_progress_visible(), "anneau de progression sur la zone")
+	assert_string_starts_with(z.get_progress_text(), "Extraction… ")
+	_raid._update_extraction(_raid.layout.player_spawn, 0.1)
+	assert_false(z.is_progress_visible(), "masqué si on sort")
+
+
+func test_minimap_extractions_exploration_et_plein_ecran() -> void:
+	var mm := _raid.minimap
+	assert_not_null(mm, "mini-carte créée")
+	await wait_physics_frames(2)
+	assert_true(mm.visible)
+	assert_gt(mm.explored_count(), 0, "zones explorées autour du joueur")
+	assert_lt(mm.explored_count(), _raid.layout.size.x * _raid.layout.size.y, "le reste reste dans le brouillard")
+	assert_not_null(mm.bg_texture, "fond (image du paquet ou cases)")
+	assert_lte(mm.size.x, 190.0)
+	# Rect dans la zone sûre et sans chevaucher la vie / le sac.
+	var safe := HudSafeArea.safe_rect(mm)
+	assert_true(safe.encloses(mm.get_global_rect()), "mini-carte dans la zone sûre")
+	if not _raid.layout.extraction_cells.is_empty():
+		var far := FloorLayout.cell_to_world(_raid.layout.extraction_cells[0])
+		if far.distance_to(_raid.player.global_position) > 20.0 * FloorLayout.TILE_SIZE:
+			assert_true(mm.is_arrow_visible(), "flèche vers l'extraction hors cadre")
+			assert_string_ends_with(mm.get_arrow_text(), " m")
+	mm.open_full_map()
+	await wait_process_frames(2)
+	assert_true(mm.is_full_map_open())
+	assert_true(get_tree().paused, "jeu en pause carte ouverte")
+	mm.toggle_full_map()
+	assert_false(mm.is_full_map_open())
+	assert_false(get_tree().paused, "pause levée")
+
+
+func test_minimap_rendu_des_cases() -> void:
+	var tex := MiniMap.tile_texture(_raid.layout, 2)
+	assert_eq(tex.get_size(), Vector2(_raid.layout.size * 2))
+
+
+func test_zone_sure_simulee() -> void:
+	var saved := HudSafeArea.debug_insets
+	HudSafeArea.debug_insets = Vector4(141, 0, 141, 63)
+	var m := HudSafeArea.margins(_raid.ui_layer)
+	var vp := _raid.get_viewport().get_visible_rect().size
+	var win := Vector2(DisplayServer.window_get_size())
+	if win.x <= 0.0:
+		win = vp
+	assert_gte(m.x, 141.0 * vp.x / win.x, "encart gauche converti")
+	assert_gte(m.w, 63.0 * vp.y / win.y)
+	assert_gte(m.y, Balance.get_float("hud", "safe_min_margin", 16.0))
+	HudSafeArea.debug_insets = saved
