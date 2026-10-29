@@ -147,15 +147,13 @@ func _build() -> void:
 		_build_death(col)
 	_add_kills(col)
 
-	# Entrée : la colonne glisse depuis la gauche, le bandeau depuis la droite
+	# Entrée : la colonne glisse depuis la gauche, le bandeau apparaît en fondu
 	col.modulate.a = 0.0
 	sl.modulate.a = 0.0
 	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tw.tween_property(col, "modulate:a", 1.0, 0.3)
 	tw.tween_property(col, "position:x", col.position.x, 0.4).from(col.position.x - 60.0)
-	tw.tween_property(sl, "modulate:a", 1.0, 0.3).set_delay(0.08)
-	tw.tween_property(sl, "offset_left", sl.offset_left, 0.45).from(sl.offset_left + 120.0).set_delay(0.08)
-	tw.tween_property(sl, "offset_right", 0.0, 0.45).from(120.0).set_delay(0.08)
+	tw.tween_property(sl, "modulate:a", 1.0, 0.35).set_delay(0.08)   # fondu seul : le bouton reste à l'écran
 
 
 func _kicker_text() -> String:
