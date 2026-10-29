@@ -1,4 +1,4 @@
-# Exfil Rush
+# RaidersGo
 
 « Tire. Pille. Tire-toi. » Extraction shooter rogue-lite en vue de dessus (style Archero), Godot 4.7.2, GDScript typé, PC + mobile.
 Ce fichier est la référence du projet : relis-le avant chaque phase.

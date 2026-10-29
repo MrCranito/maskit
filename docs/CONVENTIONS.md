@@ -291,3 +291,7 @@ Les anciens skins (recrue, désert, nuit, néon, légende dorée) sont supprimé
 
 ### Cartes = la planche cartes.png (agent Décor)
 Far West : ville dispersée dans le désert, rochers, train à l'arrêt (obstacle), éolienne, château d'eau. Station : croix de modules + centre de contrôle circulaire, planète en fond, zones de gravité faible (`FloorLayout.low_gravity_cells`, inertie gérée par le joueur). Mall : bâtiment rectangulaire, atrium à fontaine, escalators, parking à l'entrée.
+
+
+## Nom du jeu
+Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Slogan : « Tire. Pille. Tire-toi. ». Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.

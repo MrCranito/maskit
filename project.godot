@@ -3,7 +3,7 @@ config_version=5
 
 [application]
 
-config/name="Exfil Rush"
+config/name="RaidersGo"
 run/main_scene="res://scenes/ui/menus/splash.tscn"
 run/max_fps=60
 config/features=PackedStringArray("4.7", "GL Compatibility")
@@ -52,6 +52,8 @@ pointing/emulate_touch_from_mouse=true
 2d_physics/layer_4="player_projectiles"
 2d_physics/layer_5="enemy_projectiles"
 2d_physics/layer_6="interactables"
+2d_physics/layer_7="roof_player"
+2d_physics/layer_8="roof_bounds"
 
 [physics]
 
