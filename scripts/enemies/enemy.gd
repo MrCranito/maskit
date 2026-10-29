@@ -1929,13 +1929,10 @@ class FallbackVisual extends Node2D:
 
 	func setup(kind: StringName) -> void:
 		match kind:
-			&"golem":
-				radius = 34.0
-				color = Color(0.72, 0.58, 0.40)
-			&"masked_brute":
+			&"fw_bruiser":
 				radius = 28.0
 				color = Color(0.55, 0.18, 0.16)
-			&"masked_archer":
+			&"fw_sharpshooter":
 				radius = 18.0
 				color = Color(0.35, 0.30, 0.45)
 			_:

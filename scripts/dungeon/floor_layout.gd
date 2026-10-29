@@ -86,7 +86,7 @@ class Stairs:
 
 class Spawn:
 	var cell: Vector2i
-	var kind: StringName             ## Ennemi (golem…), conteneur (crate…) ou décor (cactus…)
+	var kind: StringName             ## Ennemi (fw_bandit…), conteneur (crate…) ou décor (cactus…)
 	var room_id: int = -1
 	## (Ajout aménagement) Décalage monde du point d'appui par rapport à la position
 	## standard (centre de case + 0,25 case vers le bas). ZERO = position standard.
@@ -363,12 +363,12 @@ static func make_sample() -> FloorLayout:
 
 	L.player_spawn = Vector2i(3, 14)
 	L.extraction_cells = [Vector2i(31, 27), Vector2i(32, 27)]
-	L.add_spawn(L.enemy_spawns, Vector2i(6, 6), &"masked_grunt", hall.id)
-	L.add_spawn(L.enemy_spawns, Vector2i(8, 9), &"masked_grunt", hall.id)
-	L.add_spawn(L.enemy_spawns, Vector2i(27, 10), &"masked_archer", lobby.id)
-	L.add_spawn(L.enemy_spawns, Vector2i(18, 15), &"masked_brute", street.id)
-	L.add_spawn(L.enemy_spawns, Vector2i(9, 21), &"masked_grunt", office.id)
-	L.add_spawn(L.enemy_spawns, Vector2i(26, 5), &"golem", vault.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(6, 6), &"fw_bandit", hall.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(8, 9), &"fw_raider", hall.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(27, 10), &"fw_sharpshooter", lobby.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(18, 15), &"fw_guard_dog", street.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(9, 21), &"fw_bandit", office.id)
+	L.add_spawn(L.enemy_spawns, Vector2i(26, 5), &"fw_bruiser", vault.id)
 	L.add_spawn(L.container_spawns, Vector2i(12, 10), &"crate", back.id)
 	L.add_spawn(L.container_spawns, Vector2i(23, 5), &"chest", vault.id)
 	L.add_spawn(L.container_spawns, Vector2i(13, 22), &"cupboard", office.id)

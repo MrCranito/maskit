@@ -46,6 +46,6 @@ eject_shells = false
 sprite_id = &"rocket_m202"
 value = 1300
 unlock_mode = &"kill"
-unlock_enemy_kind = &"gang_boss"
+unlock_enemy_kind = &"fw_deserter"
 unlock_kills = 1
 price_gold = 2800

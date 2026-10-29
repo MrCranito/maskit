@@ -178,8 +178,8 @@ SPEC: dict[str, dict] = {
         "name": "Le Violent", "rig": "human", "frame": 224, "scale": 1.22, "head": 1.08, "leg": 0.80,
         "torso": (1.36, 1.10), "arm": 1.36, "arm_len": 1.18, "hunch": 0.36, "fps_run": 15, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#b8604e", "#3e1028", "#e88a6e"), ("#9a4a40", "#320c22", "#c86a58"),
-                             ("#c8786a", "#441830", "#f0a088")], 5.0),
+            "skin": ("pat", [("#9a4036", "#2e0a1e", "#c2604c"), ("#7e3030", "#26081a", "#a24840"),
+                             ("#a84c44", "#34102a", "#cc6e5e")], 5.0),
             "vein": ("#6a1a3a", "#22061a", "#9a2e52"),
             "tattoo": "!#ff4ad2",
             "pants": ("#2a2030", "#0a0610", "#463650"),
@@ -208,7 +208,7 @@ SPEC: dict[str, dict] = {
         },
     },
     "mall_omnistore": {
-        "name": "L'Omnistore", "rig": "boss", "frame": 384, "scale": 1.0, "fps_run": 12,
+        "name": "L'Omnistore", "rig": "boss", "frame": 384, "scale": 1.5, "fps_run": 12, "cam_dz": 0.25,
         "mats": {
             "flesh": ("pat", [("#7e1e3e", "#2a0626", "#b23a62"), ("#561a4e", "#1a0626", "#80306e"),
                               ("#962a46", "#30082a", "#c84a6a")], 3.5),
@@ -1158,10 +1158,28 @@ class Violent(Brute):
                       scale=(0.09 * self.AW, 0.08 * self.AW, 0.09 * self.AW)), "skin", fa)
             for k in range(3):
                 x = (k - 1) * 0.04
-                self.part("claw" + side, C.bm_tube([(x, -0.03, -self.ll - 0.04), (x * 1.3, -0.08, -self.ll - 0.14),
-                                                    (x * 1.4, -0.16, -self.ll - 0.20)], [0.022, 0.014, 0.0], seg=6),
+                self.part("claw" + side, C.bm_tube([(x, -0.03, -self.ll - 0.04), (x * 1.3, -0.10, -self.ll - 0.18),
+                                                    (x * 1.4, -0.24, -self.ll - 0.28)], [0.032, 0.022, 0.0], seg=6),
                           "claw", fa)
-        self.muzzle_ref = ("clawR", (0, -0.16, -self.ll - 0.2))
+        self.muzzle_ref = ("clawR", (0, -0.24, -self.ll - 0.28))
+
+    def pose_attack(self, i: int, n: int) -> None:
+        # griffes acérées : bras armé en arrière (0-2), ruée et double griffure (3), suivi (4-5)
+        self.rest()
+        j = self.j
+        crouch = (0.04, 0.10, 0.12, 0.02, 0.04, 0.02)[i]
+        j["pelvis"].location.z = self.PZ - crouch
+        j["pelvis"].location.y = (0.0, 0.02, 0.03, -0.18, -0.14, -0.04)[i]
+        twist = (-0.25, -0.5, -0.55, 0.5, 0.6, 0.15)[i]
+        self.spine_rot((0.15, 0.25, 0.28, 0.45, 0.45, 0.2)[i] - self.HUNCH * 0.4, 0, twist)
+        self.legs((-0.45, -0.1, 0), (0.35, 0.1, 0), 0.35 + crouch * 3, 0.5 + crouch * 2)
+        sh = self.shoulder
+        hr = [Vector((-0.20, 0.14, 0.10)), Vector((-0.28, 0.24, 0.18)), Vector((-0.30, 0.26, 0.20)),
+              Vector((0.22, -0.40, -0.08)), Vector((0.34, -0.26, -0.22)), Vector((0.0, -0.22, -0.30))][i]
+        hl = [Vector((0.16, -0.20, -0.10)), Vector((0.18, -0.26, -0.04)), Vector((0.18, -0.28, -0.02)),
+              Vector((0.10, 0.10, -0.20)), Vector((-0.12, -0.36, -0.06)), Vector((0.06, -0.18, -0.28))][i]
+        self.arm_ik("R", sh["R"] + hr, self.R_POLE)
+        self.arm_ik("L", sh["L"] + hl, self.L_POLE)
 
 
 # ------------------------------------------------------------------------------- le Gardien de magasin (élite)
@@ -1433,7 +1451,8 @@ class Spider(Rig):
 
 # =============================================================================== boss
 class Omnistore(Rig):
-    """L'Omnistore : masse de chair à gueule dentée, écrans au dos, 6 pattes, néons."""
+    """L'Omnistore : masse de chair à gueule dentée, écrans au dos, 6 pattes, néons.
+    Modélisé à l'échelle 1 puis agrandi par `scale` (≈ 3 fois la hauteur du héros)."""
 
     BZ = 1.05
     L1, L2 = 0.95, 1.20
@@ -1444,9 +1463,11 @@ class Omnistore(Rig):
         j["body"] = body = joint("body", root, (0, 0, 0))
         body.scale = (self.S["scale"],) * 3
         j["torso"] = to = joint("torso", body, (0, 0, self.BZ))
-        j["head"] = hd = joint("head", to, (0, -0.42, 0.18))
+        j["head"] = hd = joint("head", to, (0, -0.46, 0.16))
+        hd.scale = (1.3,) * 3
         j["jaw"] = jw = joint("jaw", hd, (0, 0.02, -0.06))
-        j["tvs"] = tv = joint("tvs", to, (0, 0.30, 0.42))
+        j["tvs"] = tv = joint("tvs", to, (0, 0.22, 0.78))
+        tv.scale = (1.35,) * 3
         # masse de chair : corps bossu
         bm = C.bm_sphere(26, 18, 1.0)
         rnd = random.Random(3)
@@ -1536,12 +1557,12 @@ class Omnistore(Rig):
                 u = qjoint("leg_u" + name, to, hip)
                 lo2 = qjoint("leg_l" + name, to, (0, 0, 0))
                 self.part("femur" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L1 * 0.5), (0, 0, -self.L1)],
-                                                    [0.10, 0.085, 0.07], seg=10), "leg", u)
+                                                    [0.13, 0.11, 0.09], seg=10), "leg", u)
                 self.part("spikeF" + name, C.bm_xform(C.bm_cyl(6, 0.035, 0.0, 0.14), loc=(0.06 * sx, 0, -self.L1 * 0.4),
                           rot=(0, 1.2 * sx, 0)), "claw", u)
                 self.part("kneeJ" + name, C.bm_xform(C.bm_sphere(10, 8, 0.085)), "flesh_dark", lo2)
                 self.part("tibia" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L2 * 0.6), (0, 0, -self.L2 * 0.88)],
-                                                    [0.075, 0.055, 0.04], seg=10), "leg", lo2)
+                                                    [0.10, 0.075, 0.05], seg=10), "leg", lo2)
                 self.part("claw" + name, C.bm_xform(C.bm_cyl(8, 0.045, 0.0, self.L2 * 0.14), loc=(0, 0, -self.L2 * 0.94),
                           rot=(math.pi, 0, 0)), "claw", lo2)
                 self.legs_def.append({"name": name, "u": u, "l": lo2, "hip": hip, "rest": rest, "sx": sx, "k": k,

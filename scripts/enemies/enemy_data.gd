@@ -5,8 +5,9 @@ extends Resource
 
 enum AttackType { MELEE, RANGED }
 
-## Identifiant du sprite : res://assets/sprites/enemies/<kind>.svg
-@export var kind: StringName = &"masked_grunt"
+## Identifiant du visuel : planches assets/sprites/enemies/<kind>/ (EnemyArt) ou visuel « sprite »
+## déclaré par le biome (scripts/biomes/<biome>/enemy_kinds.gd).
+@export var kind: StringName = &"fw_bandit"
 @export var display_name: String = ""
 @export var max_hp: float = 40.0
 ## Vitesse de poursuite (px/s). La patrouille utilise une fraction (balance.cfg [enemy_ai]).
@@ -208,15 +209,12 @@ func get_sfx_attack() -> StringName:
 
 
 func get_sfx_hurt() -> StringName:
-	return sfx_hurt if sfx_hurt != &"" else (&"outlaw_hurt" if projectile_style == &"bullet" or kind in [&"outlaw_knife", &"dynamiter"] else &"hit_flesh")
+	return sfx_hurt if sfx_hurt != &"" else (&"outlaw_hurt" if projectile_style == &"bullet" else &"hit_flesh")
 
 
 func get_sfx_death() -> StringName:
 	if sfx_death != &"":
 		return sfx_death
-	var k := String(kind)
-	if k.contains("golem") or k.contains("colossus"):
-		return &"golem_crumble"
 	return &"outlaw_death" if get_sfx_hurt() == &"outlaw_hurt" else &"enemy_death_generic"
 
 

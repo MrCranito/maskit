@@ -46,6 +46,6 @@ eject_shells = true
 sprite_id = &"pistol_deagle"
 value = 620
 unlock_mode = &"kill"
-unlock_enemy_kind = &"gunslinger"
+unlock_enemy_kind = &"fw_bandit"
 unlock_kills = 5
 price_gold = 1600

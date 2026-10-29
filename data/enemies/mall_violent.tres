@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_violent"
+display_name = "Le Violent"
+max_hp = 460.0
+move_speed = 172.0
+body_radius = 24.0
+detection_radius = 460.0
+detection_angle_deg = 200.0
+lose_sight_time = 4.5
+alert_duration = 0.3
+alert_neighbors_radius = 480.0
+patrol_radius = 90.0
+sight_gain = 2.2
+hearing_radius = 480.0
+hearing_gain = 2.4
+awareness_decay = 0.08
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 66.0
+attack_damage = 13.0
+attack_cooldown = 1.25
+attack_windup = 0.45
+tactic = &"elite"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 34.0
+zigzag_period = 0.6
+strafe_ratio = 0.8
+attack_pattern = &"lunge"
+lunge_distance = 120.0
+lunge_speed = 600.0
+combo_hits = 3
+combo_interval = 0.2
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.2
+phase2_cooldown_mult = 0.7
+stagger_ratio = 0.0
+knockback = 20.0
+ground_drop_chance = 1.0
+corpse_name = "Le Violent abattu"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"golem_crumble"
+skills = [{"id": &"charge", "cooldown": 7.0, "windup": 0.6, "min_range": 150.0, "max_range": 460.0, "speed": 640.0, "damage": 20.0, "status": "knockdown", "status_time": 0.7, "priority": 1.4}, {"id": &"mall_cloak", "cooldown": 12.0, "initial_cooldown": 3.0, "windup": 0.35, "duration": 3.5, "alpha": 0.08, "speed_mult": 1.35, "priority": 1.2}, {"id": &"mall_pounce", "cooldown": 6.0, "windup": 0.45, "min_range": 110.0, "max_range": 300.0, "flight": 0.32, "radius": 70.0, "damage": 18.0, "lead": 0.3, "priority": 1.0}]

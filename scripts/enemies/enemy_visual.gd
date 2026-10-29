@@ -19,7 +19,8 @@ signal death_finished
 # --- Réglages visuels (pas de l'équilibrage) ---------------------------------
 
 const SHADER := preload("res://assets/shaders/enemy_flash.gdshader")
-const DEFAULT_KIND := &"masked_grunt"
+## Repli si un kind n'a aucun visuel (planches du bandit du Far West).
+const DEFAULT_KIND := &"fw_bandit"
 const DEFAULT_AURA := Color(1.0, 0.36, 0.14)
 const AURA_SPRITE_TINT := 0.12
 
@@ -64,37 +65,11 @@ const MARKER_COLOR := Color(1.0, 0.3, 0.12)
 const EYE_GLOW_PULSE := 3.0
 const EYE_REDRAW_INTERVAL := 0.066
 
-## Données par kind (mode sprite). Coordonnées "eyes"/"feet" en pixels SVG.
-const KINDS: Dictionary = {
-	&"golem": {
-		"path": "res://assets/sprites/enemies/golem.svg",
-		"svg_size": Vector2(170, 150), "feet": Vector2(85, 146), "scale": 0.69,
-		"head": Vector2(0, -100), "shadow": 44.0,
-		"eyes": [Vector2(78.5, 55), Vector2(91.5, 55)], "eye_r": 3.0,
-		"debris": [Color(0.66, 0.58, 0.5), Color(0.45, 0.4, 0.42), Color(0.8, 0.7, 0.56)],
-	},
-	&"masked_grunt": {
-		"path": "res://assets/sprites/enemies/masked_grunt.svg",
-		"svg_size": Vector2(100, 120), "feet": Vector2(50, 116), "scale": 0.55,
-		"head": Vector2(0, -66), "shadow": 20.0,
-		"eyes": [Vector2(44, 37.3), Vector2(56, 37.3)], "eye_r": 2.6,
-		"debris": [Color(0.2, 0.21, 0.3), Color(0.93, 0.9, 0.84), Color(0.35, 0.14, 0.22)],
-	},
-	&"masked_archer": {
-		"path": "res://assets/sprites/enemies/masked_archer.svg",
-		"svg_size": Vector2(100, 124), "feet": Vector2(50, 120), "scale": 0.5,
-		"head": Vector2(0, -66), "shadow": 18.0,
-		"eyes": [Vector2(46, 35), Vector2(54, 35)], "eye_r": 2.4,
-		"debris": [Color(0.18, 0.22, 0.3), Color(0.93, 0.9, 0.84), Color(0.4, 0.3, 0.26)],
-	},
-	&"masked_brute": {
-		"path": "res://assets/sprites/enemies/masked_brute.svg",
-		"svg_size": Vector2(130, 136), "feet": Vector2(65, 132), "scale": 0.58,
-		"head": Vector2(0, -80), "shadow": 30.0,
-		"eyes": [Vector2(58, 39.3), Vector2(72, 39.3)], "eye_r": 2.8,
-		"debris": [Color(0.22, 0.23, 0.32), Color(0.93, 0.9, 0.84), Color(0.5, 0.52, 0.62)],
-	},
-}
+## Données par kind (mode sprite) propres à ce script. Coordonnées "eyes"/"feet" en pixels SVG.
+## Format : {"path", "svg_size", "feet", "scale", "head", "shadow", "eyes", "eye_r", "debris"
+## [, "aura"]}. Vide : le Far West utilise les planches (EnemyArt), les autres biomes déclarent
+## leurs visuels dans scripts/biomes/<biome>/enemy_kinds.gd (BiomeRegistry).
+const KINDS: Dictionary = {}
 
 const CONE_FILL := Color(1.0, 0.25, 0.1, 0.10)
 const CONE_EDGE := Color(1.0, 0.35, 0.12)
@@ -217,6 +192,12 @@ func setup(new_kind: StringName) -> void:
 	if not uses_sheet and not KINDS.has(new_kind) and not extra.has(new_kind):
 		push_warning("EnemyVisual : kind inconnu « %s », repli sur %s" % [new_kind, DEFAULT_KIND])
 		new_kind = DEFAULT_KIND
+		sheet = EnemyArt.entry(new_kind)
+		uses_sheet = not sheet.is_empty()
+		if not uses_sheet:
+			push_error("EnemyVisual : planches de %s introuvables" % DEFAULT_KIND)
+			kind = new_kind
+			return
 	kind = new_kind
 	_reset_effects()
 	if uses_sheet:

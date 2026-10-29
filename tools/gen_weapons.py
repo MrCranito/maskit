@@ -133,12 +133,12 @@ UNLOCKS = {
     "sniper_m24": ("shop", 280), "gadget_frag": ("shop", 120), "gadget_decoy": ("shop", 150),
     "pistol_glock18": ("shop", 700), "smg_vector": ("shop", 800), "rifle_m4a1": ("shop", 900),
     "sniper_ax50": ("shop", 1000), "gadget_smoke": ("shop", 350),
-    "rocket_rpg7": ("kill", 1200, "dynamiter", 3),
+    "rocket_rpg7": ("kill", 1200, "fw_raider", 3),
     "smg_p90": ("shop", 1800), "gadget_mine": ("shop", 800),
-    "pistol_deagle": ("kill", 1600, "gunslinger", 5),
-    "rifle_scarh": ("kill", 2000, "shotgun_brute", 3),
-    "sniper_m82": ("kill", 2400, "rifleman", 1),
-    "rocket_m202": ("kill", 2800, "gang_boss", 1),
+    "pistol_deagle": ("kill", 1600, "fw_bandit", 5),
+    "rifle_scarh": ("kill", 2000, "fw_bruiser", 3),
+    "sniper_m82": ("kill", 2400, "fw_sharpshooter", 1),
+    "rocket_m202": ("kill", 2800, "fw_deserter", 1),
 }
 STARTER_ID = "pistol_p9"
 
@@ -305,7 +305,7 @@ def patch_table(path: str, kind: str) -> None:
         mm = ENTRY_RE.match(line.strip())
         if mm:
             entries[mm.group(1)] = float(mm.group(2))
-    # Tables hors TABLE_TIERS (ex. butin propre à un ennemi : enemy_gang_boss…) : leurs entrées
+    # Tables hors TABLE_TIERS (ex. butin propre à un ennemi : enemy_fw_deserter…) : leurs entrées
     # wpn_* sont écrites à la main et conservées (seuls les objets retirés sont enlevés).
     managed = kind in TABLE_TIERS
     for k in list(entries):
