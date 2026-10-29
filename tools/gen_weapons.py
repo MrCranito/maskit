@@ -150,7 +150,7 @@ TIER_WEIGHTS = {
 }
 # Équipement : plutôt caisses militaires / coffres (multiplicateur appliqué aux gadgets).
 GADGET_MULT = {"rich": 1.6, "medium": 0.5, "enemy": 0.6}
-MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "uw_locker", "uw_crate", "safe", "chest"}
+MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "safe", "chest"}
 TABLE_TIERS = {
     # Far West
     "chest": ("rich", 1.0), "safe": ("rich", 1.2), "stagecoach": ("medium", 1.5),
@@ -162,9 +162,6 @@ TABLE_TIERS = {
     # Centre commercial
     "mall_jewel_safe": ("rich", 0.8), "mall_stock_box": ("medium", 0.8), "mall_corpse": ("medium", 1.3),
     "enemy_mall": ("enemy", 1.0),
-    # Station sous-marine
-    "uw_sample_chest": ("rich", 0.8), "uw_locker": ("medium", 1.2), "uw_crate": ("medium", 1.0),
-    "uw_diver_corpse": ("medium", 1.3), "enemy_underwater": ("enemy", 1.0),
 }
 # Objets retirés de toutes les tables (masques, anciennes armes sans weapon_id).
 REMOVED_ITEMS = {"mask_fox", "mask_iron", "mask_robber", "mask_skull", "space_cracked_mask",

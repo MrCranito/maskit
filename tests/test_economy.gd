@@ -241,7 +241,7 @@ func test_recettes_valides() -> void:
 
 func test_materiaux_dans_les_tables_de_chaque_biome() -> void:
 	var worlds := ["res://data/worlds/world_01_far_west.tres", "res://data/worlds/world_02_space_station.tres",
-		"res://data/worlds/world_03_mall.tres", "res://data/worlds/world_04_underwater.tres"]
+		"res://data/worlds/world_03_mall.tres"]
 	for wp: String in worlds:
 		var world := load(wp) as Resource
 		var found := {}

@@ -65,7 +65,7 @@ func test_all_cards_load_and_are_valid() -> void:
 		count[c.category] += 1
 		if c.category == MapCard.CATEGORY_PERMANENT:
 			biomes_perm[c.get_biome()] = true
-	assert_eq(biomes_perm.size(), 4, "Une carte permanente par biome")
+	assert_eq(biomes_perm.size(), BiomeRegistry.BIOMES.size(), "Une carte permanente par biome")
 	assert_gte(count[&"permanent"], 5)
 	assert_between(count[&"weekly"], 6, 8, "Pool hebdomadaire")
 	assert_between(count[&"monthly"], 4, 6, "Pool mensuel")

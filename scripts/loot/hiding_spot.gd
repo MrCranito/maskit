@@ -19,7 +19,6 @@ const DEFS := {
 	&"wardrobe": {"name": "Armoire", "scale": 0.55, "block": Vector2(48, 14), "shadow": 28.0, "foot": 2.0, "reach": 4.0},
 	&"haystack": {"name": "Botte de foin", "scale": 0.55, "block": Vector2(58, 20), "shadow": 34.0, "foot": 4.0, "reach": 8.0},
 	&"porch": {"name": "Sous le porche", "scale": 0.55, "block": Vector2(70, 16), "shadow": 0.0, "foot": 2.0, "reach": 8.0},
-	&"uw_locker": {"name": "Casier", "scale": 0.55, "block": Vector2(36, 14), "shadow": 0.0, "foot": 22.0, "reach": 4.0}, &"uw_pipes": {"name": "Derrière la tuyauterie", "scale": 0.55, "block": Vector2(70, 14), "shadow": 0.0, "foot": 18.0, "reach": 8.0}, &"uw_lab_table": {"name": "Sous la paillasse", "scale": 0.55, "block": Vector2(76, 22), "shadow": 0.0, "foot": 32.0, "reach": 8.0},
 }
 
 static var _tex_cache: Dictionary = {}

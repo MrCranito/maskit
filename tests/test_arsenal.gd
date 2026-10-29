@@ -25,7 +25,6 @@ const BIOME_TABLES := {
 	"far_west": "res://data/worlds/world_01_far_west.tres",
 	"space_station": "res://data/worlds/world_02_space_station.tres",
 	"mall": "res://data/worlds/world_03_mall.tres",
-	"underwater": "res://data/worlds/world_04_underwater.tres",
 }
 
 
