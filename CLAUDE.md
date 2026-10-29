@@ -14,7 +14,11 @@ Ce fichier est la référence du projet : relis-le avant chaque phase.
 - Fichiers .tscn : garde-les simples. Pour les structures complexes, construis les nœuds en code plutôt que d'écrire de longs .tscn à la main. Ne modifie jamais un .tscn ou .tres sans l'avoir relu entièrement.
 - Aucune valeur d'équilibrage en dur : tout dans /data (ressources .tres) ou /data/balance.cfg.
 - Si un choix de design est ambigu, propose deux options et demande.
-- Git : commits courts et explicites, push directement sur `main`. Pas de branche ni de pull request, sauf si l'utilisateur en demande une explicitement.
+- Git : on travaille à deux sur le projet. **Ne jamais pousser directement sur `main`.**
+  - Chaque nouvelle fonctionnalité ou correction se fait dans sa propre branche, créée depuis `main` à jour : `feature/<sujet>`, `fix/<sujet>` ou `chore/<sujet>` (noms courts en minuscules, mots séparés par des tirets).
+  - Commits courts et explicites sur la branche, puis push de la branche et ouverture d'une pull request vers `main` (titre clair, description : ce qui change, comment tester, captures si visuel, tests lancés).
+  - La pull request doit être validée par l'utilisateur avant d'être fusionnée : ne jamais la fusionner soi-même.
+  - Avant d'ouvrir la PR : projet qui compile et suite GUT verte (sinon le signaler dans la description).
 
 ## Direction artistique (référence unique : la planche « Les royaumes des masques »)
 Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaumes des masques » de l'image de référence fait foi. La partie « Les royaumes assemblés » (matériaux, royaumes de bois/métal, etc.) n'est PAS utilisée.
