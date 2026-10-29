@@ -25,10 +25,10 @@ func _init(p_columns: int = 6, p_rows: int = 4, p_max_weight: float = 30.0) -> v
 	slots.fill(null)
 
 
-## Inventaire aux dimensions de [loot] (balance.cfg).
+## Inventaire aux dimensions de [loot] (balance.cfg) ; poids max + bonus du niveau de raider.
 static func from_balance() -> Inventory:
 	return Inventory.new(LootDB.geti("inventory_columns", 6), LootDB.geti("inventory_rows", 4),
-		LootDB.getf("inventory_max_weight", 30.0))
+		LootDB.getf("inventory_max_weight", 30.0) + RaiderProgress.bag_bonus_at(RaiderProgress.current_level()))
 
 
 func capacity() -> int:

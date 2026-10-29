@@ -106,6 +106,7 @@ func _build() -> void:
 		_build_death(root)
 
 	_add_pass_xp(root)
+	_add_raider_xp(root)
 
 	_menu_btn = InventoryStyle.button("Retour au menu", InventoryStyle.VIOLET, 24, Vector2(300, 62))
 	_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -393,6 +394,32 @@ func _item_row(items: Dictionary) -> Control:
 		row.add_child(tile)
 		shown += 1
 	return row
+
+
+## XP et niveau de raider (summary["raider"] = {xp, level_before, level_after, unlocks}, ajouté par Raid) :
+## une pastille « Niveau de raider N », puis une ligne par déblocage obtenu.
+func _add_raider_xp(root: VBoxContainer) -> void:
+	var rx: Variant = summary.get("raider")
+	if not (rx is Dictionary) or (rx as Dictionary).is_empty():
+		return
+	var d: Dictionary = rx
+	var after := int(d.get("level_after", 1))
+	var up := after > int(d.get("level_before", 1))
+	var txt := ("Niveau de raider %d atteint !" % after) if up else ("Niveau de raider %d" % after)
+	var chip := _stat_chip(txt, "+%d XP" % int(d.get("xp", 0)), InventoryStyle.GOLD)
+	chip.name = "RaiderXp"
+	chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(chip)
+	var names: PackedStringArray = []
+	for u: Variant in d.get("unlocks", []):
+		if u is Dictionary:
+			names.append(RaiderProgress.label_of(u))
+	if not names.is_empty():
+		var l := InventoryStyle.label("Débloqué : " + "  ·  ".join(names), 16, InventoryStyle.GOLD, 700)
+		l.name = "RaiderUnlocks"
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		root.add_child(l)
 
 
 ## XP du pass de combat gagnée (summary["pass_xp"] = {xp, tier_before, tier_after}, ajouté par Raid).
