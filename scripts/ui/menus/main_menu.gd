@@ -466,7 +466,7 @@ func _gold_pill() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.tooltip_text = "Or : vends ton butin au marchand"
-	p.add_theme_stylebox_override("panel", _currency_style(MenuKit.COIN, 16))
+	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.COIN, 16))
 	p.custom_minimum_size = Vector2(0, 66)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -488,7 +488,7 @@ func _gem_pill() -> PanelContainer:
 	p.name = "GemPill"
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	p.add_theme_stylebox_override("panel", _currency_style(MenuKit.GEM, 6))
+	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.GEM, 6))
 	p.custom_minimum_size = Vector2(0, 66)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -508,19 +508,6 @@ func _gem_pill() -> PanelContainer:
 	gem_plus.pressed.connect(func() -> void: _go_shop(&"gems"))
 	row.add_child(gem_plus)
 	return p
-
-
-## Fond des pastilles de monnaie : encre 80 %, liseré bas de 4 px à la couleur de la monnaie.
-func _currency_style(accent: Color, margin_right: float) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = Color(MenuKit.NIGHT_DEEP, 0.8)
-	s.border_color = accent
-	s.border_width_bottom = 4
-	s.content_margin_left = 16
-	s.content_margin_right = margin_right
-	s.content_margin_top = 4
-	s.content_margin_bottom = 4
-	return s
 
 
 ## Petit bouton carré à coins coupés avec pictogramme (réglages, crédits, +).

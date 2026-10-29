@@ -401,8 +401,24 @@ static func rarity_style(r: int, selected: bool = false, radius: int = 14) -> St
 
 
 ## Bouton « retour » (≥ 64 px de haut).
+## Retour standard des écrans : bouton carré à chevron de la direction D ; `text` (« Menu »,
+## « Cartes »…) devient l'infobulle.
 static func back_button(text: String = "Retour") -> Button:
-	return button("‹  " + text, Style.GHOST, 22, Vector2(150, 64))
+	return square_back_button(text)
+
+
+## Fond des pastilles de monnaie (direction D) : encre 82 %, liseré bas de 4 px à la couleur de
+## la monnaie, angles vifs.
+static func currency_style(accent: Color, margin_right: float = 20.0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(NIGHT_DEEP, 0.82)
+	s.border_color = accent
+	s.border_width_bottom = 4
+	s.content_margin_left = 14
+	s.content_margin_right = margin_right
+	s.content_margin_top = 4
+	s.content_margin_bottom = 4
+	return s
 
 
 ## Retour de la direction « D » : carré à coins coupés, contour blanc fin, chevron gauche

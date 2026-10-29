@@ -163,7 +163,7 @@ func _build_header() -> Control:
 	head.add_child(end_l)
 	var gold := PanelContainer.new()
 	gold.name = "GoldPill"
-	gold.add_theme_stylebox_override("panel", _currency_style(MenuKit.COIN))
+	gold.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.COIN))
 	gold.custom_minimum_size.y = 66
 	gold.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var grow := HBoxContainer.new()
@@ -178,7 +178,7 @@ func _build_header() -> Control:
 	head.add_child(gold)
 	var gems := PanelContainer.new()
 	gems.name = "GemPill"
-	gems.add_theme_stylebox_override("panel", _currency_style(MenuKit.GEM))
+	gems.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.GEM))
 	gems.custom_minimum_size.y = 66
 	gems.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(gems)
@@ -193,17 +193,6 @@ func _build_header() -> Control:
 		MenuKit.go_to(self, MenuKit.SHOP_SCENE))
 	gems.add_child(gem_counter)
 	return head
-
-
-## Pastille de monnaie de la maquette : fond blanc 6 %, liseré bas à la couleur de la monnaie.
-func _currency_style(accent: Color) -> StyleBoxFlat:
-	var st := StyleBoxFlat.new()
-	st.bg_color = Color(1, 1, 1, 0.06)
-	st.border_color = accent
-	st.border_width_bottom = 4
-	st.content_margin_left = 16
-	st.content_margin_right = 22
-	return st
 
 
 func _season_end(season: BattlePassSeason) -> String:
