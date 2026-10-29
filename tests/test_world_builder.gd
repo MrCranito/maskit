@@ -194,3 +194,20 @@ func test_generated_floors_build() -> void:
 		assert_eq(r.get_stairs_areas().size(), L.stairs.size())
 		assert_lt(ms, 400.0)
 		r.free()
+
+
+## Grands décors (FloorLayout.landmark_spawns) : un sprite par décor, cases murées (collision).
+func test_landmarks_construits() -> void:
+	var L := FloorLayout.make_sample()
+	L.fill_rect(Rect2i(34, 13, 3, 2), FloorLayout.Tile.WALL)
+	var s := FloorLayout.Spawn.new()
+	s.kind = &"lm_rock_b"
+	s.size = Vector2i(3, 2)
+	s.cell = Vector2i(35, 14)
+	L.landmark_spawns.append(s)
+	var root := WorldBuilder.build(L, null)
+	add_child_autofree(root)
+	var found := root.find_children("Landmark_*", "", false, false)
+	assert_eq(found.size(), 1, "un sprite de grand décor")
+	assert_true(WorldBuilder.landmark_known(&"lm_rock_b"))
+	assert_true(WorldBuilder.landmark_known(&"lm_loco"))

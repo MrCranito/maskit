@@ -247,9 +247,12 @@ func set_selected(on: bool) -> void:
 	if changed and is_inside_tree():
 		if _sel_tween != null and _sel_tween.is_valid():
 			_sel_tween.kill()
-		_sel_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_sel_tween = null
 		if on:
+			_sel_tween = create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 			_sel_tween.tween_property(self, "scale", Vector2.ONE, 0.28).from(Vector2(0.94, 0.94))
+		else:
+			scale = Vector2.ONE
 
 
 func _refresh() -> void:

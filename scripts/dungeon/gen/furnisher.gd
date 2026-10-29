@@ -95,7 +95,9 @@ static func prepare(c: Ctx, templates: Dictionary, seed_value: int, salt: String
 	c.templates = templates
 	var order: Array[int] = []
 	for room in c.L.rooms:
-		if room.outdoor or room.tags.is_empty() or not templates.has(StringName(room.tags[0])):
+		if room.tags.is_empty() or not templates.has(StringName(room.tags[0])):
+			continue
+		if room.outdoor and not bool((templates[StringName(room.tags[0])] as Dictionary).get("outdoor", false)):
 			continue
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash([seed_value, salt, c.L.floor_index, room.id, "layout"])
@@ -227,6 +229,8 @@ static func _has_free_neighbor(c: Ctx, a: Vector2i, except: Vector2i) -> bool:
 
 ## Bloque les cases dans l'ordre ; annule tout si l'une casse la connexité.
 static func commit(c: Ctx, cells: Array[Vector2i]) -> bool:
+	if cells.size() > 1:
+		return _commit_rect(c, cells)
 	var done: Array[Vector2i] = []
 	for p in cells:
 		if not keeps(c, p):
@@ -235,6 +239,60 @@ static func commit(c: Ctx, cells: Array[Vector2i]) -> bool:
 			return false
 		c.blocked[p] = true
 		done.append(p)
+	return true
+
+
+## Bloc de plusieurs cases (rectangle) : les cases praticables de l'anneau qui l'entoure
+## restent connexes entre elles en passant par l'anneau (équivalent du test 3×3 pour un
+## objet d'une case), et chaque conteneur voisin garde un accès.
+static func _commit_rect(c: Ctx, cells: Array[Vector2i]) -> bool:
+	var lo := cells[0]
+	var hi := cells[0]
+	for p in cells:
+		lo = Vector2i(mini(lo.x, p.x), mini(lo.y, p.y))
+		hi = Vector2i(maxi(hi.x, p.x), maxi(hi.y, p.y))
+	var r := Rect2i(lo, hi - lo + Vector2i.ONE)
+	var inside := {}
+	for p0 in cells:
+		inside[p0] = true
+	# Anneau (ordre circulaire) autour du rectangle.
+	var g := r.grow(1)
+	var ring: Array[Vector2i] = []
+	for x in range(g.position.x, g.end.x):
+		ring.append(Vector2i(x, g.position.y))
+	for y in range(g.position.y + 1, g.end.y):
+		ring.append(Vector2i(g.end.x - 1, y))
+	for x2 in range(g.end.x - 2, g.position.x - 1, -1):
+		ring.append(Vector2i(x2, g.end.y - 1))
+	for y2 in range(g.end.y - 2, g.position.y, -1):
+		ring.append(Vector2i(g.position.x, y2))
+	var free := {}
+	for q in ring:
+		if passable(c, q):
+			free[q] = true
+	if free.is_empty():
+		return false
+	# Composantes de l'anneau en 4-voisinage (restreint à l'anneau).
+	var start: Vector2i = free.keys()[0]
+	var seen := {start: true}
+	var stack: Array[Vector2i] = [start]
+	while not stack.is_empty():
+		var q2: Vector2i = stack.pop_back()
+		for d in DIRS:
+			var n := q2 + d
+			if free.has(n) and not seen.has(n):
+				seen[n] = true
+				stack.append(n)
+	if seen.size() != free.size():
+		return false
+	for p1 in cells:
+		c.blocked[p1] = true
+	# Accès des conteneurs voisins.
+	for q3 in ring:
+		if c.access.has(q3) and not _has_free_neighbor(c, q3, Vector2i(-99999, -99999)):
+			for p2 in cells:
+				c.blocked.erase(p2)
+			return false
 	return true
 
 
@@ -428,8 +486,9 @@ static func place_container(c: Ctx, rc: RoomCtx, list: Array[FloorLayout.Spawn],
 	return true
 
 
-static func add_decal(c: Ctx, rc: RoomCtx, piece: StringName, cell: Vector2i, offset: Vector2 = Vector2.ZERO, rot: float = 0.0, flip: bool = false) -> void:
+static func add_decal(c: Ctx, rc: RoomCtx, piece: StringName, cell: Vector2i, offset: Vector2 = Vector2.ZERO, rot: float = 0.0, flip: bool = false, scale: float = 1.0) -> void:
 	var s := FloorLayout.Spawn.new()
+	s.scale = scale
 	s.kind = piece
 	s.cell = cell
 	s.room_id = rc.r.id
@@ -614,6 +673,8 @@ static func furnish(c: Ctx, rc: RoomCtx, steps: Array) -> void:
 				_op_art(c, rc, st)
 			"fill":
 				_op_fill(c, rc, st)
+			"grid":
+				_op_grid(c, rc, st)
 
 
 static func _count(rc: RoomCtx, st: Dictionary, def: int = 1) -> int:
@@ -1163,6 +1224,120 @@ static func _op_booth(c: Ctx, rc: RoomCtx, st: Dictionary) -> void:
 			return
 
 
+# --- grid -------------------------------------------------------------------------------------
+## Remplit le CENTRE de la salle par un groupe répété en grille régulière centrée :
+## kind (ou liste : alternance par nœud), spacing (allée entre groupes, 2), margin (distance aux
+## murs, 2), pad (anneau libre autour de chaque groupe, 1), ratio (occupation cible de la salle,
+## 0.22), max, tag. Les nœuds sont pris du centre vers l'extérieur ; un nœud occupé (pilier,
+## îlot) est sauté. Les allées logiques (lanes) peuvent être couvertes : la connexité reste
+## garantie par commit/keeps et l'anneau libre.
+
+## [cases praticables de la salle (cloisons comprises), cases occupées].
+static func room_occupancy(c: Ctx, rc: RoomCtx) -> Array[int]:
+	var R := rc.r.rect
+	var w := c.L.size.x
+	var tot := 0
+	var occ := 0
+	for y in range(R.position.y, R.end.y):
+		for x in range(R.position.x, R.end.x):
+			var i := y * w + x
+			if c.room_of[i] != rc.r.id:
+				continue
+			var p := Vector2i(x, y)
+			if c.L.partition_cells.has(p):
+				tot += 1
+				occ += 1
+			elif FloorLayout.is_walkable_tile(c.L.tiles[i]):
+				tot += 1
+				if c.blocked.has(p) or c.occupied.has(p):
+					occ += 1
+	return [tot, occ]
+
+
+static func _op_grid(c: Ctx, rc: RoomCtx, st: Dictionary) -> void:
+	var kinds: Array = st["kind"] if st.get("kind") is Array else [st.get("kind", &"")]
+	var kind0 := StringName(kinds[0])
+	if not known(c, kind0):
+		return
+	var fp := footprint(c, kind0)
+	# Salle trop étroite pour le groupe : variante plus petite ("alt", ex. tabouret, bac).
+	if st.has("alt") and (rc.r.rect.size.x < fp.x + 4 or rc.r.rect.size.y < fp.y + 4):
+		var alt := StringName(st["alt"])
+		if known(c, alt):
+			kind0 = alt
+			kinds = [alt]
+			fp = footprint(c, alt)
+	var sp := int(st.get("spacing", 2))
+	var margin := int(st.get("margin", 2))
+	var pad := int(st.get("pad", 1))
+	var ratio := float(st.get("ratio", 0.22))
+	var mx := int(st.get("max", 99))
+	var tag := String(st.get("tag", "grid"))
+	var R := rc.r.rect
+	var inner := R.grow(-margin)
+	# Salle étroite : marge réduite (au moins une case le long des murs).
+	if inner.size.x < fp.x + 2 or inner.size.y < fp.y + 2:
+		inner = R.grow(-1)
+	if inner.size.x < fp.x or inner.size.y < fp.y:
+		return
+	var step := fp + Vector2i(sp, sp)
+	# Densité cible mesurée sur la zone CENTRALE (inner) : les meubles muraux ne consomment
+	# pas le budget du centre.
+	var tot := 0
+	var occ0 := 0
+	var wq := c.L.size.x
+	for yq in range(inner.position.y, inner.end.y):
+		for xq in range(inner.position.x, inner.end.x):
+			var iq := yq * wq + xq
+			if c.room_of[iq] != rc.r.id:
+				continue
+			var pq := Vector2i(xq, yq)
+			if c.L.partition_cells.has(pq):
+				tot += 1
+				occ0 += 1
+			elif FloorLayout.is_walkable_tile(c.L.tiles[iq]):
+				tot += 1
+				if c.blocked.has(pq) or c.occupied.has(pq):
+					occ0 += 1
+	var budget := int(round(ratio * float(tot))) - occ0
+	if budget <= 0:
+		return
+	# Plusieurs alignements de grille possibles (déphasages) : on garde celui qui accueille le
+	# plus de groupes (essai sans rien poser), puis on pose du centre vers l'extérieur.
+	var ctr := Vector2(R.position) + Vector2(R.size) * 0.5
+	var best: Array = []
+	for phy in mini(step.y, 2):
+		for phx in mini(step.x, 2):
+			var nodes: Array = []
+			var y := inner.position.y + phy
+			while y + fp.y <= inner.end.y:
+				var x := inner.position.x + phx
+				while x + fp.x <= inner.end.x:
+					var r := Rect2i(x, y, fp.x, fp.y)
+					if fits(c, rc, r, pad, true):
+						nodes.append(r)
+					x += step.x
+				y += step.y
+			if nodes.size() > best.size():
+				best = nodes
+	var keyed: Array = []
+	for r2: Rect2i in best:
+		keyed.append([(Vector2(r2.position) + Vector2(fp) * 0.5).distance_to(ctr), r2])
+	keyed.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var placed := 0
+	var used := 0
+	for e: Array in keyed:
+		if placed >= mx or used >= budget:
+			return
+		var rr: Rect2i = e[1]
+		var kind := StringName(kinds[(rr.position.x / step.x + rr.position.y / step.y) % kinds.size()])
+		if not known(c, kind) or footprint(c, kind) != fp:
+			kind = kind0
+		if fits(c, rc, rr, pad, true) and place_prop(c, rc, kind, rr, &"", tag, true):
+			placed += 1
+			used += fp.x * fp.y
+
+
 # --- fill ---------------------------------------------------------------------------------------
 ## Densifie la salle jusqu'à `ratio` de cases occupées : petits meubles d'une case (kinds) contre
 ## les murs, de préférence à côté d'un meuble existant (groupes), jamais sur les allées.
@@ -1237,7 +1412,7 @@ static func _op_decal(c: Ctx, rc: RoomCtx, st: Dictionary) -> void:
 		"center":
 			var ctr := (Vector2(R.position) + Vector2(R.size) * 0.5) * TS
 			var cell := Vector2i(int(ctr.x / TS), int(ctr.y / TS))
-			add_decal(c, rc, _pick(rc, st["piece"]), cell, ctr - FloorLayout.cell_to_world(cell), _rot(rc, st))
+			add_decal(c, rc, _pick(rc, st["piece"]), cell, ctr - FloorLayout.cell_to_world(cell), _rot(rc, st), false, float(st.get("scale", 1.0)))
 		"under":
 			var of := String(st.get("of", ""))
 			if not rc.tags.has(of):
@@ -1249,7 +1424,7 @@ static func _op_decal(c: Ctx, rc: RoomCtx, st: Dictionary) -> void:
 				var shift_v: Vector2 = st.get("shift", Vector2.ZERO)
 				var cw := (Vector2(A.position) + Vector2(A.size) * 0.5) * TS + shift_v
 				var cell2 := Vector2i(int(cw.x / TS), int(cw.y / TS))
-				add_decal(c, rc, _pick(rc, st["piece"]), cell2, cw - FloorLayout.cell_to_world(cell2), _rot(rc, st))
+				add_decal(c, rc, _pick(rc, st["piece"]), cell2, cw - FloorLayout.cell_to_world(cell2), _rot(rc, st), false, float(st.get("scale", 1.0)))
 				k += 1
 		"near":
 			var of2 := String(st.get("of", ""))

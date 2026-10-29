@@ -186,8 +186,8 @@ func _build_detail() -> Control:
 ## Recalcule les cartes disponibles (heure UTC) et reconstruit la rangée.
 func refresh_rotation() -> void:
 	var now: int = MapRotation.now()
-	entries = MapRotation.available_cards(now)
-	next_event = MapRotation.next_event(now)
+	entries = MapRotation.offered_cards(now)
+	next_event = {} if MapRotation.is_restricted() else MapRotation.next_event(now)
 	_period_end = _compute_period_end(now)
 	var keep: Dictionary = _find_entry(last_selected_id)
 	if not keep.is_empty():

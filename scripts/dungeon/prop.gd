@@ -65,6 +65,11 @@ const DEFS := {
 	&"stove": {"block": Vector2(40, 30)},
 	&"bucket": {"block": Vector2.ZERO},
 	&"tool_rack": {"block": Vector2(56, 14)},
+	# Ville éparpillée (planche des cartes) : buisson sec (traversable), charrette, barrière.
+	&"shrub": {"block": Vector2.ZERO},
+	&"cart": {"block": Vector2(100, 26)},
+	&"fence": {"block": Vector2(110, 10)},
+	&"tree": {"block": Vector2(20, 12)},
 }
 
 static var _tex_cache: Dictionary = {}

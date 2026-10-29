@@ -82,6 +82,8 @@ var _props: Array[WorldProp] = []
 var _wall_body: StaticBody2D = null
 var _stairs_cooldown: float = 0.5
 ## Grilles précalculées (index y * w + x) : id de salle (-1) et id de bâtiment (-1).
+## Cases de mur dont le rendu est remplacé (grands décors posés dessus, bord de carte du désert).
+var _hidden_walls: Dictionary = {}
 var _room_grid: PackedInt32Array = PackedInt32Array()
 var _building_grid: PackedInt32Array = PackedInt32Array()
 ## Sources de lumière chaude (monde) : [position, rayon, intensité].
@@ -166,12 +168,14 @@ func _build(world: Resource) -> void:
 	wall_height = Balance.get_float("world_builder", "wall_height", 52.0)
 	_stairs_cooldown = Balance.get_float("world_builder", "stairs_cooldown", 0.5)
 	_build_grids()
+	_index_landmarks()
 	_build_ground()
 	_build_walls()
 	_build_porches()
 	_build_doors()
 	_build_stairs()
 	_build_props()
+	_build_landmarks()
 	_build_extraction()
 	_build_roofs()
 	_build_ambience()
@@ -241,6 +245,8 @@ func is_mine_cell(c: Vector2i) -> bool:
 
 
 func ground_at(c: Vector2i) -> int:
+	if _hidden_walls.has(c):
+		return Ground.SAND
 	var t := layout.get_tile(c)
 	match t:
 		FloorLayout.Tile.VOID, FloorLayout.Tile.WALL:
@@ -302,8 +308,15 @@ func _build_ground() -> void:
 	}
 	var void_tex: Texture2D = TEX_SAND_B if layout.floor_index == 0 else TEX_MINE
 	var void_tint := Color(0.66, 0.5, 0.5) if layout.floor_index == 0 else Color(0.32, 0.28, 0.4)
+	if _outskirts():
+		# Ville éparpillée : le désert continue au-delà de la carte (même sable, un peu plus sombre).
+		mats[Ground.VOID] = [TEX_SAND, TEX_SAND_B, 0.85, 0.1, 0.05]
+		void_tint = Color(0.86, 0.8, 0.8)
 	for g: int in [Ground.VOID, Ground.SAND, Ground.PLANKS, Ground.MINE]:
 		var rects := _ground_rects(g)
+		if g == Ground.VOID and _outskirts():
+			# Désert hors carte : un grand rectangle de sable sous toute la carte.
+			rects = [[Rect2(Vector2(-16, -16) * TS, (Vector2(layout.size) + Vector2(32, 32)) * TS), Color.WHITE]]
 		if rects.is_empty():
 			continue
 		var m: Array = mats.get(g, [void_tex, void_tex, 0.0, 0.18, 0.05])
@@ -435,7 +448,7 @@ class GroundDecals extends Node2D:
 				if t == FloorLayout.Tile.VOID:
 					_void_detail(atlas, c)
 					continue
-				if not FloorLayout.is_walkable_tile(t):
+				if not FloorLayout.is_walkable_tile(t) and not builder._hidden_walls.has(c):
 					continue
 				var g := builder.ground_at(c)
 				if g == Ground.SAND:
@@ -452,7 +465,7 @@ class GroundDecals extends Node2D:
 			for x2: int in L.size.x:
 				var c2 := Vector2i(x2, y2)
 				var t2 := L.get_tile(c2)
-				if FloorLayout.is_walkable_tile(t2):
+				if FloorLayout.is_walkable_tile(t2) or builder._hidden_walls.has(c2):
 					_wall_shadows(walls, c2)
 				elif t2 == FloorLayout.Tile.VOID:
 					_void_edge(walls, c2)
@@ -562,6 +575,10 @@ class GroundDecals extends Node2D:
 		var gv := WorldBuilder.wall_region("grad_v")
 		var gh := WorldBuilder.wall_region("grad_h")
 		var interior := L.get_tile(c) != FloorLayout.Tile.STREET
+		if builder._hidden_walls.has(c + Vector2i.UP):
+			n = FloorLayout.Tile.STREET
+		if builder._hidden_walls.has(c + Vector2i.LEFT):
+			w = FloorLayout.Tile.STREET
 		if FloorLayout.is_opaque_tile(n):
 			var depth := 34.0 if not interior else 24.0
 			draw_texture_rect_region(walls, Rect2(o, Vector2(TS, depth)), gv, Color(shadow, 0.55))
@@ -704,10 +721,12 @@ class WallLayer extends Node2D:
 		for y: int in L.size.y:
 			for x: int in L.size.x:
 				var c := Vector2i(x, y)
-				if L.get_tile(c) == FloorLayout.Tile.WALL:
+				if L.get_tile(c) == FloorLayout.Tile.WALL and not builder._hidden_walls.has(c):
 					_draw_wall_cell(tex, c)
 
 	func _is_wall(c: Vector2i) -> bool:
+		if builder._hidden_walls.has(c):
+			return false
 		var t := builder.layout.get_tile(c)
 		return t == FloorLayout.Tile.WALL or t == FloorLayout.Tile.DOOR
 
@@ -1150,14 +1169,161 @@ class FloorDetails extends Node2D:
 	func _draw() -> void:
 		for s: FloorLayout.Spawn in spawns:
 			var piece := String(s.kind)
-			if not WorldProp.has_piece(piece):
+			var tex: Texture2D = WorldProp.ATLAS
+			var reg: Rect2
+			if WorldProp.has_piece(piece):
+				reg = WorldProp.piece_region(piece)
+			elif WorldBuilder.LmMeta.PIECES.has(piece):
+				var r: Array = WorldBuilder.LmMeta.PIECES[piece]["rect"]
+				reg = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+				tex = WorldBuilder.LM_ATLAS
+			else:
 				continue
-			var reg := WorldProp.piece_region(piece)
 			var size := reg.size / WorldProp.PX_PER_WORLD
 			var c := FloorLayout.cell_to_world(s.cell) + s.offset
-			draw_set_transform(c, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
-			draw_texture_rect_region(WorldProp.ATLAS, Rect2(-size * 0.5, size), reg)
+			draw_set_transform(c, s.rot, Vector2(-s.scale if s.flip else s.scale, s.scale))
+			draw_texture_rect_region(tex, Rect2(-size * 0.5, size), reg)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# --- Grands décors (rochers, train, éolienne, puits…) ---------------------------------
+
+const LM_ATLAS: Texture2D = preload("res://assets/sprites/far_west/landmarks.png")
+const LmMeta := preload("res://assets/sprites/far_west/landmarks_meta.gd")
+
+
+## Cases de mur masquées : emprises des grands décors + bord de carte extérieur du désert
+## (le sable continue au-delà, le mur reste une limite invisible).
+func _index_landmarks() -> void:
+	_hidden_walls.clear()
+	for s: FloorLayout.Spawn in layout.landmark_spawns:
+		for q in FloorLayout.spawn_cells(s):
+			if layout.get_tile(q) == FloorLayout.Tile.WALL:
+				_hidden_walls[q] = true
+	if layout.floor_index == 0 and not layout.landmark_spawns.is_empty():
+		var w := layout.size.x
+		var h := layout.size.y
+		for x: int in w:
+			for y: int in [0, h - 1]:
+				if building_id_at(Vector2i(x, y)) < 0:
+					_hidden_walls[Vector2i(x, y)] = true
+		for y2: int in h:
+			for x2: int in [0, w - 1]:
+				if building_id_at(Vector2i(x2, y2)) < 0:
+					_hidden_walls[Vector2i(x2, y2)] = true
+
+
+## Désert autour de la ville éparpillée (rez-de-chaussée avec grands décors).
+func _outskirts() -> bool:
+	return layout.floor_index == 0 and not layout.landmark_spawns.is_empty()
+
+
+## Rochers et cactus hors carte (décor pur, déterministe) : bande de 14 cases autour de la grille.
+func _build_outskirts() -> void:
+	if not _outskirts():
+		return
+	var kinds: Array[StringName] = [&"lm_mesa", &"lm_rock_d", &"lm_rock_c", &"lm_rock_b", &"lm_rock_a", &"lm_rock_e"]
+	var w := layout.size.x
+	var h := layout.size.y
+	var band := 14
+	var y := -band
+	while y < h + band:
+		var x := -band
+		while x < w + band:
+			var inside := x >= -1 and y >= -1 and x <= w and y <= h + 2
+			var hv := hash01(x, y, 300)
+			if not inside and hv < 0.34:
+				var k: StringName = kinds[int(hash01(x, y, 301) * float(kinds.size())) % kinds.size()]
+				# Les gros amas loin du bord, les petits près.
+				var dist := maxi(maxi(-x, x - w), maxi(-y, y - h))
+				if dist < 4 and (k == &"lm_mesa" or k == &"lm_rock_d"):
+					k = &"lm_rock_b"
+				_outskirt_piece(k, Vector2(float(x) + 0.5 + hash01(x, y, 302), float(y) + 1.0) * TS)
+			elif not inside and hv < 0.42:
+				var pk := "prop_cactus" if hash01(x, y, 303) < 0.5 else "prop_shrub"
+				_outskirt_piece(StringName(pk), Vector2(float(x) + 0.5, float(y) + 0.7) * TS)
+			x += 3
+		y += 3
+
+
+func _outskirt_piece(kind: StringName, pos: Vector2) -> void:
+	var lm := LandmarkSprite.new()
+	var piece := String(kind)
+	if LmMeta.PIECES.has(piece):
+		var e: Dictionary = LmMeta.PIECES[piece]
+		var r: Array = e["rect"]
+		var f: Array = e["feet"]
+		lm.tex = LM_ATLAS
+		lm.region = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+		lm.feet = Vector2(float(f[0]), float(f[1]))
+	elif WorldProp.has_piece(piece):
+		lm.tex = WorldProp.ATLAS
+		lm.region = WorldProp.piece_region(piece)
+		lm.feet = WorldProp.piece_feet(piece)
+	else:
+		return
+	lm.position = pos
+	lm.z_index = 10
+	_outskirts_root.add_child(lm)
+
+
+var _outskirts_root: Node2D = null
+
+
+static func landmark_known(kind: StringName) -> bool:
+	return LmMeta.PIECES.has(String(kind)) or WorldProp.has_piece(String(kind))
+
+
+## Un nœud par grand décor (trié en Y avec les personnages : le train cache le joueur qui passe
+## derrière). Point d'appui = milieu du bord sud de l'emprise.
+func _build_landmarks() -> void:
+	if _outskirts():
+		_outskirts_root = Node2D.new()
+		_outskirts_root.name = "Outskirts"
+		_outskirts_root.y_sort_enabled = true
+		_outskirts_root.z_index = 10
+		add_child(_outskirts_root)
+		_build_outskirts()
+	for s: FloorLayout.Spawn in layout.landmark_spawns:
+		var piece := String(s.kind)
+		var lm := LandmarkSprite.new()
+		lm.name = "Landmark_%s" % piece
+		var x0 := s.cell.x - (s.size.x - 1) / 2
+		lm.position = Vector2((float(x0) + float(s.size.x) * 0.5) * TS, float(s.cell.y + 1) * TS)
+		lm.z_index = 10
+		if LmMeta.PIECES.has(piece):
+			var e: Dictionary = LmMeta.PIECES[piece]
+			var r: Array = e["rect"]
+			var f: Array = e["feet"]
+			lm.tex = LM_ATLAS
+			lm.region = Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			lm.feet = Vector2(float(f[0]), float(f[1]))
+		elif WorldProp.has_piece(piece):
+			lm.tex = WorldProp.ATLAS
+			lm.region = WorldProp.piece_region(piece)
+			lm.feet = WorldProp.piece_feet(piece)
+			# Décors « prop_* » : point d'appui au centre de l'emprise (pas au bord sud).
+			lm.position.y -= float(s.size.y) * TS * 0.5
+		else:
+			continue
+		lm.flip = s.flip
+		add_child(lm)
+
+
+class LandmarkSprite extends Node2D:
+	var tex: Texture2D = null
+	var region := Rect2()
+	var feet := Vector2.ZERO
+	var flip := false
+
+	func _ready() -> void:
+		set_process(false)
+
+	func _draw() -> void:
+		var k := 1.0 / WorldProp.PX_PER_WORLD
+		if flip:
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+		draw_texture_rect_region(tex, Rect2(-feet * k, region.size * k), region)
 
 
 # --- Extraction ------------------------------------------------------------------
@@ -1285,8 +1451,75 @@ func _build_roofs() -> void:
 		if not roof.facade_bottom:
 			top = r.position.y + TS - 6.0
 		roof.roof_rect = Rect2(r.position.x - 4.0, top, r.size.x + 8.0, r.end.y - wall_height - top)
+		if b.archetype == &"shack":
+			# Cabanes : tôles et bardeaux de couleurs variées (gris, bleu ardoise, rouge, brun).
+			var tints: Array[Color] = [Color(0.9, 1.75, 2.5), Color(0.75, 1.3, 2.4), Color(1.0, 1.0, 1.0), Color(0.85, 1.25, 1.3), Color(0.95, 1.6, 1.9)]
+			roof.self_modulate = tints[int(hash01(b.rect.position.x, b.rect.position.y, 77) * float(tints.size())) % tints.size()]
 		holder.add_child(roof)
 		_roofs.append(roof)
+		if layout.floor_index == 0 and _outskirts():
+			# Détails de toiture (s'effacent avec le toit) : tôles rapportées, cheminées, lucarnes.
+			var det := RoofDetails.new()
+			det.name = "RoofDetails"
+			det.r = roof.roof_rect
+			det.seed_value = b.id * 31 + b.rect.position.x
+			det.flat = BuildingRoof.STYLE.get(b.archetype, &"shingle") == &"flat"
+			roof.add_child(det)
+
+
+## Détails dessinés par-dessus un grand toit (ville éparpillée) : plaques de tôle rapportées,
+## rangée de cheminées / conduits, lucarnes, rustine rouge ; casse les grands aplats.
+class RoofDetails extends Node2D:
+	var r := Rect2()
+	var seed_value := 0
+	var flat := false
+
+	func _draw() -> void:
+		var area := r.size.x * r.size.y
+		if area < 6.0 * 64.0 * 6.0 * 64.0 * 0.5:
+			return
+		var n := int(area / (64.0 * 64.0 * 14.0)) + 1
+		var walls := WorldBuilder.TEX_WALLS
+		var white := WorldBuilder.wall_region("white")
+		var mid := r.position.x + r.size.x * 0.5
+		for i: int in n:
+			var hx := WorldBuilder.hash01(seed_value, i, 11)
+			var hy := WorldBuilder.hash01(seed_value, i, 12)
+			var w := 40.0 + WorldBuilder.hash01(seed_value, i, 13) * 60.0
+			var h := 30.0 + WorldBuilder.hash01(seed_value, i, 14) * 50.0
+			var west := hx < 0.5
+			var x := (r.position.x + 14.0 + hx * 2.0 * (r.size.x * 0.5 - w - 28.0)) if west else (mid + 10.0 + (hx - 0.5) * 2.0 * (r.size.x * 0.5 - w - 28.0))
+			var y := r.position.y + 20.0 + hy * (r.size.y - h - 80.0)
+			var pr := Rect2(x, y, w, h)
+			var tint := Color(1.3, 1.4, 1.6, 0.9) if WorldBuilder.hash01(seed_value, i, 15) < 0.6 else Color(1.5, 0.72, 0.56, 0.9)
+			if not west:
+				tint = Color(tint.r * 0.72, tint.g * 0.72, tint.b * 0.8, tint.a)
+			draw_texture_rect_region(walls, Rect2(pr.position + Vector2(4, 4), pr.size), white, Color(WorldBuilder.NIGHT, 0.3))
+			draw_texture_rect_region(walls, pr, WorldBuilder.wall_region("cap_wood"), tint)
+			var k := 0.0
+			while k < pr.size.x - 4.0:
+				draw_texture_rect_region(walls, Rect2(pr.position.x + k, pr.position.y, 2.0, pr.size.y), white, Color(0, 0, 0, 0.18))
+				k += 9.0
+			draw_rect(pr, OUTLINE, false, 1.5)
+		# Cheminées / conduits le long du faîtage (kit 3D de l'atlas).
+		var m := maxi(1, int(r.size.y / 220.0))
+		for j: int in m:
+			var py := r.position.y + r.size.y * (0.25 + 0.5 * float(j) / float(maxi(m - 1, 1)) if m > 1 else 0.3)
+			var px := mid + (24.0 if j % 2 == 0 else -40.0)
+			if WorldProp.has_piece("kit_chimney"):
+				draw_texture_rect_region(WorldProp.ATLAS, WorldProp.piece_dest("kit_chimney", Vector2(px, py), 0.8), WorldProp.piece_region("kit_chimney"))
+		# Lucarnes (rectangles sombres à cadre clair) sur le versant ouest.
+		var nl := int(r.size.x / 260.0)
+		for l: int in nl:
+			var lx := r.position.x + 30.0 + float(l) * 90.0
+			var ly := r.end.y - 120.0
+			if lx + 40.0 > mid - 10.0:
+				break
+			var lr := Rect2(lx, ly, 34.0, 26.0)
+			draw_rect(Rect2(lr.position + Vector2(4, 4), lr.size), Color(WorldBuilder.NIGHT, 0.35))
+			draw_rect(lr, Color(0.86, 0.74, 0.58))
+			draw_rect(lr.grow(-5.0), Color(0.16, 0.14, 0.24))
+			draw_rect(lr, OUTLINE, false, 1.5)
 
 
 # --- Ambiance (léger : aucune lumière dynamique) -----------------------------------

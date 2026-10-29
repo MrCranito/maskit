@@ -57,12 +57,12 @@ static func by_index(key: String, idx: int, def: Array) -> float:
 
 
 ## Gabarit de taille [w_min, w_max, h_min, h_max] d'un archétype (murs compris).
-static func size_range(archetype: StringName) -> Array:
+static func size_range(archetype: StringName, prefix: String = "size_") -> Array:
 	var defaults := {
 		&"saloon": [12, 16, 11, 14], &"bank": [11, 15, 10, 13], &"sheriff": [11, 14, 9, 12],
 		&"store": [9, 13, 9, 11], &"hotel": [13, 17, 13, 15], &"stable": [12, 16, 10, 13],
-		&"church": [9, 12, 12, 15], &"mine": [8, 11, 7, 9],
+		&"church": [9, 12, 12, 15], &"mine": [8, 11, 7, 9], &"shack": [6, 8, 5, 7], &"shed": [4, 5, 4, 4],
 	}
 	var def: Array = defaults.get(archetype, [10, 12, 9, 11])
-	var a := get_arr("size_" + String(archetype), def)
+	var a := get_arr(prefix + String(archetype), get_arr("size_" + String(archetype), def))
 	return a if a.size() == 4 else def

@@ -24,12 +24,20 @@ const T := FloorLayout.Tile
 ## Rôle → liste de [kind, min, max, placement] ; placement : &"wall" (contre un
 ## mur), &"center" (loin des murs) ou &"any".
 const PROPS := {
+	# Ville éparpillée (désert) : grandes zones extérieures ; quantités ×(surface / 150).
+	&"desert": [[&"tree", 1, 2, &"rock"], [&"cactus", 1, 3, &"rock"], [&"shrub", 2, 4, &"rock"], [&"tumbleweed", 1, 2, &"any"], [&"wagon_wheel", 0, 1, &"bld"],
+		[&"hay_bale", 1, 2, &"bld"], [&"barrel", 1, 2, &"bld"], [&"crate_stack", 1, 2, &"bld"], [&"water_trough", 0, 1, &"bld"],
+		[&"hitching_post", 0, 1, &"bld"]],
+	&"town_entry": [[&"cactus", 1, 3, &"any"], [&"shrub", 2, 3, &"any"], [&"tumbleweed", 1, 2, &"any"], [&"wanted_poster", 0, 1, &"wall"]],
+	&"town_exit": [[&"hitching_post", 1, 2, &"wall"], [&"lantern", 1, 2, &"wall"], [&"cactus", 1, 2, &"any"], [&"shrub", 1, 2, &"any"]],
+	&"railway": [[&"crate_stack", 1, 3, &"wall"], [&"barrel", 1, 2, &"wall"], [&"sacks", 0, 2, &"wall"]],
 	&"street_entry": [[&"cactus", 1, 2, &"wall"], [&"wanted_poster", 1, 1, &"wall"], [&"tumbleweed", 0, 1, &"any"]],
-	&"street": [[&"hitching_post", 2, 4, &"wall"], [&"water_trough", 1, 2, &"wall"], [&"lantern", 1, 3, &"wall"], [&"wanted_poster", 1, 2, &"wall"], [&"tumbleweed", 1, 3, &"any"], [&"wagon_wheel", 0, 2, &"wall"], [&"cactus", 0, 2, &"wall"]],
+	&"street": [[&"hitching_post", 2, 4, &"bld"], [&"water_trough", 1, 2, &"bld"], [&"lantern", 1, 3, &"bld"], [&"wanted_poster", 1, 2, &"bld"], [&"tumbleweed", 1, 3, &"any"], [&"wagon_wheel", 0, 2, &"bld"], [&"cactus", 0, 2, &"rock"], [&"shrub", 0, 2, &"rock"]],
 	&"street_exit": [[&"hitching_post", 1, 2, &"wall"], [&"lantern", 1, 1, &"wall"], [&"cactus", 1, 2, &"wall"]],
 	&"alley": [[&"wagon_wheel", 0, 1, &"wall"], [&"lantern", 0, 1, &"wall"], [&"tumbleweed", 0, 1, &"any"]],
-	&"backyard": [[&"cactus", 1, 3, &"any"], [&"hay_bale", 0, 2, &"wall"], [&"wagon_wheel", 0, 1, &"wall"]],
-	&"plaza": [[&"water_trough", 1, 1, &"center"], [&"bench", 1, 2, &"wall"], [&"water_tower", 0, 1, &"wall"], [&"cactus", 0, 2, &"wall"]],
+	&"backyard": [[&"hay_bale", 1, 2, &"wall"], [&"barrel", 1, 2, &"wall"], [&"crate_stack", 0, 2, &"wall"], [&"wagon_wheel", 0, 1, &"wall"], [&"shrub", 0, 1, &"any"]],
+	&"corral": [[&"hay_bale", 1, 2, &"wall"], [&"water_trough", 1, 1, &"wall"], [&"hitching_post", 0, 1, &"wall"]],
+	&"plaza": [[&"water_trough", 1, 1, &"wall"], [&"bench", 1, 2, &"wall"], [&"hitching_post", 1, 2, &"wall"], [&"lantern", 1, 2, &"wall"], [&"cactus", 0, 2, &"any"], [&"shrub", 1, 2, &"any"]],
 	&"saloon_hall": [[&"saloon_bar", 1, 1, &"wall"], [&"piano", 1, 1, &"wall"], [&"poker_table", 2, 3, &"center"], [&"lantern", 1, 2, &"wall"]],
 	&"saloon_office": [[&"desk", 1, 1, &"wall"], [&"safe", 0, 1, &"wall"]],
 	&"storage": [[&"shelf", 1, 2, &"wall"]],
@@ -62,11 +70,18 @@ const PROPS := {
 ## Rôle → cachettes possibles {kind: poids} (barrel, wardrobe, haystack, porch).
 ## Rôles absents : pas de cachette dans la salle.
 const HIDING := {
+	&"desert": {&"barrel": 2.0, &"haystack": 2.0},
+	&"town_entry": {&"haystack": 1.0},
+	&"town_exit": {&"barrel": 1.0},
+	&"railway": {&"barrel": 2.0},
+	&"shack": {&"wardrobe": 1.0, &"barrel": 1.0},
 	&"street_entry": {&"barrel": 2.0, &"haystack": 1.0},
 	&"street": {&"barrel": 2.0, &"porch": 2.0, &"haystack": 1.0},
 	&"street_exit": {&"barrel": 1.0, &"porch": 1.0},
 	&"alley": {&"barrel": 2.0, &"haystack": 1.0},
 	&"backyard": {&"haystack": 2.0, &"barrel": 1.0},
+	&"corral": {&"haystack": 2.0},
+	&"shed": {&"barrel": 1.0},
 	&"plaza": {&"barrel": 1.0, &"porch": 1.0},
 	&"saloon_hall": {&"barrel": 1.0},
 	&"storage": {&"barrel": 2.0, &"wardrobe": 1.0},
@@ -87,11 +102,18 @@ const HIDING := {
 
 ## Rôle → conteneurs possibles {kind: poids}.
 const CONTAINERS := {
+	&"desert": {&"wagon": 2.0, &"barrel": 2.0, &"crate": 2.0, &"corpse": 1.5},
+	&"town_entry": {&"barrel": 1.0, &"crate": 1.0},
+	&"town_exit": {&"stagecoach": 3.0, &"crate": 1.0},
+	&"railway": {&"crate": 3.0, &"barrel": 1.0, &"corpse": 1.0},
+	&"shack": {&"cupboard": 2.0, &"chest": 1.0, &"crate": 1.0, &"corpse": 0.5},
 	&"street_entry": {&"barrel": 1.0, &"crate": 1.0},
 	&"street": {&"wagon": 2.0, &"barrel": 2.0, &"crate": 2.0, &"corpse": 1.0},
 	&"street_exit": {&"stagecoach": 3.0, &"crate": 1.0},
 	&"alley": {&"barrel": 2.0, &"crate": 2.0, &"corpse": 1.0},
-	&"backyard": {&"wagon": 1.0, &"crate": 2.0, &"corpse": 1.5},
+	&"backyard": {&"wagon": 2.0, &"crate": 2.0, &"barrel": 1.0, &"corpse": 1.0},
+	&"corral": {&"wagon": 2.0, &"crate": 1.0},
+	&"shed": {&"crate": 2.0, &"barrel": 1.0, &"chest": 0.5},
 	&"plaza": {&"barrel": 1.0, &"wagon": 1.0},
 	&"saloon_hall": {&"barrel": 2.0, &"crate": 1.0, &"corpse": 1.0},
 	&"saloon_office": {&"cupboard": 2.0, &"chest": 1.0},
@@ -133,6 +155,11 @@ class Ctx:
 	var door_adj: Dictionary = {}      ## Portes et leurs 4 voisines
 	var cand_cache: Dictionary = {}    ## "room:placement" → Array[Vector2i]
 	var fur: Fur.Ctx = null            ## Aménagement par gabarits (salles intérieures)
+	## (Village) Grilles (1 octet par case) des cases extérieures à ≤ 2 cases d'une formation
+	## rocheuse / d'un bâtiment ou d'une palissade : végétation près des rochers, fouillis en
+	## grappes autour des bâtiments. Vides si le plan n'a pas ces champs.
+	var near_rock: PackedByteArray = PackedByteArray()
+	var near_bld: PackedByteArray = PackedByteArray()
 
 	func room_id_at(p: Vector2i) -> int:
 		if not L.in_bounds(p):
@@ -146,6 +173,7 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 	c.world = world
 	_reserve(c)
 	_index_rooms(c)
+	_index_near(c)
 	c.fur = Fur.make_ctx(L, c.blocked, c.reserved, c.enemy_cells, c.room_of, furniture_defs(), c.world.has_container)
 	Fur.prepare(c.fur, Tpl.TEMPLATES, seed_value, "fw")
 	for room in L.rooms:
@@ -174,6 +202,9 @@ static func enemy_count(room: FloorLayout.Room, floor_index: int, difficulty: in
 	var tmul := float(Cfg.get_dict("enemy_room_mult", {}).get(String(room.type), 1.0))
 	var fmul := float(Cfg.get_dict("enemy_floor_mult", {}).get(str(floor_index), 1.0))
 	var area := float(room.rect.get_area())
+	if room.outdoor:
+		# Grandes zones de désert (beaucoup de cases occupées par rochers, bâtiments…).
+		area *= Cfg.getf("enemy_outdoor_area_mult", 1.0)
 	var n := area * dens * tmul * fmul + roll
 	var cap := Cfg.geti("enemy_max_per_room", 9)
 	var bonus := 0
@@ -184,6 +215,53 @@ static func enemy_count(room: FloorLayout.Room, floor_index: int, difficulty: in
 
 
 # --- Réservations ---------------------------------------------------------
+
+## Abords des rochers et des bâtiments / palissades (vides si le plan n'a pas ces champs).
+## Calcul par grilles d'octets (distance de Tchebychev ≤ 2 / ≤ 1), puis dictionnaires.
+static func _index_near(c: Ctx) -> void:
+	var L := c.L
+	if L.rock_formations.is_empty() and L.fences.is_empty():
+		return
+	var W := L.size.x
+	var H := L.size.y
+	var rock := PackedByteArray()
+	rock.resize(W * H)
+	var bld := PackedByteArray()
+	bld.resize(W * H)
+	for rf: Dictionary in L.rock_formations:
+		for q: Vector2i in rf["cells"]:
+			rock[q.y * W + q.x] = 1
+	for b in L.buildings:
+		var r := b.rect
+		for y in range(r.position.y, r.end.y):
+			for x in range(r.position.x, r.end.x):
+				bld[y * W + x] = 1
+	for pl: Array in L.fences:
+		for q2: Vector2i in pl:
+			bld[q2.y * W + q2.x] = 1
+	c.near_rock = _dilate(_dilate(rock, W, H), W, H)
+	c.near_bld = _dilate(_dilate(bld, W, H), W, H)
+
+
+## Dilatation 3×3 d'une grille d'octets.
+static func _dilate(g: PackedByteArray, W: int, H: int) -> PackedByteArray:
+	var h := PackedByteArray()
+	h.resize(W * H)
+	for y in H:
+		var row := y * W
+		for x in W:
+			if g[row + x] == 1 or (x > 0 and g[row + x - 1] == 1) or (x < W - 1 and g[row + x + 1] == 1):
+				h[row + x] = 1
+	var v := PackedByteArray()
+	v.resize(W * H)
+	for y2 in H:
+		for x2 in W:
+			var i := y2 * W + x2
+			if h[i] == 1 or (y2 > 0 and h[i - W] == 1) or (y2 < H - 1 and h[i + W] == 1):
+				v[i] = 1
+	return v
+
+
 
 ## Table case → salle (équivalent de FloorLayout.room_at, précalculé).
 static func _index_rooms(c: Ctx) -> void:
@@ -304,6 +382,19 @@ static func _candidates(c: Ctx, room: FloorLayout.Room, placement: StringName) -
 	c.cand_cache["%d:wall" % room.id] = l_wall
 	c.cand_cache["%d:center" % room.id] = l_center
 	c.cand_cache["%d:any" % room.id] = l_any
+	var l_rock: Array[Vector2i] = []
+	var l_bld: Array[Vector2i] = []
+	if not c.near_bld.is_empty():
+		for p2 in l_any:
+			var j := p2.y * w + p2.x
+			if L.paths.has(p2):
+				continue
+			if c.near_rock[j] == 1:
+				l_rock.append(p2)
+			if c.near_bld[j] == 1:
+				l_bld.append(p2)
+	c.cand_cache["%d:rock" % room.id] = l_rock if not l_rock.is_empty() else l_wall.duplicate()
+	c.cand_cache["%d:bld" % room.id] = l_bld if not l_bld.is_empty() else l_wall.duplicate()
 	return c.cand_cache[key]
 
 
@@ -388,12 +479,75 @@ static func blocked_cells(L: FloorLayout) -> Dictionary:
 
 # --- Décors ------------------------------------------------------------------
 
+## Couverts groupés de la ville éparpillée : amas de 2 à 4 objets (caisses, tonneaux, charrette,
+## barrière, foin) posés côte à côte au milieu du sable, entre les bâtiments.
+const COVER_KINDS: Array[StringName] = [&"crate_stack", &"barrel", &"crate_stack", &"hay_bale", &"sacks", &"barrel"]
+
+
+static func _cover_groups(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator) -> void:
+	var n := int(float(room.rect.get_area()) / Cfg.getf("cover_group_area", 110.0))
+	# Village : grappes autour des bâtiments et des cours (abords), sinon loin des murs.
+	var cells := _candidates(c, room, &"bld" if not c.near_bld.is_empty() else &"center")
+	for g in n:
+		for t in 12:
+			if cells.is_empty():
+				return
+			var p: Vector2i = cells[rng.randi_range(0, cells.size() - 1)]
+			if c.blocked.has(p) or c.enemy_cells.has(p):
+				continue
+			# Rien d'autre à 2 cases : le groupe reste lisible et contournable.
+			var crowded := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if c.blocked.has(p + Vector2i(dx, dy)):
+						crowded = true
+			if crowded or not Fur.keeps(c.fur, p):
+				continue
+			var lead: StringName = &"fence" if rng.randf() < 0.3 else (&"cart" if rng.randf() < 0.25 else COVER_KINDS[rng.randi_range(0, COVER_KINDS.size() - 1)])
+			if lead == &"fence" or lead == &"cart":
+				var p2 := p + Vector2i.RIGHT
+				if c.reserved.has(p2) or c.blocked.has(p2) or c.room_id_at(p2) != room.id or not FloorLayout.is_walkable_tile(c.L.get_tile(p2)):
+					continue
+				var cells2: Array[Vector2i] = [p, p2]
+				if not Fur.commit(c.fur, cells2):
+					continue
+				var s := c.L.add_spawn(c.L.prop_spawns, p, lead, room.id)
+				s.size = Vector2i(2, 1)
+				s.cell = p
+				s.offset = Vector2(TILE_HALF, 0.0)
+			else:
+				c.blocked[p] = true
+				c.L.add_spawn(c.L.prop_spawns, p, lead, room.id)
+			# 1 à 3 voisins.
+			var dirs: Array[Vector2i] = [Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP, Vector2i(-1, 1), Vector2i(1, 1)]
+			var extra := rng.randi_range(1, 3)
+			for d in dirs:
+				if extra <= 0:
+					break
+				var q := p + d
+				if c.reserved.has(q) or c.blocked.has(q) or c.enemy_cells.has(q) or c.room_id_at(q) != room.id:
+					continue
+				if c.L.get_tile(q) != T.STREET or not Fur.keeps(c.fur, q):
+					continue
+				c.blocked[q] = true
+				c.L.add_spawn(c.L.prop_spawns, q, COVER_KINDS[rng.randi_range(0, COVER_KINDS.size() - 1)], room.id)
+				extra -= 1
+			break
+
+
+const TILE_HALF := 32.0
+
+
 static func _furnish(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator) -> void:
 	var role := _role(room)
+	if role == &"desert" or role == &"plaza" or role == &"town_exit":
+		_cover_groups(c, room, rng)
 	var entries: Array = PROPS.get(role, [])
 	var scale := 1.0
 	if room.outdoor and role == &"street":
 		scale = maxf(1.0, room.rect.size.x / 30.0)
+	elif room.outdoor:
+		scale = maxf(1.0, float(room.rect.get_area()) / Cfg.getf("outdoor_props_area", 150.0))
 	for e: Array in entries:
 		var kind: StringName = e[0]
 		if not c.world.has_prop(kind):
@@ -419,7 +573,10 @@ static func _containers(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerat
 		return
 	var dens := Cfg.getf("container_density", 0.03)
 	var tmul := float(Cfg.get_dict("container_room_mult", {}).get(String(room.type), 1.0))
-	var n := int(floor(room.rect.get_area() * dens * tmul + rng.randf()))
+	var area := float(room.rect.get_area())
+	if room.outdoor:
+		area *= Cfg.getf("container_outdoor_area_mult", 1.0)
+	var n := int(floor(area * dens * tmul + rng.randf()))
 	var mn := 0
 	if room.type == FloorLayout.ROOM_LOOT:
 		mn = 1
@@ -505,22 +662,31 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	# Ordre des cases indépendant de la difficulté (pour la croissance).
 	var cells: Array[Vector2i] = []
 	var r := room.rect
-	for y in range(r.position.y, r.end.y):
-		for x in range(r.position.x, r.end.x):
-			var p := Vector2i(x, y)
-			var t := c.L.get_tile(p)
+	var L := c.L
+	var w := L.size.x
+	var tiles := L.tiles
+	var room_of := c.room_of
+	var rid := room.id
+	var ex := {}
+	for e in L.extraction_cells:
+		ex[e] = true
+	var ps := L.player_spawn
+	for y in range(maxi(r.position.y, 0), mini(r.end.y, L.size.y)):
+		for x in range(maxi(r.position.x, 0), mini(r.end.x, w)):
+			var i := y * w + x
+			var t := tiles[i]
 			if t != T.FLOOR and t != T.STREET:
 				continue
-			if c.blocked.has(p) or c.enemy_cells.has(p) or c.room_id_at(p) != room.id:
+			if room_of[i] != rid:
 				continue
-			if c.L.extraction_cells.has(p) or c.L.get_tile(p) == T.DOOR:
+			# Rayon de sécurité (les salles scellées sont derrière une porte verrouillée : aucun).
+			if not sealed and absi(x - ps.x) + absi(y - ps.y) < safe:
 				continue
-			if c.door_adj.has(p):
+			var p := Vector2i(x, y)
+			if c.blocked.has(p) or c.enemy_cells.has(p) or ex.has(p):
+				continue
+			if c.door_adj.has(p) and not sealed:
 				# Les gardes d'une petite salle scellée peuvent se tenir près de la porte.
-				if not sealed:
-					continue
-			# Les salles scellées sont derrière une porte verrouillée : pas de rayon de sécurité.
-			if not sealed and absi(p.x - c.L.player_spawn.x) + absi(p.y - c.L.player_spawn.y) < safe:
 				continue
 			cells.append(p)
 	for i in range(cells.size() - 1, 0, -1):

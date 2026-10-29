@@ -57,6 +57,14 @@ class Building:
 	var rect: Rect2i                 ## Emprise extérieure (murs compris), en cases
 	var room_ids: PackedInt32Array = PackedInt32Array()
 	var door_ids: PackedInt32Array = PackedInt32Array()
+	## (Ajout village) Style de toit pour le rendu : tin_blue | tin_rust | shingle | red | plank
+	## (&"" = non renseigné : le rendu choisit d'après l'archétype).
+	var roof_style: StringName = &""
+	## (Ajout village) Nombre de niveaux visibles (1 ou 2 ; 2 = saloon / hôtel à étage).
+	var stories: int = 1
+	## (Ajout village) Côté de la façade principale (porte sur la rue, porche) : direction
+	## unitaire du bâtiment vers la rue (DOWN = façade au sud, LEFT = façade à l'ouest…).
+	var porch_side: Vector2i = Vector2i.DOWN
 
 
 class Door:
@@ -90,6 +98,8 @@ class Spawn:
 	var flip: bool = false
 	## (Ajout aménagement) Rotation (radians) des détails au sol (decor_spawns).
 	var rot: float = 0.0
+	## (Ajout aménagement) Échelle d'affichage des détails au sol (grands tapis).
+	var scale: float = 1.0
 
 
 var floor_index: int = 0             ## 0 = rez-de-chaussée, 1 = étage, -1 = sous-sol
@@ -117,6 +127,34 @@ var wall_decor_cells: Dictionary = {}
 ## (Ajout aménagement) Cases passées de FLOOR à WALL par l'aménagement (cloisons, murets,
 ## alcôves) : Vector2i → true. Ce sont des murs comme les autres (opaques, bloquants).
 var partition_cells: Dictionary = {}
+## (Ajout cartes) Grands décors posés SUR des cases WALL (rochers, wagons du train à l'arrêt,
+## éolienne, château d'eau, puits, réacteurs…) : kind = pièce d'atlas du biome, cell = case
+## d'appui (rangée du bas, colonne centrale : voir spawn_cells), size = emprise. Les cases de
+## l'emprise sont des murs (collision, opacité) ; le constructeur dessine la pièce à leur place.
+## Peut rester vide.
+var landmark_spawns: Array[Spawn] = []
+## (Ajout cartes) Zones de gravité faible (station spatiale) : Vector2i → true. Cases praticables
+## où le joueur garde de l'inertie (géré côté joueur). Vide dans les autres biomes.
+var low_gravity_cells: Dictionary = {}
+## (Ajout village Far West) Données de plan pour le rendu pré-calculé. Toutes peuvent rester
+## vides (autres biomes, étages 1 / -1).
+## Terre battue (rues, ruelles, place) : Vector2i → true. Cases praticables (STREET).
+var paths: Dictionary = {}
+## Palissades : Array d'Array[Vector2i] (polylignes de cases contiguës, dans l'ordre). Chaque
+## case est un mur (obstacle, opaque) ; les ouvertures (portails) ne sont pas dans les listes.
+var fences: Array = []
+## Formations rocheuses : Array de {"cells": Array[Vector2i], "height": float (cases),
+## "kind": StringName (mesa | ledge | scree)}. Toutes les cases sont des murs.
+var rock_formations: Array = []
+## Grands repères : Array de {"kind": StringName (windmill | water_tower | well),
+## "cell": Vector2i (case d'appui, rangée du bas), "rect": Rect2i (emprise, murs)}.
+var landmarks: Array = []
+## Voies ferrées : Array de {"kind": StringName (main | spur), "points": Array[Vector2i]
+## (polyligne de l'axe, en cases), "width": int (cases)}. Les rails sont praticables.
+var rails: Array = []
+## Train à l'arrêt : Array de {"kind": StringName (pièce lm_loco, lm_boxcar…), "rect": Rect2i}
+## dans l'ordre de la locomotive à la queue. Cases murées (obstacle) ; passages entre wagons.
+var train: Array = []
 
 
 func _init(p_size: Vector2i = Vector2i.ZERO) -> void:
@@ -253,6 +291,11 @@ static func spawn_cells(s: Spawn) -> Array[Vector2i]:
 ## (Ajout aménagement) true si la case de mur `c` porte un décor mural.
 func has_wall_decor(c: Vector2i) -> bool:
 	return wall_decor_cells.has(c)
+
+
+## (Ajout cartes) true si la case praticable `c` est en gravité faible.
+func is_low_gravity(c: Vector2i) -> bool:
+	return low_gravity_cells.has(c)
 
 
 ## Cases atteignables depuis `from` en traversant toutes les portes (même verrouillées

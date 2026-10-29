@@ -61,8 +61,10 @@ class Plan:
 
 ## Construit le plan d'un archétype. `ctx` : { super_budget: int } (décrémenté si
 ## une salle super_loot verrouillée est créée).
-static func build(archetype: StringName, rng: RandomNumberGenerator, ctx: Dictionary) -> Plan:
-	var sr := Cfg.size_range(archetype)
+## `size_prefix` : préfixe des clés de gabarit de taille dans [generator] (« size_ » : ancienne
+## ville éparpillée, « village_size_ » : village de la maquette).
+static func build(archetype: StringName, rng: RandomNumberGenerator, ctx: Dictionary, size_prefix: String = "size_") -> Plan:
+	var sr := Cfg.size_range(archetype, size_prefix)
 	var w := rng.randi_range(int(sr[0]), int(sr[1]))
 	var h := rng.randi_range(int(sr[2]), int(sr[3]))
 	var p: Plan
@@ -75,6 +77,8 @@ static func build(archetype: StringName, rng: RandomNumberGenerator, ctx: Dictio
 		&"stable": p = _stable(w, h, rng)
 		&"church": p = _church(w, h, rng)
 		&"mine": p = _mine(w, h, rng)
+		&"shack": p = _shack(w, h, rng)
+		&"shed": p = _shed(w, h, rng)
 		_: p = _store(w, h, rng)
 	p.archetype = archetype
 	return p
@@ -317,6 +321,24 @@ static func _church(w: int, h: int, rng: RandomNumberGenerator) -> Plan:
 	var nave := p.add_room(Rect2i(1, 5, w - 2, h - 6), nave_type, "Nef", &"church_nave")
 	var sac := p.add_room(Rect2i(1, 1, w - 2, 3), &"loot", "Sacristie", &"church_sacristy")
 	link(p, rng, nave, sac)
+	front_doors(p, rng, 1)
+	return p
+
+
+## Cabane isolée (bâtiment secondaire de la ville éparpillée) : une seule pièce.
+static func _shack(w: int, h: int, rng: RandomNumberGenerator) -> Plan:
+	var p := Plan.new()
+	p.size = Vector2i(w, h)
+	p.add_room(Rect2i(1, 1, w - 2, h - 2), &"", "Cabane", &"shack")
+	front_doors(p, rng, 1)
+	return p
+
+
+## Appentis / remise / latrines collés à un bâtiment : une petite pièce, une porte en façade.
+static func _shed(w: int, h: int, rng: RandomNumberGenerator) -> Plan:
+	var p := Plan.new()
+	p.size = Vector2i(w, h)
+	p.add_room(Rect2i(1, 1, w - 2, h - 2), &"", "Appentis", &"shed")
 	front_doors(p, rng, 1)
 	return p
 

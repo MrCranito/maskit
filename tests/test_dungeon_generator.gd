@@ -100,8 +100,9 @@ func test_etages_presents_et_tailles() -> void:
 		var g := _floor(floors, 0)
 		assert_not_null(g, "étage 0 présent")
 		assert_not_null(_floor(floors, -1), "sous-sol présent (la mine est obligatoire)")
-		assert_between(g.size.x, 55, 95, "largeur étage 0")
-		assert_between(g.size.y, 36, 64, "hauteur étage 0")
+		assert_between(g.size.x, 40, 70, "largeur étage 0")
+		assert_between(g.size.y, 70, 110, "hauteur étage 0")
+		assert_gt(g.size.y, g.size.x, "carte au format portrait")
 		var prev := -99
 		for f: FloorLayout in floors:
 			assert_gt(f.floor_index, prev, "generate_run trié par floor_index")
@@ -109,13 +110,22 @@ func test_etages_presents_et_tailles() -> void:
 			assert_eq(f.size, g.size, "tous les étages ont la même grille")
 
 
-func test_rez_de_chaussee_rue_et_batiments() -> void:
+## Village de la maquette (docs/reference/farwest_maquette_carte.png) : 16 à 24 bâtiments, surtout
+## de petites maisons, 4 à 6 bâtiments importants (+ entrée de mine), voie ferrée traversant toute
+## la carte avec un train à l'arrêt (obstacle, passages), rochers, rues de terre, palissades.
+func test_rez_de_chaussee_village() -> void:
 	for per_diff: Array in runs:
 		var g := _floor(per_diff[0], 0)
-		assert_between(g.buildings.size(), 5, 8, "5 à 8 bâtiments")
+		var major := 0
+		var small := 0
 		var archs: Array[StringName] = []
 		for b in g.buildings:
 			archs.append(b.archetype)
+			if b.archetype == &"shack" or b.archetype == &"shed":
+				small += 1
+				assert_lte(b.rect.size.x * b.rect.size.y, 7 * 7, "%s : petite maison" % b.name)
+			elif b.archetype != &"mine":
+				major += 1
 			assert_between(b.room_ids.size(), 1, 4, "%s : 1 à 4 salles" % b.name)
 			var street_doors := 0
 			for di in b.door_ids:
@@ -125,15 +135,116 @@ func test_rez_de_chaussee_rue_et_batiments() -> void:
 				if (ra != null and ra.outdoor) or (rb != null and rb.outdoor):
 					street_doors += 1
 			assert_between(street_doors, 1, 2, "%s : 1-2 entrées sur la rue" % b.name)
+		assert_between(g.buildings.size(), 15, 28, "16 à 24 bâtiments (tolérance)")
+		assert_between(major, 4, 6, "4 à 6 bâtiments importants")
+		assert_gt(small, major, "majorité de petites maisons")
 		for a: StringName in [&"saloon", &"bank", &"sheriff", &"mine"]:
 			assert_true(archs.has(a), "bâtiment %s présent" % a)
-		var main_street: FloorLayout.Room = null
+		# Bâtiments séparés par au moins une case (les appentis sont collés à leur bâtiment).
+		for i in g.buildings.size():
+			for j in range(i + 1, g.buildings.size()):
+				var bi := g.buildings[i]
+				var bj := g.buildings[j]
+				if bi.archetype == &"shed" or bj.archetype == &"shed":
+					assert_false(bi.rect.intersects(bj.rect), "appentis sans chevauchement")
+				else:
+					assert_false(bi.rect.grow(1).intersects(bj.rect), "bâtiments espacés")
+		var rail: FloorLayout.Room = null
 		for r in g.rooms:
-			if r.name == "Rue principale":
-				main_street = r
-		assert_not_null(main_street)
-		if main_street:
-			assert_between(main_street.rect.size.y, 5, 7, "largeur de la rue principale")
+			if r.tags.size() > 0 and r.tags[0] == "railway":
+				rail = r
+		assert_not_null(rail, "voie ferrée")
+		if rail:
+			assert_gte(rail.rect.size.x, g.size.x - 2, "la voie traverse toute la carte")
+		var kinds := {}
+		var train_cells := 0
+		for s in g.landmark_spawns:
+			kinds[s.kind] = true
+			for q in FloorLayout.spawn_cells(s):
+				assert_eq(g.get_tile(q), T.WALL, "grand décor posé sur des murs")
+			if String(s.kind) in ["lm_loco", "lm_tender", "lm_boxcar", "lm_boxcar_b", "lm_tankcar", "lm_flatcar", "lm_caboose"]:
+				train_cells += s.size.x
+		assert_true(kinds.has(&"lm_loco"), "locomotive")
+		assert_gt(train_cells, g.size.x / 3, "train long")
+		assert_true(kinds.has(&"lm_windmill") or kinds.has(&"prop_water_tower"), "éolienne / château d'eau")
+		assert_true(kinds.has(&"lm_well"), "puits")
+		var rocks := 0
+		for k: StringName in kinds:
+			if String(k).begins_with("lm_rock") or k == &"lm_mesa":
+				rocks += 1
+		assert_gte(rocks, 3, "rochers variés")
+
+
+## Champs du contrat de rendu (FloorLayout : paths, fences, rock_formations, landmarks, rails, train ;
+## Building : roof_style, stories, porch_side), cohérents avec la grille.
+func test_contrat_rendu_village() -> void:
+	var styles := [&"tin_blue", &"tin_rust", &"shingle", &"red", &"plank"]
+	for per_diff: Array in runs:
+		var g := _floor(per_diff[0], 0)
+		assert_gt(g.paths.size(), 200, "rues de terre battue")
+		for c: Vector2i in g.paths:
+			assert_eq(g.get_tile(c), T.STREET, "rue praticable")
+			if g.get_tile(c) != T.STREET:
+				return
+		assert_gte(g.fences.size(), 2, "palissades")
+		for pl: Array in g.fences:
+			assert_gt(pl.size(), 0)
+			for k in pl.size():
+				var c2: Vector2i = pl[k]
+				assert_eq(g.get_tile(c2), T.WALL, "palissade = obstacle")
+				if k > 0:
+					var d: Vector2i = c2 - (pl[k - 1] as Vector2i)
+					assert_eq(absi(d.x) + absi(d.y), 1, "polyligne de cases contiguës")
+		assert_gte(g.rock_formations.size(), 6, "formations rocheuses (coins, bords, milieu)")
+		var big := 0
+		for rf: Dictionary in g.rock_formations:
+			var cells: Array = rf["cells"]
+			if cells.size() >= 16:
+				big += 1
+			assert_gt(float(rf["height"]), 0.0)
+			for c3: Vector2i in cells:
+				assert_eq(g.get_tile(c3), T.WALL, "rocher = obstacle")
+		assert_gte(big, 2, "formations massives")
+		var lk := {}
+		for lm: Dictionary in g.landmarks:
+			lk[lm["kind"]] = true
+			for c4 in FloorLayout.spawn_cells(_lm_spawn(lm)):
+				assert_eq(g.get_tile(c4), T.WALL, "repère = obstacle")
+		assert_true(lk.has(&"well"), "puits")
+		assert_true(lk.has(&"windmill") or lk.has(&"water_tower"), "éolienne / château d'eau")
+		var main := false
+		for rl: Dictionary in g.rails:
+			if rl["kind"] == &"main":
+				main = true
+		assert_true(main, "voie principale")
+		assert_gte(g.train.size(), 4, "train")
+		for t: Dictionary in g.train:
+			var tr: Rect2i = t["rect"]
+			for y in range(tr.position.y, tr.end.y):
+				for x in range(tr.position.x, tr.end.x):
+					assert_eq(g.get_tile(Vector2i(x, y)), T.WALL, "wagon = obstacle")
+		for b in g.buildings:
+			assert_true(styles.has(b.roof_style), "%s : style de toit" % b.name)
+			assert_between(b.stories, 1, 2)
+			assert_eq(absi(b.porch_side.x) + absi(b.porch_side.y), 1, "porch_side unitaire")
+			if b.archetype == &"saloon" or b.archetype == &"hotel":
+				assert_eq(b.stories, 2, "%s : deux niveaux" % b.name)
+			# La porte de façade est sur le côté porch_side.
+			var ok := false
+			for di in b.door_ids:
+				var dc := g.doors[di].cell
+				var o := dc + b.porch_side
+				if not b.rect.has_point(o) and g.get_tile(o) == T.STREET:
+					ok = true
+			assert_true(ok, "%s : porte sur le côté du porche" % b.name)
+
+
+func _lm_spawn(lm: Dictionary) -> FloorLayout.Spawn:
+	var r: Rect2i = lm["rect"]
+	var s := FloorLayout.Spawn.new()
+	s.size = r.size
+	s.cell = Vector2i(r.position.x + (r.size.x - 1) / 2, r.end.y - 1)
+	return s
 
 
 func test_types_de_salles() -> void:

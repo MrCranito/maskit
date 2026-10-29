@@ -8,6 +8,8 @@ Usage (depuis la racine du projet ; ordre complet de régénération du décor) 
     python3 art/blender/build_props.py --pack                  # empaqueter seulement
     python3 art/blender/build_props.py --keep --furniture      # reprendre l'atlas actuel + mobilier
                                                                # des gabarits d'aménagement
+    python3 art/blender/build_props.py --landmarks [--only lm_loco]  # grands décors (rochers, train,
+                                                               # éolienne, puits) → landmarks.png
 
 Sorties : assets/sprites/far_west/atlas.png (+ atlas_meta.gd : rect, pieds en px d'atlas).
 Échelle : 2 px par unité monde. 1 BU Blender projeté = 36 unités monde (comme le héros :
@@ -81,6 +83,20 @@ PAL = {
     "candle": ("#f4ead0", "#9a8a90", "#ffffff"),
     "mirror": ("#9ab8c8", "#4a5a7a", "#e4f4fa"),
     "sky": ("#e89060", "#7a4a6a", "#ffc890"),
+    # Ville éparpillée (planche des cartes) : grès rouge, buissons, train.
+    "rock_red": ("#a8482e", "#4a1e3a", "#d8683e"),
+    "rock_orange": ("#bc5e36", "#52243c", "#e88450"),
+    "rock_dark": ("#86382a", "#381834", "#b05238"),
+    "rock_top": ("#d08452", "#6a3446", "#f4a86c"),
+    "bush": ("#6e8a3c", "#24403e", "#a6c464"),
+    "bush_dry": ("#9a8a4a", "#4a4040", "#c8b870"),
+    "loco": ("#34343e", "#14141e", "#5a5a6a"),
+    "red_paint": ("#b0362c", "#4a1428", "#e0583e"),
+    "boxcar": ("#9a3a2e", "#42182a", "#c85a40"),
+    "boxcar_b": ("#7a4a36", "#34202a", "#a86a48"),
+    "tank_grey": ("#8a8c96", "#3a3c54", "#c4c8d4"),
+    "coal": ("#26242c", "#0c0c16", "#4a4652"),
+    "ballast": ("#8a7a70", "#3e3848", "#b4a494"),
 }
 
 
@@ -135,8 +151,8 @@ class Builder:
         kw.setdefault("sharp", 80.0)
         return self.add(name, bm, mat, **kw)
 
-    def tube(self, name, path, radii, mat, seg=8, **kw):
-        bm = C.bm_tube(path, radii, seg=seg)
+    def tube(self, name, path, radii, mat, seg=8, flat=1.0, **kw):
+        bm = C.bm_tube(path, radii, seg=seg, flat=flat)
         kw.setdefault("sharp", 80.0)
         return self.add(name, bm, mat, **kw)
 
@@ -1122,11 +1138,419 @@ def d_rug_round(B: Builder) -> None:
     B.cyl("c", 0.2, 0.2, 0.026, (0, 0, 0.016), M("gold"), seg=16, outline=False)
 
 
+# ----------------------------------------------------------------------------- grands décors
+# Grands décors de la ville éparpillée (FloorLayout.landmark_spawns) : posés sur des cases de mur,
+# emprise (cases) → le modèle remplit l'emprise vue en 3/4 (1 case = 64 u = 1,778 BU ; la
+# profondeur au sol D et la hauteur H se partagent les rangées : 0,743·D + 0,669·H ≈ rangées).
+# (0, 0, 0) = milieu du bord AVANT (sud) de l'emprise ; le modèle s'étend vers +Y (nord).
+
+CELL = 64.0 / WORLD_PER_BU
+
+
+def _depth_for(rows: float, h: float) -> float:
+    return max(0.6, (rows * CELL - 0.669 * h) / 0.743)
+
+
+def _rock_blob(rnd, w: float, d: float, n: int = 14, rough: float = 0.16):
+    """Contour irrégulier (x, y) d'un amas, dans [-w/2, w/2] × [0, d]."""
+    pts = []
+    for i in range(n):
+        a = 2 * math.pi * i / n
+        k = 1.0 + rnd.uniform(-rough, rough)
+        pts.append((math.cos(a) * w / 2 * k, d / 2 + math.sin(a) * d / 2 * k))
+    return pts
+
+
+def _strata(B: Builder, name: str, rnd, w: float, d: float, h: float, layers: int, x0: float = 0.0, y0: float = 0.0,
+            shrink: float = 0.12) -> float:
+    """Empilement de strates de grès (prismes à contour irrégulier, retrait progressif)."""
+    z = 0.0
+    mats = [M("rock_red"), M("rock_orange"), M("rock_dark"), M("rock_orange")]
+    base = _rock_blob(rnd, w, d)
+    cx, cy = 0.0, d / 2
+    for k in range(layers):
+        hz = h / layers * rnd.uniform(0.8, 1.2)
+        s = 1.0 - shrink * k - rnd.uniform(0.0, 0.05)
+        dx, dy = rnd.uniform(-0.1, 0.1) * w, rnd.uniform(-0.06, 0.04) * d
+        sec0, sec1 = [], []
+        for (px, py) in base:
+            j = rnd.uniform(0.96, 1.04)
+            qx = x0 + cx + (px - cx) * s * j + dx
+            qy = y0 + cy + (py - cy) * s * j + dy
+            sec0.append((qx, qy, z))
+            sec1.append((x0 + cx + (px - cx) * s * j * 0.93 + dx, y0 + cy + (py - cy) * s * j * 0.93 + dy, z + hz))
+        bm = C.bm_loft([sec0, sec1])
+        top = M("rock_top") if k == layers - 1 else mats[k % len(mats)]
+        ob = B.add("%s_l%d" % (name, k), bm, [mats[k % len(mats)], top], sharp=35)
+        # Dessus de la dernière strate : couleur claire (face du haut = dernier polygone).
+        if k == layers - 1:
+            ob.data.polygons[-1].material_index = 1
+        z += hz
+    return z
+
+
+def _bushes(B: Builder, rnd, pts, scale: float = 1.0, dry: float = 0.3) -> None:
+    for i, (x, y, z) in enumerate(pts):
+        r = rnd.uniform(0.16, 0.26) * scale
+        m = M("bush_dry" if rnd.random() < dry else "bush")
+        for k in range(4):
+            a = rnd.uniform(0, 6.28)
+            B.sphere("bush%d_%d" % (i, k), r * rnd.uniform(0.7, 1.0),
+                     (x + math.cos(a) * r * 0.6, y + math.sin(a) * r * 0.5, z + r * 0.6 + rnd.uniform(0, r * 0.4)),
+                     m, scale=(1.0, 1.0, 0.8), seg=8, rings=6)
+
+
+def _boulders(B: Builder, rnd, pts) -> None:
+    for i, (x, y, r) in enumerate(pts):
+        B.sphere("bd%d" % i, r, (x, y, r * 0.45), M("rock_red" if i % 2 else "rock_orange"),
+                 scale=(1.25, 1.0, 0.75), seg=9, rings=6, sharp=40)
+
+
+def lm_rock(fp, seed: int, layers: int, h: float, mesa: bool = False):
+    def build(B: Builder) -> None:
+        import random
+        rnd = random.Random(seed)
+        w = fp[0] * CELL * 0.9
+        d = _depth_for(fp[1] + 0.4, h)
+        top = _strata(B, "main", rnd, w, d * 0.92, h, layers, y0=d * 0.04, shrink=0.1 if mesa else 0.16)
+        # Second bloc (plus bas) sur le côté : silhouette en amas.
+        if fp[0] >= 3:
+            side = rnd.choice((-1, 1))
+            _strata(B, "sub", rnd, w * 0.45, d * 0.5, h * 0.55, max(2, layers - 2), x0=side * w * 0.3, y0=-d * 0.02)
+        _boulders(B, rnd, [(rnd.uniform(-w / 2, w / 2), rnd.uniform(-0.1, 0.25), rnd.uniform(0.12, 0.26)) for _ in range(3 + fp[0])])
+        bushes = [(rnd.uniform(-w / 2, w / 2) * 0.9, rnd.uniform(-0.2, 0.1), 0.0) for _ in range(1 + fp[0] // 2)]
+        bushes += [(rnd.uniform(-w / 4, w / 4), d * rnd.uniform(0.35, 0.6), top - 0.05) for _ in range(1 if fp[0] < 4 else 2)]
+        _bushes(B, rnd, bushes, scale=1.0 + 0.1 * fp[0])
+    return build
+
+
+def _trucks(B: Builder, xs, d: float, r: float = 0.32) -> None:
+    for i, x in enumerate(xs):
+        B.box("truck%d" % i, (1.0, d * 0.82, 0.22), (x, d / 2, r + 0.05), M("iron_dark"))
+        for k, dx in enumerate((-0.32, 0.32)):
+            B.cyl("wh%d_%d" % (i, k), r, r, 0.12, (x + dx, 0.02, r), M("iron_dark"), rot=(math.pi / 2, 0, 0), seg=16)
+            B.cyl("whc%d_%d" % (i, k), r * 0.45, r * 0.45, 0.13, (x + dx, 0.01, r), M("rust"), rot=(math.pi / 2, 0, 0), seg=10)
+
+
+def _car_body(B: Builder, name: str, L: float, d: float, h: float, z0: float, mat, roof=None) -> None:
+    B.box(name + "_frame", (L + 0.1, d + 0.06, 0.16), (0, d / 2, z0 - 0.08), M("iron_dark"))
+    B.box(name, (L, d, h), (0, d / 2, z0 + h / 2), mat, bevel=0.03)
+    # Planches verticales (lattes) sur la face avant.
+    n = int(L / 0.28)
+    for k in range(n + 1):
+        x = -L / 2 + k * L / n
+        B.box("%s_slat%d" % (name, k), (0.03, 0.02, h * 0.96), (x, -0.005, z0 + h / 2), M("wood_dark"), shadow=False)
+    B.box(name + "_roof", (L + 0.16, d + 0.2, 0.1), (0, d / 2, z0 + h + 0.05), roof or M("wood_grey"), bevel=0.03)
+    B.box(name + "_walk", (L * 0.95, 0.22, 0.05), (0, d / 2, z0 + h + 0.12), M("wood_dark"))
+
+
+def lm_boxcar(variant: int):
+    def build(B: Builder) -> None:
+        L = 4 * CELL * 0.94
+        d, h, z0 = 1.9, 1.75, 0.62
+        mat = M("boxcar" if variant == 0 else "boxcar_b")
+        _car_body(B, "box", L, d, h, z0, mat)
+        # Porte coulissante (entrouverte sur la variante b).
+        B.box("door", (1.3, 0.05, h * 0.9), (0.2 if variant == 0 else 0.6, -0.03, z0 + h * 0.47), M("wood_red" if variant == 0 else "wood"))
+        B.box("rail_d", (2.4, 0.04, 0.06), (0.3, -0.06, z0 + h * 0.93), M("iron"))
+        if variant == 1:
+            B.box("gap", (0.5, 0.02, h * 0.85), (-0.4, -0.04, z0 + h * 0.45), M("black"), outline=False)
+        B.box("ladder", (0.2, 0.04, h), (L / 2 - 0.25, -0.05, z0 + h / 2), M("iron"))
+        _trucks(B, (-L / 2 + 0.9, L / 2 - 0.9), d)
+    return build
+
+
+def lm_tankcar(B: Builder) -> None:
+    L = 4 * CELL * 0.94
+    d = 1.8
+    B.box("frame", (L, d * 0.8, 0.2), (0, d / 2, 0.66), M("iron_dark"))
+    B.cyl("tank", 0.95, 0.95, L * 0.92, (0, d / 2, 1.6), M("tank_grey"), rot=(0, math.pi / 2, 0), seg=24)
+    for sx in (-1, 1):
+        B.sphere("cap%d" % sx, 0.95, (sx * L * 0.46, d / 2, 1.6), M("tank_grey"), scale=(0.3, 1, 1), seg=16, rings=10)
+    B.cyl("dome", 0.36, 0.36, 0.5, (0, d / 2, 2.6), M("tank_grey"), seg=14)
+    B.cyl("domecap", 0.42, 0.42, 0.08, (0, d / 2, 2.86), M("iron_dark"), seg=14)
+    for x in (-L * 0.3, L * 0.3):
+        B.torus("band%.1f" % x, 0.97, 0.04, (x, d / 2, 1.6), M("iron_dark"), rot=(0, math.pi / 2, 0), seg=28, rseg=5)
+    B.box("label", (1.4, 0.02, 0.35), (0, d / 2 - 0.96, 1.6), M("cream"), outline=False)
+    _trucks(B, (-L / 2 + 0.9, L / 2 - 0.9), d)
+
+
+def lm_flatcar(B: Builder) -> None:
+    import random
+    rnd = random.Random(5)
+    L = 4 * CELL * 0.94
+    d = 1.9
+    B.box("deck", (L, d, 0.22), (0, d / 2, 0.78), M("wood"), bevel=0.02)
+    B.box("frame", (L + 0.1, d + 0.06, 0.16), (0, d / 2, 0.62), M("iron_dark"))
+    # Chargement : billes de bois et caisses (assez haut pour servir de couvert).
+    for k in range(3):
+        for j in range(3 - k):
+            y = d * 0.25 + j * 0.55 + k * 0.27
+            B.cyl("log%d%d" % (k, j), 0.27, 0.27, L * 0.5, (-L * 0.2, y, 1.15 + k * 0.46), M("wood" if (j + k) % 2 else "wood_dark"),
+                  rot=(0, math.pi / 2, 0), seg=12)
+    for k2 in range(3):
+        B.box("crate%d" % k2, (0.8, 0.8, 0.75), (L * 0.22 + (k2 % 2) * 0.9, d * 0.3 + (k2 // 2) * 0.9, 1.27 + (k2 // 2) * 0.0),
+              M("plank_light"), bevel=0.03, rot=(0, 0, rnd.uniform(-0.1, 0.1)))
+    for x in (-L / 2 + 0.2, L / 2 - 0.2):
+        for y in (0.1, d - 0.1):
+            B.box("stake%.1f%.1f" % (x, y), (0.1, 0.1, 0.9), (x, y, 1.3), M("wood_dark"))
+    _trucks(B, (-L / 2 + 0.9, L / 2 - 0.9), d)
+
+
+def lm_caboose(B: Builder) -> None:
+    L = 3 * CELL * 0.92
+    d, h, z0 = 1.85, 1.6, 0.62
+    _car_body(B, "cab", L * 0.82, d, h, z0, M("red_paint"), roof=M("wood_dark"))
+    B.box("cupola", (1.2, d * 0.7, 0.6), (0, d / 2, z0 + h + 0.4), M("red_paint"), bevel=0.02)
+    B.box("cuproof", (1.4, d * 0.85, 0.08), (0, d / 2, z0 + h + 0.74), M("wood_dark"))
+    for x in (-0.35, 0.35):
+        B.box("cw%.1f" % x, (0.35, 0.03, 0.3), (x, d / 2 - d * 0.35 - 0.01, z0 + h + 0.42), M("glass"), outline=False)
+    for x in (-0.6, 0.6):
+        B.box("win%.1f" % x, (0.4, 0.03, 0.45), (x, -0.02, z0 + h * 0.62), M("glass"), outline=False)
+    for sx in (-1, 1):
+        B.box("porch%d" % sx, (0.4, d, 0.08), (sx * (L * 0.41 + 0.2), d / 2, z0), M("iron_dark"))
+        B.box("rail%d" % sx, (0.05, d, 0.5), (sx * (L * 0.41 + 0.38), d / 2, z0 + 0.3), M("iron"))
+    _trucks(B, (-L * 0.28, L * 0.28), d)
+
+
+def lm_tender(B: Builder) -> None:
+    L = 3 * CELL * 0.92
+    d = 1.9
+    B.box("body", (L, d, 1.25), (0, d / 2, 1.25), M("loco"), bevel=0.04)
+    B.box("coal", (L * 0.85, d * 0.8, 0.3), (0, d / 2, 1.95), M("coal"), bevel=0.15)
+    import random
+    rnd = random.Random(2)
+    for k in range(10):
+        B.sphere("lump%d" % k, rnd.uniform(0.12, 0.2), (rnd.uniform(-L * 0.38, L * 0.38), rnd.uniform(0.3, d - 0.3), 2.1),
+                 M("coal"), seg=6, rings=4)
+    B.box("stripe", (L * 0.98, 0.02, 0.12), (0, -0.01, 1.4), M("red_paint"), outline=False)
+    _trucks(B, (-L * 0.28, L * 0.28), d)
+
+
+def lm_loco(B: Builder) -> None:
+    """Locomotive à vapeur (tête à l'ouest) : chaudière noire, cheminée, cabine, chasse-buffles rouge."""
+    L = 5 * CELL * 0.94
+    d = 1.9
+    yc = d / 2
+    B.box("frame", (L, d * 0.86, 0.3), (0.0, yc, 0.75), M("iron_dark"))
+    B.cyl("boiler", 0.72, 0.72, L * 0.58, (-L * 0.12, yc, 1.6), M("loco"), rot=(0, math.pi / 2, 0), seg=24)
+    B.cyl("smokebox", 0.76, 0.76, 0.6, (-L * 0.42, yc, 1.6), M("iron_dark"), rot=(0, math.pi / 2, 0), seg=24)
+    B.cyl("front", 0.6, 0.6, 0.06, (-L * 0.42 - 0.32, yc, 1.6), M("iron"), rot=(0, math.pi / 2, 0), seg=20)
+    B.cyl("lamp", 0.2, 0.2, 0.3, (-L * 0.42 - 0.1, yc, 2.5), M("brass"), rot=(0, math.pi / 2, 0), seg=12)
+    B.cyl("lampg", 0.14, 0.14, 0.04, (-L * 0.42 - 0.27, yc, 2.5), M("glass"), rot=(0, math.pi / 2, 0), seg=12, outline=False)
+    B.cyl("stack", 0.2, 0.4, 0.9, (-L * 0.36, yc, 2.65), M("loco"), seg=16)
+    B.cyl("stacktop", 0.42, 0.42, 0.1, (-L * 0.36, yc, 3.1), M("iron_dark"), seg=16)
+    B.cyl("dome", 0.3, 0.32, 0.45, (-L * 0.1, yc, 2.4), M("brass"), seg=16)
+    B.sphere("domecap", 0.31, (-L * 0.1, yc, 2.62), M("brass"), scale=(1, 1, 0.5), seg=12, rings=6)
+    B.cyl("sand", 0.24, 0.26, 0.35, (-L * 0.24, yc, 2.35), M("loco"), seg=14)
+    for x in (-L * 0.3, -L * 0.05, L * 0.12):
+        B.torus("band%.1f" % x, 0.74, 0.035, (x, yc, 1.6), M("brass"), rot=(0, math.pi / 2, 0), seg=28, rseg=5)
+    # Cabine.
+    cx = L * 0.33
+    B.box("cab", (1.6, d * 0.95, 1.9), (cx, yc, 1.85), M("red_paint"), bevel=0.03)
+    B.box("cabroof", (1.9, d * 1.08, 0.12), (cx, yc, 2.86), M("loco"), bevel=0.03)
+    B.box("cabwin", (0.6, 0.03, 0.55), (cx + 0.15, yc - d * 0.48, 2.15), M("glass"), outline=False)
+    # Chasse-buffles.
+    secs = []
+    for z, k in ((0.25, 1.0), (0.8, 0.55)):
+        secs.append([(-L / 2 - 0.25 * k, 0.15, z), (-L / 2 + 0.2, 0.05, z), (-L / 2 + 0.2, d - 0.05, z), (-L / 2 - 0.25 * k, d - 0.15, z)])
+    B.add("pilot", C.bm_loft(secs), M("red_paint"), sharp=30)
+    # Roues motrices rouges + bielle.
+    for i, x in enumerate((-L * 0.2, 0.0, L * 0.18)):
+        B.cyl("dw%d" % i, 0.55, 0.55, 0.12, (x, 0.04, 0.6), M("red_paint"), rot=(math.pi / 2, 0, 0), seg=20)
+        B.cyl("dwh%d" % i, 0.18, 0.18, 0.14, (x, 0.03, 0.6), M("iron_dark"), rot=(math.pi / 2, 0, 0), seg=10)
+    B.box("rod", (L * 0.42, 0.04, 0.08), (-L * 0.01, -0.06, 0.55), M("steel"))
+    B.cyl("cyl", 0.25, 0.25, 0.7, (-L * 0.36, 0.1, 0.85), M("iron"), rot=(0, math.pi / 2, 0), seg=14)
+    for x in (-L * 0.42, L * 0.33):
+        B.cyl("pw%.1f" % x, 0.3, 0.3, 0.12, (x, 0.04, 0.32), M("iron_dark"), rot=(math.pi / 2, 0, 0), seg=14)
+
+
+def lm_windmill(B: Builder) -> None:
+    """Éolienne de pompage (tour en treillis, roue à pales, gouvernail), avec réservoir au pied."""
+    H = 6.2
+    yc = CELL * 0.9
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            p0 = (sx * 0.9, yc + sy * 0.9, 0.0)
+            p1 = (sx * 0.18, yc + sy * 0.18, H)
+            B.tube("leg%d%d" % (sx, sy), [p0, p1], [0.06, 0.04], M("wood_grey"), seg=6)
+    for k in range(1, 6):
+        t = k / 6.0
+        r = 0.9 * (1 - t) + 0.18 * t
+        z = H * t
+        for (a, b) in (((-r, -r), (r, -r)), ((r, -r), (r, r)), ((-r, -r), (-r, r))):
+            B.tube("brace%d_%d%d" % (k, int(a[0] > 0), int(b[1] > 0)), [(a[0], yc + a[1], z), (b[0], yc + b[1], z)], [0.025, 0.025], M("wood_dark"), seg=4)
+    B.box("deck", (0.7, 0.7, 0.08), (0, yc, H), M("wood_dark"))
+    # Roue (pales en éventail) tournée de 35° vers la caméra.
+    hub = (-0.25, yc - 0.45, H + 0.45)
+    rot = math.radians(35)
+    n = 18
+    for k in range(n):
+        a = 2 * math.pi * k / n
+        d0 = (math.cos(a), math.sin(a))
+        def P(r):
+            x = d0[0] * r
+            z = d0[1] * r
+            return (hub[0] + x * math.cos(rot), hub[1] - x * math.sin(rot) * 0.6, hub[2] + z)
+        B.tube("blade%d" % k, [P(0.25), P(1.35)], [0.09, 0.14], M("cream" if k % 2 else "steel"), seg=3, flat=0.2)
+    B.torus("ring", 0.85, 0.035, hub, M("iron"), rot=(math.pi / 2, 0, -rot), seg=28, rseg=4)
+    B.torus("ring2", 1.35, 0.03, hub, M("iron"), rot=(math.pi / 2, 0, -rot), seg=32, rseg=4)
+    B.sphere("hubc", 0.18, hub, M("iron_dark"), seg=10, rings=6)
+    B.tube("tailbar", [(hub[0], hub[1], hub[2]), (hub[0] + 1.5, hub[1] + 0.9, hub[2] + 0.1)], [0.04, 0.03], M("iron"))
+    B.box("vane", (0.06, 1.1, 0.7), (hub[0] + 1.6, hub[1] + 0.95, hub[2] + 0.15), M("red_paint"), rot=(0, 0, 0.5))
+    B.tube("pump", [(0, yc, 0.0), (0, yc, H)], [0.03, 0.03], M("iron"), seg=5)
+    # Réservoir rond au pied.
+    B.cyl("tank", 0.75, 0.75, 0.55, (0.95, yc - 0.55, 0.28), M("wood_grey"), seg=20)
+    B.cyl("water", 0.68, 0.68, 0.02, (0.95, yc - 0.55, 0.55), M("water"), seg=20, outline=False)
+    B.torus("tband", 0.77, 0.03, (0.95, yc - 0.55, 0.42), M("iron"), seg=24, rseg=4)
+
+
+def lm_well(B: Builder) -> None:
+    """Puits de pierre de la place : margelle, toit à deux pans, treuil et seau."""
+    yc = CELL * 0.85
+    R = 1.05
+    import random
+    rnd = random.Random(4)
+    n = 16
+    for ring_i, z in enumerate((0.0, 0.32, 0.64)):
+        for k in range(n):
+            a = 2 * math.pi * (k + 0.5 * (ring_i % 2)) / n
+            B.box("st%d_%d" % (ring_i, k), (0.42, 0.3, 0.3), (math.cos(a) * R, yc + math.sin(a) * R, z + 0.16),
+                  M("stone" if (k + ring_i) % 3 else "ore"), bevel=0.05, rot=(0, 0, a + math.pi / 2))
+    B.cyl("dark", R - 0.18, R - 0.18, 0.02, (0, yc, 0.9), M("black"), seg=24, outline=False)
+    B.cyl("water", R - 0.25, R - 0.25, 0.02, (0, yc, 0.5), M("water"), seg=24, outline=False)
+    for sx in (-1, 1):
+        B.box("post%d" % sx, (0.16, 0.16, 2.2), (sx * (R + 0.05), yc, 1.1), M("wood"), bevel=0.02)
+    B.cyl("axle", 0.1, 0.1, 2 * R + 0.3, (0, yc, 1.75), M("wood_dark"), rot=(0, math.pi / 2, 0), seg=10)
+    B.tube("crank", [(R + 0.2, yc, 1.75), (R + 0.25, yc - 0.3, 1.6), (R + 0.25, yc - 0.32, 1.45)], [0.03] * 3, M("iron"))
+    B.tube("rope", [(0, yc, 1.7), (0, yc, 1.1)], [0.02, 0.02], M("hay_dark"))
+    B.cyl("bucket", 0.18, 0.14, 0.28, (0, yc, 1.0), M("wood"), seg=12)
+    # Toit à deux pans (bardeaux).
+    for sy in (-1, 1):
+        B.box("roof%d" % sy, (2 * R + 0.8, 0.95, 0.07), (0, yc + sy * 0.38, 2.42), M("wood_red"), rot=(sy * 0.62, 0, 0))
+    B.box("ridge", (2 * R + 0.85, 0.12, 0.1), (0, yc, 2.72), M("wood_dark"))
+    _bushes(B, rnd, [(-R - 0.5, yc - 0.6, 0.0), (R + 0.6, yc + 0.4, 0.0)], scale=0.9)
+
+
+def d_rail(B: Builder) -> None:
+    """Tronçon de voie ferrée (E-O) vu de dessus : ballast, traverses, rails ; raccord sans couture."""
+    import random
+    rnd = random.Random(11)
+    L = 2.2
+    B.box("ballast", (L, 1.85, 0.06), (0, 0, 0.03), M("ballast"), outline=False)
+    for k in range(40):
+        B.sphere("pb%d" % k, rnd.uniform(0.03, 0.06), (rnd.uniform(-L / 2, L / 2), rnd.choice((-1, 1)) * rnd.uniform(0.7, 0.9), 0.07),
+                 M("stone" if k % 2 else "ore"), seg=5, rings=3, outline=False)
+    for i in range(5):
+        x = -CELL / 2 + (i + 0.5) * CELL / 4
+        if abs(x) > L / 2:
+            continue
+        B.box("tie%d" % i, (0.24, 1.45, 0.08), (x, 0, 0.1), M("wood_dark" if i % 2 else "wood"))
+    for sy in (-0.42, 0.42):
+        B.box("rail%.1f" % sy, (L, 0.08, 0.1), (0, sy, 0.19), M("steel"))
+        B.box("railb%.1f" % sy, (L, 0.15, 0.03), (0, sy, 0.15), M("iron"))
+
+
+def p_shrub(B: Builder) -> None:
+    import random
+    rnd = random.Random(21)
+    _bushes(B, rnd, [(0.0, 0.0, 0.0), (0.28, 0.12, 0.0), (-0.25, 0.1, 0.0)], scale=1.25, dry=0.35)
+    for k in range(6):
+        a = rnd.uniform(0, 6.28)
+        B.tube("tw%d" % k, [(0, 0.05, 0.05), (math.cos(a) * 0.45, 0.05 + math.sin(a) * 0.3, 0.35 + rnd.uniform(0, 0.25))],
+               [0.02, 0.008], M("tumble"), seg=4)
+
+
+def p_tree(B: Builder) -> None:
+    """Arbre du désert (mesquite) : tronc tordu, houppier vert en boules."""
+    import random
+    rnd = random.Random(31)
+    B.tube("trunk", [(0, 0, 0), (0.05, 0.02, 0.6), (-0.1, 0.05, 1.2), (0.0, 0.05, 1.6)], [0.12, 0.1, 0.08, 0.06], M("wood_dark"), seg=7)
+    B.tube("br1", [(-0.05, 0.04, 1.0), (-0.5, 0.1, 1.5)], [0.06, 0.04], M("wood_dark"), seg=5)
+    B.tube("br2", [(0.0, 0.04, 1.2), (0.5, 0.0, 1.7)], [0.06, 0.04], M("wood_dark"), seg=5)
+    for k in range(9):
+        a = k * 0.7
+        r = rnd.uniform(0.32, 0.46)
+        B.sphere("leaf%d" % k, r, (math.cos(a) * 0.45, 0.05 + math.sin(a) * 0.3, 1.65 + rnd.uniform(-0.15, 0.3)),
+                 M("bush" if k % 3 else "cactus"), scale=(1, 1, 0.8), seg=9, rings=6)
+
+
+def p_cart(B: Builder) -> None:
+    """Charrette à bras (deux roues) chargée de caisses et d'un tonneau."""
+    w, d = 2.2, 1.1
+    zb = 0.7
+    B.box("bed", (w, d, 0.1), (0, 0, zb), M("wood"))
+    for sy in (-d / 2, d / 2):
+        B.box("side%.1f" % sy, (w, 0.07, 0.35), (0, sy, zb + 0.2), M("wood_grey"))
+    for sx in (-w / 2, w / 2):
+        B.box("end%.1f" % sx, (0.07, d, 0.35), (sx, 0, zb + 0.2), M("wood_grey"))
+    for sy in (-d / 2 - 0.12, d / 2 + 0.12):
+        wheel(B, "wh%.1f" % sy, 0.62, (0.15, sy, 0.62), M("iron"), M("wood"), axis="y")
+    B.tube("shaft_l", [(-w / 2, -0.35, zb), (-w / 2 - 1.0, -0.38, 0.25)], [0.05, 0.04], M("wood_dark"))
+    B.tube("shaft_r", [(-w / 2, 0.35, zb), (-w / 2 - 1.0, 0.38, 0.25)], [0.05, 0.04], M("wood_dark"))
+    B.box("crate", (0.65, 0.6, 0.55), (0.45, 0.0, zb + 0.33), M("plank_light"), bevel=0.03, rot=(0, 0, 0.15))
+    p_barrel(B, loc=(-0.45, 0.05, zb + 0.05), name="cb")
+
+
+def p_fence(B: Builder) -> None:
+    """Barrière de ranch (2 cases) : poteaux et deux lisses, une lisse cassée."""
+    w = 2 * CELL * 0.92
+    for k in range(4):
+        x = -w / 2 + k * w / 3
+        B.box("post%d" % k, (0.14, 0.14, 1.15), (x, 0.0, 0.57), M("wood_grey" if k % 2 else "wood"), bevel=0.02,
+              rot=(0, (k - 1.5) * 0.03, 0))
+    B.box("rail_hi", (w + 0.1, 0.08, 0.14), (0, -0.08, 0.95), M("wood"))
+    B.box("rail_lo", (w * 0.62, 0.08, 0.14), (-w * 0.19, -0.08, 0.5), M("wood_grey"))
+    B.box("rail_br", (w * 0.38, 0.08, 0.14), (w * 0.3, -0.12, 0.3), M("wood_grey"), rot=(0, 0.35, 0))
+
+
+# Grands décors : (fonction, cadre monde (l, h), hauteur visée BU).
+LANDMARKS = {
+    "lm_rock_a": (lm_rock((2, 2), 1, 3, 1.4), (220, 220), 0.8),
+    "lm_rock_b": (lm_rock((3, 2), 2, 3, 1.5), (300, 240), 0.8),
+    "lm_rock_c": (lm_rock((3, 3), 3, 4, 2.0), (300, 320), 1.0),
+    "lm_rock_d": (lm_rock((4, 3), 4, 4, 2.2), (380, 330), 1.1),
+    "lm_rock_e": (lm_rock((2, 3), 5, 4, 1.9), (220, 320), 1.0),
+    "lm_mesa": (lm_rock((5, 4), 6, 5, 2.6, mesa=True), (460, 430), 1.3),
+    "lm_loco": (lm_loco, (380, 300), 1.6),
+    "lm_tender": (lm_tender, (240, 240), 1.3),
+    "lm_boxcar": (lm_boxcar(0), (310, 260), 1.4),
+    "lm_boxcar_b": (lm_boxcar(1), (310, 260), 1.4),
+    "lm_tankcar": (lm_tankcar, (310, 260), 1.4),
+    "lm_flatcar": (lm_flatcar, (310, 260), 1.2),
+    "lm_caboose": (lm_caboose, (240, 280), 1.5),
+    "lm_windmill": (lm_windmill, (260, 460), 3.2),
+    "lm_well": (lm_well, (220, 220), 1.2),
+}
+LANDMARK_DIR = os.path.join(TMP, "landmarks")
+
+
+def render_landmarks(only: list[str] | None = None) -> None:
+    global PIECES
+    keep = PIECES
+    PIECES = LANDMARK_DIR
+    try:
+        for k, (fn, fr, tz) in LANDMARKS.items():
+            if only and k not in only:
+                continue
+            render_piece(k, fn, fr, target_z=tz, outline_px=5.0)
+        if not only or "decal_rail" in only:
+            render_piece("decal_rail", d_rail, (72, 72), target_z=0.0, flat=True, outline_px=2.5)
+    finally:
+        PIECES = keep
+
+
+def pack_landmarks() -> None:
+    """Atlas séparé des grands décors : assets/sprites/far_west/landmarks.png (+ landmarks_meta.gd)."""
+    pack(2048, pieces_dir=LANDMARK_DIR, out_name="landmarks", extras=False)
+
+
 FURNITURE = {
     "bottle_shelf": p_bottle_shelf, "stage": p_stage, "dresser": p_dresser, "washstand": p_washstand,
     "nightstand": p_nightstand, "gun_rack": p_gun_rack, "bookcase": p_bookcase, "crate_stack": p_crate_stack,
     "sacks": p_sacks, "dining_table": p_dining_table, "table_chairs": p_table_chairs, "candelabra": p_candelabra,
     "settee": p_settee, "stove": p_stove, "bucket": p_bucket, "tool_rack": p_tool_rack,
+    "shrub": p_shrub, "cart": p_cart, "fence": p_fence, "tree": p_tree,
 }
 FURNITURE_FRAMES = {
     "bottle_shelf": ((150, 140), 1.2), "stage": ((240, 230), 1.4), "dresser": ((90, 120), 1.0),
@@ -1134,6 +1558,8 @@ FURNITURE_FRAMES = {
     "bookcase": ((90, 130), 1.2), "crate_stack": ((90, 90), 0.6), "sacks": ((80, 70), 0.4),
     "dining_table": ((150, 140), 0.6), "table_chairs": ((120, 90), 0.6), "candelabra": ((50, 90), 0.9),
     "settee": ((120, 90), 0.5), "stove": ((70, 140), 1.3), "bucket": ((40, 40), 0.3), "tool_rack": ((90, 110), 1.0),
+    "shrub": ((70, 60), 0.3), "cart": ((170, 110), 0.6), "fence": ((150, 90), 0.5),
+    "tree": ((130, 150), 1.2),
 }
 FURNITURE_GLOW = {"candelabra": (0.0, 0.0, 1.8), "nightstand": (0.05, 0.05, 1.08), "stove": (0.0, -0.45, 0.5),
                   "dining_table": (0.0, 0.0, 1.28), "stage": (0.0, -1.2, 0.6)}
@@ -1323,27 +1749,29 @@ def render_props(only: list[str] | None = None) -> None:
 
 # ----------------------------------------------------------------------------- atlas
 
-def pack(atlas_w: int = 2048) -> None:
+def pack(atlas_w: int = 2048, pieces_dir: str | None = None, out_name: str = "atlas", extras: bool = True) -> None:
     """Empaquette toutes les pièces (décors, kit de façades, décalques, lueurs) dans un atlas."""
     from PIL import Image
+    pieces_dir = pieces_dir or PIECES
     items: list[tuple[str, Image.Image, dict]] = []
-    for fn in sorted(os.listdir(PIECES)):
+    for fn in sorted(os.listdir(pieces_dir)):
         if fn.endswith(".png") and not fn.endswith(".big.png"):
             name = fn[:-4]
             info = {}
-            jp = os.path.join(PIECES, name + ".json")
+            jp = os.path.join(pieces_dir, name + ".json")
             if os.path.exists(jp):
                 with open(jp) as f:
                     info = json.load(f)
-            items.append((name, Image.open(os.path.join(PIECES, fn)).convert("RGBA"), info))
+            items.append((name, Image.open(os.path.join(pieces_dir, fn)).convert("RGBA"), info))
     dec_dir = os.path.join(TMP, "tiles", "decals")
-    if os.path.isdir(dec_dir):
+    if extras and os.path.isdir(dec_dir):
         for fn in sorted(os.listdir(dec_dir)):
             if fn.endswith(".png"):
                 im = Image.open(os.path.join(dec_dir, fn)).convert("RGBA")
                 items.append(("decal_" + fn[:-4], im, {"feet": [im.width / 2, im.height / 2]}))
-    items.append(("glow", _glow_sprite(128), {"feet": [64, 64]}))
-    items.append(("white", Image.new("RGBA", (8, 8), (255, 255, 255, 255)), {"feet": [4, 4], "inset": 2}))
+    if extras:
+        items.append(("glow", _glow_sprite(128), {"feet": [64, 64]}))
+        items.append(("white", Image.new("RGBA", (8, 8), (255, 255, 255, 255)), {"feet": [4, 4], "inset": 2}))
     # Rangement par étagères (hauteur décroissante), marge 2 px.
     items.sort(key=lambda t: -t[1].height)
     pad = 2
@@ -1374,11 +1802,11 @@ def pack(atlas_w: int = 2048) -> None:
                 e[k] = info[k]
         meta["pieces"][name] = e
     # Pixels quasi transparents -> 0 (compression), mais couleur conservée (pas de franges).
-    out = os.path.join(OUT_DIR, "atlas.png")
+    out = os.path.join(OUT_DIR, out_name + ".png")
     atlas.save(out, optimize=True)
-    with open(os.path.join(OUT_DIR, "atlas_meta.gd"), "w") as f:
+    with open(os.path.join(OUT_DIR, out_name + "_meta.gd"), "w") as f:
         f.write("## Généré par art/blender/build_props.py : NE PAS ÉDITER.\n")
-        f.write("## Pièces de assets/sprites/far_west/atlas.png : rect [x, y, w, h] (px), feet [x, y]\n")
+        f.write("## Pièces de assets/sprites/far_west/%s.png : rect [x, y, w, h] (px), feet [x, y]\n" % out_name)
         f.write("## (point d'appui au sol, px depuis le coin du rect), glow (point chaud). 2 px = 1 unité monde.\n")
         f.write("const PIECES := %s\n" % json.dumps(meta["pieces"]))
     print("ATLAS", out, atlas.size, len(items), "pièces")
@@ -1403,6 +1831,10 @@ def main() -> None:
     --furniture [--only a,b] : rend le mobilier / décors muraux / détails au sol des gabarits."""
     args = sys.argv[1:]
     only = args[args.index("--only") + 1].split(",") if "--only" in args else None
+    if "--landmarks" in args:
+        render_landmarks(only)
+        pack_landmarks()
+        return
     if "--keep" in args:
         print("pièces reprises de l'atlas :", seed_from_atlas(OUT_DIR, PIECES))
     if "--furniture" in args:

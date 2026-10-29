@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="MapCard" format=3]
 
 [ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_e8jex"]
+[ext_resource type="Texture2D" path="res://assets/ui/maps/dust_creek_real.png" id="2_thumb"]
 
 [resource]
 script = ExtResource("1_e8jex")
@@ -10,5 +11,6 @@ description = "La ville fantôme au coucher du soleil. Saloon, banque et mine : 
 world_path = "res://data/worlds/world_01_far_west.tres"
 difficulty = 0
 accent_color = Color(0.98, 0.62, 0.32, 1)
+thumbnail = ExtResource("2_thumb")
 tags = PackedStringArray("Classique")
 reward_text = "Butin standard"

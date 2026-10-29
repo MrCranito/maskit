@@ -59,6 +59,10 @@ const DEBUG_DOOR_LOCKED := Color(1.0, 0.2, 0.2)
 
 ## Seed et difficulté du raid.
 var run_seed: int = 0
+## (Test B) Seed de la STRUCTURE de carte : une des cartes pré-rendues (Blender) tirée au
+## sort, 0 = pas de pré-rendu (structure = run_seed). Ennemis et butin restent sur run_seed.
+var map_seed: int = 0
+var prerender: PrerenderBackdrop = null
 var difficulty: int = 1
 ## WorldData chargé (null si le module Monde n'existe pas encore).
 var world: Resource = null
@@ -164,8 +168,11 @@ func _world_module_path(key: StringName, fallback: String) -> String:
 func _generate_floors() -> void:
 	floors.clear()
 	var gen: Script = _load_script(_world_module_path(&"generator_path", GENERATOR_PATH))
+	map_seed = 0
+	if world != null and StringName(world.get("biome")) == &"far_west" and Balance.get_value("prerender", "enabled", true):
+		map_seed = PrerenderBackdrop.pick_seed(run_seed)
 	if gen != null and world != null:
-		var result: Variant = _call_module(gen, &"generate_run", [run_seed, world, difficulty])
+		var result: Variant = _call_module(gen, &"generate_run", [map_seed if map_seed != 0 else run_seed, world, difficulty])
 		if result is Array:
 			for l: Variant in result:
 				if l is FloorLayout:
@@ -173,6 +180,8 @@ func _generate_floors() -> void:
 		if not floors.has(0) and not floors.is_empty():
 			push_warning("Raid: le générateur n'a pas produit d'étage 0.")
 		uses_generator = not floors.is_empty()
+		if map_seed != 0 and floors.has(0):
+			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
 	if floors.is_empty():
 		if gen != null and world == null:
 			push_warning("Raid: générateur présent mais pas de monde, carte d'exemple.")
@@ -226,6 +235,7 @@ func _build_floor(index: int) -> void:
 	level.add_child(floor_root)
 
 	_build_world_root()
+	_attach_prerender(index)
 	_collect_doors()
 	if state != null:
 		_restore_door_nodes(state)
@@ -269,6 +279,46 @@ func _build_world_root() -> void:
 		world_root.connect("stairs_entered", _on_stairs_entered)
 	else:
 		push_warning("Raid: le constructeur de monde n'expose pas stairs_entered.")
+
+
+## (Test B) Fond pré-rendu de l'étage 0 : remplace les visuels du WorldBuilder.
+func _attach_prerender(index: int) -> void:
+	prerender = null
+	if map_seed == 0 or index != 0 or not uses_world_builder:
+		return
+	prerender = PrerenderBackdrop.create(map_seed, floors.get(0))
+	if prerender == null:
+		return
+	floor_root.add_child(prerender)
+	floor_root.move_child(prerender, 0)
+	prerender.attach_to(world_root)
+
+
+## (Test B) Carte pré-rendue = structure fixe : chaque ennemi est redéplacé sur une case
+## libre de sa salle (tirage sur run_seed) pour que deux parties sur la même carte diffèrent.
+static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var busy := {}
+	for list: Array in [l.prop_spawns, l.container_spawns, l.hiding_spot_spawns]:
+		for sp: FloorLayout.Spawn in list:
+			for c: Vector2i in FloorLayout.spawn_cells(sp):
+				busy[c] = true
+	for sp2: FloorLayout.Spawn in l.enemy_spawns:
+		var room := l.get_room(sp2.room_id) if sp2.room_id >= 0 else l.room_at(sp2.cell)
+		if room == null or room.type == &"boss":
+			continue
+		for _i: int in 12:
+			var c2 := Vector2i(rng.randi_range(room.rect.position.x, room.rect.end.x - 1),
+				rng.randi_range(room.rect.position.y, room.rect.end.y - 1))
+			var t := l.get_tile(c2)
+			if busy.has(c2) or c2.distance_to(l.player_spawn) < 8.0 \
+					or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+				continue
+			busy.erase(sp2.cell)
+			sp2.cell = c2
+			busy[c2] = true
+			break
 
 
 func _collect_doors() -> void:
@@ -1306,7 +1356,7 @@ func _draw_debug_info(canvas: Node2D) -> void:
 	if not is_instance_valid(player):
 		return
 	var lines := PackedStringArray([
-		"Seed %d · difficulté %d · étage %d" % [run_seed, difficulty, current_floor],
+		"Seed %d · carte %s · difficulté %d · étage %d" % [run_seed, (str(map_seed) + " (pré-rendue)") if map_seed != 0 else "générée", difficulty, current_floor],
 		"Générateur:%s Décor:%s Brouillard:%s" % [
 			"oui" if uses_generator else "exemple",
 			"WorldBuilder" if uses_world_builder else "secours",

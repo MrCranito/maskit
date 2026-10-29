@@ -17,9 +17,14 @@ func before_each() -> void:
 	}
 	GameState.debug_time_override = 0
 	LootRoller.reset_map_bonus()
+	# Les tests couvrent la rotation complète : on neutralise la restriction du build de test.
+	var cfg: ConfigFile = Balance.get("_config")
+	_saved["only_ids"] = cfg.get_value("maps", "only_ids", [])
+	cfg.set_value("maps", "only_ids", [])
 
 
 func after_each() -> void:
+	(Balance.get("_config") as ConfigFile).set_value("maps", "only_ids", _saved.get("only_ids", []))
 	GameState.current_map = _saved["map"]
 	GameState.world_path = _saved["world"]
 	GameState.difficulty = _saved["diff"]
@@ -431,3 +436,14 @@ func test_difficulty_badge_for_raid_banner() -> void:
 	autofree(b)
 	assert_eq(b.name, &"DifficultyBadge")
 	assert_eq((b.find_child("Name", true, false) as Label).text, "Infernal")
+
+
+func test_build_de_test_ne_propose_que_dust_creek() -> void:
+	var cfg: ConfigFile = Balance.get("_config")
+	cfg.set_value("maps", "only_ids", ["perm_dust_creek"])
+	var offered := MapRotation.offered_cards(MapRotation.now())
+	assert_eq(offered.size(), 1)
+	assert_eq(String((offered[0]["card"] as MapCard).id), "perm_dust_creek")
+	assert_true(MapRotation.is_restricted())
+	cfg.set_value("maps", "only_ids", [])
+	assert_false(MapRotation.is_restricted())

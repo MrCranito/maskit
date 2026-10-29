@@ -169,6 +169,27 @@ static func available_cards(unix_time: int) -> Array[Dictionary]:
 	return out
 
 
+## Cartes proposées au joueur : available_cards filtrées par [maps] only_ids (build de test ;
+## liste vide = toutes les cartes).
+static func offered_cards(unix_time: int) -> Array[Dictionary]:
+	var all_cards := available_cards(unix_time)
+	var only: Variant = Balance.get_value("maps", "only_ids", [])
+	if not (only is Array) or (only as Array).is_empty():
+		return all_cards
+	var keep: Array[Dictionary] = []
+	for e: Dictionary in all_cards:
+		var card: MapCard = e.get("card") as MapCard
+		if card != null and (only as Array).has(String(card.id)):
+			keep.append(e)
+	return keep
+
+
+## Vrai si la rotation est restreinte (build de test) : pas d'annonce d'événement à venir.
+static func is_restricted() -> bool:
+	var only: Variant = Balance.get_value("maps", "only_ids", [])
+	return only is Array and not (only as Array).is_empty()
+
+
 ## Événement actif à t ({} si aucun).
 static func active_event(unix_time: int) -> Dictionary:
 	var slot: int = event_slot(unix_time)
