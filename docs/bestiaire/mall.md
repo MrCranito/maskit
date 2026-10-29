@@ -117,3 +117,7 @@ boss, phases) ; `tests/test_mall.gd` adapté (nouveaux kinds, boss générique).
 - `planche_modeles_mall.png` — les 9 modèles (idle, attaque, cadavre).
 - `en_jeu_classiques_repos.png`, `en_jeu_classiques_combat.png` — les 6 classiques dans un raid du centre commercial.
 - `en_jeu_elites_boss_repos.png`, `en_jeu_elites_boss_combat.png` — élites et boss.
+
+## Arène du boss (décision utilisateur, 29/10)
+L'Omnistore reste dans le **bureau du directeur** (dernier étage), et non dans l'atrium « Galeries
+marchandes — Niveau central » de la planche. Pas de changement du plan du centre commercial.

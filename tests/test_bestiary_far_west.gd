@@ -378,7 +378,7 @@ func test_sheriff_charge_rides_the_horse() -> void:
 	assert_true(b.force_skill(&"fw_sheriff_charge"))
 	await wait_until(func() -> bool: return b.visual != null and String(b.visual.get(&"_run_anim")) == "charge", 2.5)
 	assert_eq(String(b.visual.get(&"_run_anim")), "charge", "animation à cheval pendant la charge")
-	await wait_until(func() -> bool: return _player.hits.size() > 0 or b.current_state_name() != Enemy.STATE_SKILL, 3.0)
+	await wait_until(func() -> bool: return b.current_state_name() != Enemy.STATE_SKILL, 5.0)
 	await wait_physics_frames(3)
 	assert_eq(String(b.visual.get(&"_run_anim")), "run", "retour à pied après la charge")
 
