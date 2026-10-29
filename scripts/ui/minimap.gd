@@ -15,9 +15,9 @@ extends Control
 
 signal full_map_toggled(open: bool)
 
-const NIGHT := Color(0.071, 0.102, 0.18)
-const BORDER := Color(0.85, 0.88, 0.95, 0.85)
-const EXTRACT := Color(0.3, 1.0, 0.62)
+const NIGHT := Color(0.024, 0.027, 0.05)
+const BORDER := Color(1.0, 1.0, 1.0, 0.4)
+const EXTRACT := Color(0.718, 0.608, 1.0)
 const TS := float(FloorLayout.TILE_SIZE)
 const FOG_SHADER_CODE := """
 shader_type canvas_item;
@@ -390,7 +390,7 @@ class MapView extends Control:
 		mask.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 		var st := StyleBoxFlat.new()
 		st.bg_color = Color(0.05, 0.07, 0.13, 0.96)
-		st.set_corner_radius_all(18)
+		st.set_corner_radius_all(2)
 		st.anti_aliasing = true
 		mask.add_theme_stylebox_override("panel", st)
 		add_child(mask)
@@ -403,7 +403,7 @@ class MapView extends Control:
 		fs.draw_center = false
 		fs.border_color = BORDER
 		fs.set_border_width_all(2)
-		fs.set_corner_radius_all(18)
+		fs.set_corner_radius_all(2)
 		fs.shadow_color = Color(0, 0, 0, 0.35)
 		fs.shadow_size = 6
 		fs.anti_aliasing = true

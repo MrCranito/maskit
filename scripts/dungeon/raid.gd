@@ -37,9 +37,9 @@ const GROUP_FOG_HIDEABLE := &"fog_hideable"
 ## Nom affiché si aucun WorldData n'est disponible (ville de la carte d'exemple).
 const DEFAULT_WORLD_NAME := "Dust Creek"
 
-const NIGHT_BLUE := Color(0.071, 0.102, 0.18, 0.92)  # ~#121a2e
-const BORDER_LIGHT := Color(0.85, 0.88, 0.95, 0.85)
-const TEXT_SECONDARY := Color(0.78, 0.80, 0.86)
+const NIGHT_BLUE := Color(0.024, 0.027, 0.05, 0.72)  # encre translucide (direction D)
+const BORDER_LIGHT := Color(1.0, 1.0, 1.0, 0.0)
+const TEXT_SECONDARY := Color(1.0, 1.0, 1.0, 0.65)
 
 ## Couleurs debug des salles par type, et des portes par état.
 const DEBUG_ROOM_COLORS := {
@@ -1094,7 +1094,7 @@ static func _make_panel_style(radius: int) -> StyleBoxFlat:
 	style.bg_color = NIGHT_BLUE
 	style.border_color = BORDER_LIGHT
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(radius)
+	style.set_corner_radius_all(mini(radius, 2))
 	style.content_margin_left = 18
 	style.content_margin_right = 18
 	style.content_margin_top = 6
@@ -1107,10 +1107,8 @@ static func _make_label(size: int, color: Color, bold: bool) -> Label:
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var settings := LabelSettings.new()
-	var font := FontVariation.new()
-	font.base_font = ThemeDB.fallback_font
-	font.variation_embolden = 0.8 if bold else 0.0
-	settings.font = font
+	settings.font = LootVisuals.title_font() if bold else LootVisuals.text_font(500)
+	l.uppercase = bold
 	settings.font_size = size
 	settings.font_color = color
 	l.label_settings = settings

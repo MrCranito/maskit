@@ -276,32 +276,21 @@ func _build_showcase() -> Control:
 	return p
 
 
-## Gros bouton doré « Débloquer le Premium — 950 » + gemme.
+## Gros bouton violet à coins coupés « Débloquer le Premium — 950 » + gemme (direction D).
 func _premium_button() -> Button:
 	var b := Button.new()
 	b.name = "PremiumButton"
 	b.focus_mode = Control.FOCUS_ALL
 	b.custom_minimum_size = Vector2(0, 64)
-	var gold := Color(0.96, 0.72, 0.22)
-	var n := MenuKit.panel_style(gold, gold.lightened(0.45), 16, 2, 0)
-	n.border_width_bottom = 6
-	n.border_color = gold.darkened(0.45)
-	n.shadow_color = Color(gold, 0.35)
-	n.shadow_size = 14
-	n.shadow_offset = Vector2.ZERO
-	n.content_margin_left = 22
-	n.content_margin_right = 22
-	var h := n.duplicate() as StyleBoxFlat
-	h.bg_color = gold.lightened(0.12)
-	var pr := n.duplicate() as StyleBoxFlat
-	pr.bg_color = gold.darkened(0.08)
-	pr.border_width_bottom = 2
-	var f := StyleBoxFlat.new()
+	var n := CutBox.make(MenuKit.VIOLET, 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
+	var h := CutBox.make(MenuKit.VIOLET.lightened(0.12), 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
+	var pr := CutBox.make(MenuKit.VIOLET.darkened(0.2), 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
+	var f := CutBox.new()
 	f.draw_center = false
 	f.border_color = MenuKit.TEXT
-	f.set_border_width_all(3)
-	f.set_corner_radius_all(19)
-	f.set_expand_margin_all(3)
+	f.border_width = 2.0
+	f.cut = 16.0
+	f.grow = 3.0
 	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		b.add_theme_stylebox_override(k, {"normal": n, "hover": h, "pressed": pr, "hover_pressed": pr, "focus": f}[k])
 	var row := HBoxContainer.new()
@@ -311,7 +300,7 @@ func _premium_button() -> Button:
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_bottom = -4
 	b.add_child(row)
-	var l := MenuKit.label("Débloquer le Premium — %d" % BattlePassSystem.premium_price(), 21, Color(0.2, 0.11, 0.02), MenuKit.nunito(1000))
+	var l := MenuKit.label("Débloquer le Premium — %d" % BattlePassSystem.premium_price(), 24, MenuKit.TEXT, MenuKit.display())
 	l.name = "Text"
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(l)
@@ -319,8 +308,8 @@ func _premium_button() -> Button:
 	g.custom_minimum_size = Vector2(28, 28)
 	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(g)
-	var font: Font = MenuKit.nunito(1000)
-	b.custom_minimum_size.x = font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 21).x + 28 + 10 + 56
+	var font: Font = MenuKit.display()
+	b.custom_minimum_size.x = font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x + 28 + 10 + 56
 	b.pressed.connect(ask_premium)
 	MenuKit.add_feedback(b, 1.04)
 	return b
@@ -363,10 +352,10 @@ func _build_progress() -> Control:
 	xp_bar.custom_minimum_size = Vector2(0, 12)
 	var bg := StyleBoxFlat.new()
 	bg.bg_color = Color(1, 1, 1, 0.08)
-	bg.set_corner_radius_all(6)
+	bg.set_corner_radius_all(2)
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = MenuKit.GOLD
-	fill.set_corner_radius_all(6)
+	fill.set_corner_radius_all(2)
 	xp_bar.add_theme_stylebox_override("background", bg)
 	xp_bar.add_theme_stylebox_override("fill", fill)
 	col.add_child(xp_bar)
@@ -772,7 +761,7 @@ class PassCell extends Button:
 			disabled = true
 			var e := StyleBoxFlat.new()
 			e.bg_color = Color(1, 1, 1, 0.025)
-			e.set_corner_radius_all(14)
+			e.set_corner_radius_all(2)
 			add_theme_stylebox_override("disabled", e)
 			return
 		glow = Panel.new()
@@ -782,7 +771,7 @@ class PassCell extends Button:
 		gs.draw_center = false
 		gs.border_color = MenuKit.GOLD
 		gs.set_border_width_all(3)
-		gs.set_corner_radius_all(16)
+		gs.set_corner_radius_all(2)
 		gs.set_expand_margin_all(3)
 		gs.shadow_color = Color(MenuKit.GOLD, 0.55)
 		gs.shadow_size = 10
@@ -823,7 +812,7 @@ class PassCell extends Button:
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var ds := StyleBoxFlat.new()
 		ds.bg_color = MenuKit.GOLD
-		ds.set_corner_radius_all(7)
+		ds.set_corner_radius_all(2)
 		ds.border_color = MenuKit.NIGHT_DEEP
 		ds.set_border_width_all(2)
 		dot.add_theme_stylebox_override("panel", ds)
@@ -891,7 +880,7 @@ class PassCell extends Button:
 		st.bg_color = bg
 		st.border_color = border
 		st.set_border_width_all(bw)
-		st.set_corner_radius_all(14)
+		st.set_corner_radius_all(2)
 		st.anti_aliasing = true
 		var hv := st.duplicate() as StyleBoxFlat
 		hv.bg_color = bg.lightened(0.08)
@@ -899,7 +888,7 @@ class PassCell extends Button:
 		f.draw_center = false
 		f.border_color = MenuKit.GOLD.lightened(0.3)
 		f.set_border_width_all(2)
-		f.set_corner_radius_all(16)
+		f.set_corner_radius_all(2)
 		f.set_expand_margin_all(2)
 		add_theme_stylebox_override("normal", st)
 		add_theme_stylebox_override("hover", hv)
@@ -918,8 +907,8 @@ class PassCell extends Button:
 		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var fs := StyleBoxFlat.new()
-		fs.bg_color = Color(1.0, 0.86, 0.5, 0.85)
-		fs.set_corner_radius_all(14)
+		fs.bg_color = Color(0.718, 0.608, 1.0, 0.85)
+		fs.set_corner_radius_all(2)
 		flash.add_theme_stylebox_override("panel", fs)
 		flash.modulate.a = 0.0
 		add_child(flash)
@@ -961,7 +950,7 @@ class TierNumber extends Control:
 			var pill := Rect2(size.x * 0.5 - tw * 0.5 - 9, y - 12, tw + 18, 24)
 			var sb := StyleBoxFlat.new()
 			sb.bg_color = MenuKit.TEXT
-			sb.set_corner_radius_all(12)
+			sb.set_corner_radius_all(2)
 			draw_style_box(sb, pill)
 			col = MenuKit.NIGHT_DEEP
 		draw_string(f, Vector2(size.x * 0.5 - tw * 0.5, y + fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
