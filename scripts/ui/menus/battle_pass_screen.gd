@@ -136,52 +136,74 @@ func _build() -> void:
 
 func _build_header() -> Control:
 	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 14)
+	head.add_theme_constant_override("separation", 22)
 	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	back_button = MenuKit.button("‹  Menu", MenuKit.Style.GHOST, 19, Vector2(124, 52))
-	MenuKit.tighten(back_button, 12)
+	back_button = MenuKit.square_back_button("Menu")
 	back_button.pressed.connect(go_back)
 	head.add_child(back_button)
 	var titles := VBoxContainer.new()
-	titles.add_theme_constant_override("separation", -4)
+	titles.add_theme_constant_override("separation", 0)
 	titles.alignment = BoxContainer.ALIGNMENT_CENTER
 	titles.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(titles)
 	var season := bp.get_season()
-	var kicker := MenuKit.label("Pass de combat", 13, MenuKit.GOLD, MenuKit.nunito(900))
+	# « Saison 1 — Dust Creek » → petit « Pass de combat · Saison 1 » + gros « DUST CREEK »
+	var parts := season.display_name.split(" — ")
+	var kicker := MenuKit.label("Pass de combat · " + parts[0] if parts.size() > 1 else "Pass de combat",
+		17, MenuKit.VIOLET_LIGHT, MenuKit.nunito(600), 0)
+	kicker.uppercase = true
 	titles.add_child(kicker)
-	var t := MenuKit.label(season.display_name, 24, MenuKit.TEXT, MenuKit.nunito(1000), 3)
+	var t := MenuKit.label(parts[1] if parts.size() > 1 else season.display_name, 40, MenuKit.TEXT, MenuKit.display(), 0)
+	t.uppercase = true
 	titles.add_child(t)
-	var end_l := MenuKit.label(_season_end(season), 14, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+	var end_l := MenuKit.label(_season_end(season), 18, Color(1, 1, 1, 0.65), MenuKit.nunito(600), 0)
+	end_l.uppercase = true
 	end_l.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(end_l)
 	var gold := PanelContainer.new()
 	gold.name = "GoldPill"
-	var gs := MenuKit.panel_style(Color(MenuKit.NIGHT, 0.9), Color(MenuKit.GOLD, 0.45), 26, 2, 0)
-	gs.content_margin_left = 8
-	gs.content_margin_right = 16
-	gs.shadow_size = 0
-	gold.add_theme_stylebox_override("panel", gs)
-	gold.custom_minimum_size.y = 48
+	gold.add_theme_stylebox_override("panel", _currency_style(MenuKit.COIN))
+	gold.custom_minimum_size.y = 66
 	gold.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var grow := HBoxContainer.new()
-	grow.add_theme_constant_override("separation", 6)
+	grow.add_theme_constant_override("separation", 12)
 	gold.add_child(grow)
-	var coin := MenuGlyph.new(&"coin", MenuKit.COIN, 26)
+	var coin := MenuGlyph.new(&"coin", MenuKit.COIN, 30)
 	coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	grow.add_child(coin)
-	gold_label = MenuKit.label("0", 20, MenuKit.TEXT, MenuKit.nunito(1000), 3)
+	gold_label = MenuKit.label("0", 25, MenuKit.TEXT, MenuKit.nunito(700), 0)
 	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	grow.add_child(gold_label)
 	head.add_child(gold)
-	gem_counter = GemCounter.new(20)
+	var gems := PanelContainer.new()
+	gems.name = "GemPill"
+	gems.add_theme_stylebox_override("panel", _currency_style(MenuKit.GEM))
+	gems.custom_minimum_size.y = 66
+	gems.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	head.add_child(gems)
+	gem_counter = GemCounter.new(25)
+	gem_counter.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	gem_counter.value_label.add_theme_font_override("font", MenuKit.nunito(700))
+	gem_counter.value_label.add_theme_constant_override("outline_size", 0)
+	gem_counter.custom_minimum_size = Vector2.ZERO
 	gem_counter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gem_counter.pressed.connect(func() -> void:
 		ShopScreen.last_tab = &"gems"
 		MenuKit.go_to(self, MenuKit.SHOP_SCENE))
-	head.add_child(gem_counter)
+	gems.add_child(gem_counter)
 	return head
+
+
+## Pastille de monnaie de la maquette : fond blanc 6 %, liseré bas à la couleur de la monnaie.
+func _currency_style(accent: Color) -> StyleBoxFlat:
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color(1, 1, 1, 0.06)
+	st.border_color = accent
+	st.border_width_bottom = 4
+	st.content_margin_left = 16
+	st.content_margin_right = 22
+	return st
 
 
 func _season_end(season: BattlePassSeason) -> String:
@@ -198,8 +220,8 @@ func _build_showcase() -> Control:
 	p.name = "Showcase"
 	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	p.custom_minimum_size.y = 250
-	var st := MenuKit.panel_style(Color(MenuKit.NIGHT, 1.0), Color(1, 1, 1, 0.1), 20, 1, 0)
-	st.shadow_size = 0
+	var st := CutBox.make(Color(0.047, 0.043, 0.1), 30.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+	st.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
 	p.add_theme_stylebox_override("panel", st)
 	p.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 	var stack := Control.new()
@@ -230,21 +252,23 @@ func _build_showcase() -> Control:
 	detail_big.anchor_top = 0.2
 	detail_big.anchor_bottom = 0.8
 	stack.add_child(detail_big)
-	# Texte + action (zone droite)
+	# Texte + action (zone centrale, avant le bandeau Premium)
 	var col := VBoxContainer.new()
-	col.anchor_left = 0.45
-	col.anchor_right = 1.0
+	col.anchor_left = 0.32
+	col.anchor_right = 0.7
 	col.anchor_bottom = 1.0
-	col.offset_right = -28
+	col.offset_right = -70
 	col.offset_top = 20
 	col.offset_bottom = -20
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
 	col.add_theme_constant_override("separation", 6)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(col)
-	_s_kicker = MenuKit.label("", 15, MenuKit.GOLD, MenuKit.nunito(900))
+	_s_kicker = MenuKit.label("", 18, MenuKit.GOLD, MenuKit.nunito(600), 0)
+	_s_kicker.uppercase = true
 	col.add_child(_s_kicker)
-	_s_name = MenuKit.label("", 44, MenuKit.TEXT, MenuKit.nunito(1000), 6)
+	_s_name = MenuKit.label("", 90, MenuKit.TEXT, MenuKit.display(), 0)
+	_s_name.uppercase = true
 	_s_name.clip_text = true
 	_s_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	col.add_child(_s_name)
@@ -252,7 +276,7 @@ func _build_showcase() -> Control:
 	_s_meta.add_theme_constant_override("separation", 8)
 	_s_meta.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(_s_meta)
-	_s_desc = MenuKit.label("", 16, MenuKit.TEXT_DIM, MenuKit.nunito(700))
+	_s_desc = MenuKit.label("", 19, Color(1, 1, 1, 0.75), MenuKit.nunito(500), 0)
 	_s_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_s_desc.max_lines_visible = 2
 	_s_desc.custom_minimum_size = Vector2(0, 46)
@@ -264,105 +288,153 @@ func _build_showcase() -> Control:
 	actions.add_theme_constant_override("separation", 12)
 	actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(actions)
-	premium_button = _premium_button()
-	actions.add_child(premium_button)
-	premium_badge = MenuKit.pill("Premium actif", Color(MenuKit.GOLD.darkened(0.6), 0.9), 15, MenuKit.GOLD.lightened(0.25), Color(MenuKit.GOLD, 0.6))
-	premium_badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	actions.add_child(premium_badge)
 	equip_button = MenuKit.button("Équiper", MenuKit.Style.SECONDARY, 18, Vector2(140, 56))
 	MenuKit.tighten(equip_button, 14)
 	equip_button.pressed.connect(_on_equip)
 	actions.add_child(equip_button)
+	stack.add_child(_build_premium_slab())
 	return p
 
 
-## Gros bouton violet à coins coupés « Débloquer le Premium — 950 » + gemme (direction D).
+## Bandeau Premium de la vitrine (maquette) : violet translucide, bord gauche en biais ;
+## « Récompenses en plus sur les N paliers », « PREMIUM » en Anton, bouton encre « Débloquer ·
+## prix » (ou « Premium actif » une fois acheté).
+func _build_premium_slab() -> Control:
+	var sl := MainMenu.LobbySlab.new()
+	sl.name = "PremiumSlab"
+	sl.cut = Balance.get_float("battle_pass", "premium_slab_cut", 80.0)
+	sl.color = Color(MenuKit.VIOLET, Balance.get_float("menu", "lobby_slab_alpha", 0.66) - 0.04)
+	sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sl.anchor_left = Balance.get_float("battle_pass", "premium_slab_anchor", 0.7)
+	sl.anchor_right = 1.0
+	sl.anchor_bottom = 1.0
+	# pas de verre dépoli ici : la vitrine découpe ses enfants (clip_children), l'écran n'y est
+	# pas lisible par le shader ; le décor est déjà flouté et assombri derrière
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.offset_left = sl.cut
+	col.offset_right = -36
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 10)
+	sl.add_child(col)
+	var k := MenuKit.label("Récompenses en plus\nsur les %d paliers" % bp.max_tier(), 17, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	k.uppercase = true
+	k.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	col.add_child(k)
+	var t := MenuKit.label("PREMIUM", 67, MenuKit.TEXT, MenuKit.display(), 0)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	col.add_child(t)
+	premium_button = _premium_button()
+	premium_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	col.add_child(premium_button)
+	premium_badge = MenuKit.pill("Premium actif", MenuKit.NIGHT_DEEP, 18, MenuKit.TEXT)
+	premium_badge.size_flags_horizontal = Control.SIZE_SHRINK_END
+	col.add_child(premium_badge)
+	return sl
+
+
+## Bouton encre à coin haut gauche coupé « Débloquer · 950 » + gemme (maquette Pass).
 func _premium_button() -> Button:
 	var b := Button.new()
 	b.name = "PremiumButton"
 	b.focus_mode = Control.FOCUS_ALL
-	b.custom_minimum_size = Vector2(0, 64)
-	var n := CutBox.make(MenuKit.VIOLET, 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
-	var h := CutBox.make(MenuKit.VIOLET.lightened(0.12), 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
-	var pr := CutBox.make(MenuKit.VIOLET.darkened(0.2), 14.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
+	b.custom_minimum_size = Vector2(0, 74)
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, 16.0, Color(0, 0, 0, 0), 0.0, 22.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT
+		return c
 	var f := CutBox.new()
 	f.draw_center = false
 	f.border_color = MenuKit.TEXT
 	f.border_width = 2.0
-	f.cut = 16.0
+	f.cut = 18.0
+	f.corners = CutBox.CUT_TOP_LEFT
 	f.grow = 3.0
-	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
-		b.add_theme_stylebox_override(k, {"normal": n, "hover": h, "pressed": pr, "hover_pressed": pr, "focus": f}[k])
+	b.add_theme_stylebox_override("normal", mk.call(MenuKit.NIGHT_DEEP))
+	b.add_theme_stylebox_override("hover", mk.call(MenuKit.NIGHT_PANEL))
+	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 1)))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 1)))
+	b.add_theme_stylebox_override("focus", f)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 12)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	row.offset_bottom = -4
 	b.add_child(row)
-	var l := MenuKit.label("Débloquer le Premium — %d" % BattlePassSystem.premium_price(), 24, MenuKit.TEXT, MenuKit.display())
+	var l := MenuKit.label("Débloquer · %d" % BattlePassSystem.premium_price(), 23, MenuKit.TEXT, MenuKit.nunito(700), 0)
 	l.name = "Text"
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(l)
 	var g := GemIcon.new()
-	g.custom_minimum_size = Vector2(28, 28)
+	g.custom_minimum_size = Vector2(24, 24)
 	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(g)
-	var font: Font = MenuKit.display()
-	b.custom_minimum_size.x = font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x + 28 + 10 + 56
+	b.custom_minimum_size.x = MenuKit.nunito(700).get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 23).x + 24 + 12 + 48
 	b.pressed.connect(ask_premium)
 	MenuKit.add_feedback(b, 1.04)
 	return b
 
 
-## Barre de progression unique + bouton global « Tout récupérer ».
+## Ligne de progression (maquette) : « PALIER N », « x / y XP », barre violette, « Tout récupérer ».
 func _build_progress() -> Control:
 	var row := HBoxContainer.new()
 	row.name = "Progress"
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 22)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.custom_minimum_size.y = 57
+	# Badge de palier : plus affiché (maquette), gardé pour le code commun
 	tier_badge = TierBadge.new()
 	tier_badge.name = "TierBadge"
-	tier_badge.custom_minimum_size = Vector2(56, 56)
+	tier_badge.visible = false
 	row.add_child(tier_badge)
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 5)
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(col)
-	var line := HBoxContainer.new()
-	line.add_theme_constant_override("separation", 12)
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_child(line)
-	tier_label = MenuKit.label("", 19, MenuKit.TEXT, MenuKit.nunito(1000), 3)
-	line.add_child(tier_label)
-	xp_label = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(900))
+	tier_label = MenuKit.label("", 37, MenuKit.TEXT, MenuKit.display(), 0)
+	tier_label.uppercase = true
+	tier_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(tier_label)
+	xp_label = MenuKit.label("", 18, Color(1, 1, 1, 0.7), MenuKit.nunito(600), 0)
 	xp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	line.add_child(xp_label)
-	next_label = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(800))
-	next_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	next_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	next_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	next_label.clip_text = true
-	next_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	line.add_child(next_label)
+	row.add_child(xp_label)
 	xp_bar = ProgressBar.new()
 	xp_bar.show_percentage = false
-	xp_bar.custom_minimum_size = Vector2(0, 12)
+	xp_bar.custom_minimum_size = Vector2(0, 10)
+	xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	xp_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(1, 1, 1, 0.08)
-	bg.set_corner_radius_all(2)
+	bg.bg_color = Color(1, 1, 1, 0.12)
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = MenuKit.GOLD
-	fill.set_corner_radius_all(2)
+	fill.bg_color = MenuKit.VIOLET_LIGHT
 	xp_bar.add_theme_stylebox_override("background", bg)
 	xp_bar.add_theme_stylebox_override("fill", fill)
-	col.add_child(xp_bar)
-	claim_all_button = MenuKit.button("Tout récupérer", MenuKit.Style.PRIMARY, 18, Vector2(0, 56))
-	MenuKit.tighten(claim_all_button, 18)
+	row.add_child(xp_bar)
+	next_label = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(600), 0)
+	next_label.visible = false
+	row.add_child(next_label)
+	claim_all_button = Button.new()
+	claim_all_button.name = "ClaimAll"
+	claim_all_button.focus_mode = Control.FOCUS_ALL
+	claim_all_button.custom_minimum_size = Vector2(0, 57)
 	claim_all_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	claim_all_button.add_theme_font_override("font", MenuKit.nunito(700))
+	claim_all_button.add_theme_font_size_override("font_size", 22)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		claim_all_button.add_theme_color_override(k, MenuKit.TEXT)
+	var mk := func(bg2: Color) -> CutBox:
+		var c := CutBox.make(bg2, 13.0, Color(0, 0, 0, 0), 0.0, 24.0, 0.0)
+		return c
+	claim_all_button.add_theme_stylebox_override("normal", mk.call(MenuKit.VIOLET))
+	claim_all_button.add_theme_stylebox_override("hover", mk.call(MenuKit.VIOLET.lightened(0.12)))
+	claim_all_button.add_theme_stylebox_override("pressed", mk.call(MenuKit.VIOLET.darkened(0.2)))
+	claim_all_button.add_theme_stylebox_override("hover_pressed", mk.call(MenuKit.VIOLET.darkened(0.2)))
+	var f := CutBox.new()
+	f.draw_center = false
+	f.border_color = MenuKit.TEXT
+	f.border_width = 2.0
+	f.cut = 15.0
+	f.grow = 3.0
+	claim_all_button.add_theme_stylebox_override("focus", f)
 	claim_all_button.pressed.connect(claim_all)
+	MenuKit.add_feedback(claim_all_button, 1.04)
 	row.add_child(claim_all_button)
 	return row
 
@@ -375,14 +447,14 @@ func _build_grid() -> Control:
 	row.custom_minimum_size.y = _cell * 2 + 28 + 26
 	var labels := VBoxContainer.new()
 	labels.add_theme_constant_override("separation", 0)
-	labels.custom_minimum_size.x = 64
+	labels.custom_minimum_size.x = 100
 	labels.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(labels)
-	labels.add_child(_row_label("Premium", MenuKit.GOLD, &"ticket"))
+	labels.add_child(_row_label("Premium", MenuKit.GOLD, &""))
 	var mid := Control.new()
 	mid.custom_minimum_size.y = 26
 	labels.add_child(mid)
-	labels.add_child(_row_label("Gratuit", MenuKit.TEXT_DIM, &""))
+	labels.add_child(_row_label("Gratuit", Color(1, 1, 1, 0.6), &""))
 	track_scroll = ScrollContainer.new()
 	MenuKit.make_touch_scroll(track_scroll)   # glisser au doigt partout (même sur les boutons)
 	track_scroll.name = "Track"
@@ -423,8 +495,9 @@ func _row_label(txt: String, col: Color, glyph: StringName) -> Control:
 		var g := PassGlyph.new(glyph, col, 26)
 		g.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		box.add_child(g)
-	var l := MenuKit.label(txt, 13, col, MenuKit.nunito(1000))
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var l := MenuKit.label(txt, 16, col, MenuKit.nunito(600), 0)
+	l.uppercase = true
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(l)
 	return box
 
@@ -538,10 +611,10 @@ func _refresh_showcase(animate: bool = false) -> void:
 	if is_char or is_wsk:
 		_s_name.text = skin.display_name
 		var rc := MenuKit.rarity_color(skin.rarity)
-		_s_meta.add_child(MenuKit.pill(MenuKit.rarity_name(skin.rarity), rc.darkened(0.3), 14, MenuKit.TEXT if skin.rarity < 4 else Color(0.16, 0.1, 0.02)))
+		_s_meta.add_child(MenuKit.pill(MenuKit.rarity_name(skin.rarity).to_upper(), rc, 16, Color(0.1, 0.04, 0.2)))
 		var w := ShopScreen.weapon_of(skin) if is_wsk else null
-		_s_meta.add_child(MenuKit.pill("Skin d'arme · %s" % w.display_name if w != null else "Skin de personnage",
-			Color(1, 1, 1, 0.08), 14, MenuKit.TEXT_DIM))
+		_s_meta.add_child(MenuKit.pill(("Skin d'arme · %s" % w.display_name if w != null else "Skin de personnage").to_upper(),
+			Color(0, 0, 0, 0), 16, MenuKit.TEXT, Color(1, 1, 1, 0.4)))
 		_s_desc.text = skin.description
 		if is_char:
 			detail_preview.set_skin(skin, animate)
@@ -767,14 +840,11 @@ class PassCell extends Button:
 		glow = Panel.new()
 		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		# disponible : barre violet clair en haut de la case (maquette), qui pulse
 		var gs := StyleBoxFlat.new()
 		gs.draw_center = false
-		gs.border_color = MenuKit.GOLD
-		gs.set_border_width_all(3)
-		gs.set_corner_radius_all(2)
-		gs.set_expand_margin_all(3)
-		gs.shadow_color = Color(MenuKit.GOLD, 0.55)
-		gs.shadow_size = 10
+		gs.border_color = MenuKit.VIOLET_LIGHT
+		gs.border_width_top = 4
 		glow.add_theme_stylebox_override("panel", gs)
 		glow.visible = false
 		add_child(glow)
@@ -797,11 +867,11 @@ class PassCell extends Button:
 			amount_label.offset_bottom = -1
 			amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			add_child(amount_label)
-		lock = PassGlyph.new(&"lock", MenuKit.GOLD if tr == &"premium" else MenuKit.TEXT_DIM, 18)
+		lock = PassGlyph.new(&"lock", Color(1, 1, 1, 0.7), 16)
 		lock.position = Vector2(4, 4)
 		lock.size = Vector2(18, 18)
 		add_child(lock)
-		check = PassGlyph.new(&"check", MenuKit.GOOD, 30)
+		check = PassGlyph.new(&"check", MenuKit.VIOLET_LIGHT, 30)
 		check.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 		check.offset_left = -15
 		check.offset_top = -15
@@ -838,7 +908,7 @@ class PassCell extends Button:
 		var reached: bool = tier <= reached_tier
 		lock.visible = state == PREMIUM_LOCKED or (state == LOCKED and not reached)
 		check.visible = state == CLAIMED
-		dot.visible = state == AVAILABLE
+		dot.visible = false
 		glow.visible = state == AVAILABLE
 		var a: float = 1.0
 		match state:
@@ -863,38 +933,40 @@ class PassCell extends Button:
 			glow.modulate.a = 0.35 + 0.65 * v
 
 	func _restyle() -> void:
-		var bg := Color(0.1, 0.13, 0.22)
-		var border := Color(1, 1, 1, 0.1)
-		var bw := 1
+		# maquette : case à coin haut droit coupé ; skin = dégradé de sa rareté ; disponible =
+		# voile violet + contour violet clair ; obtenue = atténuée
+		var bg := Color(1, 1, 1, 0.05)
+		var border := Color(1, 1, 1, 0.08)
+		var bw := 1.0
 		if featured:
-			bg = bg.lerp(_accent.darkened(0.55), 0.35)
-			border = Color(_accent, 0.85)
-			bw = 2
+			bg = Color(_accent, 0.22)
+			border = Color(_accent, 0.6)
+		if state == AVAILABLE:
+			bg = Color(MenuKit.VIOLET, 0.28)
+			border = MenuKit.VIOLET_LIGHT
 		if state == CLAIMED:
-			bg = bg.darkened(0.35)
-			border = Color(border, border.a * 0.4)
+			bg = Color(1, 1, 1, 0.03)
+			border = Color(1, 1, 1, 0.05)
 		if _selected:
 			border = Color(1, 1, 1, 0.95)
-			bw = 3
-		var st := StyleBoxFlat.new()
-		st.bg_color = bg
-		st.border_color = border
-		st.set_border_width_all(bw)
-		st.set_corner_radius_all(2)
-		st.anti_aliasing = true
-		var hv := st.duplicate() as StyleBoxFlat
-		hv.bg_color = bg.lightened(0.08)
-		var f := StyleBoxFlat.new()
+			bw = 2.0
+		var st := CutBox.make(bg, 15.0, border, bw, 0.0, 0.0)
+		st.corners = CutBox.CUT_TOP_RIGHT
+		var hv := st.duplicate() as CutBox
+		hv.bg_color = Color(bg.r, bg.g, bg.b, bg.a + 0.06)
+		var f := CutBox.new()
 		f.draw_center = false
-		f.border_color = MenuKit.GOLD.lightened(0.3)
-		f.set_border_width_all(2)
-		f.set_corner_radius_all(2)
-		f.set_expand_margin_all(2)
+		f.border_color = MenuKit.TEXT
+		f.border_width = 2.0
+		f.cut = 17.0
+		f.corners = CutBox.CUT_TOP_RIGHT
+		f.grow = 2.0
 		add_theme_stylebox_override("normal", st)
 		add_theme_stylebox_override("hover", hv)
 		add_theme_stylebox_override("pressed", hv)
 		add_theme_stylebox_override("hover_pressed", hv)
 		add_theme_stylebox_override("focus", f)
+		modulate.a = 0.55 if state == CLAIMED else 1.0
 
 	## La case « s'ouvre » : éclat doré, rebond.
 	func play_open(delay: float = 0.0) -> void:
@@ -937,23 +1009,18 @@ class TierNumber extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
-		var f: Font = MenuKit.nunito(1000)
-		var fs: int = 15
+		# maquette : trait de 2 px en haut (violet si atteint), numéro centré dessous
+		var f: Font = MenuKit.nunito(600)
+		var fs: int = 17
 		var txt := str(tier)
 		var tw: float = f.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var y: float = size.y * 0.5
-		var line_col := Color(MenuKit.GOLD, 0.7) if reached else Color(1, 1, 1, 0.08)
-		draw_line(Vector2(0, y), Vector2(size.x * 0.5 - tw * 0.5 - 9, y), line_col, 3.0)
-		draw_line(Vector2(size.x * 0.5 + tw * 0.5 + 9, y), Vector2(size.x, y), line_col, 3.0)
-		var col := MenuKit.GOLD if reached else MenuKit.TEXT_DIM
-		if next:
-			var pill := Rect2(size.x * 0.5 - tw * 0.5 - 9, y - 12, tw + 18, 24)
-			var sb := StyleBoxFlat.new()
-			sb.bg_color = MenuKit.TEXT
-			sb.set_corner_radius_all(2)
-			draw_style_box(sb, pill)
-			col = MenuKit.NIGHT_DEEP
-		draw_string(f, Vector2(size.x * 0.5 - tw * 0.5, y + fs * 0.36), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		var x0: float = size.x * 0.5 - _cell_w() * 0.5
+		draw_rect(Rect2(x0, 1, _cell_w(), 2), MenuKit.VIOLET_LIGHT if reached else Color(1, 1, 1, 0.15))
+		var col := MenuKit.TEXT if reached or next else Color(1, 1, 1, 0.45)
+		draw_string(f, Vector2(size.x * 0.5 - tw * 0.5, size.y * 0.5 + fs * 0.42), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+
+	func _cell_w() -> float:
+		return Balance.get_float("battle_pass", "cell_size", 70.0)
 
 
 ## Décor de la vitrine : le camp de Dust Creek (rendu du lobby) assombri, rayons et halo à la
