@@ -49,7 +49,6 @@ static func button(text: String, color: Color, font_size: int = 18, min_size: Ve
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_override("font", LootVisuals.title_font())
 	b.add_theme_font_size_override("font_size", font_size)
-	b.text = text.to_upper()
 	var dark_text := color.get_luminance() > 0.55
 	var fg := NIGHT_BLUE_DEEP if dark_text else TEXT
 	for st: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
@@ -77,7 +76,8 @@ static func label(text: String, size: int, color: Color = TEXT, weight: int = 60
 
 static func title(text: String, size: int, color: Color = TEXT) -> Label:
 	var l := Label.new()
-	l.text = text.to_upper()
+	l.text = text
+	l.uppercase = true
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var ls := LootVisuals.label_settings(LootVisuals.title_font(), size, color, 0)
 	ls.shadow_color = Color(0, 0, 0, 0.5)

@@ -814,7 +814,7 @@ func test_pause_menu_pauses_tree() -> void:
 	pm.open()
 	assert_true(get_tree().paused, "L'arbre est en pause")
 	assert_eq(pm.process_mode, Node.PROCESS_MODE_ALWAYS)
-	assert_eq(pm.abandon_button.text, "Abandonner le raid".to_upper(), "Libellé des boutons en capitales (Anton)")
+	assert_eq(pm.abandon_button.text, "Abandonner le raid")
 	pm.close()
 	assert_false(get_tree().paused, "Reprendre relance le jeu")
 

@@ -81,7 +81,8 @@ static func label(text: String, size: int, color: Color = TEXT, font: Font = nul
 
 ## Titre : Anton en capitales, légère ombre portée.
 static func title(text: String, size: int, color: Color = TEXT) -> Label:
-	var l := label(text.to_upper(), size, color, ANTON)
+	var l := label(text, size, color, ANTON)
+	l.uppercase = true
 	l.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.03, 0.55))
 	l.add_theme_constant_override("shadow_offset_x", 0)
 	l.add_theme_constant_override("shadow_offset_y", maxi(1, size / 20))
@@ -117,12 +118,12 @@ static func _button_box(bg: Color, border: Color, bottom: int, _radius: int) -> 
 	return s
 
 
-## Gros bouton tactile : coins coupés, libellé en Anton capitales. Retours : survol (éclairci +
+## Gros bouton tactile : coins coupés, libellé en Anton. Retours : survol (éclairci +
 ## léger agrandissement), pression (écrasement), focus (contour violet), son + vibration au clic.
 static func button(text: String, style: Style = Style.SECONDARY, font_size: int = 28,
 		min_size: Vector2 = Vector2(300, 74)) -> Button:
 	var b := Button.new()
-	b.text = text.to_upper()
+	b.text = text
 	b.custom_minimum_size = min_size
 	b.focus_mode = Control.FOCUS_ALL
 	b.add_theme_font_override("font", ANTON)
