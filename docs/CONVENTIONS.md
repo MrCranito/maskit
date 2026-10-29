@@ -310,3 +310,10 @@ Quatre agents en parallèle. Propriété des fichiers :
   - Marchand / Atelier : scènes `res://scenes/ui/menus/merchant.tscn` et `res://scenes/ui/menus/crafting.tscn` (agent Économie) ; l'agent Pass & skins ajoute leurs boutons dans la barre de navigation du lobby (icônes « Marchand », « Atelier », « Pass »), et le bouton « Coop » vers `res://scenes/ui/menus/coop_lobby.tscn`.
   - Kill d'un ennemi : `EventBus.enemy_died(enemy)` existe ; l'agent Économie l'écoute pour les déblocages (`enemy.data.kind`), l'agent Pass & skins pour l'XP de pass (via les stats de fin de raid).
   - XP de pass : `BattlePass.add_raid_xp(summary: Dictionary)` appelée par raid.gd en fin de raid (l'agent Pass & skins ajoute cet appel, une ligne, en relisant raid.gd juste avant).
+
+
+## Travail à deux : branches et pull requests (à partir du 29/10)
+- Plus aucun push direct sur `main`. Une branche par fonctionnalité ou correction (`feature/…`, `fix/…`, `chore/…`), créée depuis `main` à jour.
+- Une pull request par branche, vers `main`, avec : description exacte de tout ce qui a changé, comment tester (éditeur, iPhone, APK), captures d'écran de chaque modification visible (hébergées sur la branche orpheline `pr-assets`), résultat des tests GUT.
+- Fusion uniquement après validation de la PR par l'utilisateur.
+- L'APK Android (workflow `Android APK`) se reconstruit à chaque fusion dans `main`.
