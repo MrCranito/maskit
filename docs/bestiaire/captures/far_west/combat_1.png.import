@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv1nm07a3p3hk"
-path="res://.godot/imported/golem.svg-565cf245c638ed2b66659200dfe39f38.ctex"
+uid="uid://c4lxpseaqv5be"
+path="res://.godot/imported/combat_1.png-5cfc49ac40c7bdb6999ea2b65850c94b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/enemies/golem.svg"
-dest_files=["res://.godot/imported/golem.svg-565cf245c638ed2b66659200dfe39f38.ctex"]
+source_file="res://docs/bestiaire/captures/far_west/combat_1.png"
+dest_files=["res://.godot/imported/combat_1.png-5cfc49ac40c7bdb6999ea2b65850c94b.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.8
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

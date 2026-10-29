@@ -55,9 +55,9 @@ DOWN = Vector((0, 0, -1))
 # ----------------------------------------------------------------------------- matériaux
 # (base, ombre, lumière) en hex ; "!#hex" = émissif (lumières, yeux) ; ("pat", [...], échelle) = usure.
 SS_MATS = {
-    "armor": ("pat", [("#2e3546", "#0b0e18", "#5a667e"), ("#272d3b", "#090b13", "#4e586e")], 7.0),
-    "plate": ("#4c566b", "#141928", "#8a96ae"),
-    "light": ("#a2acbe", "#343c54", "#e4eaf4"),
+    "armor": ("pat", [("#283042", "#05070d", "#7484a4"), ("#222937", "#04060b", "#647492")], 7.0),
+    "plate": ("#46516a", "#0b0f1a", "#a6b4d0"),
+    "light": ("#b6c1d4", "#2a3248", "#f4f7fc"),
     "dark": ("#22252e", "#08090e", "#3e4250"),
     "joint": ("#15171d", "#050508", "#2e3139"),
     "metal": ("#8a8e98", "#2c2e3a", "#d8dae0"),
@@ -68,13 +68,17 @@ SS_MATS = {
     "blue": "!#4ad4ff",
     "violet": "!#d070ff",
     "pink": "!#ffa8f6",
+    "red_hot": "!#ffd8cc",
+    "blue_hot": "!#eafcff",
+    "pink_hot": "!#fff0fc",
     "off": ("#1c1e26", "#06070a", "#2c2f38"),
     "skin": ("pat", [("#6a3a8c", "#1e0e30", "#a466c8"), ("#5a2e7a", "#180a28", "#8e52b4")], 5.0),
     "skin_light": ("#b07ad0", "#40205a", "#e2b4f4"),
     "skin_dark": ("#34184a", "#100618", "#5a2e78"),
     "claw": ("#e8dcf0", "#5a4a70", "#ffffff"),
 }
-GLOW_KEYS = ("red", "blue", "violet", "pink")
+GLOW_KEYS = ("red", "blue", "violet", "pink", "red_hot", "blue_hot", "pink_hot")
+HOT = {"red": "red_hot", "blue": "blue_hot", "violet": "pink_hot", "pink": "pink_hot"}
 EMIT = 1.8
 
 
@@ -108,6 +112,15 @@ class Creature:
     def part(self, name, bm, key, parent, smooth=True, grp=None, nofs=False, thick=0.0):
         """Pièce. Une clef lumineuse (red/blue/violet) crée aussi son double éteint (mort)."""
         glow = key in GLOW_KEYS
+        if glow and key in HOT and (name.startswith("eye") or name == "core"):
+            # point chaud quasi blanc au centre de la lueur (lisible sur mobile)
+            hot = bm.copy()
+            vs = [v.co.copy() for v in hot.verts]
+            c = sum(vs, Vector()) / max(len(vs), 1)
+            dy = (max(v.y for v in vs) - min(v.y for v in vs)) * 0.35
+            for v in hot.verts:
+                v.co = c + (v.co - c) * 0.5 - Vector((0, dy, 0))
+            self.part(name + "Hot", hot, HOT[key], parent, smooth=smooth)
         if glow:
             twin = bm.copy()
         ob = C.mesh_obj(name, bm, self.ph, smooth=smooth, coll=C.nofs_collection() if (nofs or glow) else None)
@@ -145,7 +158,7 @@ class Creature:
             elif sp[0] == "pat":
                 mats[key] = C.toon_pattern(name, sp[1], scale=sp[2], thresholds=(0.55,), rim=0.22)
             else:
-                mats[key] = C.toon(name, sp[0], sp[1], sp[2], rim=0.24)
+                mats[key] = C.toon(name, sp[0], sp[1], sp[2], rim=0.32)
         for ob, key in self.parts:
             ob.data.materials[0] = mats.get(key, mats["armor"])
 
@@ -181,7 +194,26 @@ class Creature:
     def pose(self, anim: str, i: int, n: int) -> None:
         self.lit = True
         getattr(self, "pose_" + anim)(i, n)
+        self.post_pose(anim, i, n)
         self.lights(self.lit)
+
+    def post_pose(self, anim: str, i: int, n: int) -> None:
+        pass
+
+    def chain(self, name, parent, base, n, seg, r0, r1, key, ring="skin_light") -> list:
+        """Chaîne de segments (tentacule) modélisés le long de -Z, chacun enfant du précédent."""
+        out = []
+        prev = parent
+        for i in range(n):
+            e = J("%s_%d" % (name, i), prev, base if i == 0 else (0, 0, -seg))
+            ra = r0 + (r1 - r0) * i / n
+            rb = r0 + (r1 - r0) * (i + 1) / n
+            self.part("%s_s%d" % (name, i), C.bm_xform(C.bm_cyl(10, ra, rb, seg * 1.05), loc=(0, 0, -seg / 2)), key, e)
+            if i % 2 == 1 and ring:
+                self.part("%s_r%d" % (name, i), C.bm_xform(C.bm_torus(10, 4, ra, ra * 0.25)), ring, e)
+            out.append(e)
+            prev = e
+        return out
 
     def corpse_fall(self, t: float, back: float = 0.72, lift: float = 0.16) -> float:
         """Bascule du corps entier (comme les hors-la-loi) : chute sur le dos avec vrille pour un
@@ -239,6 +271,20 @@ class Mech(Creature):
             sh = j["sh" + side] = J("sh" + side, body, quat=True)
             ft = j["ft" + side] = J("ft" + side, body)
             L1, L2 = self.L1, self.L2
+            if S.get("organic"):
+                self.part("thigh" + side, C.bm_xform(C.bm_cyl(12, 0.13 * lr, 0.085 * lr, L1 * 1.05), loc=(0, 0, -L1 / 2)),
+                          "armor", th)
+                self.part("knee" + side, C.bm_sphere(10, 7, 0.085 * lr), "plate", sh)
+                self.part("shin" + side, C.bm_xform(C.bm_cyl(12, 0.08 * lr, 0.055 * lr, L2), loc=(0, 0, -L2 / 2)),
+                          "plate", sh)
+                self.part("spur" + side, C.bm_xform(C.bm_cyl(6, 0.03 * lr, 0.0, 0.16), loc=(0, 0.06, -0.02),
+                          rot=(-2.4, 0, 0)), "claw", sh)
+                self.part("foot" + side, C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.04, 0.04),
+                          scale=(0.09 * lr, 0.13 * lr, 0.05)), "plate", ft)
+                for k in (-1, 0, 1):
+                    self.part("toe" + side, C.bm_xform(C.bm_cyl(6, 0.025, 0.0, 0.13), loc=(0.045 * k, -0.17, 0.03),
+                              rot=(math.pi / 2 + 0.2, 0.25 * k, 0)), "claw", ft)
+                continue
             if S.get("thin"):
                 self.part("thigh" + side, C.bm_xform(C.bm_cyl(10, 0.055 * lr, 0.045 * lr, L1), loc=(0, 0, -L1 / 2)),
                           "plate", th)
@@ -280,6 +326,10 @@ class Mech(Creature):
     def build_pelvis(self, pelvis) -> None:
         S = self.S
         tw, td, _th = S["torso"]
+        if S.get("organic"):
+            self.part("pelvis", C.bm_xform(C.bm_sphere(14, 9, 1.0), loc=(0, 0.02, 0.03),
+                      scale=(0.20 * tw, 0.16 * td, 0.15)), "armor", pelvis)
+            return
         if S.get("thin"):
             self.part("pelvis", C.bm_xform(C.bm_sphere(12, 8, 1.0), scale=(0.13 * tw, 0.09 * td, 0.08)), "plate", pelvis)
             for k in range(4):
@@ -297,6 +347,12 @@ class Mech(Creature):
     def build_torso(self, spine) -> None:
         S = self.S
         tw, td, th = S["torso"]
+        if S.get("organic"):
+            self.build_alien_torso(spine, tw, td, th)
+            return
+        if S.get("orb"):
+            self.build_orb(spine, tw, td, th)
+            return
         if S.get("thin"):
             # cage thoracique étroite + cœur bleu lumineux
             secs = []
@@ -314,10 +370,16 @@ class Mech(Creature):
                 self.part("pec", pec, "armor", spine)
             self.part("coreRing", C.bm_xform(C.bm_torus(20, 6, 0.10, 0.026), loc=(0, -0.13 * td, 0.25),
                       rot=(math.pi / 2 - 0.45, 0, 0)), "metal", spine)
-            self.part("coreGlow", C.bm_xform(C.bm_torus(20, 6, 0.135, 0.012), loc=(0, -0.125 * td, 0.25),
+            self.part("coreGlow", C.bm_xform(C.bm_torus(22, 6, 0.145, 0.02), loc=(0, -0.125 * td, 0.25),
                       rot=(math.pi / 2 - 0.45, 0, 0)), "blue", spine)
-            self.part("core", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.13 * td, 0.25),
-                      scale=(0.085, 0.05, 0.085), rot=(-0.45, 0, 0)), "blue", spine)
+            self.part("coreGlow2", C.bm_xform(C.bm_torus(22, 5, 0.175, 0.008), loc=(0, -0.115 * td, 0.25),
+                      rot=(math.pi / 2 - 0.45, 0, 0)), "blue", spine)
+            self.part("core", C.bm_xform(C.bm_sphere(16, 12, 1.0), loc=(0, -0.135 * td, 0.25),
+                      scale=(0.10, 0.06, 0.10), rot=(-0.45, 0, 0)), "blue", spine)
+            for k in range(4):
+                a = k * math.pi / 2 + math.pi / 4
+                self.part("coreVein", C.bm_xform(C.bm_box(0.012, 0.012, 0.10), loc=(0.15 * math.cos(a), -0.11 * td,
+                          0.25 + 0.15 * math.sin(a)), rot=(0, -a + math.pi / 2, 0)), "blue", spine)
             return
         # torse blindé : plastron large, abdomen articulé, sac dorsal
         secs = []
@@ -342,7 +404,21 @@ class Mech(Creature):
             self.part("vent", C.bm_xform(C.bm_cyl(10, 0.045, 0.05, 0.10), loc=(0.10 * tw * sx, 0.24 * td, th - 0.08)),
                       "gun", spine)
         self.part("collar", C.bm_xform(C.bm_cyl(14, 0.11 * tw, 0.09 * tw, 0.08), loc=(0, 0.0, th - 0.01)), "joint", spine)
-        if S.get("architect"):
+        if S.get("heavy"):
+            # blindage détaillé : grille de ventilation, plaques latérales, rivets, bandes lumineuses
+            for k in range(3):
+                self.part("grille%d" % k, C.bm_xform(C.bm_box(0.16 * tw, 0.015, 0.018), loc=(0, -0.19 * td - 0.012,
+                          th - 0.10 - 0.035 * k)), "dark", spine)
+            for sx in (1, -1):
+                side = C.bm_box(0.07, 0.20 * td, 0.24, bevel=0.025)
+                C.bm_xform(side, loc=(0.25 * tw * sx, -0.02, th - 0.30), rot=(0, 0.2 * sx, 0))
+                self.part("sidePlate", side, "plate", spine)
+                self.part("sideLight", C.bm_xform(C.bm_box(0.012, 0.012, 0.16), loc=(0.29 * tw * sx, -0.10 * td,
+                          th - 0.30)), S.get("accent", "blue"), spine)
+                for k in range(3):
+                    self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.016), loc=(0.15 * tw * sx, -0.20 * td,
+                              th - 0.08 - 0.06 * k)), "light", spine)
+        if S.get("arch_core"):
             # cœur de réacteur rouge au plastron, ailerons dorsaux, antennes
             self.part("coreRing", C.bm_xform(C.bm_torus(22, 7, 0.10, 0.03), loc=(0, -0.20 * td, th - 0.20),
                       rot=(math.pi / 2 - 0.3, 0, 0)), "metal", spine)
@@ -377,6 +453,21 @@ class Mech(Creature):
             sho = Vector((S["shoulder_w"] * sx, 0.0, th - 0.07))
             ua = j["ua" + side] = J("ua" + side, spine, sho, quat=True)
             fa = j["fa" + side] = J("fa" + side, spine, quat=True)
+            if S.get("organic"):
+                self.part("shoulder" + side, C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.02 * sx, 0, 0.02),
+                          scale=(0.12 * ar, 0.11 * ar, 0.10 * ar)), "armor", ua)
+                self.part("uarm" + side, C.bm_xform(C.bm_cyl(10, 0.07 * ar, 0.055 * ar, self.AU), loc=(0, 0, -self.AU / 2)),
+                          "armor", ua)
+                self.part("elbow" + side, C.bm_sphere(8, 6, 0.055 * ar), "plate", fa)
+                self.part("farm" + side, C.bm_xform(C.bm_cyl(10, 0.05 * ar, 0.065 * ar, self.AL), loc=(0, 0, -self.AL / 2)),
+                          "plate", fa)
+                self.part("hand" + side, C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, 0, -self.AL),
+                          scale=(0.075 * ar, 0.07 * ar, 0.06 * ar)), "plate", fa)
+                for k in (-1, 0, 1):
+                    cl = C.bm_xform(C.bm_cyl(6, 0.022 * ar, 0.0, 0.26), loc=(0.04 * k * ar, -0.03, -self.AL - 0.12),
+                                    rot=(0.35, 0.22 * k, 0))
+                    self.part("claw" + side, cl, "claw", fa)
+                continue
             if S.get("thin"):
                 pad = C.bm_sphere(12, 8, 1.0)
                 C.bm_xform(pad, loc=(0.02 * sx, 0, 0.02), scale=(0.09 * ar, 0.085 * ar, 0.075 * ar))
@@ -451,6 +542,120 @@ class Mech(Creature):
                       rot=(0, math.pi / 2, 0)), "armor", head)
         self.part("crest", C.bm_xform(C.bm_box(0.03, 0.18, 0.04, bevel=0.01), loc=(0, 0.0, 0.30)), "light", head)
         self.part("antenna", C.bm_xform(C.bm_cyl(6, 0.008, 0.004, 0.16), loc=(0.11, 0.06, 0.34)), "metal", head)
+
+    def head_none(self, head) -> None:
+        pass
+
+    def head_alien(self, head) -> None:
+        """Tête large et basse, gueule à crocs, sept yeux roses lumineux."""
+        hd = C.bm_sphere(18, 12, 1.0)
+        for v in hd.verts:
+            x, y, z = v.co
+            if y < 0 and z < 0:
+                y *= 1.25
+            v.co = Vector((x * 0.20, y * 0.18, z * 0.14 + 0.10))
+        self.part("skull", hd, "plate", head)
+        self.part("crest", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0.06, 0.20), scale=(0.08, 0.16, 0.06),
+                  rot=(-0.4, 0, 0)), "plate", head)
+        self.part("maw", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.16, 0.02), scale=(0.11, 0.05, 0.05)),
+                  "dark", head)
+        for sx in (1, -1):
+            for k in range(3):
+                self.part("fang", C.bm_xform(C.bm_cyl(6, 0.014, 0.0, 0.07), loc=(0.03 * sx + 0.03 * k * sx, -0.19, 0.0),
+                          rot=(math.pi, 0, 0)), "claw", head)
+            self.part("mandible", C.bm_xform(C.bm_cyl(6, 0.025, 0.0, 0.14), loc=(0.15 * sx, -0.12, -0.02),
+                      rot=(2.0, 0, 0.5 * sx)), "claw", head)
+        for k, (x, z, r) in enumerate(((0.0, 0.18, 0.04), (0.065, 0.16, 0.032), (-0.065, 0.16, 0.032),
+                                       (0.12, 0.12, 0.026), (-0.12, 0.12, 0.026), (0.035, 0.22, 0.022),
+                                       (-0.035, 0.22, 0.022))):
+            self.part("eye%d" % k, C.bm_xform(C.bm_sphere(10, 7, r), loc=(x, -0.15 + abs(x) * 0.35, z)), "pink", head,
+                      grp="eye")
+
+    def build_alien_torso(self, spine, tw, td, th) -> None:
+        """Torse massif voûté (alien) : bosse dorsale, plaques chitineuses, pustules et tentacules."""
+        secs = []
+        for z, rx, ry, cy in ((0.0, 0.17, 0.14, 0.0), (0.14, 0.22, 0.18, 0.01), (0.28, 0.27, 0.21, 0.03),
+                              (th - 0.08, 0.28, 0.20, 0.05), (th, 0.16, 0.13, 0.05)):
+            secs.append(C.ellipse(0, cy, z, rx * tw, ry * td, 20))
+        self.part("torso", C.bm_loft(secs), "armor", spine)
+        hump = C.bm_sphere(16, 10, 1.0)
+        C.bm_xform(hump, loc=(0, 0.12 * td, th - 0.12), scale=(0.24 * tw, 0.16 * td, 0.18))
+        self.part("hump", hump, "armor", spine)
+        for k in range(3):
+            plate = C.bm_sphere(14, 8, 1.0)
+            for v in plate.verts:
+                if v.co.y > 0:
+                    v.co.y *= 0.2
+            C.bm_xform(plate, loc=(0, -0.17 * td, 0.08 + 0.11 * k), scale=(0.15 * tw - 0.01 * k, 0.05, 0.05))
+            self.part("belly%d" % k, plate, "light", spine)
+        for k, (x, y, z) in enumerate(((0.12, 0.22, 0.42), (-0.10, 0.25, 0.36), (0.02, 0.27, 0.28), (0.20, 0.14, 0.30),
+                                       (-0.20, 0.16, 0.44), (0.08, 0.20, 0.52))):
+            self.part("pust%d" % k, C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(x * tw, y * td, z),
+                      scale=(0.035, 0.035, 0.03)), "pink", spine)
+        # tentacules dorsaux (4) : partent vers le haut et l'arrière, ondulent (post_pose)
+        self.tentacles = []
+        for c, (x, z, splay) in enumerate(((0.12, th - 0.04, 0.45), (-0.12, th - 0.04, -0.45),
+                                           (0.20, th - 0.22, 0.85), (-0.20, th - 0.22, -0.85))):
+            base_rot = (2.45, splay, 0.0)
+            ch = self.chain("tent%d" % c, spine, Vector((x * tw, 0.16 * td, z)), 5, 0.13, 0.05, 0.015, "armor",
+                            ring="pink")
+            ch[0].rotation_euler = base_rot
+            self.tentacles.append((base_rot, ch))
+
+    def build_orb(self, spine, tw, td, th) -> None:
+        """L'Architecte : torse-sphère massif portant un énorme œil rouge central, couronne d'antennes
+        et ailerons dorsaux, anneaux lumineux rouges."""
+        Rb = self.S.get("orb_r", 0.42)
+        cz = th * 0.5 + 0.02
+        self.part("orb", C.bm_xform(C.bm_sphere(30, 20, Rb), loc=(0, 0, cz)), "armor", spine)
+        for k, (z, key) in enumerate(((-0.30, "plate"), (0.05, "dark"))):
+            self.part("orbBand%d" % k, C.bm_xform(C.bm_torus(36, 8, 1.0, 0.06), loc=(0, 0, cz + z * Rb),
+                      scale=(Rb * 1.02, Rb * 1.02, Rb)), key, spine)
+        self.part("orbGlow", C.bm_xform(C.bm_torus(36, 6, 1.0, 0.02), loc=(0, 0, cz - 0.30 * Rb + 0.02),
+                  scale=(Rb * 1.04, Rb * 1.04, Rb)), "red", spine)
+        cap = C.bm_sphere(20, 12, 1.0)
+        for v in cap.verts:
+            if v.co.z < 0:
+                v.co.z *= 0.2
+        C.bm_xform(cap, loc=(0, 0.16 * Rb, cz + Rb * 0.70), scale=(Rb * 0.62, Rb * 0.55, Rb * 0.36))
+        self.part("cap", cap, "plate", spine)
+        for sx in (1, -1):
+            cheek = C.bm_box(0.10, Rb * 0.5, Rb * 0.6, bevel=0.03)
+            C.bm_xform(cheek, loc=(Rb * 0.80 * sx, -Rb * 0.40, cz - 0.02), rot=(0, 0, 0.6 * sx))
+            self.part("cheek", cheek, "plate", spine)
+            self.part("cheekLight", C.bm_xform(C.bm_box(0.014, Rb * 0.35, 0.03), loc=(Rb * 0.86 * sx, -Rb * 0.42,
+                      cz + 0.05), rot=(0, 0, 0.6 * sx)), "red", spine)
+            # antennes
+            self.part("antenna", C.bm_xform(C.bm_cyl(8, 0.018, 0.008, 0.55), loc=(Rb * 0.35 * sx, 0.10, cz + Rb + 0.18),
+                      rot=(-0.25, 0.3 * sx, 0)), "metal", spine)
+            self.part("antTip", C.bm_xform(C.bm_sphere(8, 6, 0.035), loc=(Rb * 0.35 * sx + 0.08 * sx, 0.03,
+                      cz + Rb + 0.44)), "red", spine)
+            # ailerons dorsaux
+            fin = C.bm_box(0.05, 0.36, 0.55, bevel=0.02)
+            for v in fin.verts:
+                if v.co.z > 0:
+                    v.co.y += 0.18
+            C.bm_xform(fin, loc=(Rb * 0.45 * sx, Rb * 0.85, cz + Rb * 0.45), rot=(0.4, 0, 0.30 * sx))
+            self.part("fin", fin, "armor", spine)
+            self.part("finLight", C.bm_xform(C.bm_box(0.014, 0.26, 0.03), loc=(Rb * 0.45 * sx + 0.03 * sx, Rb * 0.88,
+                      cz + Rb * 0.62), rot=(0.4, 0, 0.30 * sx)), "red", spine)
+        # œil central, tourné vers la caméra (haut de la face avant) : socle, anneau, lentille rouge
+        er = Rb * 0.46
+        el = 0.62
+        ey, ez = -Rb * math.cos(el), cz + Rb * math.sin(el)
+        nrm = Vector((0, -math.cos(el), math.sin(el)))
+        tilt = math.pi / 2 - el
+        def at(d):
+            return (0, ey + nrm.y * d, ez + nrm.z * d)
+        self.part("eyeSocket", C.bm_xform(C.bm_cyl(28, er, er, 0.06), loc=at(0.0), rot=(tilt, 0, 0)), "eye_rim", spine)
+        self.part("eyeRing", C.bm_xform(C.bm_torus(32, 8, er * 1.06, 0.04), loc=at(0.02), rot=(tilt, 0, 0)),
+                  "metal", spine)
+        self.part("eyeGlowRing", C.bm_xform(C.bm_torus(32, 6, er * 0.82, 0.022), loc=at(0.035), rot=(tilt, 0, 0)),
+                  "red", spine)
+        self.part("eye", C.bm_xform(C.bm_sphere(20, 14, 1.0), loc=at(0.03), scale=(er * 0.64, er * 0.64, er * 0.25),
+                  rot=(tilt, 0, 0)), "red", spine, grp="eye")
+        # jupe sous la sphère
+        self.part("skirt", C.bm_xform(C.bm_cyl(24, Rb * 0.55, Rb * 0.75, 0.14), loc=(0, 0, cz - Rb * 0.82)), "dark", spine)
 
     def head_thin(self, head) -> None:
         """Crâne allongé, deux petits yeux bleus (téléporteur)."""
@@ -545,6 +750,24 @@ class Mech(Creature):
             self.muzzle_local = ("faR", (0, 0, -self.AL - 0.18))
 
     # ------------------------------------------------------------------ poses
+    def hunch(self) -> float:
+        return self.S.get("hunch", 0.30 if self.S.get("thin") else 0.04)
+
+    def post_pose(self, anim: str, i: int, n: int) -> None:
+        """Tentacules dorsaux (alien) : ondulation selon l'animation, inertes à la mort."""
+        if not getattr(self, "tentacles", None):
+            return
+        ph = 2 * math.pi * i / max(n, 1)
+        amp = {"idle": 0.22, "run": 0.45, "attack": 0.6, "hit": 0.4, "death": 0.0}.get(anim, 0.3)
+        limp = (i / max(n - 1, 1)) if anim == "death" else 0.0
+        for c, (base_rot, chain) in enumerate(self.tentacles):
+            for k, e in enumerate(chain):
+                if k == 0:
+                    e.rotation_euler = (base_rot[0] - 0.9 * limp, base_rot[1], base_rot[2])
+                else:
+                    e.rotation_euler = (0.32 * (1 - limp) + amp * math.sin(ph + k * 0.9 + c * 1.7), 0,
+                                        0.25 * amp * math.cos(ph + c))
+
     def rest(self) -> None:
         j = self.j
         for name in ("pelvis", "spine", "neck", "head"):
@@ -552,7 +775,7 @@ class Mech(Creature):
         j["body"].location = (0, 0, 0)
         j["body"].rotation_euler = (0, 0, 0)
         j["pelvis"].location = (0, 0, self.PZ)
-        j["head"].rotation_euler = (-0.12 if not self.S.get("thin") else 0.05, 0, 0)
+        j["head"].rotation_euler = (-0.12 if not self.hunch() > 0.2 else 0.05, 0, 0)
         for g in self.grp:
             if g not in ("glow_on", "glow_off"):
                 self.show(g, True)
@@ -616,11 +839,11 @@ class Mech(Creature):
         j = self.j
         t = 2 * math.pi * i / n
         b, sway = math.sin(t), math.sin(t + 0.6)
-        thin = self.S.get("thin")
-        j["pelvis"].location.z = self.PZ - 0.012 * (1 - b) * 0.5 - (0.06 if thin else 0.0)
+        hu = self.hunch()
+        j["pelvis"].location.z = self.PZ - 0.012 * (1 - b) * 0.5 - (0.06 if hu > 0.2 else 0.0)
         j["pelvis"].rotation_euler = (0, 0.012 * sway, 0.03 * sway)
-        j["spine"].rotation_euler = ((0.30 if thin else 0.04) + 0.016 * b, -0.02 * sway, 0)
-        j["neck"].rotation_euler = ((-0.25 if thin else -0.04) - 0.016 * b, 0.04 * sway, 0.03 * sway)
+        j["spine"].rotation_euler = (hu + 0.016 * b, -0.02 * sway, 0)
+        j["neck"].rotation_euler = (-hu * 0.85 - 0.016 * b, 0.04 * sway, 0.03 * sway)
         fl, fr = self.stance(1.1 if self.S.get("heavy") else 1.0)
         self.feet(fl, fr)
         self.hold(aim=0.15 if self.S.get("weapon") != "claws" else 0.25, dz=0.012 * b)
@@ -635,7 +858,7 @@ class Mech(Creature):
         lift = 0.10 if heavy else 0.16
         j["pelvis"].location.z = self.PZ - 0.06 + 0.05 * abs(math.sin(p + 0.35))
         j["pelvis"].rotation_euler = (0, 0, -0.12 * s)
-        lean = 0.42 if self.S.get("thin") else (0.12 if heavy else 0.22)
+        lean = self.hunch() + 0.12 if self.hunch() > 0.2 else (0.12 if heavy else 0.22)
         j["spine"].rotation_euler = (lean, 0, 0.14 * s)
         j["neck"].rotation_euler = (-lean * 0.8, 0, -0.10 * s)
         hw = self.HW * 1.05
@@ -657,7 +880,7 @@ class Mech(Creature):
         k = (1.0, 0.6, 0.25)[i]
         j["pelvis"].location.z = self.PZ - 0.03 * k
         j["pelvis"].location.y = 0.05 * k
-        j["spine"].rotation_euler = (-0.30 * k + (0.25 if self.S.get("thin") else 0.0), 0, 0.12 * k)
+        j["spine"].rotation_euler = (-0.30 * k + (0.8 * self.hunch() if self.hunch() > 0.2 else 0.0), 0, 0.12 * k)
         j["neck"].rotation_euler = (-0.30 * k, 0, -0.14 * k)
         fl, fr = self.stance(1.0, dy=-0.05 * k)
         self.feet(fl, fr)
@@ -1226,8 +1449,8 @@ SPECS: dict[str, dict] = {
         "arm": (0.22, 0.23), "head": "mono", "head_scale": 1.45, "weapon": "rifle", "accent": "red",
     },
     "ss_spectre": {
-        "cls": Spectre, "name": "Spectre", "frame": 192, "cam_z": 0.90,
-        "scale": 1.30, "hover": 0.80, "radius": 0.25, "leg": (0.28, 0.40), "eye": "blue",
+        "cls": Spectre, "name": "Spectre", "frame": 192, "cam_z": 1.05,
+        "scale": 1.30, "hover": 1.02, "radius": 0.25, "leg": (0.32, 0.50), "eye": "blue",
     },
     "ss_teleporter": {
         "cls": Mech, "name": "Téléporteur", "frame": 192, "cam_z": 1.04,
@@ -1247,8 +1470,16 @@ SPECS: dict[str, dict] = {
         "heavy": True, "guardian": True, "accent": "blue",
     },
     "ss_alien": {
-        "cls": Alien, "name": "Alien", "frame": 256, "cam_z": 0.80,
-        "scale": 1.75, "tent_len": 0.17,
+        "cls": Mech, "name": "Alien", "frame": 256, "cam_z": 1.15,
+        "scale": 1.40, "leg": (0.34, 0.34), "hip_w": 0.15, "torso": (1.45, 1.30, 0.58), "shoulder_w": 0.36,
+        "arm": (0.30, 0.32), "arm_r": 1.7, "limb_r": 1.6, "head": "alien", "head_scale": 1.25, "weapon": "claws",
+        "organic": True, "hunch": 0.42, "accent": "pink", "neck_fwd": 0.10, "neck_up": -0.04,
+        "mats": {
+            "armor": ("pat", [("#6a3a8c", "#1a0a2c", "#b070d8"), ("#58307a", "#140826", "#9a5cc4")], 5.0),
+            "plate": ("#3c1c58", "#0e0418", "#7240a0"),
+            "light": ("#c48ae0", "#4a2468", "#f2d0ff"),
+            "dark": ("#1c0a26", "#080210", "#3a1850"),
+        },
     },
     "ss_alien_brood": {
         "cls": Alien, "name": "Larve d'alien", "frame": 160, "cam_z": 0.45,
@@ -1262,15 +1493,16 @@ SPECS: dict[str, dict] = {
     "ss_atlas": {
         "cls": Mech, "name": "Le Sécurité Atlas", "frame": 256, "cam_z": 1.12,
         "scale": 1.36, "leg": (0.34, 0.34), "hip_w": 0.15, "torso": (1.30, 1.20, 0.54), "shoulder_w": 0.38,
-        "arm": (0.24, 0.26), "arm_r": 1.35, "limb_r": 1.3, "head": "mono", "head_scale": 1.0,
-        "weapon": "heavy_rifle", "shield": True, "heavy": True, "accent": "blue",
+        "arm": (0.24, 0.26), "arm_r": 1.35, "limb_r": 1.3, "head": "guardian", "head_scale": 1.35,
+        "weapon": "heavy_rifle", "shield": True, "heavy": True, "accent": "blue", "neck_up": 0.05, "neck_fwd": 0.05,
     },
     "ss_architect": {
-        "cls": Mech, "name": "L'Architecte", "frame": 304, "cam_z": 1.34,
-        "scale": 1.60, "leg": (0.34, 0.34), "hip_w": 0.17, "torso": (1.55, 1.30, 0.56), "shoulder_w": 0.46,
-        "arm": (0.26, 0.28), "arm_r": 1.6, "limb_r": 1.45, "head": "architect", "head_scale": 1.0,
-        "weapon": "arm_cannons", "heavy": True, "guardian": True, "architect": True, "accent": "red",
-        "neck_up": 0.06, "neck_fwd": 0.05,
+        # Rendu à demi-densité (px_scale 0,5) : modèle énorme dans un cadre raisonnable (atlas < 4096 px),
+        # affiché deux fois plus grand en jeu (display_height).
+        "cls": Mech, "name": "L'Architecte", "frame": 320, "cam_z": 2.55, "px_scale": 0.5,
+        "scale": 2.85, "leg": (0.34, 0.34), "hip_w": 0.18, "torso": (1.6, 1.4, 0.72), "shoulder_w": 0.50,
+        "arm": (0.30, 0.34), "arm_r": 1.75, "limb_r": 1.6, "head": "none", "orb": True, "orb_r": 0.46,
+        "weapon": "arm_cannons", "heavy": True, "architect": True, "accent": "red",
     },
 }
 CLASSIC = ["ss_security_droid", "ss_spectre", "ss_teleporter", "ss_detector", "ss_station_guardian", "ss_alien",
@@ -1287,7 +1519,7 @@ def setup_scene(kind: str):
     C.reset_scene()
     C.setup_render((frame * BE.SS, frame * BE.SS), samples=4, outline_px=4.6)
     o = sp["cls"](kind, sp)
-    cam = C.ortho_camera(ELEV, 2.30 * frame / 160.0, target=(0, 0, sp["cam_z"]))
+    cam = C.ortho_camera(ELEV, 2.30 * frame / 160.0 / sp.get("px_scale", 1.0), target=(0, 0, sp["cam_z"]))
     cam.data.sensor_fit = "VERTICAL"
     return o, cam
 
@@ -1317,8 +1549,8 @@ def write_meta(kind: str, frames: dict, muzzle: dict, feet) -> dict:
         "name": SPECS[kind]["name"],
         "frame_size": [frame, frame],
         "feet_offset": [feet[0], feet[1]],
-        "display_height": round(frame * BE.WORLD_PER_PX, 1),
-        "world_per_px": BE.WORLD_PER_PX,
+        "display_height": round(frame * BE.WORLD_PER_PX / SPECS[kind].get("px_scale", 1.0), 1),
+        "world_per_px": BE.WORLD_PER_PX / SPECS[kind].get("px_scale", 1.0),
         "height_px": bb[3] - bb[1],
         "head_px": bb[1],
         "fps": {a: f for a, (_n, f, _l) in ANIMS.items()},

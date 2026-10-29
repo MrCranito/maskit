@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3nryigho16lv"
-path="res://.godot/imported/en_jeu_classiques_repos.png-2521c92c023f31da2dcdc8ccda2660d3.ctex"
+uid="uid://dumcgvpecmcny"
+path="res://.godot/imported/meute_2.png-47f563b44ffc29bfbae063560b65f039.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/bestiaire/captures/space_station/en_jeu_classiques_repos.png"
-dest_files=["res://.godot/imported/en_jeu_classiques_repos.png-2521c92c023f31da2dcdc8ccda2660d3.ctex"]
+source_file="res://docs/bestiaire/captures/far_west/meute_2.png"
+dest_files=["res://.godot/imported/meute_2.png-47f563b44ffc29bfbae063560b65f039.ctex"]
 
 [params]
 

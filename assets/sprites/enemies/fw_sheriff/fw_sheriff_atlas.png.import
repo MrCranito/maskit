@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://criwhb5dsdeml"
+path.bptc="res://.godot/imported/fw_sheriff_atlas.png-f204e4768bf52734b58df1cab5da2c84.bptc.ctex"
+path.astc="res://.godot/imported/fw_sheriff_atlas.png-f204e4768bf52734b58df1cab5da2c84.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/fw_sheriff/fw_sheriff_atlas.png"
+dest_files=["res://.godot/imported/fw_sheriff_atlas.png-f204e4768bf52734b58df1cab5da2c84.bptc.ctex", "res://.godot/imported/fw_sheriff_atlas.png-f204e4768bf52734b58df1cab5da2c84.astc.ctex"]
 
 [params]
 

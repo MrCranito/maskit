@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dcrph84qm0yud"
-path="res://.godot/imported/masked_archer.svg-e3a151e0bef3b38bf47a2886424f2bc7.ctex"
+uid="uid://bru1xoegjq6xv"
+path="res://.godot/imported/en_jeu_classiques_repos.png-13cd04334972c6c9e4b3485c75fa18f2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/enemies/masked_archer.svg"
-dest_files=["res://.godot/imported/masked_archer.svg-e3a151e0bef3b38bf47a2886424f2bc7.ctex"]
+source_file="res://docs/bestiaire/captures/mall/en_jeu_classiques_repos.png"
+dest_files=["res://.godot/imported/en_jeu_classiques_repos.png-13cd04334972c6c9e4b3485c75fa18f2.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.4
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

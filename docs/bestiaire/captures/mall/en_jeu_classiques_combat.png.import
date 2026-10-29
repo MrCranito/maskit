@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cku2rimjhqqkg"
-path="res://.godot/imported/planche_classiques.png-e4015547f71ece96167fbc7ee65d96e0.ctex"
+uid="uid://bbrrbidjqcmsn"
+path="res://.godot/imported/en_jeu_classiques_combat.png-309fb6f8e75cec542d33955655b33805.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://docs/bestiaire/captures/space_station/planche_classiques.png"
-dest_files=["res://.godot/imported/planche_classiques.png-e4015547f71ece96167fbc7ee65d96e0.ctex"]
+source_file="res://docs/bestiaire/captures/mall/en_jeu_classiques_combat.png"
+dest_files=["res://.godot/imported/en_jeu_classiques_combat.png-309fb6f8e75cec542d33955655b33805.ctex"]
 
 [params]
 

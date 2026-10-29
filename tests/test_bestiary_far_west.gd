@@ -7,6 +7,8 @@ const CLASSIC: Array[StringName] = [&"fw_bandit", &"fw_raider", &"fw_sharpshoote
 	&"fw_marauder", &"fw_bruiser", &"fw_guard_dog"]
 const ROW1: Array[StringName] = [&"fw_bandit", &"fw_raider", &"fw_sharpshooter"]
 const ROW2: Array[StringName] = [&"fw_marauder", &"fw_bruiser", &"fw_guard_dog"]
+const ELITES: Array[StringName] = [&"fw_deserter", &"fw_buffalo"]
+const BOSS := &"fw_sheriff"
 const OLD: Array[StringName] = [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"rifleman",
 	&"dynamiter", &"gang_boss", &"sandstone_colossus"]
 const WORLD := "res://data/worlds/world_01_far_west.tres"
@@ -300,3 +302,122 @@ func test_bruiser_shield_reduces_frontal_shots() -> void:
 	b.take_damage(20.0, _player)
 	var back := hp1 - b.hp
 	assert_lt(front, back * 0.6, "les tirs de face sont amortis par le bouclier")
+
+
+# --- Élites et boss (planche bestiaire_elites_boss.png) -----------------------------------
+
+func test_elites_and_boss_declared() -> void:
+	var w := load(WORLD) as WorldData
+	assert_eq(w.boss_kind, BOSS, "boss du monde")
+	assert_eq(w.elite_kinds.size(), 2, "2 élites")
+	for k: StringName in ELITES:
+		assert_true(w.elite_kinds.has(k), "%s dans elite_kinds" % k)
+		var d := _load(k)
+		assert_not_null(d)
+		assert_true(d.elite, "%s : elite = true" % k)
+		assert_false(d.boss)
+		assert_gt(d.max_hp, _load(&"fw_bruiser").max_hp, "%s plus solide que les classiques" % k)
+	var b := _load(BOSS)
+	assert_true(b.boss, "boss = true")
+	assert_eq(b.boss_title, "Maître des terres arides")
+	assert_gt(b.max_hp, _load(&"fw_buffalo").max_hp * 3.0, "boss vraiment très résistant")
+	assert_eq(b.phases.size(), 3, "3 phases")
+	var froms: Array[float] = [1.0, 0.7, 0.3]
+	for i: int in 3:
+		var ph: Dictionary = b.phases[i]
+		assert_almost_eq(float(ph.get("from", -1.0)), froms[i], 0.001, "phase %d : from" % (i + 1))
+		for entry: Variant in ph.get("skills", []):
+			var sid := StringName(str((entry as Dictionary).get("id", "")))
+			assert_true(EnemySkills.has_skill(sid), "phase %d : %s connue" % [i + 1, sid])
+		for sid2: Variant in ph.get("on_enter", []):
+			assert_true(_phase_has(ph, StringName(str(sid2))), "phase %d : on_enter %s dans ses compétences" % [i + 1, sid2])
+	# Planche : phase 1 distance + renforts ; phase 2 + tornade et charge ; phase 3 double tir + plus de renforts.
+	assert_true(_phase_has(b.phases[0], &"fw_call_outlaws") and _phase_has(b.phases[0], &"fw_revolver_shot"))
+	assert_false(_phase_has(b.phases[0], &"fw_sand_tornado"))
+	assert_true(_phase_has(b.phases[1], &"fw_sand_tornado") and _phase_has(b.phases[1], &"fw_sheriff_charge"))
+	assert_true(_phase_has(b.phases[2], &"fw_double_shot"))
+	assert_gt(_phase_param(b.phases[2], &"fw_call_outlaws", "count"), _phase_param(b.phases[0], &"fw_call_outlaws", "count"),
+		"phase 3 : plus de renforts")
+
+
+func _phase_has(ph: Dictionary, sid: StringName) -> bool:
+	for entry: Variant in ph.get("skills", []):
+		if StringName(str((entry as Dictionary).get("id", ""))) == sid:
+			return true
+	return false
+
+
+func _phase_param(ph: Dictionary, sid: StringName, key: String) -> float:
+	for entry: Variant in ph.get("skills", []):
+		if StringName(str((entry as Dictionary).get("id", ""))) == sid:
+			return float((entry as Dictionary).get(key, 0.0))
+	return 0.0
+
+
+func test_elites_and_boss_have_sheets() -> void:
+	for k: StringName in [&"fw_deserter", &"fw_buffalo", &"fw_sheriff"]:
+		assert_true(EnemyArt.has_sheet(k), "%s : planches" % k)
+		for a: String in ANIMS:
+			assert_true(EnemyArt.has_anim(k, a), "%s : %s" % [k, a])
+		for entry: Variant in _load(k).skills:
+			var sid := StringName(str((entry as Dictionary).get("id", "")))
+			assert_true(EnemySkills.has_skill(sid), "%s : %s connue" % [k, sid])
+	assert_true(EnemyArt.has_anim(BOSS, "charge"), "le shérif a son animation à cheval")
+
+
+func test_sheriff_charge_rides_the_horse() -> void:
+	var b := await _engaged(BOSS, Vector2.ZERO, Vector2(400, 0))
+	var d := b.data
+	var entry: Dictionary = {}
+	for e2: Variant in (d.phases[1] as Dictionary)["skills"]:
+		if StringName(str((e2 as Dictionary)["id"])) == &"fw_sheriff_charge":
+			entry = e2
+	var sk := EnemySkills.create(&"fw_sheriff_charge")
+	sk.setup(b, entry)
+	b.skills.append(sk)
+	assert_true(b.force_skill(&"fw_sheriff_charge"))
+	await wait_until(func() -> bool: return b.visual != null and String(b.visual.get(&"_run_anim")) == "charge", 2.5)
+	assert_eq(String(b.visual.get(&"_run_anim")), "charge", "animation à cheval pendant la charge")
+	await wait_until(func() -> bool: return _player.hits.size() > 0 or b.current_state_name() != Enemy.STATE_SKILL, 3.0)
+	await wait_physics_frames(3)
+	assert_eq(String(b.visual.get(&"_run_anim")), "run", "retour à pied après la charge")
+
+
+func test_sand_tornado_slows_and_hides() -> void:
+	var b := await _engaged(BOSS, Vector2.ZERO, Vector2(300, 0))
+	var sk := EnemySkills.create(&"fw_sand_tornado")
+	sk.setup(b, {"id": &"fw_sand_tornado", "count": 1, "offset": 0.0, "drift_speed": 0.0})
+	b.skills.append(sk)
+	var statuses: Array = []
+	_player.set_meta(&"statuses", statuses)
+	assert_true(b.force_skill(&"fw_sand_tornado"))
+	await wait_until(func() -> bool: return not get_tree().get_nodes_in_group(&"fw_sand_tornado").is_empty(), 3.0)
+	var tor := get_tree().get_first_node_in_group(&"fw_sand_tornado") as Node2D
+	assert_not_null(tor, "tornade créée")
+	if tor == null:
+		return
+	assert_true(bool(tor.call(&"is_inside", _player.global_position)), "le joueur est dans la tornade")
+	assert_gt(tor.z_index, 50, "nuage au-dessus des personnages et des toits (vision réduite)")
+	var hp0 := _player.hp
+	await wait_seconds(0.6)
+	assert_lt(_player.hp, hp0, "petits dégâts dans la tornade")
+	tor.queue_free()
+
+
+func test_slow_status_reduces_player_speed() -> void:
+	var st := PlayerStatus.new()
+	add_child_autofree(st)
+	assert_almost_eq(st.speed_mult(), 1.0, 0.001)
+	st.apply(&"slow", 1.0, 0.45)
+	assert_almost_eq(st.speed_mult(), 0.55, 0.001, "ralenti de 45 %")
+
+
+func test_buffalo_charge_and_debris() -> void:
+	var bf := await _engaged(&"fw_buffalo", Vector2.ZERO, Vector2(320, 0))
+	assert_true(bf.force_skill(&"fw_debris_throw"))
+	var fired: Array = []
+	var cb := func(p: Node) -> void: fired.append(p)
+	EventBus.projectile_fired.connect(cb)
+	await wait_until(func() -> bool: return fired.size() >= 5, 2.5)
+	EventBus.projectile_fired.disconnect(cb)
+	assert_gte(fired.size(), 5, "projection de débris en éventail")

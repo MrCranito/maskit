@@ -313,3 +313,127 @@ func test_nuit_blanche_se_cache_dans_l_ombre() -> void:
 	await wait_physics_frames(2)
 	assert_false(bool(sk.call("is_hidden")), "révélée quand on la touche")
 	assert_almost_eq(e.visual.modulate.a, 1.0, 0.01)
+
+
+# --- Élites et boss -------------------------------------------------------------------------
+
+const ELITES := [&"mall_violent", &"mall_store_warden"]
+const BOSS := &"mall_omnistore"
+
+
+func test_elites_declares() -> void:
+	var w := load(WORLD_PATH) as WorldData
+	assert_eq(w.elite_kinds.size(), 2, "2 élites par monde")
+	for k: StringName in ELITES:
+		assert_true(w.elite_kinds.has(k), "élite du monde : %s" % k)
+		var d := load("res://data/enemies/%s.tres" % k) as EnemyData
+		assert_not_null(d)
+		if d == null:
+			continue
+		assert_true(d.elite, "%s : elite = true" % k)
+		assert_false(d.boss)
+		assert_gt(d.max_hp, (load("res://data/enemies/mall_brute.tres") as EnemyData).max_hp, "%s plus coriace que les classiques" % k)
+		assert_true(EnemyArt.has_sheet(k), "planches %s" % k)
+		for entry: Variant in d.skills:
+			assert_true(EnemySkills.has_skill(StringName(str((entry as Dictionary)["id"]))), "%s : %s" % [k, entry["id"]])
+	assert_eq((load("res://data/enemies/mall_violent.tres") as EnemyData).display_name, "Le Violent")
+	assert_eq((load("res://data/enemies/mall_store_warden.tres") as EnemyData).display_name, "Le Gardien de magasin")
+
+
+func test_boss_declare_avec_trois_phases() -> void:
+	var w := load(WORLD_PATH) as WorldData
+	assert_eq(w.boss_kind, BOSS)
+	var d := load("res://data/enemies/%s.tres" % BOSS) as EnemyData
+	assert_not_null(d)
+	if d == null:
+		return
+	assert_true(d.boss)
+	assert_eq(d.display_name, "L'Omnistore")
+	assert_eq(d.boss_title, "Entité de consommation corrompue")
+	assert_true(EnemyArt.has_sheet(BOSS), "planches du boss")
+	assert_eq(d.phases.size(), 3, "3 phases")
+	var froms := [1.0, 0.7, 0.3]
+	var wanted := [[&"mall_panic_wave", &"mall_illusion"], [&"mall_alarm", &"teleport"], [&"mall_overload"]]
+	for i in 3:
+		var ph: Dictionary = d.phases[i]
+		assert_almost_eq(float(ph["from"]), froms[i], 0.001, "phase %d" % (i + 1))
+		var ids := []
+		for entry: Variant in ph.get("skills", []):
+			var sid := StringName(str((entry as Dictionary)["id"]))
+			assert_true(EnemySkills.has_skill(sid), "phase %d : %s connue" % [i + 1, sid])
+			ids.append(sid)
+		for sid2: StringName in wanted[i]:
+			assert_true(ids.has(sid2), "phase %d : %s (planche)" % [i + 1, sid2])
+	assert_gt(float((d.phases[2] as Dictionary).get("damage_mult", 1.0)), 1.2, "phase 3 enragée")
+	# « Vraiment très difficile » : plusieurs fois les PV d'une élite.
+	assert_gt(d.max_hp, 5.0 * (load("res://data/enemies/mall_store_warden.tres") as EnemyData).max_hp)
+
+
+func test_violent_devient_invisible() -> void:
+	var e := await _engaged(&"mall_violent", Vector2.ZERO, Vector2(300, 0))
+	var sk := e.get_skill(&"mall_cloak")
+	e.force_skill(&"mall_cloak")
+	await wait_seconds(0.6)
+	assert_true(bool(sk.call("is_cloaked")), "invisibilité temporaire")
+	assert_lt(e.visual.modulate.a, 0.2)
+	assert_gt(e.rage_speed_mult, 1.0, "plus rapide")
+	e.take_damage(5.0, _player)
+	assert_false(bool(sk.call("is_cloaked")), "révélé quand il est touché")
+	assert_almost_eq(e.rage_speed_mult, 1.0, 0.001)
+	assert_almost_eq(e.visual.modulate.a, 1.0, 0.01)
+
+
+func test_gardien_bouclier_et_renforts() -> void:
+	var e := await _engaged(&"mall_store_warden", Vector2.ZERO, Vector2(320, 0))
+	var sh := e.get_skill(&"energy_shield")
+	e.force_skill(&"energy_shield")
+	await wait_until(func() -> bool: return bool(sh.call("is_shield_up")), 2.0)
+	e.face(Vector2.RIGHT)
+	var hp0 := e.hp
+	e.take_damage(20.0, _player)
+	assert_lt(hp0 - e.hp, 5.0, "bouclier de protection")
+	var before := get_tree().get_nodes_in_group(&"enemy_units").size()
+	e.get_skill(&"mall_alarm").cooldown_left = 0.0
+	await wait_seconds(0.3)
+	e.force_skill(&"mall_alarm")
+	await wait_seconds(1.5)
+	assert_gt(get_tree().get_nodes_in_group(&"enemy_units").size(), before, "appel de renforts")
+
+
+func test_boss_ondes_de_panique_desorientent() -> void:
+	var e := await _engaged(BOSS, Vector2.ZERO, Vector2(200, 0))
+	e.force_skill(&"mall_panic_wave")
+	await wait_until(func() -> bool: return _player.has_status_kind(&"blind"), 3.0)
+	assert_true(_player.has_status_kind(&"blind"), "désoriente")
+	assert_true(_player.has_status_kind(&"slow"), "ralentit")
+
+
+func test_boss_change_de_phase_et_surcharge() -> void:
+	var e := await _engaged(BOSS, Vector2.ZERO, Vector2(260, 0))
+	assert_not_null(e.get_skill(&"mall_panic_wave"), "phase 1 : ondes de panique")
+	e.take_damage(e.max_hp * 0.35, _player)
+	await wait_physics_frames(2)
+	assert_not_null(e.get_skill(&"mall_alarm"), "phase 2 : appel des consommables")
+	assert_not_null(e.get_skill(&"teleport"), "phase 2 : téléportation")
+	e.invulnerable_left = 0.0
+	e.take_damage(e.max_hp * 0.45, _player)
+	await wait_physics_frames(2)
+	assert_not_null(e.get_skill(&"mall_overload"), "phase 3 : surcharge")
+	await wait_until(func() -> bool: return _player.hits.size() > 0, 4.0)
+	assert_gt(_player.hits.size(), 0, "surcharge : attaque de zone")
+
+
+func test_boss_illusions_sans_butin() -> void:
+	var e := await _engaged(BOSS, Vector2.ZERO, Vector2(300, 0))
+	var n0 := get_tree().get_nodes_in_group(&"enemy_units").size()
+	e.force_skill(&"mall_illusion")
+	await wait_seconds(1.1)
+	var mirages: Array = []
+	for u: Node in get_tree().get_nodes_in_group(&"enemy_units"):
+		if u != e and u is Enemy and (u as Enemy).data.kind == BOSS:
+			mirages.append(u)
+	assert_gt(get_tree().get_nodes_in_group(&"enemy_units").size(), n0, "illusions")
+	for m: Enemy in mirages:
+		assert_false(m.data.boss, "un mirage n'est pas un second boss")
+	await wait_seconds(1.0)
+	assert_almost_eq(e.visual.modulate.a, 1.0, 0.01, "le vrai boss redevient visible")

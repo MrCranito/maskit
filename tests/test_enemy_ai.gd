@@ -50,7 +50,7 @@ func after_each() -> void:
 
 func _make_data(angle: float = 360.0) -> EnemyData:
 	var d := EnemyData.new()
-	d.kind = &"masked_grunt"
+	d.kind = &"fw_bandit"
 	d.max_hp = 30.0
 	d.move_speed = 120.0
 	d.detection_radius = 300.0
@@ -210,7 +210,7 @@ func test_death_leaves_groups_and_emits() -> void:
 
 func test_ranged_enemy_fires_projectile() -> void:
 	var d := _make_data()
-	d.kind = &"masked_archer"
+	d.kind = &"fw_sharpshooter"
 	d.attack_type = EnemyData.AttackType.RANGED
 	d.attack_range = 280.0
 	d.projectile_speed = 600.0
@@ -226,11 +226,11 @@ func test_ranged_enemy_fires_projectile() -> void:
 
 
 func test_enemy_data_resources_load() -> void:
-	for kind: String in ["golem", "masked_grunt", "masked_archer", "masked_brute"]:
+	for kind: String in ["fw_bandit", "fw_raider", "fw_sharpshooter", "fw_marauder", "fw_bruiser", "fw_guard_dog"]:
 		var d := load("res://data/enemies/%s.tres" % kind) as EnemyData
 		assert_not_null(d, kind)
 		if d != null:
 			assert_eq(String(d.kind), kind)
 			assert_gt(d.max_hp, 0.0)
-	var archer := load("res://data/enemies/masked_archer.tres") as EnemyData
+	var archer := load("res://data/enemies/fw_sharpshooter.tres") as EnemyData
 	assert_true(archer.is_ranged())

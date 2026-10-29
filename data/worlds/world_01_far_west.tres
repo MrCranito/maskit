@@ -100,4 +100,5 @@ container_kinds = Array[StringName]([&"crate", &"barrel", &"chest", &"cupboard",
 prop_kinds = Array[StringName]([&"cactus", &"hitching_post", &"water_trough", &"wagon_wheel", &"saloon_bar", &"piano", &"poker_table", &"bed", &"desk", &"jail_bars", &"rail_track", &"mine_cart", &"lantern", &"wanted_poster", &"bench", &"altar", &"hay_bale", &"safe", &"shelf", &"counter", &"tumbleweed", &"water_tower", &"pew", &"ore_pile", &"support_beam", &"bottle_shelf", &"stage", &"dresser", &"washstand", &"nightstand", &"gun_rack", &"bookcase", &"crate_stack", &"sacks", &"dining_table", &"table_chairs", &"candelabra", &"settee", &"stove", &"bucket", &"tool_rack", &"shrub", &"cart", &"fence", &"barrel", &"tree"])
 floors_min = -1
 floors_max = 1
-boss_kind = &""
+boss_kind = &"fw_sheriff"
+elite_kinds = Array[StringName]([&"fw_deserter", &"fw_buffalo"])

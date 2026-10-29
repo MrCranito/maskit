@@ -152,9 +152,9 @@ func test_smoke_grenade_releases_cloud() -> void:
 
 
 func test_enemy_sight_blocked_by_smoke() -> void:
-	var data := load("res://data/enemies/outlaw_knife.tres") as EnemyData
+	var data := load("res://data/enemies/fw_raider.tres") as EnemyData
 	if data == null:
-		pending("outlaw_knife absent")
+		pending("fw_raider absent")
 		return
 	var e := (load("res://scenes/enemies/enemy.tscn") as PackedScene).instantiate() as Enemy
 	e.data = data

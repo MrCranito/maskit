@@ -78,19 +78,34 @@ func test_monde_far_west_charge() -> void:
 		assert_true(world.palette.get(key) is Color, "couleur %s" % key)
 
 
-func test_colosse_seulement_super_loot_ou_boss() -> void:
+## Kinds de boss du monde : WorldData.boss_kind + kinds du roster dont les données sont « boss ».
+func _boss_kinds() -> Array[StringName]:
+	var out: Array[StringName] = []
+	if world.boss_kind != &"":
+		out.append(world.boss_kind)
 	for type: Variant in world.enemy_roster:
-		var has_colossus: bool = (world.enemy_roster[type] as Dictionary).has(&"sandstone_colossus")
-		if has_colossus:
-			assert_true(type == &"super_loot" or type == &"boss", "colosse interdit en %s" % type)
+		for k: Variant in (world.enemy_roster[type] as Dictionary):
+			var kind := StringName(str(k))
+			var p := "res://data/enemies/%s.tres" % kind
+			if not out.has(kind) and ResourceLoader.exists(p) and (load(p) as EnemyData).boss:
+				out.append(kind)
+	return out
+
+
+func test_boss_seulement_super_loot_ou_boss() -> void:
+	var bosses := _boss_kinds()
+	for type: Variant in world.enemy_roster:
+		for b: StringName in bosses:
+			if (world.enemy_roster[type] as Dictionary).has(b):
+				assert_true(type == &"super_loot" or type == &"boss", "boss %s interdit en %s" % [b, type])
 	var bad := 0
 	for f in _all_floors():
 		for sp in f.enemy_spawns:
-			if sp.kind == &"sandstone_colossus":
+			if bosses.has(sp.kind):
 				var r := f.get_room(sp.room_id)
 				if r == null or not (r.type == FloorLayout.ROOM_SUPER_LOOT or r.type == FloorLayout.ROOM_BOSS):
 					bad += 1
-	assert_eq(bad, 0, "colosses hors super_loot/boss")
+	assert_eq(bad, 0, "boss hors super_loot/boss")
 
 
 # --- Structure ----------------------------------------------------------------

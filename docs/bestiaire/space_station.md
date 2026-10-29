@@ -39,16 +39,21 @@ Tous les paramètres sont dans les `.tres` (les valeurs de `defaults()` ne sont 
 ### Modèles Blender
 `art/blender/bestiary/space_station/build_ss_enemies.py` (pipeline de `art/blender/build_enemies.py` :
 caméra 3/4 à 48°, toon peint, contour Freestyle, même densité de pixels que le héros ; pack/SpriteFrames
-importés de `build_enemies.py`). Rigs : `Mech` (humanoïdes en IK : droïde, téléporteur, gardien, Atlas,
-Architecte), `Spectre` (sphère volante, 6 pattes IK pendantes), `Spider` (8 pattes IK au sol, version
-volante pour le Drone Tieur), `Alien` (tentacules en chaînes de segments). Les lumières (yeux, cœur,
-canons) sont émissives et s'éteignent sur les dernières images de la mort.
+importés de `build_enemies.py`). Rigs : `Mech` (humanoïdes en IK : droïde, téléporteur, gardien, Atlas ; variante `organic` pour l'alien
+bipède massif à 4 tentacules dorsaux animés et 7 yeux ; variante `orb` pour L'Architecte : torse-sphère à
+énorme œil rouge central, antennes, ailerons, bras-canons doubles), `Spectre` (sphère volante haute, 6
+pattes IK pendantes), `Spider` (8 pattes IK au sol ; version volante pour le Drone Tieur), `Alien`
+(créature ronde à tentacules : utilisée pour la larve, distincte de l'adulte). Les lueurs (yeux, cœurs,
+canons) sont émissives avec un point chaud quasi blanc au centre (lisible sur mobile) et s'éteignent sur
+les dernières images de la mort. Métal sombre contrasté (ombres presque noires, reflets clairs).
 
 ```
 flock /home/claude/.blender_render.lock python3 art/blender/bestiary/space_station/build_ss_enemies.py [--kinds ...]
 python3 art/blender/bestiary/space_station/build_ss_enemies.py --sheet   # planche de présentation
 ```
-Cadres : 192 px (droïde, spectre, téléporteur, détecteur), 224-256 px (gardien, alien), 160 px (larve).
+Cadres : 192 px (droïde, spectre, téléporteur, détecteur), 224-256 px (gardien, alien, élites), 160 px (larve).
+L'Architecte est rendu à demi-densité (`px_scale` 0,5, cadre 320 px, `display_height` doublé) : environ 2,5×
+la taille d'un droïde en jeu tout en gardant un atlas sous 4096 px (limite GPU mobile).
 
 ## Anciens monstres supprimés
 `space_android`, `space_brute`, `space_drone`, `space_soldier` : `.tres`, PNG + `.import` de

@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://bnvyhmgcn3uur"
+path.bptc="res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.bptc.ctex"
+path.astc="res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/fw_buffalo/fw_buffalo_atlas.png"
+dest_files=["res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.bptc.ctex", "res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.astc.ctex"]
 
 [params]
 

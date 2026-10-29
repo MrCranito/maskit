@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://tj6ukvtmscic"
-path="res://.godot/imported/masked_grunt.svg-008c96db49eae97e4834682e6933912d.ctex"
+uid="uid://bjbiq5qob1ads"
+path="res://.godot/imported/combat_3.png-a7329c593a504e9117b226fba7f86bb7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/enemies/masked_grunt.svg"
-dest_files=["res://.godot/imported/masked_grunt.svg-008c96db49eae97e4834682e6933912d.ctex"]
+source_file="res://docs/bestiaire/captures/far_west/combat_3.png"
+dest_files=["res://.godot/imported/combat_3.png-a7329c593a504e9117b226fba7f86bb7.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.5
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

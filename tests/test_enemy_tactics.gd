@@ -155,7 +155,7 @@ func test_enemy_takes_cover_in_scene() -> void:
 	EnemyTactics.override_map = EnemyTactics.build_map(l)
 	_add_wall(_cell_rect(block))
 	_player.global_position = FloorLayout.cell_to_world(Vector2i(11, 5))
-	var e := _spawn(&"gunslinger", FloorLayout.cell_to_world(Vector2i(3, 5)))
+	var e := _spawn(&"fw_bandit", FloorLayout.cell_to_world(Vector2i(3, 5)))
 	await wait_physics_frames(2)
 	assert_true(e.seek_cover(_player.global_position, e.data.range_min(), e.data.range_max() * 1.1), "couvert trouvé")
 	assert_false(e.has_line_between(_player.global_position, e.cover_position), "le mur arrête les balles")
@@ -181,7 +181,7 @@ func test_engaged_enemies_spread_on_flanks() -> void:
 	_player.global_position = Vector2(400, 0)
 	var es: Array[Enemy] = []
 	for i in 3:
-		es.append(_spawn(&"outlaw_knife", Vector2(0, -60 + 60 * i)))
+		es.append(_spawn(&"fw_raider", Vector2(0, -60 + 60 * i)))
 	await wait_physics_frames(2)
 	for e: Enemy in es:
 		e.become_aware(_player.global_position, false)
@@ -206,9 +206,9 @@ func test_zigzag_alternates() -> void:
 
 # --- Schémas d'attaque et télégraphes -------------------------------------------------------
 
-func test_rifleman_aim_line_before_precise_shot() -> void:
-	var d := _data(&"rifleman")
-	var e := _spawn(&"rifleman", Vector2.ZERO, d)
+func test_sharpshooter_aim_line_before_precise_shot() -> void:
+	var d := _data(&"fw_sharpshooter")
+	var e := _spawn(&"fw_sharpshooter", Vector2.ZERO, d)
 	_player.global_position = Vector2(450, 0)
 	var fired: Array = []
 	var cb := func(p: Node) -> void: fired.append([p, Time.get_ticks_msec()])
@@ -227,23 +227,46 @@ func test_rifleman_aim_line_before_precise_shot() -> void:
 		assert_gt(proj.speed, 800.0, "tir précis rapide")
 
 
-func test_gunslinger_fires_burst_of_three() -> void:
-	var d := _data(&"gunslinger")
+func test_bandit_fires_burst() -> void:
+	var d := _data(&"fw_bandit")
 	d.aim_spread_deg = 0.0
-	var e := _spawn(&"gunslinger", Vector2.ZERO, d)
+	d.skills = []
+	assert_gte(d.burst_count, 2, "rafale")
+	var e := _spawn(&"fw_bandit", Vector2.ZERO, d)
 	_player.global_position = Vector2(260, 0)
 	var fired: Array = []
 	var cb := func(p: Node) -> void: fired.append(p)
 	EventBus.projectile_fired.connect(cb)
 	await wait_until(func() -> bool: return e.current_state_name() == Enemy.STATE_ATTACK, 2.0)
-	await wait_until(func() -> bool: return fired.size() >= 3, 2.0)
+	await wait_until(func() -> bool: return fired.size() >= d.burst_count, 2.0)
 	EventBus.projectile_fired.disconnect(cb)
-	assert_eq(fired.size(), d.burst_count, "rafale de 3")
+	assert_eq(fired.size(), d.burst_count, "rafale complète")
 
 
-func test_dynamiter_lobs_dynamite_with_ground_circle() -> void:
-	var d := _data(&"dynamiter")
-	var e := _spawn(&"dynamiter", Vector2.ZERO, d)
+## Ancien « dynamiteur » (schéma « lob ») : plus porté par un monstre du Far West, données de test.
+func _lobber_data() -> EnemyData:
+	var d := _data(&"fw_bandit")
+	d.skills = []
+	d.attack_type = EnemyData.AttackType.RANGED
+	d.attack_range = 330.0
+	d.attack_damage = 22.0
+	d.attack_cooldown = 3.2
+	d.attack_windup = 0.6
+	d.projectile_speed = 0.0
+	d.tactic = &"grenadier"
+	d.preferred_range_min = 190.0
+	d.preferred_range_max = 320.0
+	d.attack_pattern = &"lob"
+	d.throw_radius = 85.0
+	d.throw_damage = 22.0
+	d.throw_flight_time = 0.75
+	d.throw_fuse = 0.85
+	return d
+
+
+func test_lobber_lobs_dynamite_with_ground_circle() -> void:
+	var d := _lobber_data()
+	var e := _spawn(&"fw_bandit", Vector2.ZERO, d)
 	_player.global_position = Vector2(260, 0)
 	await wait_until(func() -> bool: return e.current_state_name() == Enemy.STATE_ATTACK, 2.0)
 	await wait_physics_frames(2)
@@ -270,10 +293,12 @@ func test_dynamite_damage_falls_off_and_spares_far_targets() -> void:
 	assert_almost_eq(hp0 - _player.hp, Explosion.falloff_damage(10.0, 90.0, 20.0, 0.3), 0.01, "dégâts pleins au centre")
 
 
-func test_knife_lunges_and_combo() -> void:
-	var d := _data(&"outlaw_knife")
+func test_marauder_lunges_and_combo() -> void:
+	var d := _data(&"fw_marauder")
 	d.zigzag_amplitude = 0.0
-	var e := _spawn(&"outlaw_knife", Vector2.ZERO, d)
+	d.skills = []
+	assert_gte(d.combo_hits, 2, "combo")
+	var e := _spawn(&"fw_marauder", Vector2.ZERO, d)
 	_player.global_position = Vector2(140, 0)
 	await wait_until(func() -> bool: return e.current_state_name() == Enemy.STATE_ATTACK, 2.0)
 	var x0 := e.global_position.x
@@ -282,9 +307,10 @@ func test_knife_lunges_and_combo() -> void:
 	assert_gte(_player.hits.size(), 2, "combo de deux coups")
 
 
-func test_knife_windup_is_visible_before_lunge() -> void:
-	var d := _data(&"outlaw_knife")
-	var e := _spawn(&"outlaw_knife", Vector2.ZERO, d)
+func test_melee_windup_is_visible_before_lunge() -> void:
+	var d := _data(&"fw_marauder")
+	d.skills = []
+	var e := _spawn(&"fw_marauder", Vector2.ZERO, d)
 	_player.global_position = Vector2(140, 0)
 	await wait_until(func() -> bool: return e.current_state_name() == Enemy.STATE_ATTACK, 2.0)
 	await wait_physics_frames(2)
@@ -295,7 +321,7 @@ func test_knife_windup_is_visible_before_lunge() -> void:
 # --- Réactions ------------------------------------------------------------------------
 
 func test_big_hit_staggers() -> void:
-	var e := _spawn(&"gunslinger", Vector2.ZERO)
+	var e := _spawn(&"fw_bandit", Vector2.ZERO)
 	_player.global_position = Vector2(300, 0)
 	await wait_physics_frames(2)
 	e.become_aware(_player.global_position)
@@ -305,7 +331,9 @@ func test_big_hit_staggers() -> void:
 
 
 func test_low_hp_retreats_once() -> void:
-	var e := _spawn(&"gunslinger", Vector2.ZERO)
+	var d := _data(&"fw_bandit")
+	d.skills = []  # pas de sifflet sous 70 % : on teste le repli seul
+	var e := _spawn(&"fw_bandit", Vector2.ZERO, d)
 	_player.global_position = Vector2(150, 0)
 	e.data.stagger_ratio = 0.0
 	await wait_until(func() -> bool: return e.is_in_combat(), 1.5)
@@ -317,7 +345,9 @@ func test_low_hp_retreats_once() -> void:
 
 
 func test_elite_enters_phase_two() -> void:
-	var e := _spawn(&"gang_boss", Vector2.ZERO)
+	var d := _data(&"fw_deserter")
+	d.phase2_alt_pattern = &"lob"  # mécanique d'alternance (le Déserteur n'alterne pas par défaut)
+	var e := _spawn(&"fw_deserter", Vector2.ZERO, d)
 	_player.global_position = Vector2(300, 0)
 	await wait_physics_frames(2)
 	var v1 := e.run_speed()
@@ -332,9 +362,9 @@ func test_elite_enters_phase_two() -> void:
 
 
 func test_lost_player_triggers_search() -> void:
-	var d := _data(&"gunslinger")
+	var d := _data(&"fw_bandit")
 	d.lose_sight_time = 0.3
-	var e := _spawn(&"gunslinger", Vector2.ZERO, d)
+	var e := _spawn(&"fw_bandit", Vector2.ZERO, d)
 	_player.global_position = Vector2(250, 0)
 	await wait_until(func() -> bool: return e.current_state_name() == Enemy.STATE_CHASE \
 		or e.current_state_name() == Enemy.STATE_ATTACK, 1.5)
@@ -356,7 +386,7 @@ func _register_floor() -> Node2D:
 
 func test_corpse_stays_on_ground_and_is_searchable() -> void:
 	var root := _register_floor()
-	var e := _spawn(&"gunslinger", Vector2(200, 200))
+	var e := _spawn(&"fw_bandit", Vector2(200, 200))
 	await wait_physics_frames(2)
 	var eid := e.get_instance_id()
 	e.take_damage(10000.0, _player)
@@ -382,7 +412,7 @@ func test_corpse_stays_on_ground_and_is_searchable() -> void:
 
 func test_corpse_restored_after_floor_change() -> void:
 	var root := _register_floor()
-	var e := _spawn(&"outlaw_knife", Vector2(100, 100))
+	var e := _spawn(&"fw_raider", Vector2(100, 100))
 	await wait_physics_frames(2)
 	var eid := e.get_instance_id()
 	e.take_damage(10000.0, _player)
@@ -406,7 +436,7 @@ func test_corpse_restored_after_floor_change() -> void:
 
 
 func test_ground_drop_follows_chance() -> void:
-	var d := _data(&"gunslinger")
+	var d := _data(&"fw_bandit")
 	var keys: Array[StringName] = []
 	d.ground_drop_chance = 1.0
 	var rng := RandomNumberGenerator.new()
@@ -426,7 +456,7 @@ func test_ground_drop_follows_chance() -> void:
 
 
 func test_archetype_corpse_tables() -> void:
-	for k: StringName in [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"rifleman", &"dynamiter", &"gang_boss"]:
+	for k: StringName in [&"fw_bandit", &"fw_raider", &"fw_sharpshooter", &"fw_marauder", &"fw_bruiser", &"fw_guard_dog"]:
 		var t := LootManager.corpse_table_for(load("res://data/enemies/%s.tres" % k) as EnemyData)
 		assert_not_null(t, k)
 		assert_eq(t.kind, StringName("enemy_" + String(k)), "table propre à %s" % k)
@@ -434,7 +464,8 @@ func test_archetype_corpse_tables() -> void:
 			assert_true(LootDB.has_item(StringName(id)), "%s : %s existe" % [k, id])
 	assert_not_null(LootDB.get_table(&"enemy_drop"))
 	# Autres biomes : table du biome.
-	var mall := load("res://data/enemies/mall_guard.tres") as EnemyData
+	var mall := EnemyData.new()
+	mall.kind = &"mall_sans_table"
 	assert_eq(LootManager.corpse_table_for(mall, &"enemy_mall").kind, &"enemy_mall")
 
 
@@ -465,7 +496,7 @@ func test_corpse_count_is_capped() -> void:
 	var cap := int(LootDB.cfg().get_value("enemy_loot", "max_corpses_per_floor", 30))
 	var list: Array[Node2D] = LootManager.get("_corpses")
 	for i in cap + 5:
-		var c := EnemyCorpse.create_corpse(&"gunslinger", Vector2(i, 0), {}, "x")
+		var c := EnemyCorpse.create_corpse(&"fw_bandit", Vector2(i, 0), {}, "x")
 		root.add_child(c)
 		list.append(c)
 	LootManager.call("_enforce_corpse_limit")
@@ -476,19 +507,23 @@ func test_corpse_count_is_capped() -> void:
 # --- Variantes et performance -------------------------------------------------------------
 
 func test_variants_are_deterministic_and_mixed() -> void:
-	assert_eq(EnemyVariants.roll_kind(&"gunslinger", 42), EnemyVariants.roll_kind(&"gunslinger", 42))
+	# [enemy_variants] est vide (le roster liste directement le bestiaire) : poids de test.
+	var cfg: ConfigFile = Balance.get("_config")
+	cfg.set_value(EnemyVariants.SECTION, "fw_bandit", {"fw_bandit": 1.0, "fw_sharpshooter": 1.0})
+	assert_eq(EnemyVariants.roll_kind(&"fw_bandit", 42), EnemyVariants.roll_kind(&"fw_bandit", 42))
 	var seen := {}
 	for s in 60:
-		seen[EnemyVariants.roll_kind(&"gunslinger", s)] = true
-	assert_true(seen.has(&"gunslinger") and seen.has(&"rifleman"), "pistoleros et tireurs embusqués")
-	assert_eq(EnemyVariants.roll_kind(&"golem", 3), &"golem", "pas de variantes : inchangé")
+		seen[EnemyVariants.roll_kind(&"fw_bandit", s)] = true
+	assert_true(seen.has(&"fw_bandit") and seen.has(&"fw_sharpshooter"), "bandits et tireurs d'élite")
+	assert_eq(EnemyVariants.roll_kind(&"fw_bruiser", 3), &"fw_bruiser", "pas de variantes : inchangé")
+	cfg.erase_section_key(EnemyVariants.SECTION, "fw_bandit")
 
 
 func test_far_enemies_sleep_and_leave_active_list() -> void:
 	_player.global_position = Vector2.ZERO
 	var es: Array[Enemy] = []
 	for i in 30:
-		es.append(_spawn(&"gunslinger", Vector2(4000 + 60 * i, 3000)))
+		es.append(_spawn(&"fw_bandit", Vector2(4000 + 60 * i, 3000)))
 	await wait_physics_frames(2)
 	for e: Enemy in es:
 		e._on_sleep_check()
@@ -502,7 +537,7 @@ func test_far_enemies_sleep_and_leave_active_list() -> void:
 func test_awake_enemies_frame_cost() -> void:
 	# 24 ennemis éveillés en combat dans une arène ouverte : coût physique moyen par image.
 	_player.global_position = Vector2.ZERO
-	var kinds: Array[StringName] = [&"outlaw_knife", &"gunslinger", &"shotgun_brute", &"rifleman", &"dynamiter", &"gang_boss"]
+	var kinds: Array[StringName] = [&"fw_bandit", &"fw_raider", &"fw_sharpshooter", &"fw_marauder", &"fw_bruiser", &"fw_deserter"]
 	for i in 24:
 		_spawn(kinds[i % kinds.size()], Vector2.from_angle(TAU * float(i) / 24.0) * 420.0)
 	await wait_physics_frames(30)

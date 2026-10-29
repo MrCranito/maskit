@@ -209,6 +209,7 @@ SPEC: dict[str, dict] = {
     },
     "mall_omnistore": {
         "name": "L'Omnistore", "rig": "boss", "frame": 384, "scale": 1.5, "fps_run": 12, "cam_dz": 0.25,
+        "out_scale": 0.72, "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
         "mats": {
             "flesh": ("pat", [("#7e1e3e", "#2a0626", "#b23a62"), ("#561a4e", "#1a0626", "#80306e"),
                               ("#962a46", "#30082a", "#c84a6a")], 3.5),
@@ -234,7 +235,18 @@ CLASSICS = KINDS[:6]
 
 
 def frame_of(kind: str) -> int:
+    """Cadre de rendu (px, densité du héros)."""
     return int(SPEC[kind].get("frame", BASE_FRAME))
+
+
+def out_frame(kind: str) -> int:
+    """Cadre stocké dans l'atlas : `out_scale` < 1 réduit la résolution des très grands gabarits
+    (boss) pour garder l'atlas sous 8192 px (mobile) ; l'échelle monde est compensée dans la méta."""
+    return int(round(frame_of(kind) * float(SPEC[kind].get("out_scale", 1.0)) / 4.0)) * 4
+
+
+def out_k(kind: str) -> float:
+    return out_frame(kind) / float(frame_of(kind))
 
 
 def joint(name: str, parent, loc) -> bpy.types.Object:
@@ -1701,6 +1713,7 @@ def anims_for(kind: str) -> dict:
     r = SPEC[kind].get("fps_run")
     if r:
         a["run"] = (8, r, True)
+    a.update(SPEC[kind].get("anims", {}))
     return a
 
 
@@ -1813,7 +1826,7 @@ def write_import(kind: str) -> None:
 
 
 def write_tres(kind: str, anims: dict, regions: dict, meta: dict) -> None:
-    F = frame_of(kind)
+    F = out_frame(kind)
     rd = "res://assets/sprites/enemies/%s/" % kind
     total = sum(n for n, _f, _l in anims.values()) * len(DIRS)
     lines = ['[gd_resource type="SpriteFrames" load_steps=%d format=3]' % (2 + total), "",
@@ -1849,11 +1862,12 @@ def measure(im) -> tuple:
 def muzzle_px(rig: Rig, cam) -> list:
     bpy.context.view_layer.update()
     p = C.world_to_px(cam, rig.muzzle_world())
-    return [round(p[0] / SS, 1), round(p[1] / SS, 1)]
+    k = out_k(rig.kind)
+    return [round(p[0] / SS * k, 1), round(p[1] / SS * k, 1)]
 
 
 def make_meta(kind: str, frames: dict, feet, muzzle: dict) -> dict:
-    F = frame_of(kind)
+    F = out_frame(kind)
     anims = anims_for(kind)
     bb = measure(frames[("idle", "s", 0)])
     corpse = {}
@@ -1865,8 +1879,8 @@ def make_meta(kind: str, frames: dict, feet, muzzle: dict) -> dict:
         "name": SPEC[kind]["name"],
         "frame_size": [F, F],
         "feet_offset": [feet[0], feet[1]],
-        "display_height": round(F * WORLD_PER_PX, 1),
-        "world_per_px": WORLD_PER_PX,
+        "display_height": round(frame_of(kind) * WORLD_PER_PX, 1),
+        "world_per_px": round(WORLD_PER_PX / out_k(kind), 6),
         "height_px": bb[3] - bb[1],
         "head_px": bb[1],
         "fps": {a: f for a, (_n, f, _l) in anims.items()},
@@ -1896,7 +1910,7 @@ def build_kind(kind: str) -> None:
     os.makedirs(tmp, exist_ok=True)
     bpy.context.view_layer.update()
     feet = C.world_to_px(cam, (0, 0, 0))
-    feet = (round(feet[0] / SS), round(feet[1] / SS))
+    feet = (round(feet[0] / SS * out_k(kind)), round(feet[1] / SS * out_k(kind)))
     frames, order, muzzle = {}, [], {}
     for d, ang in DIRS.items():
         rig.j["root"].rotation_euler = (0, 0, math.radians(ang))
@@ -1905,12 +1919,12 @@ def build_kind(kind: str) -> None:
             for i in range(n):
                 rig.pose(anim, i, n)
                 p = os.path.join(tmp, "%s_%s_%d.png" % (anim, d, i))
-                frames[(anim, d, i)] = render_frame(p, F)
+                frames[(anim, d, i)] = render_frame(p, out_frame(kind))
                 order.append((anim, d, i))
                 if anim == "attack" and i == 3:
                     muzzle[d] = muzzle_px(rig, cam)
         print(kind, "DIR", d, "%.0fs" % (time.time() - t0), flush=True)
-    atlas, regions = pack(frames, order, F)
+    atlas, regions = pack(frames, order, out_frame(kind))
     compact_png(atlas, os.path.join(od, "%s_atlas.png" % kind))
     write_import(kind)
     meta = make_meta(kind, frames, feet, muzzle)
@@ -1933,7 +1947,7 @@ def repack(kind: str) -> None:
     tmp = os.path.join(TMP_DIR, kind)
     bpy.context.view_layer.update()
     feet = C.world_to_px(cam, (0, 0, 0))
-    feet = (round(feet[0] / SS), round(feet[1] / SS))
+    feet = (round(feet[0] / SS * out_k(kind)), round(feet[1] / SS * out_k(kind)))
     frames, order, muzzle = {}, [], {}
     for d, ang in DIRS.items():
         rig.j["root"].rotation_euler = (0, 0, math.radians(ang))
@@ -1944,7 +1958,7 @@ def repack(kind: str) -> None:
             for i in range(n):
                 frames[(anim, d, i)] = Image.open(os.path.join(tmp, "%s_%s_%d.png" % (anim, d, i))).convert("RGBA")
                 order.append((anim, d, i))
-    atlas, regions = pack(frames, order, F)
+    atlas, regions = pack(frames, order, out_frame(kind))
     compact_png(atlas, os.path.join(od, "%s_atlas.png" % kind))
     meta = make_meta(kind, frames, feet, muzzle)
     with open(os.path.join(od, "%s_meta.json" % kind), "w") as f:
@@ -2004,11 +2018,14 @@ def presentation_sheet(kinds) -> None:
         dr.rounded_rectangle([cx, cy, cx + cell_w - 12, cy + cell_h - 12], 14, fill=(18, 26, 46, 235),
                              outline=(176, 110, 230, 255), width=2)
         tmp = os.path.join(TMP_DIR, kind)
-        F = frame_of(kind)
+        F = out_frame(kind)
         n_death = anims_for(kind)["death"][0]
         shots = [("idle_se_0", "idle"), ("attack_sw_3", "attaque"), ("death_s_%d" % (n_death - 1), "cadavre")]
+        if F > 256:
+            shots = shots[:2]
+        w = (cell_w - 32) // len(shots)
         # échelle commune : 1 px de rendu = 1 px affiché ; le boss est réduit pour tenir dans la case
-        k = min(1.0, (cell_h - 70) / F)
+        k = min(1.0, (cell_h - 70) / F, 1.1 * w / F if F > 256 else 9.0)
         x = cx + 10
         for fname, label in shots:
             path = os.path.join(tmp, fname + ".png")
@@ -2017,7 +2034,6 @@ def presentation_sheet(kinds) -> None:
             im = Image.open(path).convert("RGBA")
             if k < 1.0:
                 im = im.resize((int(F * k), int(F * k)), Image.LANCZOS)
-            w = (cell_w - 32) // 3
             sheet.alpha_composite(im, (x + (w - im.size[0]) // 2, cy + 46 + (cell_h - 110 - im.size[1]) // 2 + 10))
             dr.text((x + w // 2 - 20, cy + cell_h - 40), label, font=sub_f, fill=(190, 190, 210, 255))
             x += w

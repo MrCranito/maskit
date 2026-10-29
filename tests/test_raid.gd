@@ -65,10 +65,11 @@ func test_enemies_exist_and_are_fog_hideable() -> void:
 		assert_true(e.is_in_group(&"fog_hideable"), "%s dans fog_hideable" % e.name)
 
 
-func test_unknown_enemy_kind_falls_back_to_grunt() -> void:
+func test_unknown_enemy_kind_falls_back_to_default() -> void:
 	var data: Resource = Raid.load_enemy_data(&"kind_qui_n_existe_pas")
 	assert_not_null(data)
-	assert_eq(data.get("kind"), &"masked_grunt")
+	assert_eq(data.get("kind"), Raid.FALLBACK_ENEMY_KIND)
+	assert_eq(data.get("kind"), &"fw_bandit")
 
 
 func test_door_query_reflects_door_state() -> void:

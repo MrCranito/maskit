@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwimwvqcq1wqx"
-path="res://.godot/imported/masked_brute.svg-f6d757d4d8543e9d650485c9c5b1a6ba.ctex"
+uid="uid://cqngaeuxletoa"
+path="res://.godot/imported/meute_1.png-14eade2ccb3cb8121cf9ebd251e75794.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/enemies/masked_brute.svg"
-dest_files=["res://.godot/imported/masked_brute.svg-f6d757d4d8543e9d650485c9c5b1a6ba.ctex"]
+source_file="res://docs/bestiaire/captures/far_west/meute_1.png"
+dest_files=["res://.godot/imported/meute_1.png-14eade2ccb3cb8121cf9ebd251e75794.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.6
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

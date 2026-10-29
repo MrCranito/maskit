@@ -240,7 +240,7 @@ func test_set_current_map() -> void:
 
 
 func test_enemy_apply_modifiers() -> void:
-	var data := load("res://data/enemies/outlaw_knife.tres") as EnemyData
+	var data := load("res://data/enemies/fw_raider.tres") as EnemyData
 	var base_hp: float = data.max_hp
 	var base_dmg: float = data.attack_damage
 	var base_speed: float = data.move_speed

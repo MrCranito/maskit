@@ -47,6 +47,13 @@ func step(_dt: float) -> bool:
 		_stealth_left = f("stealth_time")
 		e._visual_call(&"set_modulate", [Color(1, 1, 1, f("stealth_alpha"))])
 		e.attack_cooldown_left = 0.0
+		# Filet de sécurité : la compétence peut être remplacée (phase de boss) avant la fin.
+		if e.is_inside_tree():
+			var wr: WeakRef = weakref(e)
+			e.get_tree().create_timer(f("stealth_time") + 0.5, false).timeout.connect(func() -> void:
+				var en := wr.get_ref() as Enemy
+				if en != null and en.is_alive():
+					en._visual_call(&"set_modulate", [Color.WHITE]))
 	return true
 
 
