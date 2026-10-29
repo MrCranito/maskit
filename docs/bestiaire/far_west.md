@@ -81,6 +81,8 @@ chef de projet.
 ## Butin
 Tables `data/loot_tables/enemy_fw_*.tres` (reprises des anciennes tables équivalentes ; bêtes :
 peu de butin, `mat_cloth`, pièces avalées). `corpse_name` dans chaque `.tres`.
+Élites et boss : `enemy_fw_deserter` (reprise de l'ancien chef de bande), `enemy_fw_buffalo`,
+`enemy_fw_sheriff` (4 à 6 tirages, étoile de shérif, sacs d'or, rares armes) ; butin au sol garanti.
 
 ## Correspondance anciens kinds → nouveaux (pour `data/weapons/*.tres` `unlock_enemy_kind`)
 | Ancien kind | Arme débloquée | Nouveau kind proposé |
