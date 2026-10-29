@@ -16,7 +16,9 @@ Ce fichier est la référence du projet : relis-le avant chaque phase.
 - Si un choix de design est ambigu, propose deux options et demande.
 - Git : on travaille à deux sur le projet. **Ne jamais pousser directement sur `main`.**
   - Chaque nouvelle fonctionnalité ou correction se fait dans sa propre branche, créée depuis `main` à jour : `feature/<sujet>`, `fix/<sujet>` ou `chore/<sujet>` (noms courts en minuscules, mots séparés par des tirets).
-  - Commits courts et explicites sur la branche, puis push de la branche et ouverture d'une pull request vers `main` (titre clair, description : ce qui change, comment tester, captures si visuel, tests lancés).
+  - Commits courts et explicites sur la branche, puis push de la branche et ouverture d'une pull request vers `main`.
+  - Description de la PR OBLIGATOIRE et précise : liste exacte de ce qui a changé (fonctionnalités, fichiers principaux, valeurs d'équilibrage modifiées avant → après), comment tester, résultat des tests.
+  - Captures d'écran OBLIGATOIRES de chaque modification visible (avant/après quand c'est pertinent), affichées dans la description. Les images sont poussées sur la branche `pr-assets` (branche orpheline jamais fusionnée), dans `<numéro ou nom de la branche>/`, et insérées par leur lien `https://raw.githubusercontent.com/MrCranito/maskit/pr-assets/<dossier>/<image>.png`. Pour un changement sans effet visible, l'écrire explicitement.
   - La pull request doit être validée par l'utilisateur avant d'être fusionnée : ne jamais la fusionner soi-même.
   - Avant d'ouvrir la PR : projet qui compile et suite GUT verte (sinon le signaler dans la description).
 

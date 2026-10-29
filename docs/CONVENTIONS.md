@@ -314,6 +314,6 @@ Quatre agents en parallèle. Propriété des fichiers :
 
 ## Travail à deux : branches et pull requests (à partir du 29/10)
 - Plus aucun push direct sur `main`. Une branche par fonctionnalité ou correction (`feature/…`, `fix/…`, `chore/…`), créée depuis `main` à jour.
-- Une pull request par branche, vers `main`, avec : résumé, comment tester (éditeur, iPhone, APK), captures pour les changements visuels, résultat des tests GUT.
+- Une pull request par branche, vers `main`, avec : description exacte de tout ce qui a changé, comment tester (éditeur, iPhone, APK), captures d'écran de chaque modification visible (hébergées sur la branche orpheline `pr-assets`), résultat des tests GUT.
 - Fusion uniquement après validation de la PR par l'utilisateur.
 - L'APK Android (workflow `Android APK`) se reconstruit à chaque fusion dans `main`.
