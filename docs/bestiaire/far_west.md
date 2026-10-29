@@ -13,14 +13,17 @@ Freestyle et mêmes matériaux toon peints que le héros et l'ancien `art/blende
 | `fw_sheet.py` | rendu 8 directions, atlas rogné, SpriteFrames + méta (format `EnemyArt`) |
 | `fw_humans.py` | humanoïdes (rig à joints + IK des bras) : Bandit, Pillard, Tireur d'élite, Robuste |
 | `fw_beasts.py` | quadrupèdes (rig propre : torse, cou/tête/mâchoire, 4 pattes à 3 segments, queue) : Maraudeur, Chien de garde |
+| `fw_bosses.py` | Le Buffle (quadrupède cuirassé, cornes, coup de corne) et Le Shérif Sable-Fou (cape, bras-canon, revolver + cheval monté pour l'animation `charge`) ; Le Déserteur est dans `fw_humans.py` |
 | `build_fw_bestiary.py` | CLI : `--kinds`, `--preview s,se --anim idle:0,attack:3`, `--board <png>` |
 
 ```
 flock /home/claude/.blender_render.lock python3 art/blender/bestiary/far_west/build_fw_bestiary.py [--kinds fw_bandit,...]
 ```
 Animations : idle (6), run (8), attack (6 : 0-2 élan, 2 tenue du télégraphe, 3 coup/tir, 4-5 retour),
-hit (3), death (8, dernière image = cadavre) × 8 directions. Cadre 192 px (humains), 224 px (bêtes,
-même densité de pixels : la caméra s'élargit avec le cadre).
+hit (3), death (8, dernière image = cadavre) × 8 directions ; le shérif a en plus `charge` (8, à cheval,
+jouée par `EnemyVisual.set_run_anim("charge")` pendant `fw_sheriff_charge`). Cadres : 192 px (humains),
+224 px (hyène, chien), 288 px (Buffle), 320 px (Shérif à cheval) — même densité de pixels partout (la
+caméra s'élargit avec le cadre).
 
 ## Monstres classiques (rangée 1 = plus simples, rangée 2 = plus durs)
 
@@ -42,6 +45,31 @@ tireurs), renforts (sifflet du bandit, hurlement du maraudeur, aboiement du chie
 - `fw_pack_howl` (`pack_howl_skill.gd`, hérite du sifflet commun) — rameute la meute ; si moins de `min_pack` congénères proches, un maraudeur surgit.
 - `fw_bodyguard` (`bodyguard_skill.gd`) — garde du corps du Robuste.
 Valeurs par défaut : `data/balance.cfg` `[bestiary_far_west]` ; chaque `.tres` les précise.
+
+## Élites et boss
+
+| Kind | Nom | PV | Vitesse | Attaque | Compétences |
+|---|---|---|---|---|---|
+| `fw_deserter` | Le Déserteur (élite, bandit d'élite) | 380 | 150 | rafale de 5 (7 dmg), portée 440 | `dodge_roll` réactive (esquive rapide, 75 %), `whistle` (2 renforts bandit/pillard/tireur), `rage` sous 30 % ; phase 2 d'élite sous 50 % |
+| `fw_buffalo` | Le Buffle (élite, bête colossale) | 650 | 95 | coup de corne de zone (26 dmg, rayon 110) | `charge` dévastatrice (720 px/s, 34 dmg, renverse), `fw_debris_throw` (éventail de 5 débris), `hard_skin` (cuirasse −30 % de face) ; phase 2 d'élite sous 40 % |
+| `fw_sheriff` | **Le Shérif Sable-Fou** — « Maître des terres arides » (boss) | 3000 | 125 | revolver + canon : rafale de 2 (12 dmg), portée 480 | voir phases |
+
+`WorldData` : `boss_kind = fw_sheriff`, `elite_kinds = [fw_deserter, fw_buffalo]`.
+
+### Phases du Shérif (`phases`, format de `enemy_data.gd`)
+| Phase | PV | Compétences | Modificateurs |
+|---|---|---|---|
+| 1 « Le hors-la-loi » | 100 → 70 % | `fw_revolver_shot` (tir précis 26 dmg, ligne de visée), `fw_call_outlaws` (2 renforts, 4 vivants max) | — |
+| 2 « Tempête de sable » | 70 → 30 % | + `fw_sand_tornado` (lancée en entrant), `fw_sheriff_charge` (à cheval, 32 dmg, renverse) | vitesse ×1,1, invulnérable 1,5 s |
+| 3 « Double tir » | 30 → 0 % | `fw_double_shot` (2 balles à la fois, recharge 1,8 s), revolver, renforts ×3 (6 vivants, Déserteur possible, lancés en entrant), tornades ×2, charge | vitesse ×1,2, recharges ×0,7, dégâts ×1,15, invulnérable 2 s |
+
+Compétences ajoutées au registre Far West : `fw_debris_throw`, `fw_revolver_shot`, `fw_double_shot`
+(classe commune `projectile_skill.gd`), `fw_call_outlaws` (classe commune `whistle_skill.gd`),
+`fw_sand_tornado` (`sand_tornado_skill.gd` + nœud `sand_tornado.gd` : nuage tourbillonnant au-dessus des
+personnages qui dérive vers le joueur — vision réduite, statut « slow » −45 %, 4 dégâts/s),
+`fw_sheriff_charge` (`sheriff_charge_skill.gd`, hérite de la charge commune, animation à cheval).
+L'arène (« Ville abandonnée — Fort du shérif ») et la règle d'un seul boss par raid sont gérées par le
+chef de projet.
 
 ## Roster (`data/worlds/world_01_far_west.tres`)
 - Rangée 1 (bandit, pillard, tireur) : partout (le bandit dans toutes les salles).
@@ -66,8 +94,26 @@ peu de butin, `mat_cloth`, pièces avalées). `corpse_name` dans chaque `.tres`.
 | `sandstone_colossus` (boss) | — | `fw_sheriff` (boss) |
 (`tools/gen_weapons.py` lignes 136-141 et `tests/test_economy.gd` utilisent aussi ces kinds.)
 
+## Captures (`docs/bestiaire/captures/far_west/`)
+- `modeles.png` : planche de présentation des 9 modèles (idle, course, attaque, cadavre ; + charge à cheval).
+- `classiques_en_jeu.png`, `combat_0..3.png`, `meute_0..2.png` : classiques en jeu (raid réel).
+- `elites_boss_en_jeu.png`, `boss_phase1.png`, `boss_charge_telegraphe.png`, `boss_tornade.png`, `boss_phase3.png` : élites et boss.
+- `docs/bestiaire/captures/.gdignore` : Godot n'importe pas les captures.
+Script de capture (xvfb) : copie de travail hors dépôt ; scénarios lineup / fight / pack / elites / boss.
+
 ## Changements partagés
 - `scripts/dungeon/gen/populator.gd` : ajout générique `_depth_roster()` (poids des kinds
   `row2_kinds` × `row2_floor_mult` de `[bestiary_<biome>]`, inchangé sans section) appelé dans
   `_enemies()` à la place de `c.world.get_roster(room.type)` seul.
-- `data/balance.cfg` : nouvelle section `[bestiary_far_west]` (fin du fichier).
+- `scripts/enemies/enemy_visual.gd` : (1) suppression des entrées SVG de repli des anciens kinds Far
+  West dans `KINDS` (SVG supprimés) ; (2) ajout `set_run_anim(an)` + variable `_run_anim` (animation
+  de course de remplacement, ex. « charge » à cheval ; remise à "run" dans `_reset_effects`).
+- `scripts/net/net_protocol.gd` : `FX_METHODS` += `&"set_run_anim"` (en fin de liste, relais coop).
+- `scripts/player/player_status.gd` : nouveau statut `&"slow"` + `speed_mult()` ;
+  `scripts/player/player.gd` `get_effective_speed()` × `status.speed_mult()`.
+- `art/blender/build_enemies.py` : `ARCH` vidé (anciens hors-la-loi) ; le module reste la bibliothèque
+  commune (la Station l'importe).
+- `data/balance.cfg` : `[enemy_variants]` sans les variantes outlaw_knife / gunslinger ; nouvelle
+  section `[bestiary_far_west]`.
+- À reprendre par le chef de projet : `whistle_skill.gd` a encore `kinds` par défaut
+  `["outlaw_knife", "gunslinger"]` (sans effet pour le Far West : tous les `.tres` précisent `kinds`).
