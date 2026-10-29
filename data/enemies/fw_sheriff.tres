@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"fw_sheriff"
+display_name = "Le Shérif Sable-Fou"
+max_hp = 3000.0
+move_speed = 125.0
+body_radius = 26.0
+detection_radius = 620.0
+detection_angle_deg = 360.0
+lose_sight_time = 6.0
+alert_duration = 0.3
+alert_neighbors_radius = 900.0
+patrol_radius = 40.0
+sight_gain = 3.0
+hearing_radius = 600.0
+hearing_gain = 3.0
+awareness_decay = 0.05
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 480.0
+attack_damage = 12.0
+attack_cooldown = 1.3
+attack_windup = 0.45
+projectile_speed = 700.0
+retreat_distance = 150.0
+projectile_style = &"bullet"
+tactic = &"elite"
+preferred_range_min = 170.0
+preferred_range_max = 380.0
+use_cover = false
+can_flank = true
+strafe_ratio = 0.8
+attack_pattern = &"burst"
+burst_count = 2
+burst_interval = 0.14
+aim_spread_deg = 3.0
+stagger_ratio = 0.0
+knockback = 0.0
+boss = true
+boss_title = "Maître des terres arides"
+phases = [{"from": 1.0, "name": "Phase 1 — Le hors-la-loi", "skills": [{"id": &"fw_revolver_shot", "cooldown": 4.0, "windup": 0.6, "min_range": 140.0, "max_range": 560.0, "count": 1, "speed": 980.0, "damage": 26.0, "style": "bullet", "lifetime": 0.9, "priority": 1.6}, {"id": &"fw_call_outlaws", "cooldown": 24.0, "initial_cooldown": 4.0, "hp_below": 1.01, "windup": 0.9, "count": 2, "max_total": 4, "kinds": ["fw_bandit", "fw_raider", "fw_sharpshooter"], "priority": 2.2}]}, {"from": 0.7, "name": "Phase 2 — Tempête de sable", "speed_mult": 1.1, "invuln": 1.5, "on_enter": ["fw_sand_tornado"], "skills": [{"id": &"fw_revolver_shot", "cooldown": 3.5, "windup": 0.55, "min_range": 140.0, "max_range": 560.0, "count": 1, "speed": 1000.0, "damage": 26.0, "style": "bullet", "lifetime": 0.9, "priority": 1.6}, {"id": &"fw_call_outlaws", "cooldown": 22.0, "initial_cooldown": 8.0, "hp_below": 1.01, "windup": 0.9, "count": 2, "max_total": 4, "kinds": ["fw_bandit", "fw_raider", "fw_sharpshooter"], "priority": 2.0}, {"id": &"fw_sand_tornado", "cooldown": 13.0, "count": 1, "max_alive": 2, "priority": 2.2}, {"id": &"fw_sheriff_charge", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 0.9, "min_range": 160.0, "max_range": 560.0, "speed": 760.0, "overshoot": 120.0, "width": 76.0, "damage": 32.0, "status": "knockdown", "status_time": 0.9, "self_stun": 0.8, "priority": 1.9}]}, {"from": 0.3, "name": "Phase 3 — Double tir", "speed_mult": 1.2, "cooldown_mult": 0.7, "damage_mult": 1.15, "invuln": 2.0, "on_enter": ["fw_call_outlaws"], "skills": [{"id": &"fw_double_shot", "cooldown": 1.8, "windup": 0.35, "min_range": 0.0, "max_range": 520.0, "count": 2, "arc_deg": 8.0, "interval": 0.0, "speed": 820.0, "damage": 15.0, "style": "bullet", "lifetime": 0.9, "priority": 2.4}, {"id": &"fw_revolver_shot", "cooldown": 3.5, "windup": 0.5, "min_range": 140.0, "max_range": 560.0, "count": 1, "speed": 1000.0, "damage": 28.0, "style": "bullet", "lifetime": 0.9, "priority": 1.6}, {"id": &"fw_call_outlaws", "cooldown": 16.0, "initial_cooldown": 0.0, "hp_below": 1.01, "windup": 0.8, "count": 3, "max_total": 6, "kinds": ["fw_bandit", "fw_raider", "fw_sharpshooter", "fw_deserter"], "priority": 2.6}, {"id": &"fw_sand_tornado", "cooldown": 11.0, "count": 2, "max_alive": 3, "priority": 2.2}, {"id": &"fw_sheriff_charge", "cooldown": 7.0, "initial_cooldown": 2.0, "windup": 0.8, "min_range": 160.0, "max_range": 560.0, "speed": 800.0, "overshoot": 120.0, "width": 76.0, "damage": 34.0, "status": "knockdown", "status_time": 1.0, "self_stun": 0.6, "priority": 1.9}]}]
+ground_drop_chance = 1.0
+sfx_attack = &"revolver_shot"
+sfx_hurt = &"outlaw_hurt"
+sfx_death = &"outlaw_death"
+corpse_name = "Le Shérif Sable-Fou, enfin tombé"
+skills = [{"id": &"fw_revolver_shot", "cooldown": 4.0, "windup": 0.6, "min_range": 140.0, "max_range": 560.0, "count": 1, "speed": 980.0, "damage": 26.0, "style": "bullet", "lifetime": 0.9, "priority": 1.6}, {"id": &"fw_call_outlaws", "cooldown": 24.0, "initial_cooldown": 4.0, "hp_below": 1.01, "windup": 0.9, "count": 2, "max_total": 4, "kinds": ["fw_bandit", "fw_raider", "fw_sharpshooter"], "priority": 2.2}]

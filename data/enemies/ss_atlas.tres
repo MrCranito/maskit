@@ -1,0 +1,50 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_atlas"
+display_name = "Le Sécurité Atlas"
+max_hp = 400.0
+move_speed = 95.0
+body_radius = 30.0
+detection_radius = 480.0
+detection_angle_deg = 200.0
+lose_sight_time = 5.0
+alert_duration = 0.4
+alert_neighbors_radius = 460.0
+patrol_radius = 60.0
+sight_gain = 1.8
+hearing_radius = 420.0
+hearing_gain = 1.8
+awareness_decay = 0.08
+attack_type = 1
+attack_range = 420.0
+attack_damage = 6.0
+attack_cooldown = 2.0
+attack_windup = 0.55
+projectile_speed = 560.0
+projectile_style = &"laser"
+aura_color = Color(0.3, 0.8, 1, 1)
+tactic = &"heavy"
+preferred_range_min = 90.0
+preferred_range_max = 360.0
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"burst"
+burst_count = 4
+burst_interval = 0.1
+aim_spread_deg = 5.0
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.2
+phase2_cooldown_mult = 0.7
+stagger_ratio = 0.6
+stagger_time = 0.3
+knockback = 15.0
+skills = [{"id": &"energy_shield", "style": 1.0, "duration": 4.0, "block": 0.9, "cooldown": 9.0, "windup": 0.35, "max_range": 520.0, "priority": 1.6}, {"id": &"fan_volley", "cooldown": 10.0, "initial_cooldown": 4.0, "windup": 0.8, "min_range": 150.0, "max_range": 480.0, "count": 12, "arc_deg": 60.0, "interval": 0.06, "speed": 560.0, "damage": 4.0, "style": "laser", "lifetime": 1.0, "priority": 1.4}, {"id": &"rush", "status": "knockdown", "status_time": 0.6, "cooldown": 6.0, "windup": 0.45, "min_range": 0.0, "max_range": 130.0, "speed": 560.0, "damage": 18.0, "priority": 2.5}]
+sfx_attack = &"gun_shot_alt"
+sfx_hurt = &"metal_impact"
+sfx_death = &"golem_crumble"
+corpse_name = "Carcasse de l'Atlas"

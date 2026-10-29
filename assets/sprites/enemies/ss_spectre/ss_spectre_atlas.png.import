@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://hcbkdu8cesq7"
+path.bptc="res://.godot/imported/ss_spectre_atlas.png-c0cd489cab5e0b4c7384872549be0e9c.bptc.ctex"
+path.astc="res://.godot/imported/ss_spectre_atlas.png-c0cd489cab5e0b4c7384872549be0e9c.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ss_spectre/ss_spectre_atlas.png"
+dest_files=["res://.godot/imported/ss_spectre_atlas.png-c0cd489cab5e0b4c7384872549be0e9c.bptc.ctex", "res://.godot/imported/ss_spectre_atlas.png-c0cd489cab5e0b4c7384872549be0e9c.astc.ctex"]
 
 [params]
 

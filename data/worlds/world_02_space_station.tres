@@ -30,7 +30,8 @@ enemy_roster = {
 &"boss": {
 &"ss_security_droid": 1.0,
 &"ss_spectre": 2.0,
-&"ss_station_guardian": 0.5
+&"ss_station_guardian": 0.5,
+&"ss_teleporter": 0.5
 },
 &"combat": {
 &"ss_alien": 1.0,
@@ -62,16 +63,19 @@ enemy_roster = {
 },
 &"rest": {
 &"ss_security_droid": 1.0,
-&"ss_spectre": 1.0
+&"ss_spectre": 1.0,
+&"ss_teleporter": 0.5
 },
 &"spawn": {
 &"ss_security_droid": 1.0,
-&"ss_spectre": 1.0
+&"ss_spectre": 1.0,
+&"ss_teleporter": 0.5
 },
 &"super_loot": {
 &"ss_alien": 1.0,
 &"ss_detector": 0.5,
 &"ss_security_droid": 2.0,
+&"ss_spectre": 1.0,
 &"ss_station_guardian": 2.0,
 &"ss_teleporter": 1.0
 },
@@ -89,7 +93,8 @@ container_kinds = Array[StringName]([&"locker", &"cargo_crate", &"med_cabinet", 
 prop_kinds = Array[StringName]([&"console", &"server_rack", &"bunk_bed", &"mess_table", &"med_bed", &"lab_bench", &"specimen_tank", &"cargo_stack", &"pipe_cluster", &"reactor_core", &"holo_table", &"captain_chair", &"weapon_rack", &"plant_bed", &"vending_machine", &"coolant_tank", &"power_node", &"escape_pod", &"floor_cables", &"warning_beacon", &"shuttle", &"workbench", &"fuel_drums", &"desk_station", &"locker_bank", &"supply_shelf", &"crew_table", &"med_cabinet_wall", &"tool_wall", &"crate_pallet", &"bio_bed", &"ss_planter", &"ss_chair"])
 floors_min = -1
 floors_max = 1
-boss_kind = &"space_reactor_colossus"
+boss_kind = &"ss_architect"
+elite_kinds = Array[StringName]([&"ss_drone_tieur", &"ss_atlas"])
 generator_path = "res://scripts/biomes/space_station/space_station_generator.gd"
 builder_path = "res://scripts/biomes/space_station/space_station_builder.gd"
 containers_dir = "res://assets/sprites/space_station/containers/"

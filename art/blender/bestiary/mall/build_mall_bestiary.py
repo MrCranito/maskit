@@ -47,7 +47,7 @@ import rdm_common as C  # noqa: E402
 import bpy  # noqa: E402
 from mathutils import Euler, Matrix, Vector  # noqa: E402
 
-ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
 OUT_DIR = os.path.join(ROOT, "assets", "sprites", "enemies")
 CAPT_DIR = os.path.join(ROOT, "docs", "bestiaire", "captures", "mall")
 TMP_DIR = os.environ.get("RDM_TMP", "/tmp/rdm_mall_bestiary")
@@ -87,11 +87,11 @@ SPEC: dict[str, dict] = {
         "name": "Zombie", "rig": "human", "frame": 192, "scale": 1.0, "head": 1.16, "leg": 0.80,
         "torso": (0.98, 0.92), "arm": 0.90, "arm_len": 1.08, "hunch": 0.30, "fps_run": 9, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#7e8478", "#24223e", "#a8ae9a"), ("#6e5664", "#221632", "#947482"),
-                             ("#8a7e6c", "#2c263e", "#b0a28a")], 5.0),
+            "skin": ("pat", [("#6a7064", "#1e1c36", "#8e9682"), ("#5e4858", "#1a1028", "#7e6274"),
+                             ("#76705e", "#262036", "#9a9078")], 5.0),
             "wound": ("#6e1424", "#2a0618", "#9a2232"),
             "mouth": ("#2a0814", "#100208", "#4a1222"),
-            "shirt": ("pat", [("#6a6478", "#22203a", "#948ea6"), ("#4e4a5e", "#1a1830", "#726c86")], 6.0),
+            "shirt": ("pat", [("#4e4a60", "#16142c", "#6c6888"), ("#3e3a50", "#100e24", "#5a5672")], 6.0),
             "pants": "jeans",
             "shoe": ("#3a3032", "#100c14", "#5a4c4e"),
             "eye_glow": "!#f0f0a0",
@@ -146,11 +146,11 @@ SPEC: dict[str, dict] = {
         },
     },
     "mall_brute": {
-        "name": "Gros brute", "rig": "human", "frame": 256, "scale": 1.42, "head": 1.02, "leg": 0.74,
-        "torso": (1.62, 1.34), "arm": 1.70, "arm_len": 1.16, "hunch": 0.34, "belly": 0.6, "fps_run": 10, "top_key": "skin",
+        "name": "Gros brute", "rig": "human", "frame": 256, "scale": 1.42, "head": 1.22, "leg": 0.74,
+        "torso": (1.62, 1.34), "arm": 1.70, "arm_len": 1.16, "hunch": 0.24, "belly": 0.6, "fps_run": 10, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#ae8a80", "#3a2a4a", "#dcb4a4"), ("#8e6c6c", "#2e1e40", "#b89088"),
-                             ("#9a7a86", "#30223e", "#c4a0aa")], 4.0),
+            "skin": ("pat", [("#7e6c70", "#20142e", "#a28e8e"), ("#6a5660", "#1a1028", "#8a747e"),
+                             ("#76646e", "#1e1230", "#988290")], 4.0),
             "vein": ("#6a2a5a", "#260a2a", "#9a4a86"),
             "pants": ("pat", [("#3a3044", "#100c1c", "#5e5070"), ("#30283a", "#0c0816", "#4c4060")], 6.0),
             "shoe": ("#2a2228", "#0a080c", "#463a40"),
@@ -158,15 +158,16 @@ SPEC: dict[str, dict] = {
             "chain": ("#8a8c98", "#2a2c3e", "#d0d2dc"),
             "eye_glow": "!#ff4a3a",
             "wound": ("#8e1a2c", "#36081e", "#c02a3a"),
+            "metal": ("#6a6e7e", "#1e2032", "#a8acbc"),
         },
     },
     "mall_night_spider": {
-        "name": "Nuit blanche", "rig": "spider", "frame": 192, "scale": 1.0, "fps_run": 18,
-        "legs": 4, "body_z": 0.42, "femur": 0.44, "tibia": 0.56, "spread": 0.78,
+        "name": "Nuit blanche", "rig": "spider", "frame": 192, "scale": 1.22, "fps_run": 18,
+        "legs": 4, "body_z": 0.40, "femur": 0.56, "tibia": 0.66, "spread": 0.80,
         "mats": {
             "carapace": ("pat", [("#4a2a72", "#140a2a", "#7a52b0"), ("#3a2060", "#100822", "#62409a")], 5.0),
-            "leg": ("#2e1c4a", "#0c061c", "#5e3e8e"),
-            "leg_tip": ("#1a0e2c", "#06020e", "#3a2652"),
+            "leg": ("#4a2e72", "#140a2a", "#7e5ab4"),
+            "leg_tip": ("#2e1c4a", "#0c061c", "#5e3e8e"),
             "glow": "!#c35cff",
             "glow_soft": "!#8a3aff",
             "eye_glow": "!#ff3a7a",
@@ -609,11 +610,6 @@ class Zombie(Human):
         for sx in (1, -1):
             self.part("ear", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.178 * sx, 0.0, 0.19),
                       scale=(0.025, 0.04, 0.05)), "skin", head)
-        # cheveux clairsemés (côtés et arrière du crâne)
-        for k in range(5):
-            a = 1.6 + k * 0.75
-            self.part("tuft", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.16 * math.sin(a), -0.16 * math.cos(a), 0.30),
-                      scale=(0.06, 0.06, 0.03)), "hair", head)
 
     def dress(self) -> None:
         sp = self.j["spine"]
@@ -1075,6 +1071,13 @@ class Brute(Human):
                       loc=(0, 0, -0.13 * self.AL)), "bracer", fa)
             self.part("fist" + side, C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -self.ll),
                       scale=(0.10 * self.AW, 0.09 * self.AW, 0.09 * self.AW)), "skin", fa)
+        # épaulière de métal riveté (gauche) et sangle
+        self.part("pad", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.03, 0.0, 0.05), scale=(0.15, 0.14, 0.10)),
+                  "metal", self.j["uaL"])
+        for k in range(4):
+            a = -0.9 + 0.6 * k
+            self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.016), loc=(0.03 + 0.13 * math.sin(a), -0.12 * math.cos(a), 0.10)),
+                      "chain", self.j["uaL"])
         self.muzzle_ref = ("fistR", (0, 0, -self.ll))
 
     def arms_rest(self, b: float = 0.0) -> None:
@@ -1286,6 +1289,10 @@ class Spider(Rig):
                       "glow", abd, nofs=True)
         self.part("spot", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.66, 0.16), scale=(0.07, 0.05, 0.06)),
                   "glow_soft", abd, nofs=True)
+        for sx in (1, -1):
+            for k in range(3):
+                self.part("dot", C.bm_xform(C.bm_sphere(8, 6, 0.03), loc=(0.20 * sx - 0.03 * sx * k, 0.22 + 0.13 * k,
+                          0.24 - 0.03 * k)), "glow", abd, nofs=True)
         # yeux (grappe rouge-rose)
         for (x, z, r) in ((0.045, 0.07, 0.030), (-0.045, 0.07, 0.030), (0.085, 0.05, 0.020), (-0.085, 0.05, 0.020),
                           (0.03, 0.105, 0.016), (-0.03, 0.105, 0.016)):
@@ -1309,10 +1316,12 @@ class Spider(Rig):
                 u = qjoint("leg_u" + name, th, hip)
                 lo = qjoint("leg_l" + name, th, (0, 0, 0))
                 self.part("femur" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L1 * 0.5), (0, 0, -self.L1)],
-                                                    [0.034, 0.030, 0.026], seg=8), "leg", u)
-                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.034), loc=(0, 0, 0)), "glow_soft", lo, nofs=True)
+                                                    [0.050, 0.046, 0.040], seg=8), "leg", u)
+                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.046), loc=(0, 0, 0)), "glow_soft", lo, nofs=True)
                 self.part("tibia" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L2 * 0.55), (0, 0, -self.L2 * 0.9),
-                                                     (0, 0, -self.L2)], [0.028, 0.022, 0.012, 0.0], seg=8), "leg_tip", lo)
+                                                     (0, 0, -self.L2)], [0.040, 0.032, 0.016, 0.0], seg=8), "leg_tip", lo)
+                self.part("band" + name, C.bm_xform(C.bm_cyl(8, 0.036, 0.036, 0.03), loc=(0, 0, -self.L2 * 0.45)),
+                          "glow", lo, nofs=True)
                 self.legs_def.append({"name": name, "u": u, "l": lo, "hip": hip, "rest": rest, "sx": sx, "k": k,
                                       "phase": 0.0 if (k + (0 if sx > 0 else 1)) % 2 == 0 else math.pi})
         self.muzzle_ref = ("fang", (0.0, -0.08, -0.17))
@@ -1892,20 +1901,34 @@ def build_kind(kind: str) -> None:
 
 
 def repack(kind: str) -> None:
+    """Refait atlas + SpriteFrames + méta depuis les images déjà rendues (TMP_DIR/<kind>) : la scène
+    est reconstruite sans rendu pour mesurer pieds et canon."""
     from PIL import Image
+    rig, cam = setup_scene(kind)
     F = frame_of(kind)
     anims = anims_for(kind)
+    od = os.path.join(OUT_DIR, kind)
+    os.makedirs(od, exist_ok=True)
     tmp = os.path.join(TMP_DIR, kind)
-    frames, order = {}, []
-    for d in DIRS:
+    bpy.context.view_layer.update()
+    feet = C.world_to_px(cam, (0, 0, 0))
+    feet = (round(feet[0] / SS), round(feet[1] / SS))
+    frames, order, muzzle = {}, [], {}
+    for d, ang in DIRS.items():
+        rig.j["root"].rotation_euler = (0, 0, math.radians(ang))
+        rig.dir_ang = ang
+        rig.pose("attack", 3, anims["attack"][0])
+        muzzle[d] = muzzle_px(rig, cam)
         for anim, (n, _f, _l) in anims.items():
             for i in range(n):
                 frames[(anim, d, i)] = Image.open(os.path.join(tmp, "%s_%s_%d.png" % (anim, d, i))).convert("RGBA")
                 order.append((anim, d, i))
     atlas, regions = pack(frames, order, F)
-    compact_png(atlas, os.path.join(OUT_DIR, kind, "%s_atlas.png" % kind))
-    with open(os.path.join(OUT_DIR, kind, "%s_meta.json" % kind)) as f:
-        meta = json.load(f)
+    compact_png(atlas, os.path.join(od, "%s_atlas.png" % kind))
+    meta = make_meta(kind, frames, feet, muzzle)
+    with open(os.path.join(od, "%s_meta.json" % kind), "w") as f:
+        json.dump(meta, f, indent=2, ensure_ascii=False)
+        f.write("\n")
     write_tres(kind, anims, regions, meta)
     write_import(kind)
     print("REPACK", kind, atlas.size)

@@ -108,6 +108,23 @@ ARCH: dict[str, dict] = {
             "shieldwood": ("pat", [("#6a4428", "#261420", "#8e5e38"), ("#5a3a22", "#1e1018", "#7a5030")], 6.0),
         },
     },
+    # --- élite : Le Déserteur (bandit d'élite : rafales, esquive, renforts) ---
+    "fw_deserter": {
+        "name": "Le Déserteur", "scale": 1.12, "head": 1.36, "leg": 0.84,
+        "torso": (1.02, 0.98), "arm": 1.02, "belly": 0.0,
+        "hat": "cowboy_tall", "face": "bandana", "kerchief": True, "coat": "duster", "vest": True,
+        "bandolier": "cartridges", "weapon": "burst_rifle", "bracers": True, "run_lean": 0.06,
+        "mats": {
+            "shirt": ("pat", [("#5a4a3a", "#201820", "#7e6852"), ("#4a3c30", "#18121a", "#6a5644")], 8.0),
+            "pants": ("pat", [("#3a3028", "#120e12", "#56483a"), ("#2e2620", "#0e0a0e", "#4a3c30")], 7.0),
+            "vest": ("#2a1e18", "#0c0808", "#4a3428"),
+            "coat": ("pat", [("#6a4430", "#26141a", "#94644a"), ("#58382a", "#1e1016", "#7a523c")], 5.0),
+            "hat": ("#2e221c", "#0e0a0c", "#4e3c30"),
+            "hatband": ("#c09040", "#5a3828", "#f0d080"),
+            "bandana": ("#d02a20", "#4c0c18", "#f85a40"),
+            "boot": ("#1e1614", "#080606", "#3a2c26"),
+        },
+    },
 }
 
 
@@ -558,7 +575,7 @@ class Human:
             blade = C.bm_box(0.024, 0.34, 0.42, bevel=0.006)
             for v in blade.verts:
                 y = v.co.y
-                k = (y + 0.17) / 0.34  # 0 = avant (tranchant), 1 = arrière (douille)
+                k = min(1.0, max(0.0, (y + 0.17) / 0.34))  # 0 = avant (tranchant), 1 = arrière
                 v.co.z *= 0.45 + 0.55 * (1 - k) ** 0.8 if k > 0 else 1.0
                 v.co.x *= 0.35 + 0.65 * k
             self.part("blade", C.bm_xform(blade, loc=(0, -0.20, 0.56)), "axehead", g, grp="axe")

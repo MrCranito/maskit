@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_security_bot"
+display_name = "Sécurité robot"
+max_hp = 150.0
+move_speed = 112.0
+body_radius = 21.0
+detection_radius = 470.0
+detection_angle_deg = 120.0
+lose_sight_time = 4.0
+alert_duration = 0.45
+alert_neighbors_radius = 380.0
+patrol_radius = 120.0
+sight_gain = 2.4
+hearing_radius = 340.0
+hearing_gain = 1.6
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 400.0
+attack_damage = 7.0
+attack_cooldown = 2.1
+attack_windup = 0.6
+projectile_speed = 520.0
+retreat_distance = 150.0
+projectile_style = &"bullet"
+tactic = &"gunner"
+preferred_range_min = 180.0
+preferred_range_max = 340.0
+use_cover = true
+can_flank = false
+strafe_ratio = 0.45
+attack_pattern = &"burst"
+burst_count = 3
+burst_interval = 0.12
+aim_spread_deg = 5.0
+telegraph_line = true
+stagger_ratio = 0.35
+stagger_time = 0.35
+knockback = 40.0
+ground_drop_chance = 0.4
+corpse_name = "Sécurité robot détruit"
+sfx_hurt = &"metal_impact"
+sfx_death = &"enemy_destroy"
+skills = [{"id": &"mall_alarm", "cooldown": 26.0, "initial_cooldown": 4.0, "windup": 1.0, "count": 2, "max_total": 3, "kinds": ["mall_zombie", "mall_zombie", "mall_flayer"], "shout": "ALERTE INTRUSION", "priority": 1.6}, {"id": &"hard_skin", "passive": true, "near": 9999.0, "reduction": 0.2, "front_dot": 0.3, "style": 1.0}]

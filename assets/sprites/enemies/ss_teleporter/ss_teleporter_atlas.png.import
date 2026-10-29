@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://b0c14ccdnim8p"
+path.bptc="res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.bptc.ctex"
+path.astc="res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ss_teleporter/ss_teleporter_atlas.png"
+dest_files=["res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.bptc.ctex", "res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.astc.ctex"]
 
 [params]
 

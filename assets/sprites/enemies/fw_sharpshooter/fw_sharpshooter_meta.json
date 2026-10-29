@@ -1,0 +1,136 @@
+{
+  "kind": "fw_sharpshooter",
+  "name": "Tireur d'élite",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 133,
+  "head_px": 49,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      167.5,
+      75.8
+    ],
+    "se": [
+      148.3,
+      113.9
+    ],
+    "s": [
+      98.4,
+      130.8
+    ],
+    "sw": [
+      47.1,
+      116.5
+    ],
+    "w": [
+      24.5,
+      79.4
+    ],
+    "nw": [
+      43.7,
+      41.3
+    ],
+    "n": [
+      93.6,
+      24.4
+    ],
+    "ne": [
+      144.9,
+      38.7
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      17,
+      81,
+      149,
+      162
+    ],
+    "se": [
+      17,
+      81,
+      149,
+      162
+    ],
+    "s": [
+      44,
+      78,
+      174,
+      167
+    ],
+    "sw": [
+      44,
+      78,
+      174,
+      167
+    ],
+    "w": [
+      44,
+      78,
+      174,
+      167
+    ],
+    "nw": [
+      43,
+      94,
+      175,
+      183
+    ],
+    "n": [
+      43,
+      94,
+      175,
+      183
+    ],
+    "ne": [
+      18,
+      98,
+      148,
+      180
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_sharpshooter/fw_sharpshooter_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

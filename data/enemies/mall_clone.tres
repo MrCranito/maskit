@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_clone"
+display_name = "Clone"
+max_hp = 75.0
+move_speed = 190.0
+body_radius = 17.0
+detection_radius = 420.0
+detection_angle_deg = 160.0
+lose_sight_time = 3.0
+alert_duration = 0.25
+alert_neighbors_radius = 260.0
+patrol_radius = 160.0
+sight_gain = 2.0
+hearing_radius = 380.0
+hearing_gain = 2.0
+awareness_decay = 0.14
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 58.0
+attack_damage = 14.0
+attack_cooldown = 1.4
+attack_windup = 0.3
+projectile_speed = 0.0
+retreat_distance = 0.0
+tactic = &"rusher"
+use_cover = true
+can_flank = true
+zigzag_amplitude = 30.0
+zigzag_period = 0.7
+strafe_ratio = 0.9
+attack_pattern = &"lunge"
+lunge_distance = 70.0
+lunge_speed = 500.0
+combo_hits = 1
+stagger_ratio = 0.3
+stagger_time = 0.4
+knockback = 90.0
+ground_drop_chance = 0.35
+corpse_name = "Clone abattu"
+sfx_hurt = &"outlaw_hurt"
+skills = [{"id": &"mall_illusion", "cooldown": 13.0, "initial_cooldown": 2.5, "windup": 0.5, "max_range": 420.0, "count": 2, "max_total": 3, "illusion": "mall_clone_illusion", "ring": 150.0, "stealth_time": 1.8, "stealth_alpha": 0.2, "priority": 1.4}, {"id": &"mall_shadow_step", "cooldown": 7.0, "initial_cooldown": 3.0, "windup": 0.4, "min_range": 110.0, "max_range": 420.0, "behind": 70.0, "priority": 1.2}]

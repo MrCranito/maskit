@@ -6,8 +6,9 @@ extends RefCounted
 ## - grands décors (fontaine, voitures, gondoles) : emprise de plusieurs cases, posés
 ##   seulement si l'emprise ET son pourtour sont libres (aucune coupure possible) ;
 ## - ennemis : tirages par salle indépendants de la difficulté (le total croît avec elle) ;
-##   roster du monde par type de salle, surchargé par rôle (snipers sur les balcons,
-##   mannequins dans les boutiques de vêtements…) ; boss garanti dans la salle boss.
+##   roster du monde par type de salle, surchargé par rôle (robots sur les balcons, clones dans
+##   les boutiques de vêtements, araignées au cinéma…), regroupés par zones ; 2e rangée du
+##   bestiaire surtout en combat et aux étages profonds ; boss garanti dans la salle boss.
 ## Ameublement choisi d'après Room.tags[0] (rôle posé par mall_layout.gd).
 
 const Cfg := preload("res://scripts/biomes/mall/mall_config.gd")
@@ -120,14 +121,24 @@ const HIDING := {
 	&"arcade": {&"mall_counter": 1.0},
 }
 
-## Rôle → roster d'ennemis prioritaire sur celui du monde (même format que enemy_roster).
+## Rôle → roster d'ennemis prioritaire sur celui du monde (même format que enemy_roster) :
+## robots sur les balcons et au poste de sécurité, clones parmi les cabines d'essayage, araignées
+## dans le noir du cinéma, zombies au parking…
 const ROLE_ROSTER := {
-	&"balcony": {&"mall_sniper": 2.0, &"mall_clown": 2.0, &"mall_guard": 1.5},
-	&"shop_clothes": {&"mall_mannequin": 4.0, &"mall_clown": 1.0, &"mall_guard": 1.0},
-	&"cinema_hall": {&"mall_mannequin": 2.0, &"mall_clown": 2.0},
-	&"roof": {&"mall_sniper": 2.0, &"mall_guard": 2.0, &"mall_clown": 1.0},
-	&"helipad": {&"mall_guard": 2.0, &"mall_sniper": 1.0},
+	&"balcony": {&"mall_security_bot": 2.0, &"mall_flayer": 2.0, &"mall_zombie": 1.0},
+	&"shop_clothes": {&"mall_clone": 3.0, &"mall_zombie": 1.0, &"mall_flayer": 0.5},
+	&"cinema_hall": {&"mall_night_spider": 3.0, &"mall_clone": 1.5, &"mall_zombie": 1.0},
+	&"arcade": {&"mall_clone": 2.0, &"mall_night_spider": 1.0, &"mall_zombie": 1.0},
+	&"security": {&"mall_security_bot": 3.0, &"mall_zombie": 0.5},
+	&"parking": {&"mall_zombie": 3.0, &"mall_brute": 0.8, &"mall_night_spider": 1.0, &"mall_flayer": 1.0},
+	&"roof": {&"mall_security_bot": 2.0, &"mall_flayer": 1.5, &"mall_brute": 0.8},
+	&"helipad": {&"mall_security_bot": 2.0, &"mall_brute": 1.0},
 }
+
+## Réglages du bestiaire (section [bestiary_mall] de balance.cfg, lue directement : générateur
+## utilisable sans autoload).
+const BESTIARY_SECTION := "bestiary_mall"
+
 
 ## Conteneur imposé dans les salles super_loot (coffres de bijouterie).
 const SUPER_LOOT_CONTAINER := &"mall_jewel_safe"
@@ -558,6 +569,8 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 		var tmp := cells[i]
 		cells[i] = cells[j]
 		cells[j] = tmp
+	_group_cells(cells, n, rng)
+	roster = _depth_roster(roster, room, c.L.floor_index)
 	var kinds: Array[StringName] = []
 	for k in Cfg.geti("enemy_max_per_room", 9) + 8:
 		kinds.append(_weighted(roster, rng))
@@ -566,6 +579,55 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	for i2 in mini(n, cells.size()):
 		c.enemy_cells[cells[i2]] = true
 		c.L.add_spawn(c.L.enemy_spawns, cells[i2], kinds[i2], room.id)
+
+
+static func _bcfg(key: String, def: Variant) -> Variant:
+	return Cfg.cfg().get_value(BESTIARY_SECTION, key, def)
+
+
+## « Se regroupent par zones » : avec une probabilité `group_chance`, les `n_needed` premières cases
+## d'apparition (déjà mélangées) sont réordonnées en groupes de `group_size` cases proches d'une
+## ancre ; chaque groupe démarre autour d'une nouvelle ancre tirée parmi les cases restantes.
+static func _group_cells(cells: Array[Vector2i], n_needed: int, rng: RandomNumberGenerator) -> void:
+	if cells.size() < 3 or n_needed < 2 or rng.randf() >= float(_bcfg("group_chance", 0.75)):
+		return
+	var size := maxi(int(_bcfg("group_size", 4)), 1)
+	var rest: Array[Vector2i] = cells.duplicate()
+	cells.clear()
+	var anchor: Vector2i = rest[0]
+	while cells.size() < n_needed and not rest.is_empty():
+		# Les `size` cases les plus proches de l'ancre (sélection partielle, sans tri complet).
+		var take := mini(size, mini(rest.size(), n_needed - cells.size()))
+		for _k in take:
+			var best := 0
+			var best_d := 1 << 30
+			for i in rest.size():
+				var c := rest[i]
+				var dd := absi(c.x - anchor.x) + absi(c.y - anchor.y)
+				if dd < best_d:
+					best_d = dd
+					best = i
+			cells.append(rest[best])
+			rest.remove_at(best)
+		# Prochaine ancre : une case restante au hasard (déjà mélangées) → groupes séparés.
+		if not rest.is_empty():
+			anchor = rest[rest.size() - 1]
+	cells.append_array(rest)
+
+
+## 2e rangée de la planche (plus durs) : surtout en combat / extraction et aux étages profonds ;
+## ailleurs au rez-de-chaussée, leurs poids sont multipliés par `row2_shallow_mult`.
+static func _depth_roster(roster: Dictionary, room: FloorLayout.Room, floor_index: int) -> Dictionary:
+	if floor_index != 0:
+		return roster
+	if room.type in [FloorLayout.ROOM_COMBAT, FloorLayout.ROOM_EXTRACTION, FloorLayout.ROOM_SUPER_LOOT, FloorLayout.ROOM_BOSS]:
+		return roster
+	var row2: Array = _bcfg("row2_kinds", ["mall_clone", "mall_brute", "mall_night_spider"])
+	var mult := float(_bcfg("row2_shallow_mult", 0.3))
+	var out := {}
+	for k: Variant in roster:
+		out[k] = float(roster[k]) * (mult if row2.has(String(k)) else 1.0)
+	return out
 
 
 ## Case à moins de `r` (Manhattan) d'une arrivée d'escalier (pas d'ennemi au débarquement).

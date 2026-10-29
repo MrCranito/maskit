@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_clone"
+display_name = "Illusion"
+max_hp = 1.0
+move_speed = 200.0
+body_radius = 16.0
+detection_radius = 600.0
+detection_angle_deg = 360.0
+lose_sight_time = 6.0
+alert_duration = 0.1
+alert_neighbors_radius = 0.0
+patrol_radius = 40.0
+sight_gain = 4.0
+hearing_radius = 600.0
+hearing_gain = 4.0
+awareness_decay = 0.0
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 56.0
+attack_damage = 4.0
+attack_cooldown = 1.2
+attack_windup = 0.35
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 30.0
+attack_pattern = &"lunge"
+lunge_distance = 70.0
+lunge_speed = 500.0
+stagger_ratio = 0.0
+knockback = 0.0
+ground_drop_chance = 0.0
+corpse_name = "Illusion"
+skills = [{"id": &"mall_illusion_body", "passive": true, "lifetime": 9.0, "hits": 2, "tint": Color(0.82, 0.62, 1, 0.72)}, {"id": &"rush", "status": "", "cooldown": 6.0, "windup": 0.5, "min_range": 80.0, "max_range": 260.0, "speed": 460.0, "damage": 4.0, "self_stun": 0.2}]

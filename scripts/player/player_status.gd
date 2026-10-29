@@ -7,10 +7,11 @@ extends Node2D
 ##   blind     : aveuglé (flash blanc plein écran pour le joueur local, visée perturbée,
 ##               aide à la visée coupée) ;
 ##   burn      : en feu (petites flammes ; les dégâts viennent de la zone de feu).
+##   slow      : ralenti (tempête de sable…) — vitesse × (1 − intensité), intensité bornée à 0,9.
 ## Enfant du joueur ; traitement par image seulement tant qu'un statut est actif.
 ## Réglages : balance.cfg [player_status].
 
-const KINDS: Array[StringName] = [&"stun", &"knockdown", &"root", &"blind", &"burn"]
+const KINDS: Array[StringName] = [&"stun", &"knockdown", &"root", &"blind", &"burn", &"slow"]
 const STAR := Color(1.0, 0.9, 0.35)
 const OUTLINE := Color(0.08, 0.06, 0.1)
 const ROOT_COLOR := Color(0.72, 0.74, 0.8)
@@ -59,6 +60,13 @@ func is_active() -> bool:
 ## Déplacement bloqué (étourdi, renversé, pris au piège).
 func blocks_move() -> bool:
 	return has(&"stun") or has(&"knockdown") or has(&"root")
+
+
+## Multiplicateur de vitesse de déplacement (statut « slow » : 1 − intensité).
+func speed_mult() -> float:
+	if not has(&"slow"):
+		return 1.0
+	return 1.0 - clampf(float(strength.get(&"slow", 0.0)), 0.0, 0.9)
 
 
 ## Tir bloqué (étourdi, renversé).

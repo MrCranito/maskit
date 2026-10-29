@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"mall_zombie"
+display_name = "Zombie"
+max_hp = 60.0
+move_speed = 82.0
+body_radius = 18.0
+detection_radius = 300.0
+detection_angle_deg = 150.0
+lose_sight_time = 4.5
+alert_duration = 0.6
+alert_neighbors_radius = 420.0
+patrol_radius = 90.0
+sight_gain = 1.1
+hearing_radius = 460.0
+hearing_gain = 2.4
+awareness_decay = 0.08
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 56.0
+attack_damage = 10.0
+attack_cooldown = 1.5
+attack_windup = 0.6
+projectile_speed = 0.0
+retreat_distance = 0.0
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 10.0
+zigzag_period = 1.4
+strafe_ratio = 0.3
+attack_pattern = &"melee"
+stagger_ratio = 0.3
+stagger_time = 0.5
+knockback = 70.0
+ground_drop_chance = 0.25
+corpse_name = "Zombie abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"rush", "status": "", "cooldown": 9.0, "windup": 0.7, "min_range": 70.0, "max_range": 200.0, "speed": 300.0, "damage": 11.0, "overshoot": 30.0, "self_stun": 0.4, "priority": 1.0}]

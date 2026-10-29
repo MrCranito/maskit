@@ -1,0 +1,135 @@
+{
+  "kind": "mall_clone",
+  "name": "Clone",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 97,
+  "head_px": 48,
+  "fps": {
+    "idle": 7,
+    "run": 15,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      131.2,
+      89.8
+    ],
+    "se": [
+      141.2,
+      114.6
+    ],
+    "s": [
+      124.6,
+      137.3
+    ],
+    "sw": [
+      91.3,
+      144.7
+    ],
+    "w": [
+      60.8,
+      132.4
+    ],
+    "nw": [
+      50.8,
+      107.6
+    ],
+    "n": [
+      67.4,
+      84.9
+    ],
+    "ne": [
+      100.7,
+      77.5
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      26,
+      90,
+      149,
+      159
+    ],
+    "se": [
+      26,
+      90,
+      149,
+      159
+    ],
+    "s": [
+      43,
+      81,
+      166,
+      165
+    ],
+    "sw": [
+      43,
+      81,
+      166,
+      165
+    ],
+    "w": [
+      43,
+      81,
+      166,
+      165
+    ],
+    "nw": [
+      43,
+      94,
+      166,
+      169
+    ],
+    "n": [
+      43,
+      94,
+      166,
+      169
+    ],
+    "ne": [
+      26,
+      106,
+      149,
+      166
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/mall_clone/mall_clone_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

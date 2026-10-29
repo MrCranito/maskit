@@ -94,63 +94,6 @@ const KINDS: Dictionary = {
 		"eyes": [Vector2(58, 39.3), Vector2(72, 39.3)], "eye_r": 2.8,
 		"debris": [Color(0.22, 0.23, 0.32), Color(0.93, 0.9, 0.84), Color(0.5, 0.52, 0.62)],
 	},
-	# --- Monde 1 : Far West. Repli SVG si les planches 3D (EnemyArt) sont absentes. ---
-	&"outlaw_knife": {
-		"path": "res://assets/sprites/enemies/outlaw_knife.svg",
-		"svg_size": Vector2(100, 124), "feet": Vector2(50, 120), "scale": 0.45,
-		"head": Vector2(0, -56), "shadow": 17.0,
-		"eyes": [Vector2(44, 32.3), Vector2(56, 32.3)], "eye_r": 2.4,
-		"aura": Color(1.0, 0.24, 0.16),
-		"debris": [Color(0.48, 0.08, 0.13), Color(0.95, 0.92, 0.86), Color(0.47, 0.29, 0.17)],
-	},
-	&"gunslinger": {
-		"path": "res://assets/sprites/enemies/gunslinger.svg",
-		"svg_size": Vector2(110, 130), "feet": Vector2(55, 126), "scale": 0.45,
-		"head": Vector2(0, -57), "shadow": 19.0,
-		"eyes": [Vector2(49, 33.4), Vector2(61, 33.4)], "eye_r": 2.4,
-		"aura": Color(1.0, 0.78, 0.22),
-		"debris": [Color(0.43, 0.34, 0.27), Color(0.95, 0.92, 0.86), Color(0.17, 0.15, 0.22)],
-	},
-	&"shotgun_brute": {
-		"path": "res://assets/sprites/enemies/shotgun_brute.svg",
-		"svg_size": Vector2(130, 136), "feet": Vector2(65, 132), "scale": 0.54,
-		"head": Vector2(0, -70), "shadow": 29.0,
-		"eyes": [Vector2(57.5, 37.2), Vector2(72.5, 37.2)], "eye_r": 2.8,
-		"aura": Color(1.0, 0.5, 0.14),
-		"debris": [Color(0.54, 0.23, 0.15), Color(0.93, 0.9, 0.84), Color(0.89, 0.75, 0.48)],
-	},
-	&"sandstone_colossus": {
-		"path": "res://assets/sprites/enemies/sandstone_colossus.svg",
-		"svg_size": Vector2(180, 160), "feet": Vector2(90, 156), "scale": 0.6,
-		"head": Vector2(0, -94), "shadow": 46.0,
-		"eyes": [Vector2(82, 55.5), Vector2(98, 55.5)], "eye_r": 3.2,
-		"aura": Color(1.0, 0.56, 0.16),
-		"debris": [Color(0.82, 0.48, 0.29), Color(0.6, 0.27, 0.22), Color(0.94, 0.66, 0.42), Color(0.95, 0.92, 0.86)],
-	},
-	&"rifleman": {
-		"path": "res://assets/sprites/enemies/gunslinger.svg",
-		"svg_size": Vector2(110, 130), "feet": Vector2(55, 126), "scale": 0.45,
-		"head": Vector2(0, -57), "shadow": 19.0,
-		"eyes": [Vector2(49, 33.4), Vector2(61, 33.4)], "eye_r": 2.4,
-		"aura": Color(1.0, 0.3, 0.2),
-		"debris": [Color(0.6, 0.5, 0.36), Color(0.95, 0.92, 0.86), Color(0.17, 0.15, 0.22)],
-	},
-	&"dynamiter": {
-		"path": "res://assets/sprites/enemies/outlaw_knife.svg",
-		"svg_size": Vector2(100, 124), "feet": Vector2(50, 120), "scale": 0.45,
-		"head": Vector2(0, -56), "shadow": 17.0,
-		"eyes": [Vector2(44, 32.3), Vector2(56, 32.3)], "eye_r": 2.4,
-		"aura": Color(1.0, 0.45, 0.1),
-		"debris": [Color(0.8, 0.16, 0.12), Color(0.95, 0.92, 0.86), Color(0.3, 0.36, 0.45)],
-	},
-	&"gang_boss": {
-		"path": "res://assets/sprites/enemies/shotgun_brute.svg",
-		"svg_size": Vector2(130, 136), "feet": Vector2(65, 132), "scale": 0.6,
-		"head": Vector2(0, -78), "shadow": 30.0,
-		"eyes": [Vector2(57.5, 37.2), Vector2(72.5, 37.2)], "eye_r": 2.8,
-		"aura": Color(1.0, 0.75, 0.2),
-		"debris": [Color(0.75, 0.12, 0.1), Color(0.1, 0.08, 0.08), Color(0.85, 0.66, 0.25)],
-	},
 }
 
 const CONE_FILL := Color(1.0, 0.25, 0.1, 0.10)
@@ -245,6 +188,8 @@ var _elite: bool = false
 var _font: Font = null
 var _stun_total: float = 0.5
 var _throw_anim: bool = false
+## Animation de course (planches) : "run", ou une autre (ex. "charge" : boss à cheval), cf. set_run_anim.
+var _run_anim: String = "run"
 ## Télégraphes et effets de compétences (play_skill_fx) : [kind, a, b, r, durée, âge].
 var _skill_fx: Array = []
 var _shield_left: float = 0.0
@@ -329,6 +274,7 @@ func _setup_sheet(e: Dictionary) -> void:
 
 
 func _reset_effects() -> void:
+	_run_anim = "run"
 	_dying = false
 	_dead = false
 	_death_t = 0.0
@@ -371,7 +317,7 @@ func set_moving(moving: bool) -> void:
 		return
 	_moving = moving
 	if uses_sheet and _anim_lock <= 0.0 and not _dying and not _dead:
-		_play_loop("run" if moving else "idle")
+		_play_loop(_run_anim if moving else "idle")
 
 
 ## Vitesse de lecture (course plus rapide = foulées plus rapides).
@@ -649,6 +595,18 @@ func _attack_anim() -> String:
 	return "throw" if _throw_anim else "attack"
 
 
+## Remplace l'animation de course par `an` si le kind l'a (ex. "charge" du shérif à cheval) ;
+## "" ou "run" = course normale. Relancée tout de suite si l'ennemi est en mouvement.
+func set_run_anim(an: String) -> void:
+	var want := an if an != "" and EnemyArt.has_anim(kind, an) else "run"
+	if want == _run_anim:
+		return
+	_run_anim = want
+	if uses_sheet and not _dying and not _dead and (_anim_name == "run" or _anim_name == an or _moving):
+		_anim_lock = 0.0
+		_play_loop(_run_anim)
+
+
 ## Lance une animation de « throw » si elle existe (chef de bande), sinon attack.
 func use_throw_anim(on: bool) -> void:
 	_throw_anim = on and EnemyArt.has_anim(kind, "throw")
@@ -709,7 +667,7 @@ func _update_sheet(delta: float) -> void:
 		if _anim_lock <= 0.0 or (not _anim_loop and _anim_hold < 0
 				and _anim_t * _anim_fps >= float(_anim_frames) + 0.5):
 			_anim_lock = 0.0
-			_play_loop("run" if _moving else "idle")
+			_play_loop(_run_anim if _moving else "idle")
 	_refresh_sheet_frame()
 
 

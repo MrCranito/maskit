@@ -262,7 +262,7 @@ func test_bouncing_dynamite_lands_at_final_target() -> void:
 
 
 func test_flash_grenade_blinds_only_in_sight() -> void:
-	var e := await _engaged(&"space_soldier", Vector2.ZERO, Vector2(250, 0))
+	var e := await _engaged(&"ss_security_droid", Vector2.ZERO, Vector2(250, 0))
 	e.force_skill(&"flash_grenade")
 	await wait_until(func() -> bool: return _player.has_status_kind(&"blind"), 2.5)
 	assert_true(_player.has_status_kind(&"blind"), "aveuglé")
@@ -277,7 +277,7 @@ func test_flash_grenade_blinds_only_in_sight() -> void:
 
 
 func test_kamikaze_drone_explodes_on_player() -> void:
-	var e := await _engaged(&"space_drone", Vector2.ZERO, Vector2(200, 0))
+	var e := await _engaged(&"ss_spectre", Vector2.ZERO, Vector2(200, 0))
 	var eid := e.get_instance_id()
 	e.force_skill(&"kamikaze")
 	await wait_physics_frames(3)
@@ -290,7 +290,7 @@ func test_kamikaze_drone_explodes_on_player() -> void:
 
 
 func test_android_teleports_after_marker() -> void:
-	var e := await _engaged(&"space_android", Vector2.ZERO, Vector2(380, 0))
+	var e := await _engaged(&"ss_teleporter", Vector2.ZERO, Vector2(380, 0))
 	var s := e.get_skill(&"teleport")
 	s.cooldown_left = 0.0
 	assert_true(s.can_use(380.0, true), "destination trouvée")
@@ -303,7 +303,7 @@ func test_android_teleports_after_marker() -> void:
 
 
 func test_soldier_deploys_turret_that_shoots() -> void:
-	var e := await _engaged(&"space_soldier", Vector2.ZERO, Vector2(260, 0))
+	var e := await _engaged(&"ss_security_droid", Vector2.ZERO, Vector2(260, 0))
 	e.force_skill(&"deploy_turret")
 	await wait_until(func() -> bool: return not get_tree().get_nodes_in_group(EnemyHazard.GROUP).is_empty(), 2.0)
 	var t := get_tree().get_first_node_in_group(EnemyHazard.GROUP) as EnemyHazard
@@ -315,7 +315,7 @@ func test_soldier_deploys_turret_that_shoots() -> void:
 
 
 func test_shockwave_knocks_down_when_ring_passes() -> void:
-	var e := await _engaged(&"space_reactor_colossus", Vector2.ZERO, Vector2(150, 0))
+	var e := await _engaged(&"ss_station_guardian", Vector2.ZERO, Vector2(150, 0))
 	e.force_skill(&"shockwave")
 	await wait_physics_frames(3)
 	assert_true(bool(e.visual.call("has_skill_fx", &"ring")), "anneau de danger")

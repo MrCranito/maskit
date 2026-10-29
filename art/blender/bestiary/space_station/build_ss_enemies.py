@@ -342,6 +342,21 @@ class Mech(Creature):
             self.part("vent", C.bm_xform(C.bm_cyl(10, 0.045, 0.05, 0.10), loc=(0.10 * tw * sx, 0.24 * td, th - 0.08)),
                       "gun", spine)
         self.part("collar", C.bm_xform(C.bm_cyl(14, 0.11 * tw, 0.09 * tw, 0.08), loc=(0, 0.0, th - 0.01)), "joint", spine)
+        if S.get("architect"):
+            # cœur de réacteur rouge au plastron, ailerons dorsaux, antennes
+            self.part("coreRing", C.bm_xform(C.bm_torus(22, 7, 0.10, 0.03), loc=(0, -0.20 * td, th - 0.20),
+                      rot=(math.pi / 2 - 0.3, 0, 0)), "metal", spine)
+            self.part("core", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.205 * td, th - 0.20),
+                      scale=(0.08, 0.04, 0.08), rot=(-0.3, 0, 0)), "red", spine)
+            for sx in (1, -1):
+                fin = C.bm_box(0.05, 0.30, 0.42, bevel=0.02)
+                for v in fin.verts:
+                    if v.co.z > 0:
+                        v.co.y += 0.12
+                C.bm_xform(fin, loc=(0.16 * tw * sx, 0.30 * td, th + 0.10), rot=(0.35, 0, 0.35 * sx))
+                self.part("fin", fin, "armor", spine)
+                self.part("finLight", C.bm_xform(C.bm_box(0.012, 0.20, 0.03), loc=(0.16 * tw * sx + 0.03 * sx,
+                          0.30 * td, th + 0.22), rot=(0.35, 0, 0.35 * sx)), "red", spine)
         if S.get("guardian"):
             # carénage de cou haut + projecteurs d'épaule bleus
             self.part("cowl", C.bm_xform(C.bm_box(0.42 * tw, 0.16 * td, 0.14, bevel=0.05), loc=(0, 0.12 * td, th + 0.02)),
@@ -404,6 +419,12 @@ class Mech(Creature):
                           loc=(0, 0, -self.AL - 0.185)), "blue", fa)
                 self.part("muzzleRing" + side, C.bm_xform(C.bm_torus(14, 5, 0.06 * ar, 0.015), loc=(0, 0, -self.AL - 0.17)),
                           "metal", fa)
+                if S.get("architect"):
+                    # canon double : second tube et bouche rouge, gaine lumineuse
+                    self.part("barrel2" + side, C.bm_xform(C.bm_cyl(12, 0.035 * ar, 0.04 * ar, 0.26),
+                              loc=(0.06 * ar * (1 if side == "L" else -1), 0.03, -self.AL - 0.08)), "gun", fa)
+                    self.part("muzzle2" + side, C.bm_xform(C.bm_cyl(10, 0.025 * ar, 0.025 * ar, 0.02),
+                              loc=(0.06 * ar * (1 if side == "L" else -1), 0.03, -self.AL - 0.215)), "red", fa)
             else:
                 self.part("hand" + side, C.bm_xform(C.bm_box(0.09 * ar, 0.08 * ar, 0.10 * ar, bevel=0.02),
                           loc=(0, 0, -self.AL - 0.02)), "dark", fa)
@@ -514,8 +535,10 @@ class Mech(Creature):
                 v.co.x += 0.06 * (v.co.y / 0.22) ** 2 * -1
             self.part("shieldPlate", C.bm_xform(sh, rot=(0, 0, math.pi / 2)), "plate", g)
             self.part("shieldRim", C.bm_xform(C.bm_box(0.40, 0.03, 0.04, bevel=0.01), loc=(0, -0.05, 0.27)), "light", g)
-            self.part("shieldGlow", C.bm_xform(C.bm_box(0.24, 0.012, 0.03), loc=(0, -0.05, 0.08)), "blue", g)
-            self.part("shieldGlow2", C.bm_xform(C.bm_box(0.24, 0.012, 0.03), loc=(0, -0.05, -0.04)), "blue", g)
+            self.part("shieldGlow", C.bm_xform(C.bm_box(0.30, 0.012, 0.035), loc=(0, -0.055, 0.12)), "blue", g)
+            self.part("shieldGlow2", C.bm_xform(C.bm_box(0.30, 0.012, 0.035), loc=(0, -0.055, -0.06)), "blue", g)
+            self.part("shieldEmblem", C.bm_xform(C.bm_cyl(14, 0.07, 0.07, 0.015), loc=(0, -0.055, 0.03),
+                      rot=(math.pi / 2, 0, 0)), "light", g)
         if self.S.get("weapon") == "arm_cannons":
             self.muzzle_local = ("faR", (0, 0, -self.AL - 0.20))
         if self.S.get("weapon") == "claws":
@@ -1243,10 +1266,11 @@ SPECS: dict[str, dict] = {
         "weapon": "heavy_rifle", "shield": True, "heavy": True, "accent": "blue",
     },
     "ss_architect": {
-        "cls": Mech, "name": "L'Architecte", "frame": 320, "cam_z": 1.40,
-        "scale": 1.70, "leg": (0.34, 0.34), "hip_w": 0.17, "torso": (1.55, 1.30, 0.56), "shoulder_w": 0.46,
+        "cls": Mech, "name": "L'Architecte", "frame": 304, "cam_z": 1.34,
+        "scale": 1.60, "leg": (0.34, 0.34), "hip_w": 0.17, "torso": (1.55, 1.30, 0.56), "shoulder_w": 0.46,
         "arm": (0.26, 0.28), "arm_r": 1.6, "limb_r": 1.45, "head": "architect", "head_scale": 1.0,
-        "weapon": "arm_cannons", "heavy": True, "guardian": True, "accent": "red",
+        "weapon": "arm_cannons", "heavy": True, "guardian": True, "architect": True, "accent": "red",
+        "neck_up": 0.06, "neck_fwd": 0.05,
     },
 }
 CLASSIC = ["ss_security_droid", "ss_spectre", "ss_teleporter", "ss_detector", "ss_station_guardian", "ss_alien",

@@ -1,0 +1,135 @@
+{
+  "kind": "ss_alien_brood",
+  "name": "Larve d'alien",
+  "frame_size": [
+    160,
+    160
+  ],
+  "feet_offset": [
+    80,
+    101
+  ],
+  "display_height": 92.3,
+  "world_per_px": 0.576875,
+  "height_px": 58,
+  "head_px": 63,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      115.4,
+      106.7
+    ],
+    "se": [
+      97.2,
+      122.9
+    ],
+    "s": [
+      68.9,
+      124.7
+    ],
+    "sw": [
+      47.1,
+      111.2
+    ],
+    "w": [
+      44.6,
+      90.2
+    ],
+    "nw": [
+      62.8,
+      74.0
+    ],
+    "n": [
+      91.1,
+      72.1
+    ],
+    "ne": [
+      112.9,
+      85.7
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      40,
+      49,
+      122,
+      140
+    ],
+    "se": [
+      32,
+      50,
+      122,
+      138
+    ],
+    "s": [
+      40,
+      47,
+      110,
+      136
+    ],
+    "sw": [
+      44,
+      53,
+      109,
+      125
+    ],
+    "w": [
+      38,
+      67,
+      120,
+      128
+    ],
+    "nw": [
+      38,
+      71,
+      128,
+      125
+    ],
+    "n": [
+      50,
+      61,
+      120,
+      122
+    ],
+    "ne": [
+      51,
+      54,
+      116,
+      133
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_alien_brood/ss_alien_brood_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

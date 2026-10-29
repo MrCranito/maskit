@@ -11,4 +11,7 @@ const REGISTRY := {
 	&"ss_drone_launch": DIR + "ss_summon_skill.gd",
 	&"ss_brood_summon": DIR + "ss_summon_skill.gd",
 	&"ss_frenzy": DIR + "ss_frenzy_skill.gd",
+	# Boss : L'Architecte
+	&"ss_orbital_laser": DIR + "ss_orbital_laser_skill.gd",
+	&"ss_overload": DIR + "ss_overload_skill.gd",
 }

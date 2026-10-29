@@ -22,7 +22,7 @@ func defaults() -> Dictionary:
 		"ally_radius": Balance.get_float(BAL, "bodyguard_ally_radius", 340.0),
 		"stand_offset": Balance.get_float(BAL, "bodyguard_stand_offset", 70.0),
 		"min_gain": Balance.get_float(BAL, "bodyguard_min_gain", 40.0),
-		"move_time": Balance.get_float(BAL, "bodyguard_move_time", 2.2),
+		"move_time": Balance.get_float(BAL, "bodyguard_move_time", 3.0),
 		"speed_mult": Balance.get_float(BAL, "bodyguard_speed_mult", 1.25),
 		"hold": Balance.get_float(BAL, "bodyguard_hold", 2.4),
 		"need_los": false, "priority": 1.6,
