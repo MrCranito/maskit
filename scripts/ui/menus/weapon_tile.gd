@@ -6,6 +6,9 @@ extends Button
 ## Une carte = un modèle d'arme (`weapon`) ; `uids` = exemplaires possédés (quantité affichée
 ## « ×N » si > 1). `locked` : modèle non possédé (consultation du catalogue) → grisé + cadenas.
 ## `slot_index` ≥ 0 : placé dans l'arsenal de départ (pastille numérotée ; « É » = équipement).
+## Armurerie (`set_shop_status`, Economy.weapon_status) : pastille en haut à gauche : prix en or (achetable),
+## cadenas + progression « 0/1 » (à débloquer en tuant un ennemi), « BUTIN » (Légendaire :
+## jamais en vente) ; la quantité possédée reste affichée en haut à droite.
 
 var weapon: WeaponData = null
 var uids: Array[int] = []
@@ -22,6 +25,9 @@ var _count: PanelContainer = null
 var _slot_badge: PanelContainer = null
 var _lock: Control = null
 var _content: Control = null
+## État d'armurerie (vide = hors armurerie).
+var shop_status: Dictionary = {}
+var _shop_pill: PanelContainer = null
 
 
 func _init(w: WeaponData = null, p_uids: Array[int] = [], p_locked: bool = false) -> void:
@@ -118,6 +124,10 @@ func _ready() -> void:
 	_lock.offset_top = 7
 	_lock.offset_bottom = 37
 	add_child(_lock)
+	_shop_pill = MenuKit.pill("", Color(0.02, 0.03, 0.08, 0.88), 14, MenuKit.TEXT, Color(1, 1, 1, 0.3))
+	_shop_pill.name = "ShopPill"
+	_shop_pill.position = Vector2(6, 6)
+	add_child(_shop_pill)
 	_slot_badge = MenuKit.pill("", MenuKit.RED, 15, MenuKit.TEXT, Color(1, 0.7, 0.6, 0.9))
 	_slot_badge.position = Vector2(-6, -8)
 	add_child(_slot_badge)
@@ -143,6 +153,16 @@ func set_slot(i: int) -> void:
 		_slot_badge.pivot_offset = _slot_badge.size * 0.5
 		create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
 			.tween_property(_slot_badge, "scale", Vector2.ONE, 0.25).from(Vector2(0.3, 0.3))
+
+
+## Armurerie : état {state, price, kills, needed…} (Economy.weapon_status) ; {} = retire.
+func set_shop_status(st: Dictionary) -> void:
+	shop_status = st
+	_refresh()
+
+
+func get_shop_text() -> String:
+	return (_shop_pill.get_node(^"Text") as Label).text if _shop_pill != null and _shop_pill.visible else ""
 
 
 func set_focused_detail(on: bool) -> void:
@@ -172,9 +192,47 @@ func _refresh() -> void:
 	_lock.visible = locked
 	_count.visible = not locked and owned_count() > 1
 	(_count.get_node(^"Text") as Label).text = "×%d" % owned_count()
+	_refresh_shop()
 	_slot_badge.visible = slot_index >= 0
 	var gadget: bool = weapon != null and weapon.is_gadget()
 	(_slot_badge.get_node(^"Text") as Label).text = "É" if gadget else str(slot_index + 1)
+
+
+func _refresh_shop() -> void:
+	if _shop_pill == null:
+		return
+	_shop_pill.visible = not shop_status.is_empty()
+	if shop_status.is_empty():
+		return
+	var state: StringName = shop_status.get("state", &"")
+	var txt := ""
+	var bg := Color(0.02, 0.03, 0.08, 0.88)
+	var fg := MenuKit.TEXT
+	var border := Color(1, 1, 1, 0.3)
+	match state:
+		Economy.STATE_BUYABLE:
+			txt = "%s or" % Economy.fmt(int(shop_status.get("price", 0)))
+			fg = Color(1.0, 0.82, 0.32)
+			border = Color(1.0, 0.78, 0.25, 0.7)
+			_content.modulate = Color.WHITE
+		Economy.STATE_LOCKED:
+			txt = "%d/%d" % [int(shop_status.get("kills", 0)), int(shop_status.get("needed", 1))]
+			bg = Color(0.25, 0.05, 0.07, 0.9)
+			border = Color(1.0, 0.45, 0.4, 0.6)
+			_content.modulate = Color(0.62, 0.64, 0.7, 0.95)
+		_:
+			txt = "BUTIN"
+			bg = Color(0.38, 0.22, 0.02, 0.92)
+			fg = Color(1.0, 0.86, 0.5)
+			border = Color(1.0, 0.72, 0.2, 0.7)
+			_content.modulate = Color(0.78, 0.78, 0.84, 0.95)
+	_lock.visible = state == Economy.STATE_LOCKED and not _count.visible
+	(_shop_pill.get_node(^"Text") as Label).text = txt
+	(_shop_pill.get_node(^"Text") as Label).add_theme_color_override("font_color", fg)
+	var ps := _shop_pill.get_theme_stylebox("panel") as StyleBoxFlat
+	ps.bg_color = bg
+	ps.border_color = border
+	ps.set_border_width_all(1)
 
 
 ## Petit cadenas dessiné (modèle non possédé).

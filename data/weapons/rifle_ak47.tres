@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.0
 eject_shells = true
 sprite_id = &"rifle_ak47"
 value = 90
+unlock_mode = &"shop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 260

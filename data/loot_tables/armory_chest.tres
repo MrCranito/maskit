@@ -11,6 +11,8 @@ rolls_max = 4
 empty_chance = 0.0
 search_time = 1.8
 entries = {
+&"black_powder": 4.0,
+&"mat_scrap": 3.0,
 &"space_antimatter": 0.15,
 &"space_encrypted_core": 0.4,
 &"space_fusion_cell": 2.5,
@@ -19,7 +21,8 @@ entries = {
 &"space_officer_badge": 2.0,
 &"space_plasma_cells": 6.0,
 &"space_star_map": 1.0,
-&"wpn_gadget_c4": 0.154,
+&"wpn_gadget_c4": 0.576,
+&"wpn_gadget_decoy": 3.84,
 &"wpn_gadget_drone": 0.154,
 &"wpn_gadget_frag": 3.84,
 &"wpn_gadget_mine": 0.576,

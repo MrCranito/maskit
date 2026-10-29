@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/recipe_data.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+id = &"craft_c4"
+display_name = "C4"
+description = "Explosif plastique et détonateur radio : la recette la plus chère de l'atelier."
+category = &"gadget"
+result_item_id = &""
+result_weapon_id = &"gadget_c4"
+result_count = 1
+ingredients = {
+"@mechanism": 2,
+"black_powder": 6,
+"mat_chemicals": 3
+}
+gold_cost = 250
+craft_time = 0.0
+sort_order = 70

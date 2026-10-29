@@ -41,3 +41,7 @@ muzzle_flash_scale = 0.8
 eject_shells = true
 sprite_id = &"pistol_p320"
 value = 1300
+unlock_mode = &"drop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 0

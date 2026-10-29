@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.8
 eject_shells = false
 sprite_id = &"rocket_javelin"
 value = 2600
+unlock_mode = &"drop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 0

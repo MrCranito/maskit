@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_mp5_desert"
+display_name = "Camouflage désert"
+description = "Taches sable, ocre et terre brûlée."
+kind = &"weapon"
+rarity = 2
+price_gems = 200
+weapon_category = &"smg"
+weapon_id = &"smg_mp5"
+source = &"shop"
+color_primary = Color(0.784, 0.667, 0.471, 1)
+color_secondary = Color(0.541, 0.416, 0.267, 1)
+color_accent = Color(0.902, 0.824, 0.651, 1)
+pattern = &"camo"
+glow = 0.0

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_p320_blood"
+display_name = "Rouge sang"
+description = "Laque rouge profond rayée de noir."
+kind = &"weapon"
+rarity = 3
+price_gems = 450
+weapon_category = &"pistol"
+weapon_id = &"pistol_p320"
+source = &"pass"
+color_primary = Color(0.769, 0.086, 0.110, 1)
+color_secondary = Color(0.102, 0.047, 0.063, 1)
+color_accent = Color(1.000, 0.478, 0.416, 1)
+pattern = &"stripes"
+glow = 0.0

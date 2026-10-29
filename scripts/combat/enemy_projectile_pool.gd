@@ -49,6 +49,8 @@ func spawn(pos: Vector2, dir: Vector2, speed: float, damage: float, source: Node
 	var life := lifetime if lifetime > 0.0 else Balance.get_float("enemy_ai", "projectile_lifetime", 2.5)
 	p.launch(pos, dir, speed, damage, source, life, style)
 	EventBus.projectile_fired.emit(p)
+	if NetHooks.active:
+		NetHooks.on_enemy_projectile(pos, dir, speed, life, style)  # Coop : visuel chez l'invité.
 	return p
 
 

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://data/items/icons/medkit.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"medkit"
+display_name = "Trousse de soin"
+description = "Trousse fabriquée à l'atelier : compresses, désinfectant, attelle. Rend 60 PV."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 2
+type = &"consumable"
+stack_max = 3
+value = 60
+weight = 0.6
+drop_min = 1
+drop_max = 1
+heal_amount = 60.0

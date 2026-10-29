@@ -2,9 +2,14 @@ class_name NavButton
 extends Button
 ## Bouton de la barre de navigation du lobby : pictogramme (MenuGlyph) au-dessus d'un libellé
 ## court. Fond bleu nuit translucide, liseré or au focus, retours tactiles MenuKit.
+## Option : pastille de notification (set_badge) et état « Bientôt » (écran pas encore livré).
 
 var glyph: MenuGlyph = null
 var caption: Label = null
+## Écran cible absent : le bouton affiche « Bientôt » et n'ouvre rien.
+var soon: bool = false
+var _badge: PanelContainer = null
+var _soon_pill: PanelContainer = null
 
 
 func _init(label_text: String, glyph_kind: StringName, accent: Color = MenuKit.TEXT) -> void:
@@ -35,7 +40,7 @@ func _init(label_text: String, glyph_kind: StringName, accent: Color = MenuKit.T
 	col.add_theme_constant_override("separation", 2)
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(col)
-	glyph = MenuGlyph.new(glyph_kind, accent, 34)
+	glyph = PassGlyph.new(glyph_kind, accent, 34)
 	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	col.add_child(glyph)
 	caption = MenuKit.label(label_text, 14, MenuKit.TEXT, MenuKit.nunito(900), 3)
@@ -45,3 +50,34 @@ func _init(label_text: String, glyph_kind: StringName, accent: Color = MenuKit.T
 
 func _ready() -> void:
 	MenuKit.add_feedback(self, 1.08)
+
+
+## Pastille rouge (nombre) en haut à droite ; 0 = masquée.
+func set_badge(n: int) -> void:
+	if _badge == null:
+		_badge = MenuKit.pill("", MenuKit.RED, 12, MenuKit.TEXT, Color(1, 1, 1, 0.8))
+		_badge.name = "Badge"
+		_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		_badge.offset_left = -30
+		_badge.offset_top = 2
+		_badge.offset_right = -6
+		add_child(_badge)
+	_badge.visible = n > 0
+	(_badge.get_node("Text") as Label).text = str(n) if n < 100 else "99+"
+
+
+## Écran pas encore disponible : pastille « Bientôt », pictogramme atténué.
+func set_soon(on: bool) -> void:
+	soon = on
+	glyph.modulate.a = 0.45 if on else 1.0
+	caption.modulate.a = 0.6 if on else 1.0
+	if on and _soon_pill == null:
+		_soon_pill = MenuKit.pill("Bientôt", Color(MenuKit.NIGHT_DEEP, 0.95), 11, MenuKit.GOLD, Color(MenuKit.GOLD, 0.7))
+		_soon_pill.name = "Soon"
+		_soon_pill.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_soon_pill.offset_left = -28
+		_soon_pill.offset_right = 28
+		_soon_pill.offset_top = 0
+		add_child(_soon_pill)
+	if _soon_pill != null:
+		_soon_pill.visible = on

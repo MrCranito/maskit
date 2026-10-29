@@ -137,6 +137,8 @@ var _c4_placed: Array[GadgetDevice] = []
 var _active_drone: GadgetDrone = null
 ## Gravité faible : sur une case de layout.low_gravity_cells (mis à jour toutes les 0,1 s).
 var in_low_gravity: bool = false
+## Coop (scripts/net) : « à terre » (0 PV, en attente de réanimation) — immobile, ne tire pas.
+var net_downed: bool = false
 var _lowg_check: float = 0.0
 var _lowg_accel_mult: float = 0.18
 var _lowg_decel_mult: float = 0.06
@@ -344,7 +346,7 @@ func get_placed_c4_count() -> int:
 ## Renvoie true si quelque chose s'est produit.
 func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
 	var g: WeaponData = loadout.gadget
-	if g == null or not _alive or _hidden:
+	if g == null or not _alive or _hidden or net_downed:
 		return false
 	var kind: StringName = g.gadget_kind
 	if kind == WeaponData.GADGET_C4 and get_placed_c4_count() > 0:
@@ -352,6 +354,8 @@ func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
 			if is_instance_valid(d):
 				d.detonate()
 		_c4_placed.clear()
+		if NetHooks.active:
+			NetHooks.on_gadget(self, g, &"c4_detonate", global_position, global_position, 0.0)
 		_play_sfx(&"click")
 		gadget_changed.emit()
 		return true
@@ -364,6 +368,8 @@ func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
 		if is_instance_valid(_active_drone):
 			_active_drone.leaving = true
 		_active_drone = GadgetDrone.spawn(parent, self, g)
+		if NetHooks.active:
+			NetHooks.on_gadget(self, g, &"drone", global_position, global_position, 0.0)
 	else:
 		var hand_h: float = visual.hand_height if visual != null else 24.0
 		var place: bool = kind == WeaponData.GADGET_MINE or kind == WeaponData.GADGET_C4
@@ -374,6 +380,8 @@ func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
 			target, self, in_low_gravity)
 		if kind == WeaponData.GADGET_C4:
 			_c4_placed.append(dev)
+		if NetHooks.active:
+			NetHooks.on_gadget(self, g, &"throw", global_position + d0 * 12.0, target, 0.0 if place else hand_h)
 	if visual != null:
 		visual.on_throw(d0, g)
 	_fire_noise = maxf(_fire_noise, 0.4)
@@ -465,7 +473,11 @@ func _physics_process(delta: float) -> void:
 	_fire_noise = maxf(_fire_noise - delta / maxf(noise_fire_decay, 0.01), 0.0)
 	_dry_fire_cooldown = maxf(_dry_fire_cooldown - delta, 0.0)
 	_tick_weapon(delta)
-	if not _alive:
+	if not _alive or net_downed:
+		if net_downed:
+			velocity = Vector2.ZERO
+			_is_moving = false
+			_aiming = false
 		_update_camera(delta)
 		return
 
@@ -589,7 +601,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton:
 			_mouse_aim_active = true
 		return
-	if not _alive:
+	if not _alive or net_downed:
 		return
 	if event.is_action_pressed("gadget"):
 		use_gadget(Vector2.ZERO)
@@ -1019,7 +1031,10 @@ func get_hide_spot() -> Node:
 # --- Dégâts ------------------------------------------------------------------
 
 func take_damage(amount: float, _source: Node) -> void:
-	if not _alive or _invulnerable_left > 0.0 or amount <= 0.0:
+	if not _alive or net_downed or _invulnerable_left > 0.0 or amount <= 0.0:
+		return
+	# Coop, invité : seuls les dégâts envoyés par l'hôte comptent.
+	if NetHooks.active and NetHooks.blocks_local_damage():
 		return
 	hp = maxf(hp - amount, 0.0)
 	_invulnerable_left = invulnerability_duration
@@ -1028,7 +1043,7 @@ func take_damage(amount: float, _source: Node) -> void:
 		visual.hp_dirty()
 	add_shake(camera_shake_amount * 1.6, 0.15)
 	EventBus.player_damaged.emit(amount, hp, max_hp)
-	if hp <= 0.0:
+	if hp <= 0.0 and not (NetHooks.active and NetHooks.player_down(self)):
 		_die()
 
 

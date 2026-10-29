@@ -41,3 +41,7 @@ muzzle_flash_scale = 0.0
 eject_shells = false
 sprite_id = &"gadget_frag"
 value = 60
+unlock_mode = &"shop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 120

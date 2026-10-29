@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_vector_neon"
+display_name = "Néon violet"
+description = "Coque noire parcourue de néons violets et cyan."
+kind = &"weapon"
+rarity = 4
+price_gems = 950
+weapon_category = &"smg"
+weapon_id = &"smg_vector"
+source = &"pass"
+color_primary = Color(0.753, 0.251, 1.000, 1)
+color_secondary = Color(0.078, 0.071, 0.118, 1)
+color_accent = Color(0.220, 0.941, 1.000, 1)
+pattern = &"neon"
+glow = 0.55

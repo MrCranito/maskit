@@ -80,7 +80,7 @@ func _physics_process(delta: float) -> void:
 func _on_hit(other: Node) -> void:
 	if not active or other == source:
 		return
-	if other.is_in_group(&"player"):
+	if other.is_in_group(&"player") or other.is_in_group(NetHooks.GROUP_AVATAR):
 		if other.has_method("take_damage"):
 			other.call("take_damage", damage, source if is_instance_valid(source) else null)
 		deactivate()

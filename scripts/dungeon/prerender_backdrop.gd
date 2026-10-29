@@ -25,6 +25,8 @@ extends Node2D
 ##   bâtiment effacées avec son toit (joueur dedans) ; tranche devant le joueur semi-transparente.
 
 const PACK_ROOT := "res://assets/prerender/far_west/"
+## (Ajout générique, station) Paquets par biome : res://assets/prerender/<biome>/<seed>/.
+const PACK_BASE := "res://assets/prerender/"
 const TS := float(FloorLayout.TILE_SIZE)
 
 var meta: Dictionary = {}
@@ -46,21 +48,33 @@ var _occ_enabled := true
 var _player: Node2D = null
 
 
+## Dossier des paquets d'un biome (far_west → PACK_ROOT).
+static func pack_root(biome: StringName = &"far_west") -> String:
+	return PACK_BASE + String(biome) + "/"
+
+
 ## Graines pré-rendues disponibles (dossiers contenant map.json).
-static func available_seeds() -> PackedInt32Array:
+static func available_seeds(biome: StringName = &"far_west") -> PackedInt32Array:
 	var out := PackedInt32Array()
-	var d := DirAccess.open(PACK_ROOT)
+	var root := pack_root(biome)
+	var d := DirAccess.open(root)
 	if d == null:
 		return out
 	for n in d.get_directories():
-		if n.is_valid_int() and ResourceLoader.exists(PACK_ROOT + n + "/map.json") or FileAccess.file_exists(PACK_ROOT + n + "/map.json"):
+		if n.is_valid_int() and ResourceLoader.exists(root + n + "/map.json") or FileAccess.file_exists(root + n + "/map.json"):
 			out.append(int(n))
+	out.sort()
 	return out
 
 
+## true si le biome a au moins un paquet pré-rendu.
+static func has_packs(biome: StringName) -> bool:
+	return not available_seeds(biome).is_empty()
+
+
 ## Tire une carte pré-rendue au hasard (0 si aucune).
-static func pick_seed(rng_seed: int) -> int:
-	var seeds := available_seeds()
+static func pick_seed(rng_seed: int, biome: StringName = &"far_west") -> int:
+	var seeds := available_seeds(biome)
 	if seeds.is_empty():
 		return 0
 	var rng := RandomNumberGenerator.new()
@@ -78,8 +92,8 @@ static func layout_md5(L: FloorLayout) -> String:
 	return s.md5_text()
 
 
-static func create(map_seed: int, layout: FloorLayout = null) -> PrerenderBackdrop:
-	var dir := PACK_ROOT + str(map_seed) + "/"
+static func create(map_seed: int, layout: FloorLayout = null, biome: StringName = &"far_west") -> PrerenderBackdrop:
+	var dir := pack_root(biome) + str(map_seed) + "/"
 	var f := FileAccess.open(dir + "map.json", FileAccess.READ)
 	if f == null:
 		return null
@@ -179,6 +193,9 @@ func attach_to(builder: Node2D) -> void:
 	if builder.has_method("get_props"):
 		for pr: Node in builder.call("get_props"):
 			(pr as CanvasItem).visible = false
+	# (Ajout générique) Constructeur de biome : masque ses propres visuels remplacés par le rendu.
+	if builder.has_method("prerender_hide"):
+		builder.call("prerender_hide")
 	var roofs: Array = builder.call("get_roofs") if builder.has_method("get_roofs") else []
 	var by_id := {}
 	for r: Node2D in roofs:

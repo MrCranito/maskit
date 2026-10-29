@@ -11,6 +11,8 @@ rolls_max = 3
 empty_chance = 0.1
 search_time = 1.2
 entries = {
+&"mat_chemicals": 5.0,
+&"mat_cloth": 4.0,
 &"space_data_chip": 1.0,
 &"space_medigel": 7.0,
 &"space_nanomeds": 2.0,

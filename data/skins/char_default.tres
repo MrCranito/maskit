@@ -9,6 +9,7 @@ id = &"char_default"
 display_name = "Soldat standard"
 description = "Un équipement polyvalent pour toutes les situations. Idéal pour commencer l'aventure."
 kind = &"character"
+source = &"default"
 rarity = 0
 price_gems = 0
 sprite_dir = "res://assets/sprites/hero3d"

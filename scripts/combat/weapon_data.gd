@@ -52,6 +52,12 @@ const GADGET_SMOKE := &"smoke"
 const GADGET_MINE := &"mine"
 const GADGET_C4 := &"c4"
 const GADGET_DRONE := &"drone"
+## Leurre : lancé, émet du bruit (NoiseSources) qui attire les ennemis pendant effect_duration.
+const GADGET_DECOY := &"decoy"
+## Modes de déblocage à l'armurerie (champ `unlock_mode`).
+const UNLOCK_SHOP := &"shop"
+const UNLOCK_KILL := &"kill"
+const UNLOCK_DROP := &"drop"
 
 @export var id: StringName = &""
 @export var display_name: String = ""
@@ -137,6 +143,16 @@ const GADGET_DRONE := &"drone"
 @export var permanent: bool = false
 ## Valeur marchande indicative (dollars).
 @export var value: int = 50
+
+@export_group("Économie")
+## Armurerie (agent Économie, scripts/economy/) : UNLOCK_SHOP = achetable d'emblée,
+## UNLOCK_KILL = achetable après `unlock_kills` victimes de `unlock_enemy_kind`,
+## UNLOCK_DROP = jamais achetable (butin uniquement : toutes les Légendaires).
+@export var unlock_mode: StringName = &"drop"
+@export var unlock_enemy_kind: StringName = &""
+@export var unlock_kills: int = 0
+## Prix d'achat à l'armurerie (pièces d'or).
+@export var price_gold: int = 0
 
 
 func get_rarity_color() -> Color:

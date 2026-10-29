@@ -86,6 +86,10 @@ var _glows: Array = []
 var _alarms: Array = []
 var _container_kind: Dictionary = {}
 var _hiding_kind: Dictionary = {}
+## (Pré-rendu) Toits logiques des modules fermés (layout.buildings) : BuildingRoof sans dessin
+## (roof_rect vide) dont le fondu « joueur dedans » pilote les intérieurs du fond pré-calculé
+## (PrerenderBackdrop.attach_to, même contrat que WorldBuilder.get_roofs()).
+var _roofs: Array[BuildingRoof] = []
 
 
 static func build(p_layout: FloorLayout, world: Resource = null) -> SpaceStationBuilder:
@@ -112,6 +116,20 @@ func get_props() -> Array[Node2D]:
 
 func get_wall_body() -> StaticBody2D:
 	return _wall_body
+
+
+func get_roofs() -> Array[BuildingRoof]:
+	return _roofs
+
+
+## (Pré-rendu) Masque les visuels remplacés par le fond pré-calculé (espace, plateformes
+## d'ascenseur, lueurs et alarmes peintes) ; PrerenderBackdrop.attach_to masque déjà Ground,
+## Walls (visuels), FloorDetails et les décors, et neutralise AmbientTint.
+func prerender_hide() -> void:
+	for nm: String in ["Space", "LiftVisual", "Glows", "Alarms"]:
+		var n := get_node_or_null(NodePath(nm))
+		if n is CanvasItem:
+			(n as CanvasItem).visible = false
 
 
 func get_room_at_world(pos: Vector2) -> FloorLayout.Room:
@@ -160,6 +178,7 @@ func _build(world: Resource) -> void:
 	_build_stairs()
 	_build_props()
 	_build_extraction()
+	_build_roofs()
 	_build_lights()
 	_build_ambience()
 	_prepare_loot_patch()
@@ -756,6 +775,20 @@ class FloorDetails extends Node2D:
 			draw_set_transform(FloorLayout.cell_to_world(s.cell) + s.offset, s.rot, Vector2(-1.0 if s.flip else 1.0, 1.0))
 			draw_texture_rect_region(atlas, Rect2(-size * 0.5, size), reg)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# --- Toits logiques (pré-rendu) ---------------------------------------------------------------
+
+func _build_roofs() -> void:
+	for b: FloorLayout.Building in layout.buildings:
+		var roof := BuildingRoof.new()
+		roof.name = "Roof_%d_%s" % [b.id, String(b.archetype)]
+		roof.archetype = b.archetype
+		roof.building_name = b.name
+		roof.footprint = Rect2(Vector2(b.rect.position) * TS, Vector2(b.rect.size) * TS)
+		roof.roof_rect = Rect2()
+		add_child(roof)
+		_roofs.append(roof)
 
 
 # --- Extraction ------------------------------------------------------------------------------

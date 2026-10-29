@@ -257,11 +257,11 @@ func _on_hit(other: Node) -> void:
 		_hit_ids[key] = true
 		if style == STYLE_ROCKET or style == STYLE_GRENADE:
 			# Impact direct : dégâts de base + explosion.
-			other.take_damage(damage, source)
+			_deal(other, damage)
 			_explode(global_position)
 			deactivate()
 			return
-		other.take_damage(damage, source)
+		_deal(other, damage)
 		_fx_enemy_hit(other)
 		if pierce_left > 0:
 			pierce_left -= 1
@@ -286,6 +286,15 @@ func _on_hit(other: Node) -> void:
 		if style == STYLE_TRACER:
 			_leave_tracer(hit_pos)
 	deactivate()
+
+
+## Dégâts d'un impact direct. Coop, invité : purement visuel (l'hôte refait partir le tir et
+## applique les dégâts).
+func _deal(other: Node, amount: float) -> void:
+	if NetHooks.guest_mode:
+		NetHooks.guest_hit_feedback(other)
+		return
+	other.take_damage(amount, source)
 
 
 ## Grenade contre un mur : un raycast pour la normale, rebond amorti.

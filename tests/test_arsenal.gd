@@ -1,6 +1,6 @@
 extends GutTest
 ## Arsenal (refonte Exfil Rush) : catalogue d'armes, objets armes, tables de butin,
-## cycle du profil (départ, mort, extraction) et fin de raid.
+## cycle du profil (départ, mort, extraction) et fin de raid. Économie : tests/test_economy.gd.
 ## Les tests de profil utilisent l'autoload Profile après avoir mis de côté son contenu,
 ## SaveManager.data et le fichier de sauvegarde, restaurés à l'identique après chaque test.
 
@@ -17,7 +17,9 @@ const PLANCHE := {
 	&"rocket_rpg7": ["RPG-7", &"rocket_launcher", 2], &"rocket_m202": ["M202", &"rocket_launcher", 3],
 	&"rocket_javelin": ["Javelin", &"rocket_launcher", 4],
 	&"gadget_frag": ["Grenade frag", &"gadget", 0], &"gadget_smoke": ["Grenade fumigène", &"gadget", 2],
-	&"gadget_mine": ["Mine", &"gadget", 3], &"gadget_c4": ["C4", &"gadget", 4], &"gadget_drone": ["Drone", &"gadget", 4],
+	&"gadget_mine": ["Mine", &"gadget", 3], &"gadget_c4": ["C4", &"gadget", 3], &"gadget_drone": ["Drone", &"gadget", 4],
+	# Hors planche : leurre de l'atelier (refonte n°3, économie).
+	&"gadget_decoy": ["Leurre", &"gadget", 0],
 }
 const BIOME_TABLES := {
 	"far_west": "res://data/worlds/world_01_far_west.tres",
@@ -66,7 +68,7 @@ func _catalog() -> Array[WeaponData]:
 func test_catalogue_exact_de_la_planche() -> void:
 	WeaponCatalog.reload()
 	var all := _catalog()
-	assert_eq(all.size(), 23, "18 armes + 5 équipements")
+	assert_eq(all.size(), 24, "18 armes + 5 équipements + le leurre")
 	for id: StringName in PLANCHE:
 		var w := WeaponCatalog.get_weapon(id)
 		assert_not_null(w, "arme %s" % id)
@@ -89,7 +91,7 @@ func test_catalogue_exact_de_la_planche() -> void:
 
 func test_equipements_dans_l_emplacement_gadget() -> void:
 	var kinds := {&"gadget_frag": [&"frag", 3], &"gadget_smoke": [&"smoke", 2], &"gadget_mine": [&"mine", 2],
-		&"gadget_c4": [&"c4", 1], &"gadget_drone": [&"drone", 1]}
+		&"gadget_c4": [&"c4", 1], &"gadget_drone": [&"drone", 1], &"gadget_decoy": [&"decoy", 2]}
 	for w: WeaponData in _catalog():
 		assert_eq(w.is_gadget(), w.category == WeaponData.CAT_GADGET, "%s : slot cohérent" % w.id)
 		if not w.is_gadget():
@@ -100,7 +102,7 @@ func test_equipements_dans_l_emplacement_gadget() -> void:
 		match w.gadget_kind:
 			WeaponData.GADGET_FRAG, WeaponData.GADGET_C4, WeaponData.GADGET_MINE:
 				assert_true(w.is_explosive(), "%s : explose" % w.id)
-			WeaponData.GADGET_SMOKE, WeaponData.GADGET_DRONE:
+			WeaponData.GADGET_SMOKE, WeaponData.GADGET_DRONE, WeaponData.GADGET_DECOY:
 				assert_gt(w.effect_duration, 0.0, "%s : durée" % w.id)
 				assert_gt(w.effect_radius, 0.0, "%s : rayon" % w.id)
 
@@ -291,7 +293,11 @@ func test_extraction_rend_armes_tenues_sac_et_objets() -> void:
 	assert_eq(int((p.get("items") as Dictionary).get("gold_nugget", 0)), 3, "objets en réserve")
 	assert_eq((res["weapons"] as Array).size(), 3)
 	var expected_value := LootDB.get_item(&"wpn_rifle_m4a1").value + LootDB.get_item(&"gold_nugget").value * 3
-	assert_eq(int(res["value"]), expected_value)
+	assert_eq(int(res["loot_value"]), expected_value, "valeur brute du butin")
+	# Valeur affichée = or estimé au marchand ; l'extraction ne donne pas d'or (vente manuelle).
+	assert_eq(int(res["value"]), Economy.item_sell_price(LootDB.get_item(&"wpn_rifle_m4a1"))
+		+ Economy.item_sell_price(LootDB.get_item(&"gold_nugget")) * 3)
+	assert_eq(int(p.get("gold")), 0, "pas d'or automatique")
 	assert_eq(int(res["gems"]), Profile.extraction_gems(expected_value))
 	assert_false(bool(p.get("raid_in_progress")))
 

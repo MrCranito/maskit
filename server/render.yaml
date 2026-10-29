@@ -1,0 +1,12 @@
+# Render (Blueprint) : New + > Blueprint > ce dépôt (voir README.md).
+services:
+  - type: web
+    name: raidersgo-relay
+    runtime: docker
+    rootDir: server
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LOG
+        value: "1"

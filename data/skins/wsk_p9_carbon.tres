@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_p9_carbon"
+display_name = "Carbone"
+description = "Fibre de carbone tissée, finition mate."
+kind = &"weapon"
+rarity = 2
+price_gems = 150
+weapon_category = &"pistol"
+weapon_id = &"pistol_p9"
+source = &"shop"
+color_primary = Color(0.541, 0.573, 0.627, 1)
+color_secondary = Color(0.133, 0.145, 0.173, 1)
+color_accent = Color(0.784, 0.816, 0.863, 1)
+pattern = &"carbon"
+glow = 0.0

@@ -9,6 +9,7 @@ id = &"char_fantome"
 display_name = "Fantôme"
 description = "Cagoule tête de mort et casque audio : une silhouette qu'on ne voit qu'une fois."
 kind = &"character"
+source = &"pass"
 rarity = 2
 price_gems = 250
 sprite_dir = "res://assets/sprites/hero3d/skins/fantome"

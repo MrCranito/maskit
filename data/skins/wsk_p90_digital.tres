@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_p90_digital"
+display_name = "Numérique"
+description = "Pixels verts et noirs, camouflage de jungle numérique."
+kind = &"weapon"
+rarity = 3
+price_gems = 420
+weapon_category = &"smg"
+weapon_id = &"smg_p90"
+source = &"shop"
+color_primary = Color(0.306, 0.541, 0.227, 1)
+color_secondary = Color(0.110, 0.165, 0.094, 1)
+color_accent = Color(0.612, 0.800, 0.353, 1)
+pattern = &"digital"
+glow = 0.0

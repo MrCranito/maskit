@@ -7,6 +7,7 @@ const Gen := preload("res://scripts/biomes/space_station/space_station_generator
 const Builder := preload("res://scripts/biomes/space_station/space_station_builder.gd")
 const Kinds := preload("res://scripts/biomes/space_station/enemy_kinds.gd")
 const Prop := preload("res://scripts/biomes/space_station/ss_prop.gd")
+const Cross := preload("res://scripts/biomes/space_station/ss_cross.gd")
 const SEEDS := 20
 const DIFFS := 5
 const MAX_MS_PER_FLOOR := 50.0
@@ -98,6 +99,7 @@ func test_boss_seulement_salle_boss() -> void:
 # --- Structure -----------------------------------------------------------------------------
 
 func test_trois_ponts_meme_grille() -> void:
+	# (Refonte n°3) Pont 0 = station en croix (portrait 64×116) ; ponts 1 et -1 = grille commune.
 	for per_diff: Array in runs:
 		var floors: Array = per_diff[0]
 		assert_eq(floors.size(), 3, "ponts -1, 0, 1")
@@ -107,9 +109,12 @@ func test_trois_ponts_meme_grille() -> void:
 		for f: FloorLayout in floors:
 			assert_gt(f.floor_index, prev, "trié par floor_index")
 			prev = f.floor_index
-			assert_eq(f.size, g.size, "même grille")
-		assert_between(g.size.x, 60, 70)
-		assert_between(g.size.y, 38, 48)
+		assert_eq(_floor(floors, 1).size, _floor(floors, -1).size, "même grille (ponts 1 / -1)")
+		assert_eq(g.size, Vector2i(Cross.W, Cross.H), "pont en croix")
+		assert_gt(g.size.y, g.size.x, "format portrait")
+		var o := _floor(floors, 1)
+		assert_between(o.size.x, 60, 70)
+		assert_between(o.size.y, 38, 48)
 
 
 func test_roles_et_types_de_salles() -> void:
@@ -128,7 +133,7 @@ func test_roles_et_types_de_salles() -> void:
 				boss += 1
 			if r.type == FloorLayout.ROOM_SUPER_LOOT:
 				sup += 1
-		assert_lte(sup, 1, "%s : au plus une salle scellée" % _tag(f))
+		assert_lte(sup, 2 if f.floor_index == 0 else 1, "%s : salles scellées (labo + armurerie au pont 0)" % _tag(f))
 		match f.floor_index:
 			0:
 				assert_eq(spawn, 1, "hangar d'arrivée")
@@ -340,7 +345,8 @@ func test_spawn_hangar_et_extraction_eloignee() -> void:
 		var g := _floor(per_diff[0], 0)
 		var ps := g.player_spawn
 		assert_eq(g.room_at(ps).tags[0], "hangar")
-		assert_lte(ps.x, 4, "hangar à l'ouest")
+		assert_gte(ps.y, g.size.y - 16, "hangar au sud (bas de la croix)")
+		assert_between(ps.x, g.size.x / 2 - 4, g.size.x / 2 + 4, "hangar centré")
 		for e in g.extraction_cells:
 			assert_gt(absi(e.x - ps.x) + absi(e.y - ps.y), g.size.x / 2, "capsules loin du hangar")
 
@@ -596,3 +602,197 @@ func test_amenagement_deterministe() -> void:
 		assert_eq(a.size(), b.size())
 		for i in a.size():
 			assert_eq(FurnishChecks.signature(a[i]), FurnishChecks.signature(b[i]), "aménagement identique (seed %d)" % s)
+
+
+# --- Pont en croix (maquette cartes.png, colonne « Station spatiale ») -------------------------
+
+func _deck0s() -> Array[FloorLayout]:
+	var out: Array[FloorLayout] = []
+	for per_diff: Array in runs:
+		out.append(_floor(per_diff[1], 0))
+	return out
+
+
+func _rooms_with(f: FloorLayout, role: String) -> Array[FloorLayout.Room]:
+	var out: Array[FloorLayout.Room] = []
+	for r in f.rooms:
+		if r.tags.size() > 0 and r.tags[0] == role:
+			out.append(r)
+	return out
+
+
+func test_croix_composition() -> void:
+	for f in _deck0s():
+		var dome := _rooms_with(f, "control_center")
+		assert_eq(dome.size(), 1, "centre de contrôle")
+		if dome.size() == 1:
+			assert_true(dome[0].tags.has("round"), "centre de contrôle circulaire")
+			var c := Vector2(dome[0].rect.get_center())
+			assert_lt(absf(c.x - f.size.x * 0.5), 2.0, "centre de contrôle sur l'axe")
+			assert_between(c.y, f.size.y * 0.35, f.size.y * 0.6, "au milieu de la croix")
+		assert_eq(_rooms_with(f, "reactor_pod").size(), 2, "deux cylindres-réacteurs")
+		var tubes := _rooms_with(f, "tube")
+		assert_gte(tubes.size(), 4, "tubes de liaison")
+		assert_eq(_rooms_with(f, "hangar").size(), 1, "hangar d'arrivée")
+		var pods := _rooms_with(f, "pod_bay")
+		assert_gte(pods.size(), 2, "sas d'extraction en bout de bras")
+		for e in f.extraction_cells:
+			assert_eq(f.room_at(e).tags[0], "pod_bay", "extraction dans un sas")
+		# Croix symétrique : autant de cases praticables à l'ouest qu'à l'est (± 12 %).
+		var west := 0
+		var east := 0
+		for y in f.size.y:
+			for x in f.size.x:
+				if FloorLayout.is_walkable_tile(f.get_tile(Vector2i(x, y))):
+					if x < f.size.x / 2:
+						west += 1
+					else:
+						east += 1
+		assert_lt(absf(float(west - east)) / float(west + east), 0.12, "croix symétrique")
+		# Bras est-ouest plus large que les ailes nord et le bas (silhouette en croix).
+		var span := func(y0: int, y1: int) -> int:
+			var lo := 999
+			var hi := -1
+			for y in range(y0, y1):
+				for x in f.size.x:
+					if f.get_tile(Vector2i(x, y)) != T.VOID:
+						lo = mini(lo, x)
+						hi = maxi(hi, x)
+			return hi - lo
+		assert_gt(span.call(46, 62), span.call(10, 27), "bras plus large que les ailes")
+		assert_gt(span.call(46, 62), span.call(69, 82), "bras plus large que le bas")
+		assert_true(f.has_meta(&"render_contract"), "contrat de rendu joint")
+
+
+func test_gravite_faible_dans_modules_endommages() -> void:
+	for f in _deck0s():
+		assert_false(f.low_gravity_cells.is_empty(), "zones de gravité faible")
+		for c: Vector2i in f.low_gravity_cells:
+			assert_true(FloorLayout.is_walkable_tile(f.get_tile(c)), "gravité faible praticable")
+			var r := f.room_at(c)
+			assert_true(r != null and r.tags.has("damaged"), "dans un module endommagé")
+			if r == null or not r.tags.has("damaged"):
+				return
+
+
+## Modules fermés (toit rendu incliné vers le nord) : aucune porte dans leur mur nord, sinon le
+## toit la cacherait. Chaque salle d'un bâtiment est dans son emprise.
+func test_portes_visibles_camera_inclinee() -> void:
+	for f in _deck0s():
+		var bad: Array = []
+		for b in f.buildings:
+			for rid in b.room_ids:
+				assert_true(b.rect.encloses(f.get_room(rid).rect.grow(-0) .intersection(b.rect)), "salle dans l'emprise")
+		for d in f.doors:
+			if d.vertical:
+				continue
+			var south := f.room_at(d.cell + Vector2i.DOWN)
+			if south != null and south.building_id >= 0:
+				var b2 := f.buildings[south.building_id]
+				if b2.archetype in [&"ss_module", &"ss_lift"] and d.cell.y == b2.rect.position.y:
+					bad.append(d.cell)
+		assert_eq(bad, [], "porte dans le mur nord d'un module à toit")
+
+
+func test_constructeur_toits_logiques() -> void:
+	var f := _deck0s()[0]
+	var root := Builder.build(f, world)
+	add_child_autofree(root)
+	var roofs: Array = root.call("get_roofs")
+	assert_eq(roofs.size(), f.buildings.size(), "un toit logique par module fermé")
+	for r: BuildingRoof in roofs:
+		assert_true(String(r.name).begins_with("Roof_"))
+	assert_true(root.has_method("prerender_hide"))
+
+
+# --- Paquets pré-rendus (assets/prerender/space_station/<seed>/) --------------------------------
+
+func _packs() -> PackedInt32Array:
+	return PrerenderBackdrop.available_seeds(&"space_station")
+
+
+func _pack_meta(s: int) -> Dictionary:
+	var f := FileAccess.open(PrerenderBackdrop.pack_root(&"space_station") + str(s) + "/map.json", FileAccess.READ)
+	return JSON.parse_string(f.get_as_text()) if f != null else {}
+
+
+func test_paquets_station_correspondent_au_plan() -> void:
+	var seeds := _packs()
+	assert_gt(seeds.size(), 0, "au moins une carte de station pré-rendue")
+	for s in seeds:
+		var m := _pack_meta(s)
+		var L := Gen.generate_floor(s, world, 1, 0)
+		assert_eq(String(m.get("tiles_md5", "")), PrerenderBackdrop.layout_md5(L), "seed %d : empreinte du plan" % s)
+		assert_gte(int(m.get("ppc", 0)), 72, "seed %d : résolution ≥ 72 px/case" % s)
+		assert_eq(int(m.get("tilt_deg", 0)), 38)
+		assert_eq((m.get("interiors", []) as Array).size(), L.buildings.size(), "un intérieur par module fermé")
+		assert_true(m.has("collision") and m.has("occluders"), "collisions et occultation")
+		var dir := PrerenderBackdrop.pack_root(&"space_station") + str(s) + "/"
+		for t: Dictionary in m["tiles"]:
+			assert_true(ResourceLoader.exists(dir + String(t["file"])), "tuile %s" % t["file"])
+		assert_true(ResourceLoader.exists(dir + "minimap.webp"), "mini-carte")
+		assert_true(ResourceLoader.exists(dir + "footprint.png"), "emprise")
+		assert_lt(int((m.get("collision_stats", {}) as Dictionary).get("unblocked_cells", 0)), 60, "rendu cohérent avec le plan")
+		var b := PrerenderBackdrop.create(s, L, &"space_station")
+		assert_not_null(b, "fond accepté par le jeu")
+		if b != null:
+			b.free()
+
+
+func test_paquets_station_collisions_gardent_les_passages() -> void:
+	for s in _packs():
+		var m := _pack_meta(s)
+		var L := Gen.generate_floor(s, world, 1, 0)
+		var cov := {}
+		for r: Array in m.get("collision", []):
+			var rr := Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+			for y in range(floori(rr.position.y / 64.0), ceili(rr.end.y / 64.0)):
+				for x in range(floori(rr.position.x / 64.0), ceili(rr.end.x / 64.0)):
+					var cr := Rect2(x * 64.0, y * 64.0, 64.0, 64.0).intersection(rr)
+					cov[Vector2i(x, y)] = float(cov.get(Vector2i(x, y), 0.0)) + cr.get_area() / 4096.0
+		var prot: Array[Vector2i] = [L.player_spawn]
+		for d in L.doors:
+			prot.append(d.cell)
+		for st in L.stairs:
+			prot.append(st.cell)
+		prot.append_array(L.extraction_cells)
+		for c: Vector2i in prot:
+			assert_lt(float(cov.get(c, 0.0)), 0.01, "seed %d : abord %s libre" % [s, c])
+		var blocked := {}
+		for c2: Vector2i in cov:
+			if float(cov[c2]) >= 0.5:
+				blocked[c2] = true
+		var base := L.flood_reachable(L.player_spawn)
+		var seen := {L.player_spawn: true}
+		var stack: Array[Vector2i] = [L.player_spawn]
+		while not stack.is_empty():
+			var c3: Vector2i = stack.pop_back()
+			for dv: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var n := c3 + dv
+				if seen.has(n) or blocked.has(n) or not FloorLayout.is_walkable_tile(L.get_tile(n)):
+					continue
+				seen[n] = true
+				stack.append(n)
+		# Cases des conteneurs / cachettes : objets du jeu (on interagit depuis une case voisine).
+		var objs := {}
+		for l: Array in [L.container_spawns, L.hiding_spot_spawns]:
+			for sp: FloorLayout.Spawn in l:
+				for q in FloorLayout.spawn_cells(sp):
+					objs[q] = true
+		var lost: Array = []
+		for c4: Vector2i in base:
+			if not blocked.has(c4) and not seen.has(c4) and not objs.has(c4):
+				lost.append(c4)
+		assert_eq(lost, [], "seed %d : cases devenues inaccessibles" % s)
+
+
+## Tourelles : toujours accrochées à un mur (case WALL rendue), face à une case praticable.
+func test_tourelles_sur_murs_visibles() -> void:
+	var placer: Script = load("res://scripts/dungeon/turret_placer.gd")
+	for f in _deck0s():
+		var spots: Array = placer.call("find_spots", f, 1234, 2, 0, "world_02_space_station")
+		for sp: Dictionary in spots:
+			var c: Vector2i = sp["cell"]
+			var n: Vector2i = sp["normal"]
+			assert_eq(f.get_tile(c), T.WALL, "tourelle sur un mur")
+			assert_true(FloorLayout.is_walkable_tile(f.get_tile(c + n)), "face à une case praticable")

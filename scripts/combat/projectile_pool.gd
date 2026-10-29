@@ -86,6 +86,8 @@ func spawn(position: Vector2, direction: Vector2, weapon: WeaponData, source: No
 	var p: Projectile = _free.pop_back()
 	p.launch(position, direction, weapon, source, height)
 	EventBus.projectile_fired.emit(p)
+	if NetHooks.active:
+		NetHooks.on_player_projectile(p, position, direction, weapon, source, height)  # Coop.
 	return p
 
 

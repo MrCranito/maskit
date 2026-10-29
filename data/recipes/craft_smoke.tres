@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/recipe_data.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+id = &"craft_smoke"
+display_name = "Grenade fumigène"
+description = "Réactifs, mèche de tissu et boîtier : 2 fumigènes par équipement."
+category = &"gadget"
+result_item_id = &""
+result_weapon_id = &"gadget_smoke"
+result_count = 1
+ingredients = {
+"@scrap": 1,
+"mat_chemicals": 2,
+"mat_cloth": 1
+}
+gold_cost = 25
+craft_time = 0.0
+sort_order = 40

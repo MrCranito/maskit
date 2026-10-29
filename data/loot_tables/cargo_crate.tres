@@ -11,6 +11,9 @@ rolls_max = 3
 empty_chance = 0.1
 search_time = 1.4
 entries = {
+&"black_powder": 3.0,
+&"mat_chemicals": 2.0,
+&"mat_scrap": 6.0,
 &"space_circuit": 5.0,
 &"space_energy_cell": 5.0,
 &"space_fusion_cell": 0.6,
@@ -18,7 +21,8 @@ entries = {
 &"space_plasma_cells": 4.0,
 &"space_ration": 4.0,
 &"space_servo": 2.0,
-&"wpn_gadget_c4": 0.004,
+&"wpn_gadget_c4": 0.019,
+&"wpn_gadget_decoy": 0.188,
 &"wpn_gadget_drone": 0.004,
 &"wpn_gadget_frag": 0.188,
 &"wpn_gadget_mine": 0.019,

@@ -1,7 +1,9 @@
 class_name RaidEndScreen
 extends CanvasLayer
 ## Écran de fin de raid (construit en code, charte bleu nuit) affiché par Raid :
-##   - « Extraction réussie » : armes récupérées (rareté), objets, valeur, gemmes gagnées ;
+##   - « Extraction réussie » : armes récupérées (rareté), objets, valeur estimée en or au marchand
+##     (l'extraction ne donne plus d'or : on vend au marchand), gemmes gagnées ;
+##   - encart « Armurerie » : victimes du raid qui comptent pour un déblocage d'arme (summary.unlock_kills) ;
 ##   - « Tu es mort » : armes perdues, butin perdu, « Un petit pistolet t'attend au camp »
 ##     si un pistolet de départ a été offert.
 ## Le jeu est en pause derrière (ce nœud tourne en PROCESS_MODE_ALWAYS).
@@ -21,8 +23,9 @@ const CARD_H := 104.0
 ## true = extraction, false = mort.
 var success: bool = false
 ## Résumé de Profile.finish_extraction / finish_death, complété par Raid :
-##   extraction : {weapons: Array[StringName], items: Dictionary(id → n), value: int, gems: int}
-##   mort : {lost_weapons: Array[StringName], starter_given: bool, lost_items: int, lost_value: int}
+##   extraction : {weapons: Array[StringName], items: Dictionary(id → n), value: int (or estimé), gems: int, unlock_kills: Array}
+##   mort : {lost_weapons: Array[StringName], starter_given: bool, lost_items: int, lost_value: int,
+##           lost_estimate: int (or estimé), unlock_kills: Array}
 var summary: Dictionary = {}
 
 var _panel: PanelContainer = null
@@ -102,6 +105,8 @@ func _build() -> void:
 	else:
 		_build_death(root)
 
+	_add_pass_xp(root)
+
 	_menu_btn = InventoryStyle.button("Retour au menu", InventoryStyle.GOLD, 22, Vector2(300, 62))
 	_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_menu_btn.pressed.connect(go_to_menu)
@@ -169,8 +174,11 @@ func _build_success(root: VBoxContainer) -> void:
 	stats.alignment = BoxContainer.ALIGNMENT_CENTER
 	stats.add_theme_constant_override("separation", 18)
 	root.add_child(stats)
-	stats.add_child(_stat_chip("Valeur", "%d $" % int(summary.get("value", 0)), InventoryStyle.GOLD))
+	var vchip := _stat_chip("Valeur estimée (or au marchand)", "≈ %d" % int(summary.get("value", 0)), InventoryStyle.GOLD)
+	vchip.name = "ValueChip"
+	stats.add_child(vchip)
 	stats.add_child(_stat_chip("Gemmes", "+%d" % int(summary.get("gems", 0)), Color(0.55, 0.85, 1.0)))
+	_add_kills(root)
 
 
 func _build_death(root: VBoxContainer) -> void:
@@ -181,12 +189,14 @@ func _build_death(root: VBoxContainer) -> void:
 	root.add_child(_section(title))
 	root.add_child(_weapon_row(sort_by_rarity(summary.get("lost_weapons", [])), true))
 	var n := int(summary.get("lost_items", 0))
-	var v := int(summary.get("lost_value", 0))
+	# Or estimé au marchand (Profile.finish_death : lost_estimate), sinon la valeur brute convertie.
+	var v := int(summary.get("lost_estimate", round(float(summary.get("lost_value", 0)) * Economy.cfg_f("sell_ratio", 0.5))))
 	var loot := InventoryStyle.label(
-		("Butin perdu : %d objet%s (%d $)" % [n, "s" if n > 1 else "", v]) if n > 0 else "Aucun butin à perdre.",
+		("Butin perdu : %d objet%s (≈ %d or au marchand)" % [n, "s" if n > 1 else "", v]) if n > 0 else "Aucun butin à perdre.",
 		18, InventoryStyle.TEXT, 700)
 	loot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(loot)
+	_add_kills(root)
 	if bool(summary.get("starter_given", false)):
 		var gift := PanelContainer.new()
 		var gs := StyleBoxFlat.new()
@@ -200,6 +210,61 @@ func _build_death(root: VBoxContainer) -> void:
 		gl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		gift.add_child(gl)
 		root.add_child(gift)
+
+
+## Encart « Déblocages » : victimes du raid qui comptent pour l'armurerie (summary["unlock_kills"],
+## Economy.kill_report). Une ligne compacte (tient à l'écran) ; rien si aucune.
+func _add_kills(root: VBoxContainer) -> void:
+	var rep: Variant = summary.get("unlock_kills", [])
+	if not (rep is Array) or (rep as Array).is_empty():
+		return
+	var parts: PackedStringArray = []
+	var unlocked := false
+	for e: Variant in rep:
+		if not (e is Dictionary):
+			continue
+		var d: Dictionary = e
+		var txt := "%s ×%d" % [str(d.get("name", "")), int(d.get("count", 0))]
+		var ws: PackedStringArray = []
+		for w: Variant in d.get("weapons", []):
+			var wd: Dictionary = w
+			if bool(wd.get("done", false)):
+				ws.append("%s débloquée" % str(wd.get("name", "")))
+				unlocked = true
+			else:
+				ws.append("%s %d/%d" % [str(wd.get("name", "")), mini(int(d.get("total", 0)), int(wd.get("needed", 1))), int(wd.get("needed", 1))])
+		if not ws.is_empty():
+			txt += " → " + ", ".join(ws)
+		parts.append(txt)
+	if parts.is_empty():
+		return
+	var box := PanelContainer.new()
+	box.name = "KillsBox"
+	var st := StyleBoxFlat.new()
+	st.bg_color = Color(InventoryStyle.GOLD, 0.12 if unlocked else 0.06)
+	st.border_color = Color(InventoryStyle.GOLD, 0.75 if unlocked else 0.35)
+	st.set_border_width_all(1)
+	st.set_corner_radius_all(12)
+	st.content_margin_left = 14
+	st.content_margin_right = 14
+	st.content_margin_top = 5
+	st.content_margin_bottom = 6
+	box.add_theme_stylebox_override("panel", st)
+	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var l := InventoryStyle.label("Armurerie · " + "  ·  ".join(parts), 15, InventoryStyle.GOLD if unlocked else InventoryStyle.TEXT, 800)
+	l.name = "KillsText"
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.max_lines_visible = 2
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.custom_minimum_size = Vector2(minf(panel_width() - 80.0, 760.0), 0)
+	box.add_child(l)
+	root.add_child(box)
+
+
+## Texte de l'encart des déblocages ("" si absent ; tests).
+func get_kills_text() -> String:
+	var l := find_child("KillsText", true, false) as Label
+	return l.text if l != null else ""
 
 
 ## Sépare une liste d'ids en [armes, équipements].
@@ -288,6 +353,7 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 		if lost:
 			pic.draw_line(Vector2(14, pic.size.y - 6), Vector2(pic.size.x - 14, 6), Color(DEATH, 0.85), 4.0, true))
 	v.add_child(pic)
+	WeaponSkin.apply_equipped(pic, w)   # skin d'arme équipé (recoloration)
 	var nm := InventoryStyle.label(w.display_name, 15, rc.lightened(0.25) if not lost else Color(rc, 0.7), 800)
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	nm.custom_minimum_size = Vector2(160, 0)
@@ -327,6 +393,21 @@ func _item_row(items: Dictionary) -> Control:
 		row.add_child(tile)
 		shown += 1
 	return row
+
+
+## XP du pass de combat gagnée (summary["pass_xp"] = {xp, tier_before, tier_after}, ajouté par Raid).
+func _add_pass_xp(root: VBoxContainer) -> void:
+	var px: Variant = summary.get("pass_xp")
+	if not (px is Dictionary) or (px as Dictionary).is_empty():
+		return
+	var d: Dictionary = px
+	var txt := "Pass de combat : palier %d" % int(d.get("tier_after", 0))
+	if int(d.get("tier_after", 0)) > int(d.get("tier_before", 0)):
+		txt = "Pass de combat : palier %d atteint !" % int(d.get("tier_after", 0))
+	var chip := _stat_chip(txt, "+%d XP" % int(d.get("xp", 0)), InventoryStyle.GOLD)
+	chip.name = "PassXp"
+	chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.add_child(chip)
 
 
 func _stat_chip(label_text: String, value_text: String, color: Color) -> Control:

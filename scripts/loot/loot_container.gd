@@ -186,6 +186,8 @@ func get_visual_height() -> float:
 
 ## Appui sur « action » : lance la fouille, ou rouvre la fenêtre de butin.
 func interact(player: Node) -> void:
+	if NetHooks.active and not NetHooks.container_can_use(self):
+		return  # Coop : le coéquipier fouille déjà ce conteneur.
 	match state:
 		State.CLOSED:
 			start_search(player as Node2D)
@@ -286,6 +288,8 @@ func _finish_search() -> void:
 	else:
 		_refresh_visual()
 		_save_state()
+	if NetHooks.active:
+		NetHooks.container_opened(self)
 	_announce_open()
 
 
@@ -311,6 +315,8 @@ func take(index: int, inv: Inventory, count: int = -1) -> int:
 	if int(e["count"]) <= 0:
 		entries.remove_at(index)
 	EventBus.item_picked_up.emit(it, got)
+	if NetHooks.active:
+		NetHooks.container_taken(self, it.id, got)
 	if it.is_key():
 		_play(&"key_pickup")
 	elif it.id == &"silver_dollars" or it.id == &"gold_nugget":
@@ -350,6 +356,47 @@ func _set_emptied() -> void:
 	emptied.emit(self)
 	if kind == &"drop":
 		queue_free()
+
+
+## Coop : le coéquipier a ouvert ce conteneur. Même tirage (seed du conteneur, contenu imposé),
+## sans fenêtre ni son.
+func net_open_silently() -> void:
+	if state >= State.OPENED:
+		return
+	if state == State.SEARCHING:
+		_stop_search()
+	if has_preset:
+		entries = preset_entries.duplicate()
+	else:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = loot_seed
+		entries = LootRoller.roll(LootDB.get_table(kind), rng, LootRoller.Context.make(difficulty, floor_index, room_type))
+	state = State.OPENED
+	if entries.is_empty():
+		_set_emptied()
+	else:
+		_refresh_visual()
+		_save_state()
+
+
+## Coop : le coéquipier a pris `count` × `item_id`.
+func net_remove(item_id: StringName, count: int) -> void:
+	if state == State.CLOSED or state == State.SEARCHING:
+		net_open_silently()
+	if state != State.OPENED:
+		return
+	for i: int in entries.size():
+		var it: ItemData = entries[i]["item"]
+		if it != null and it.id == item_id:
+			entries[i]["count"] = int(entries[i]["count"]) - count
+			if int(entries[i]["count"]) <= 0:
+				entries.remove_at(i)
+			break
+	if entries.is_empty():
+		_set_emptied()
+	else:
+		_refresh_visual()
+		_save_state()
 
 
 ## Restaure un état sauvegardé (changement d'étage).

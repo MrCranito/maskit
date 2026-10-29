@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_m82_night"
+display_name = "Nuit"
+description = "Noir profond, filets bleu nuit : invisible au crépuscule."
+kind = &"weapon"
+rarity = 3
+price_gems = 480
+weapon_category = &"sniper"
+weapon_id = &"sniper_m82"
+source = &"shop"
+color_primary = Color(0.165, 0.361, 1.000, 1)
+color_secondary = Color(0.047, 0.055, 0.086, 1)
+color_accent = Color(0.416, 0.612, 1.000, 1)
+pattern = &"neon"
+glow = 0.0

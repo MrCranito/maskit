@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/recipe_data.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+id = &"craft_medkit"
+display_name = "Trousse de soin"
+description = "Deux bandages, un désinfectant et une attelle : rend 60 PV."
+category = &"heal"
+result_item_id = &"medkit"
+result_weapon_id = &""
+result_count = 1
+ingredients = {
+"bandage": 2,
+"mat_chemicals": 1,
+"mat_cloth": 1
+}
+gold_cost = 15
+craft_time = 0.0
+sort_order = 20

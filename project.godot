@@ -22,6 +22,7 @@ InputSetup="*res://scripts/core/input_setup.gd"
 GameState="*res://scripts/core/game_state.gd"
 SaveManager="*res://scripts/save/save_manager.gd"
 Profile="*res://scripts/core/profile.gd"
+BattlePass="*res://scripts/progression/battle_pass.gd"
 LootManager="*res://scripts/loot/loot_manager.gd"
 AudioManager="*res://scripts/core/audio_manager.gd"
 

@@ -12,6 +12,7 @@ const SCENES := [
 	"res://scenes/ui/menus/loadout.tscn",
 	"res://scenes/ui/menus/arsenal.tscn",
 	"res://scenes/ui/menus/shop.tscn",
+	"res://scenes/ui/menus/battle_pass.tscn",
 ]
 
 var _saved_data: Dictionary = {}
@@ -20,6 +21,7 @@ var _saved_diff: int = 1
 var _saved_map: Resource = null
 var _saved_world: String = ""
 var _saved_weapons: Array[WeaponData] = []
+var _saved_pass: Dictionary = {}
 
 
 func before_each() -> void:
@@ -29,6 +31,7 @@ func before_each() -> void:
 	_saved_map = GameState.current_map
 	_saved_world = GameState.world_path
 	_saved_weapons = GameState.raid_weapons.duplicate()
+	_saved_pass = BattlePassSystem.get_instance().to_dict()
 
 
 func after_each() -> void:
@@ -38,9 +41,12 @@ func after_each() -> void:
 	GameState.current_map = _saved_map
 	GameState.world_path = _saved_world
 	GameState.raid_weapons = _saved_weapons
+	BattlePassSystem.get_instance().from_dict(_saved_pass)
 	SaveManager.data = _saved_data
 	SaveManager.save()
 	ShopScreen.last_tab = &"character"
+	ShopScreen.focus_skin_id = &""
+	BattlePassScreen.focus_skin_id = &""
 	WeaponSkin.enabled_override = -1
 
 
@@ -54,7 +60,7 @@ func _test_profile(gems: int = 0) -> void:
 
 
 func _cheapest_skin(kind: StringName) -> SkinData:
-	var list := SkinData.all_of_kind(kind)
+	var list := SkinData.shop_skins(kind)
 	for s: SkinData in list:
 		if s.price_gems > 0:
 			return s
@@ -144,7 +150,7 @@ func test_main_menu_buttons() -> void:
 		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
-	assert_eq(labels, ["JOUER", "Arsenal", "Personnages", "Boutique", "Options", "Crédits"] as Array[String])
+	assert_eq(labels, ["JOUER", "Coop", "Arsenal", "Atelier", "Marchand", "Boutique", "Pass"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
 	assert_eq(m.gem_counter.value_label.text, "42")
 	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
@@ -171,9 +177,6 @@ func test_main_menu_buttons_navigate() -> void:
 	await wait_frames(3)
 	# Bloque le vrai changement de scène (MenuKit.go_to ne part qu'une fois) : on vérifie les effets.
 	m.set_meta(&"_leaving", true)
-	ShopScreen.last_tab = &"weapon"
-	m.characters_button.pressed.emit()
-	assert_eq(ShopScreen.last_tab, &"character", "Personnages → onglet Personnages")
 	m.gem_plus.pressed.emit()
 	assert_eq(ShopScreen.last_tab, &"gems", "+ → onglet Gemmes")
 	m.lobby.hero_pressed.emit()
@@ -188,14 +191,15 @@ func test_main_menu_buttons_navigate() -> void:
 
 func test_main_menu_stats_and_currencies() -> void:
 	_test_profile(5)
-	Profile.dollars = 12345
+	Profile.dollars = 12345   # = Profile.gold (or) une fois l'économie livrée
 	Profile.stats = {"raids": 8, "extractions": 6, "deaths": 2}
 	var m := _menu()
 	await wait_frames(2)
 	assert_eq((m.stat_values[&"raids"] as Label).text, "8")
 	assert_eq((m.stat_values[&"extractions"] as Label).text, "6")
 	assert_eq((m.stat_values[&"rate"] as Label).text, "75 %")
-	assert_eq(m.dollar_label.text, MainMenu.format_thousands(12345))
+	assert_eq(m.gold_label.text, MainMenu.format_thousands(12345), "Or affiché en haut")
+	assert_eq(MainMenu.gold_amount(), 12345)
 	assert_eq(MainMenu.format_thousands(1234567), "1\u202f234\u202f567")
 
 
@@ -220,6 +224,45 @@ func test_lobby_hero_reflects_skin() -> void:
 	await wait_frames(1)
 	assert_eq(m.hero.sheet_id, String(other.id).trim_prefix("char_"), "Le héros du menu suit le skin porté")
 	assert_eq(m.hero.skin, other)
+
+
+func test_lobby_layout_nav_and_loadout() -> void:
+	# Barre de navigation gardée en bas à gauche ; « Arsenal de départ » sous la barre du haut,
+	# sans chevaucher la navigation ni le héros ; Coop à gauche de JOUER.
+	_test_profile(0)
+	for vp: Vector2 in [Vector2(1280, 720), Vector2(1560, 720)]:   # 16:9 et téléphone large (19,5:9)
+		await _check_lobby_layout(vp)
+
+
+func _check_lobby_layout(vp: Vector2) -> void:
+	var m := _menu()
+	await wait_frames(2)
+	m.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	m.size = vp
+	await wait_frames(2)
+	var top: Rect2 = (m.get("_top") as Control).get_global_rect()
+	var nav: Rect2 = (m.get("_nav") as Control).get_global_rect()
+	await wait_seconds(1.1)   # fin des animations d'entrée
+	var ls: Rect2 = m.loadout_summary.get_global_rect()
+	nav = (m.get("_nav") as Control).get_global_rect()
+	assert_gte(ls.position.y - top.end.y, 20.0, "Le panneau respire sous la barre du haut")
+	assert_false(ls.intersects(nav), "Pas de chevauchement avec la navigation")
+	assert_lt(nav.position.x, vp.x * 0.1, "Navigation en bas à gauche")
+	assert_gt(nav.end.y, vp.y - 60.0)
+	var hero_rect: Rect2 = m.lobby.hero_hit.get_global_rect()
+	assert_false(ls.intersects(hero_rect.grow(-hero_rect.size.x * 0.15)), "Pas sur le héros")
+	var coop: Rect2 = m.coop_button.get_global_rect()
+	var play: Rect2 = m.play_button.get_global_rect()
+	assert_lt(coop.end.x, play.position.x + 1.0, "Coop à gauche de JOUER")
+	assert_false(coop.intersects(nav))
+	assert_eq(m.pass_button.soon, not ResourceLoader.exists(MenuKit.BATTLE_PASS_SCENE))
+	assert_false(m.pass_button.soon, "Écran du pass livré")
+	assert_eq(m.merchant_button.soon, not ResourceLoader.exists(MenuKit.MERCHANT_SCENE), "Marchand : « Bientôt » si absent")
+	assert_eq(m.crafting_button.soon, not ResourceLoader.exists(MenuKit.CRAFTING_SCENE))
+	assert_eq(bool(m.coop_button.get_meta(&"soon")), not ResourceLoader.exists(MenuKit.COOP_SCENE))
+	# Un écran absent ne plante pas : aucun départ
+	m.call("_go_optional", m.merchant_button, "res://scenes/ui/menus/__absent__.tscn")
+	assert_false(bool(m.get_meta(&"_leaving", false)), "« Bientôt » : on reste au lobby")
 
 
 func test_lobby_assets_and_layout() -> void:
@@ -336,17 +379,21 @@ func test_credits_show_cc_by_attribution() -> void:
 	assert_string_contains(credits_md, CreditsPanel.ICONS_ATTRIBUTION)
 
 
-func test_hero_preview_turns_and_takes_skin() -> void:
+func test_hero_preview_uses_lobby_hero() -> void:
+	# Même rendu que le lobby : pose haute résolution + idle procédurale, plus de rotation.
 	var hp := HeroPreview.new()
-	hp.size = Vector2(300, 260)
+	hp.size = Vector2(300, 460)
 	add_child_autofree(hp)
 	await wait_frames(1)
-	assert_not_null(hp.sprite.sprite_frames, "Planche du héros (HeroSkin)")
-	var first := hp.get_current_animation()
-	hp.call("_turn")
-	assert_ne(hp.get_current_animation(), first, "L'aperçu change de direction")
+	assert_true(hp.hero is LobbyHero, "Composant du lobby réutilisé")
+	assert_not_null(hp.hero.sprite.texture, "Pose haute résolution")
+	assert_eq(hp.get_current_animation(), &"idle")
+	var sk := SkinData.get_skin(&"char_spetsnaz")
+	hp.set_skin(sk)
+	assert_eq(hp.get_sheet_id(), "spetsnaz", "Pose du skin sélectionné")
+	assert_almost_eq(hp.hero.position.y, 460.0 * hp.feet_ratio, 0.5, "Pieds en bas de la boîte")
 	hp.set_skin(null)
-	assert_not_null(hp.sprite.sprite_frames)
+	assert_eq(hp.get_sheet_id(), "default")
 
 
 # --- Arsenal de départ ----------------------------------------------------------------
@@ -475,7 +522,7 @@ func test_arsenal_catalog_sections() -> void:
 	assert_true(p9._count.visible, "Quantité ×2 affichée")
 	a.show_weapon_detail(p9.weapon, false)
 	assert_eq(a.detail_weapon, p9.weapon)
-	assert_null(a.skin_button, "Skins d'armes désactivés : pas de bouton de skin")
+	assert_not_null(a.skin_button, "Skins d'armes activés : bouton de skin dans l'arsenal")
 
 
 func test_rarity_names_on_ui() -> void:
@@ -490,36 +537,50 @@ func test_rarity_names_on_ui() -> void:
 
 func test_weapon_skins_data() -> void:
 	var list := SkinData.all_of_kind(SkinData.KIND_WEAPON)
-	assert_gte(list.size(), 8, "Au moins 8 skins d'armes")
-	var has_any := false
-	var has_cat := false
+	assert_gte(list.size(), 16, "Au moins 16 skins d'armes")
+	var n_shop := 0
+	var n_pass := 0
 	for s: SkinData in list:
 		assert_true(String(s.id).begins_with("wsk_"), String(s.id))
-		assert_between(s.price_gems, 80, 600, "Prix cohérent : %s" % s.id)
+		assert_true(WeaponCatalog.has_weapon(s.weapon_id), "Arme existante : %s" % s.id)
+		assert_eq(s.weapon_category, WeaponCatalog.get_weapon(s.weapon_id).category, "Catégorie cohérente : %s" % s.id)
+		assert_between(s.rarity, 2, 4, "Rare à Légendaire : %s" % s.id)
+		assert_between(s.price_gems, 100, 1200, "Prix cohérent : %s" % s.id)
 		assert_true(WeaponSkin.PATTERNS.has(s.pattern), "Motif connu : %s" % s.id)
 		assert_false(s.display_name.is_empty())
-		if s.weapon_category == SkinData.ANY_CATEGORY:
-			has_any = true
+		assert_true(s.source in [SkinData.SOURCE_SHOP, SkinData.SOURCE_PASS], "Provenance : %s" % s.id)
+		if s.is_pass():
+			n_pass += 1
 		else:
-			has_cat = true
-			assert_true(WeaponData.CATEGORIES.has(s.weapon_category), "Catégorie valide : %s" % s.id)
-	assert_true(has_any and has_cat, "Skins universels et par catégorie")
+			n_shop += 1
+		assert_true(s.applies_to(s.weapon_category, s.weapon_id))
+		assert_false(s.applies_to(s.weapon_category, &"pistol_p9") and s.weapon_id != &"pistol_p9", "Une seule arme : %s" % s.id)
+	assert_gte(n_shop, 6, "Skins d'armes en boutique")
+	assert_gte(n_pass, 5, "Skins d'armes exclusifs au pass")
 
 
-func test_weapon_skin_disabled_by_default() -> void:
-	assert_false(bool(Balance.get_value("shop", "weapon_skins_enabled", true)), "Skins d'armes plus tard")
-	assert_false(WeaponSkin.is_enabled())
-	var spr := Sprite2D.new()
-	add_child_autofree(spr)
-	WeaponSkin.apply(spr, SkinData.all_of_kind(SkinData.KIND_WEAPON)[0])
-	assert_null(spr.material, "Désactivé : aucun effet")
+func test_weapon_skins_enabled_and_dedicated_textures() -> void:
+	assert_true(bool(Balance.get_value("shop", "weapon_skins_enabled", false)), "Skins d'armes activés")
+	assert_true(WeaponSkin.is_enabled())
+	# Textures Blender dédiées : mêmes dimensions que l'arme d'origine (grip/muzzle valables).
+	var n := 0
+	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_WEAPON):
+		var held := s.held_texture()
+		if held == null:
+			continue
+		n += 1
+		var base := load("res://assets/sprites/weapons/%s.png" % s.weapon_id) as Texture2D
+		assert_eq(held.get_size(), base.get_size(), "Taille du sprite dédié : %s" % s.id)
+		assert_not_null(s.icon_texture(), "Icône dédiée : %s" % s.id)
+	assert_gte(n, 4, "Au moins 4 skins rendus sous Blender")
 
 
 func test_weapon_skin_apply() -> void:
 	WeaponSkin.enabled_override = 1
 	var spr := Sprite2D.new()
 	add_child_autofree(spr)
-	var s := SkinData.all_of_kind(SkinData.KIND_WEAPON)[0]
+	var s := SkinData.get_skin(&"wsk_p90_digital")   # recoloration par shader (pas de texture dédiée)
+	assert_null(s.held_texture())
 	WeaponSkin.apply(spr, s)
 	assert_true(spr.material is ShaderMaterial)
 	var m := spr.material as ShaderMaterial
@@ -528,6 +589,35 @@ func test_weapon_skin_apply() -> void:
 	WeaponSkin.apply(spr, null)
 	assert_null(spr.material, "null = apparence d'origine")
 	WeaponSkin.enabled_override = -1
+
+
+func test_weapon_skin_in_raid_by_weapon_texture() -> void:
+	# Le joueur appelle apply(sprite, skin de catégorie) : le skin propre à l'arme équipée l'emporte,
+	# reconnu par la texture (…/weapons/<id>.png) ; texture dédiée échangée puis restaurée.
+	_test_profile(0)
+	Profile.skins_owned.append(&"wsk_ak47_tiger")
+	assert_true(WeaponSkin.equip(&"wsk_ak47_tiger"))
+	var spr := Sprite2D.new()
+	add_child_autofree(spr)
+	var base := load("res://assets/sprites/weapons/rifle_ak47.png") as Texture2D
+	spr.texture = base
+	WeaponSkin.apply(spr, Profile.get_weapon_skin(&"rifle"))
+	var tiger := SkinData.get_skin(&"wsk_ak47_tiger")
+	if tiger.held_texture() != null:
+		assert_eq(spr.texture, tiger.held_texture(), "Sprite dédié du skin")
+	else:
+		assert_true(spr.material is ShaderMaterial)
+	# Autre fusil : le skin de l'AK ne s'applique pas
+	var m4 := Sprite2D.new()
+	add_child_autofree(m4)
+	m4.texture = load("res://assets/sprites/weapons/rifle_m4a1.png") as Texture2D
+	WeaponSkin.apply(m4, tiger)
+	assert_null(m4.material, "Skin d'une autre arme ignoré")
+	assert_eq(m4.texture.resource_path, "res://assets/sprites/weapons/rifle_m4a1.png")
+	WeaponSkin.unequip(&"rifle_ak47")
+	WeaponSkin.apply(spr, null)
+	assert_eq(spr.texture, base, "Texture d'origine restaurée")
+	assert_null(spr.material)
 
 
 # --- Boutique -------------------------------------------------------------------------
@@ -542,11 +632,13 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	assert_eq(s.tabs, [&"character", &"gems"] as Array[StringName], "Onglet Armes masqué")
-	assert_false(s.tab_chips.has(&"weapon"))
+	assert_eq(s.tabs, [&"character", &"weapon", &"gems"] as Array[StringName], "Onglets Personnages, Armes, Gemmes")
 	assert_eq(s.current_tab, &"character")
-	assert_eq(s.cards.size(), s.character_skins().size(), "Une carte par skin (hors base)")
-	assert_true(s.action_buttons.has(s.base_skin.id if s.base_skin != null else &""), "Panneau du personnage de base")
+	assert_eq(s.cards.size(), s.character_skins().size() + 1, "Une carte par skin + le personnage de base")
+	assert_true(s.action_buttons.has(s.base_skin.id), "Carte du personnage de base")
+	for sk: SkinData in s.character_skins():
+		assert_false(sk.is_pass(), "Skins du pass absents de la boutique (non obtenus) : %s" % sk.id)
+	assert_true(s.detail_preview.hero is LobbyHero, "Aperçu = rendu du lobby")
 	for c: Control in s.cards:
 		assert_not_null(c.find_child("RarityBand", true, false), "Bandeau de rareté")
 		assert_not_null(c.find_child("Preview", true, false), "Personnage en pied")
@@ -560,14 +652,37 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	assert_true(notice, "Message « Purement cosmétique »")
 
 
-func test_shop_weapon_tab_when_enabled() -> void:
-	WeaponSkin.enabled_override = 1
+func test_shop_weapon_tab() -> void:
+	_test_profile(1000)
 	var s := _shop()
 	await wait_frames(2)
-	assert_true(s.tab_chips.has(&"weapon"))
 	s.show_tab(&"weapon")
-	assert_eq(s.cards.size(), SkinData.all_of_kind(SkinData.KIND_WEAPON).size())
-	WeaponSkin.enabled_override = -1
+	assert_eq(s.cards.size(), SkinData.shop_skins(SkinData.KIND_WEAPON).size(), "Skins d'armes vendus (pass exclus)")
+	var gold := SkinData.get_skin(&"wsk_deagle_gold")
+	s.select_skin(gold)
+	assert_true(s.detail_icon.visible, "Aperçu sur l'arme")
+	assert_eq(s.detail_icon.weapon.id, &"pistol_deagle")
+	assert_eq(s.skin_state(gold), "buy")
+	assert_true(s.buy(gold))
+	assert_eq(s.skin_state(gold), "equipped")
+	assert_eq(WeaponSkin.equipped_for(WeaponCatalog.get_weapon(&"pistol_deagle")), gold, "Équipé sur le Desert Eagle")
+	assert_null(WeaponSkin.equipped_for(WeaponCatalog.get_weapon(&"pistol_p9")), "Pas sur les autres pistolets")
+	assert_eq((s.action_buttons[gold.id] as Button).text, "Retirer")
+	s.unequip_weapon(gold)
+	assert_eq(s.skin_state(gold), "equip")
+	# Skin du pass pas encore obtenu : « Dans le pass », pas d'achat possible
+	var neon := SkinData.get_skin(&"wsk_vector_neon")
+	assert_eq(s.skin_state(neon), "pass")
+	assert_false(s.buy(neon), "Un skin du pass ne s'achète pas")
+	var m := s.ask_buy(neon) as ConfirmPanel
+	await wait_frames(1)
+	assert_string_contains(m.message, "pass de combat")
+	m.close()
+	# Une fois obtenu, il apparaît (badge « Pass ») et s'équipe
+	Profile.skins_owned.append(neon.id)
+	s.show_tab(&"weapon")
+	assert_eq(s.cards.size(), SkinData.shop_skins(SkinData.KIND_WEAPON).size() + 1)
+	assert_eq(s.skin_state(neon), "equip")
 
 
 func test_shop_buy_without_gems() -> void:

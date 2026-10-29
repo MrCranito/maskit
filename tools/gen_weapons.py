@@ -8,7 +8,8 @@ Produit, à partir des tableaux ci-dessous :
 
 Les valeurs d'équilibrage vivent dans les .tres générés (pas dans le code du jeu).
 Relancer après modification :  python3 tools/gen_weapons.py
-Catalogue = la planche docs/reference/arsenal.jpg (18 armes + 5 équipements). Le script
+Catalogue = la planche docs/reference/arsenal.jpg (18 armes + 5 équipements) + le leurre (artisanat).
+Armurerie : champs unlock_mode / unlock_enemy_kind / unlock_kills / price_gold (tableau UNLOCKS). Le script
 remplace tout : les .tres d'armes absents du tableau et leurs objets wpn_* sont supprimés.
 Le pistolet de départ (pistol_p9) n'a pas d'objet wpn_ (LootDB.weapon_item le crée au besoin).
 Javelin : guidage = affixe « homing » (champ `affixes`, interprété par le projectile/joueur).
@@ -104,14 +105,37 @@ WEAPONS = [
     ("gadget_mine", "gadget", 3, "Mine", "Posée au sol, s'arme puis explose au passage d'un ennemi.",
      dict(gadget_kind="mine", charges=2, throw_range=60, fuse_time=1.2, effect_radius=70, explosion_radius=140,
           explosion_damage=160, effect_duration=120.0, projectile_style="grenade", color=(1.0, 0.35, 0.25), value=640)),
-    ("gadget_c4", "gadget", 4, "C4", "Posé où tu veux, déclenché à distance : la pièce entière saute.",
+    ("gadget_c4", "gadget", 3, "C4", "Posé où tu veux, déclenché à distance : la pièce entière saute.",
      dict(gadget_kind="c4", charges=1, throw_range=80, fuse_time=0.0, explosion_radius=210, explosion_damage=320,
           effect_radius=210, projectile_style="grenade", color=(1.0, 0.25, 0.2), value=1500)),
     ("gadget_drone", "gadget", 4, "Drone", "Allié volant qui te suit et mitraille l'ennemi le plus proche.",
      dict(gadget_kind="drone", charges=1, throw_range=0, fuse_time=0.0, effect_radius=420, effect_duration=25.0,
           damage=9, fire_rate=5.0, projectile_speed=900, projectile_style="bullet", color=(0.5, 0.9, 1.0),
           weight=1.5, value=1600)),
+    # Leurre (artisanat) : lancé, fait du bruit (NoiseSources) et attire les ennemis vers lui.
+    # effect_radius = portée d'attraction (px), effect_duration = durée d'émission (s), fuse_time = délai.
+    ("gadget_decoy", "gadget", 0, "Leurre", "Lancé au loin, il crépite et attire les ennemis vers lui quelques secondes.",
+     dict(gadget_kind="decoy", charges=2, throw_range=400, fuse_time=0.5, effect_radius=560, effect_duration=10.0,
+          projectile_style="grenade", color=(1.0, 0.85, 0.3), value=45)),
 ]
+
+# --- Armurerie (or) : (mode, prix en or, kind de l'ennemi, victimes requises) ------------------
+#   shop = achetable d'emblée · kill = achetable après N victimes de ce kind · drop = jamais achetable
+#   Règle : toutes les Légendaires sont « drop » (butin uniquement) ; Communes et la plupart des
+#   Rares sont en vente ; quelques Rares/Épiques se débloquent en tuant un ennemi précis.
+#   Repère : une partie extraite moyenne ≈ 250 or au marchand ≈ une arme Commune.
+UNLOCKS = {
+    "pistol_p9": ("shop", 100), "smg_mp5": ("shop", 220), "rifle_ak47": ("shop", 260),
+    "sniper_m24": ("shop", 280), "gadget_frag": ("shop", 120), "gadget_decoy": ("shop", 150),
+    "pistol_glock18": ("shop", 700), "smg_vector": ("shop", 800), "rifle_m4a1": ("shop", 900),
+    "sniper_ax50": ("shop", 1000), "gadget_smoke": ("shop", 350),
+    "rocket_rpg7": ("kill", 1200, "dynamiter", 3),
+    "smg_p90": ("shop", 1800), "gadget_mine": ("shop", 800),
+    "pistol_deagle": ("kill", 1600, "gunslinger", 5),
+    "rifle_scarh": ("kill", 2000, "shotgun_brute", 3),
+    "sniper_m82": ("kill", 2400, "rifleman", 1),
+    "rocket_m202": ("kill", 2800, "gang_boss", 1),
+}
 STARTER_ID = "pistol_p9"
 
 # --- Tables de butin : poids d'une arme selon sa rareté et le palier de la table -------
@@ -151,7 +175,7 @@ def fmt_float(v: float) -> str:
     return s + ".0" if "." not in s else s
 
 
-def build_stats(cat: str, rarity: int, adj: dict) -> dict:
+def build_stats(wid: str, cat: str, rarity: int, adj: dict) -> dict:
     st = {"projectile_count": 1, "spread_degrees": 0.0, "pierce": 0, "explosion_radius": 0.0,
           "explosion_damage": 0.0, "move_speed_mult": 1.0, "eject_shells": True, "affixes": [],
           "gadget_kind": "", "charges": 0, "throw_range": 0.0, "fuse_time": 0.0, "effect_radius": 0.0,
@@ -159,6 +183,7 @@ def build_stats(cat: str, rarity: int, adj: dict) -> dict:
     st.update(CATEGORY_DEFAULTS[cat])
     st.update(adj)
     st["slot"] = "gadget" if cat == "gadget" else "weapon"
+    st.update(unlock_of(wid, rarity))
     st["projectile_lifetime"] = round(float(st["range"]) / max(float(st["projectile_speed"]), 1.0), 3)
     return st
 
@@ -214,9 +239,23 @@ def weapon_tres(wid, cat, rarity, name, desc, st) -> str:
         "eject_shells = %s" % ("true" if st["eject_shells"] else "false"),
         'sprite_id = &"%s"' % wid,
         "value = %d" % st["value"],
+        'unlock_mode = &"%s"' % st["unlock_mode"],
+        'unlock_enemy_kind = &"%s"' % st["unlock_enemy_kind"],
+        "unlock_kills = %d" % st["unlock_kills"],
+        "price_gold = %d" % st["price_gold"],
         "",
     ]
     return "\n".join(lines)
+
+
+def unlock_of(wid: str, rarity: int) -> dict:
+    """Règle d'armurerie d'une arme (UNLOCKS ; Légendaires et armes absentes = drop)."""
+    u = UNLOCKS.get(wid)
+    if rarity >= 4 or u is None:
+        return dict(unlock_mode="drop", price_gold=0, unlock_enemy_kind="", unlock_kills=0)
+    if u[0] == "kill":
+        return dict(unlock_mode="kill", price_gold=u[1], unlock_enemy_kind=u[2], unlock_kills=u[3])
+    return dict(unlock_mode="shop", price_gold=u[1], unlock_enemy_kind="", unlock_kills=0)
 
 
 def item_tres(wid, name, desc, rarity, st) -> str:
@@ -260,8 +299,13 @@ def patch_table(path: str, kind: str) -> None:
         mm = ENTRY_RE.match(line.strip())
         if mm:
             entries[mm.group(1)] = float(mm.group(2))
+    # Tables hors TABLE_TIERS (ex. butin propre à un ennemi : enemy_gang_boss…) : leurs entrées
+    # wpn_* sont écrites à la main et conservées (seuls les objets retirés sont enlevés).
+    managed = kind in TABLE_TIERS
     for k in list(entries):
-        if k in REMOVED_ITEMS or k.startswith("wpn_") or "mask" in k:
+        if k in REMOVED_ITEMS or "mask" in k or (managed and k.startswith("wpn_")):
+            del entries[k]
+        elif k.startswith("wpn_") and k[4:] not in {w[0] for w in WEAPONS}:
             del entries[k]
     if kind in TABLE_TIERS:
         tier, mult = TABLE_TIERS[kind]
@@ -301,7 +345,7 @@ def main() -> int:
         if f.startswith("wpn_") and f.endswith(".tres") and f[4:-5] not in ids:
             os.remove(os.path.join(ITEM_DIR, f))
     for (wid, cat, rarity, name, desc, adj) in WEAPONS:
-        st = build_stats(cat, rarity, adj)
+        st = build_stats(wid, cat, rarity, adj)
         with open(os.path.join(WEAPON_DIR, wid + ".tres"), "w", encoding="utf-8") as f:
             f.write(weapon_tres(wid, cat, rarity, name, desc, st))
         item_path = os.path.join(ITEM_DIR, "wpn_" + wid + ".tres")
@@ -312,8 +356,10 @@ def main() -> int:
             with open(item_path, "w", encoding="utf-8") as f:
                 f.write(item_tres(wid, name, desc, rarity, st))
         dps = (st["damage"] * st["projectile_count"] + st["explosion_damage"]) * st["fire_rate"]
-        print("%-16s %-16s %d  dmg %5.1f  cad %5.2f  mag %3d  dps %6.1f  %5d $" % (
-            wid, cat, rarity, st["damage"], st["fire_rate"], st["magazine_size"], dps, st["value"]))
+        print("%-16s %-16s %d  dmg %5.1f  cad %5.2f  mag %3d  dps %6.1f  %5d $  %-4s %5d or %s" % (
+            wid, cat, rarity, st["damage"], st["fire_rate"], st["magazine_size"], dps, st["value"],
+            st["unlock_mode"], st["price_gold"],
+            ("(%d %s)" % (st["unlock_kills"], st["unlock_enemy_kind"])) if st["unlock_mode"] == "kill" else ""))
     for f in sorted(os.listdir(TABLE_DIR)):
         if f.endswith(".tres"):
             patch_table(os.path.join(TABLE_DIR, f), f[:-5])

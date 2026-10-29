@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/recipe_data.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+id = &"craft_frag"
+display_name = "Grenade frag"
+description = "Poudre tassée dans une coque de ferraille : 3 grenades par équipement."
+category = &"gadget"
+result_item_id = &""
+result_weapon_id = &"gadget_frag"
+result_count = 1
+ingredients = {
+"@scrap": 2,
+"black_powder": 3
+}
+gold_cost = 10
+craft_time = 0.0
+sort_order = 30

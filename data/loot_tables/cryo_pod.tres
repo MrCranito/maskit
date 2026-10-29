@@ -11,12 +11,15 @@ rolls_max = 2
 empty_chance = 0.2
 search_time = 1.6
 entries = {
+&"mat_chemicals": 3.0,
+&"mat_cloth": 3.0,
 &"space_data_chip": 3.0,
 &"space_medigel": 2.0,
 &"space_officer_badge": 3.0,
 &"space_ration": 2.0,
 &"space_star_map": 0.8,
-&"wpn_gadget_c4": 0.002,
+&"wpn_gadget_c4": 0.007,
+&"wpn_gadget_decoy": 0.075,
 &"wpn_gadget_drone": 0.002,
 &"wpn_gadget_frag": 0.075,
 &"wpn_gadget_mine": 0.007,

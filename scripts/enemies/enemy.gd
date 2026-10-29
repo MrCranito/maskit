@@ -128,6 +128,8 @@ var stimulus_serial: int = 0
 var hears_player: bool = false
 var saw_player_hide: bool = false
 var asleep: bool = false
+## Coop, invité : « marionnette » pilotée par les instantanés de l'hôte (pas d'IA locale).
+var net_puppet: bool = false
 
 ## Vitesse souhaitée par l'état courant (atteinte avec une accélération bornée).
 var desired_velocity: Vector2 = Vector2.ZERO
@@ -518,6 +520,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _physics_step(delta: float) -> void:
+	if net_puppet:
+		return
 	if not _debug_registered:
 		_register_debug()
 	attack_cooldown_left = maxf(attack_cooldown_left - delta, 0.0)
@@ -636,7 +640,7 @@ func _set_visual_moving(moving: bool) -> void:
 # --- Sommeil (performance) ---------------------------------------------------------
 
 func _on_sleep_check() -> void:
-	if not _alive:
+	if not _alive or net_puppet:
 		_sleep_timer.stop()
 		return
 	var p := get_player()
@@ -677,6 +681,10 @@ func wake_up() -> void:
 # --- Perception ------------------------------------------------------------------
 
 func get_player() -> Node2D:
+	if NetHooks.active:
+		# Coop : le joueur ciblable le plus proche (hôte : joueur local ou avatar de l'invité).
+		_player = NetHooks.enemy_target(self, _player)
+		return _player
 	if not is_instance_valid(_player) or not _player.is_inside_tree():
 		_player = null
 		var p: Node2D = GameState.player
@@ -1309,6 +1317,8 @@ func throw_explosive(target: Vector2) -> bool:
 	var dmg := (data.throw_damage if data.throw_damage > 0.0 else data.attack_damage) * diff_damage_mult
 	var radius := data.throw_radius if data.throw_radius > 0.0 else 90.0
 	EnemyDynamite.throw(parent, from + Vector2(0, -4), to, radius, dmg, data.throw_flight_time, data.throw_fuse, self)
+	if NetHooks.active:
+		NetHooks.on_enemy_dynamite(from + Vector2(0, -4), to, radius, data.throw_flight_time, data.throw_fuse)
 	_play_sfx(&"blade_swing_heavy")
 	_visual_call(&"play_strike", [to - from, false])
 	face(to - from)
@@ -1397,7 +1407,7 @@ func set_variant(new_data: EnemyData) -> void:
 # --- Interface de dégâts ------------------------------------------------------------
 
 func take_damage(amount: float, source: Node) -> void:
-	if not _alive or amount <= 0.0:
+	if not _alive or amount <= 0.0 or net_puppet:
 		return
 	hp = maxf(hp - amount, 0.0)
 	damaged.emit(amount, hp)
@@ -1500,6 +1510,8 @@ func _on_death_finished() -> void:
 # --- Visuel ------------------------------------------------------------------------
 
 func _visual_call(method: StringName, args: Array = []) -> Variant:
+	if NetHooks.active:
+		NetHooks.on_enemy_visual(self, method, args)  # Hôte : animation relayée au coéquipier.
 	if visual != null and is_instance_valid(visual) and visual.has_method(method):
 		return visual.callv(method, args)
 	return null

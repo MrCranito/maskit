@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_uzi_pixel"
+display_name = "Pixel"
+description = "Pixels multicolores façon jeu rétro."
+kind = &"weapon"
+rarity = 2
+price_gems = 250
+weapon_category = &"smg"
+weapon_id = &"smg_uzi"
+source = &"pass"
+color_primary = Color(0.298, 0.753, 1.000, 1)
+color_secondary = Color(0.941, 0.298, 0.659, 1)
+color_accent = Color(1.000, 0.878, 0.298, 1)
+pattern = &"digital"
+glow = 0.0

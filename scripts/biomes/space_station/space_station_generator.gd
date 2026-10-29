@@ -17,9 +17,16 @@ extends RefCounted
 ## porte verrouillée par une clef du biome (key_space_lab, key_space_armory,
 ## key_space_reactor). Boss (« Colosse du réacteur ») dans la salle du réacteur (pont -1).
 ## Déterministe (RandomNumberGenerator issus de la seed). Réglages : [space_station].
+## (Refonte n°3) Pont 0 = station en CROIX façon maquette (ss_cross.gd, format portrait 64×100,
+## pré-rendu possible dans Blender) ; ponts 1 et -1 = grille de coursives (ss_deck.gd). Les
+## ascenseurs ne sont plus aux mêmes coordonnées : chaque Stairs pointe la case d'arrivée
+## (target_cell) de l'autre pont. Réglage [space_station] cross_deck=0 → ancien pont 0.
 
 const Deck := preload("res://scripts/biomes/space_station/ss_deck.gd")
+const Cross := preload("res://scripts/biomes/space_station/ss_cross.gd")
 const Pop := preload("res://scripts/biomes/space_station/ss_populator.gd")
+
+const Cfg := preload("res://scripts/biomes/space_station/ss_config.gd")
 
 const DIFFICULTY_MIN := 0
 const DIFFICULTY_MAX := 4
@@ -71,11 +78,33 @@ static func generate_floor(seed_value: int, world: WorldData, difficulty: int, f
 
 
 static func _deck(plan: Deck.Plan, world: WorldData, seed_value: int, difficulty: int, idx: int) -> FloorLayout:
-	var d: Deck.Deck = Deck.build(plan, idx, seed_value)
-	if d == null:
-		return null
-	Pop.populate(d.layout, world, seed_value, clampi(difficulty, DIFFICULTY_MIN, DIFFICULTY_MAX))
-	return d.layout
+	var L: FloorLayout = null
+	var cross: Cross.Result = null
+	var lifts := {}
+	if use_cross():
+		# Cases d'arrivée : ponts 1 / -1 = plan commun ; pont 0 = ascenseurs de la croix.
+		lifts = Cross.lift_cells(seed_value)
+		if idx == 0:
+			cross = Cross.build(seed_value)
+	if idx == 0 and cross != null:
+		L = cross.layout
+		for st in L.stairs:
+			st.target_cell = plan.up_cell if st.up else plan.down_cell
+	else:
+		var d: Deck.Deck = Deck.build(plan, idx, seed_value)
+		if d == null:
+			return null
+		L = d.layout
+		if not lifts.is_empty():
+			for st2 in L.stairs:
+				if st2.target_floor == 0:
+					st2.target_cell = lifts["down"] if idx == -1 else lifts["up"]
+	Pop.populate(L, world, seed_value, clampi(difficulty, DIFFICULTY_MIN, DIFFICULTY_MAX))
+	return L
+
+
+static func use_cross() -> bool:
+	return Cfg.geti("cross_deck", 1) == 1
 
 
 ## Recherche d'un pont dans le résultat de generate_run (null si absent).

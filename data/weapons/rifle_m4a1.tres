@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.0
 eject_shells = true
 sprite_id = &"rifle_m4a1"
 value = 420
+unlock_mode = &"shop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 900

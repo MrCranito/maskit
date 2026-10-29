@@ -114,7 +114,7 @@ static func apply_damage(tree: SceneTree, pos: Vector2, r: float, dmg: float, sr
 		var d := pos.distance_to(t2.global_position)
 		if d > r:
 			continue
-		var mult := 1.0 if t.is_in_group(&"player") else ff
+		var mult := 1.0 if (t.is_in_group(&"player") or t.is_in_group(&"coop_avatar")) else ff
 		if mult <= 0.0:
 			continue
 		var amount := Explosion.falloff_damage(d, r, dmg, mf) * mult

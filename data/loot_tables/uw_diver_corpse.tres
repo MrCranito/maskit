@@ -11,13 +11,16 @@ rolls_max = 2
 empty_chance = 0.1
 search_time = 1.3
 entries = {
+&"mat_cloth": 5.0,
+&"mat_scrap": 2.0,
 &"uw_black_pearl": 0.3,
 &"uw_brass_valve": 2.0,
 &"uw_harpoon_bolts": 10.0,
 &"uw_medkit": 2.0,
 &"uw_oxygen_tank": 5.0,
 &"uw_pearl": 4.0,
-&"wpn_gadget_c4": 0.004,
+&"wpn_gadget_c4": 0.016,
+&"wpn_gadget_decoy": 0.163,
 &"wpn_gadget_drone": 0.004,
 &"wpn_gadget_frag": 0.163,
 &"wpn_gadget_mine": 0.016,

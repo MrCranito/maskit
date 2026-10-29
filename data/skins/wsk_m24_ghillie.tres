@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_m24_ghillie"
+display_name = "Broussaille"
+description = "Camouflage d'herbes sèches pour tireur posté."
+kind = &"weapon"
+rarity = 2
+price_gems = 200
+weapon_category = &"sniper"
+weapon_id = &"sniper_m24"
+source = &"shop"
+color_primary = Color(0.541, 0.518, 0.314, 1)
+color_secondary = Color(0.275, 0.275, 0.165, 1)
+color_accent = Color(0.722, 0.667, 0.416, 1)
+pattern = &"camo"
+glow = 0.0

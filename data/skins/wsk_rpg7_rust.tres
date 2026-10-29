@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_rpg7_rust"
+display_name = "Rouille"
+description = "Acier piqué de rouille, arêtes usées."
+kind = &"weapon"
+rarity = 2
+price_gems = 220
+weapon_category = &"rocket_launcher"
+weapon_id = &"rocket_rpg7"
+source = &"shop"
+color_primary = Color(0.659, 0.314, 0.118, 1)
+color_secondary = Color(0.290, 0.275, 0.267, 1)
+color_accent = Color(0.847, 0.627, 0.439, 1)
+pattern = &"rust"
+glow = 0.0

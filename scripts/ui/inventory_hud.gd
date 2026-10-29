@@ -5,7 +5,8 @@ extends Control
 ##   - bouton « action » (bas droite, au-dessus du stick de visée) ;
 ##   - bouton sac (haut droite) + écran d'inventaire (I / Tab) ;
 ##   - fenêtre de butin d'un conteneur ouvert ;
-##   - fil des objets ramassés (« + Pépite d'or ×2 », couleur de rareté).
+##   - fil des objets ramassés (« + Pépite d'or ×2 », couleur de rareté) et des armes devenues
+##     achetables (Profile.weapon_unlocked : « Nouvelle arme déblocable à l'armurerie : … »).
 ## Aucun _process ici : tout est piloté par signaux.
 
 const FEED_MAX := 4
@@ -63,6 +64,10 @@ func _ready() -> void:
 	inventory_screen.opened_changed.connect(_on_inventory_toggled)
 
 	EventBus.item_picked_up.connect(_on_item_picked_up)
+	# Économie : seuil de victimes atteint → arme achetable à l'armurerie.
+	var prof := get_tree().root.get_node_or_null(^"Profile")
+	if prof != null and prof.has_signal("weapon_unlocked"):
+		prof.connect("weapon_unlocked", _on_weapon_unlocked)
 	var lm := get_tree().root.get_node_or_null(^"LootManager")
 	if lm != null and lm.has_signal("key_used"):
 		lm.connect("key_used", _on_key_used)
@@ -130,7 +135,26 @@ func _on_key_used(key: ItemData, _door: Node) -> void:
 	_push_feed("%s utilisée" % (key.display_name if key != null else "Clef"), InventoryStyle.GOLD, key)
 
 
-func _push_feed(text: String, color: Color, item: ItemData) -> void:
+func _on_weapon_unlocked(weapon_id: StringName) -> void:
+	var w := WeaponCatalog.get_weapon(weapon_id)
+	if w == null:
+		return
+	_push_feed("Nouvelle arme déblocable à l'armurerie : %s" % w.display_name, InventoryStyle.GOLD,
+		LootDB.weapon_item(w), Balance.get_float("economy", "unlock_notice_duration", 4.5))
+	var am := get_tree().root.get_node_or_null(^"AudioManager")
+	if am != null and am.has_method("play_sfx"):
+		am.call("play_sfx", &"confirm", Vector2.INF, -4.0)
+
+
+## Texte du fil le plus récent (tests).
+func get_last_feed_text() -> String:
+	if _feed == null or _feed.get_child_count() == 0:
+		return ""
+	var labels := _feed.get_child(_feed.get_child_count() - 1).find_children("*", "Label", true, false)
+	return (labels[labels.size() - 1] as Label).text if not labels.is_empty() else ""
+
+
+func _push_feed(text: String, color: Color, item: ItemData, duration: float = FEED_DURATION) -> void:
 	while _feed.get_child_count() >= FEED_MAX:
 		var old := _feed.get_child(0)
 		_feed.remove_child(old)
@@ -169,7 +193,7 @@ func _push_feed(text: String, color: Color, item: ItemData) -> void:
 	h.add_child(InventoryStyle.label(text, 17, color, 800))
 	_feed.add_child(p)
 	var tw := p.create_tween()
-	tw.tween_interval(FEED_DURATION)
+	tw.tween_interval(duration)
 	tw.tween_property(p, "modulate:a", 0.0, 0.35)
 	tw.tween_callback(p.queue_free)
 

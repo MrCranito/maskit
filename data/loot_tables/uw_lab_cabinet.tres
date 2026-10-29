@@ -11,6 +11,7 @@ rolls_max = 3
 empty_chance = 0.1
 search_time = 1.4
 entries = {
+&"mat_chemicals": 5.0,
 &"uw_bio_sample": 10.0,
 &"uw_components": 3.0,
 &"uw_medkit": 3.0,

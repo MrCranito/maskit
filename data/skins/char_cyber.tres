@@ -9,6 +9,7 @@ id = &"char_cyber"
 display_name = "Cyber"
 description = "Armure noire parcourue de néons violets et cyan, visière lumineuse."
 kind = &"character"
+source = &"pass"
 rarity = 4
 price_gems = 1000
 sprite_dir = "res://assets/sprites/hero3d/skins/cyber"

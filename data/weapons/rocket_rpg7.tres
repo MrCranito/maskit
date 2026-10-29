@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.8
 eject_shells = false
 sprite_id = &"rocket_rpg7"
 value = 600
+unlock_mode = &"kill"
+unlock_enemy_kind = &"dynamiter"
+unlock_kills = 3
+price_gold = 1200

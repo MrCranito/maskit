@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_ak47_tiger"
+display_name = "Tigre"
+description = "Pelage orange zébré de bandes noires."
+kind = &"weapon"
+rarity = 3
+price_gems = 480
+weapon_category = &"rifle"
+weapon_id = &"rifle_ak47"
+source = &"shop"
+color_primary = Color(0.941, 0.541, 0.118, 1)
+color_secondary = Color(0.078, 0.047, 0.031, 1)
+color_accent = Color(1.000, 0.769, 0.416, 1)
+pattern = &"tiger"
+glow = 0.0

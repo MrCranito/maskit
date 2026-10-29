@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.3
 eject_shells = true
 sprite_id = &"pistol_deagle"
 value = 620
+unlock_mode = &"kill"
+unlock_enemy_kind = &"gunslinger"
+unlock_kills = 5
+price_gold = 1600

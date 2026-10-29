@@ -31,6 +31,8 @@ static func apply_damage(tree: SceneTree, space: PhysicsDirectSpaceState2D, cent
 	var hit: Array[Node2D] = []
 	if tree == null or radius <= 0.0 or damage <= 0.0:
 		return hit
+	if NetHooks.guest_mode and not NetHooks.applying_remote:
+		return hit  # Coop, invité : explosion visuelle, dégâts calculés par l'hôte.
 	var query: PhysicsRayQueryParameters2D = null
 	if space != null:
 		query = PhysicsRayQueryParameters2D.create(center, center, MASK_WORLD)
@@ -47,7 +49,7 @@ static func apply_damage(tree: SceneTree, space: PhysicsDirectSpaceState2D, cent
 		if d2 > r2:
 			continue
 		var mult: float = 1.0
-		if n.is_in_group(&"player"):
+		if n.is_in_group(&"player") or n.is_in_group(NetHooks.GROUP_AVATAR):
 			mult = self_mult
 			if mult <= 0.0:
 				continue

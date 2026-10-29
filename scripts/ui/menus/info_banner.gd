@@ -89,9 +89,29 @@ func build_messages(unix_time: int = -1) -> void:
 		if card != null:
 			messages.append({"icon": &"flag", "title": "Carte disponible",
 				"text": "%s · %s" % [card.display_name, card.biome_name()]})
+	# Pass de combat : palier et récompenses à récupérer
+	var bp := BattlePassSystem.get_instance()
+	var n_claim: int = bp.claimable_count()
+	if n_claim > 0:
+		messages.push_front({"icon": &"star", "title": "Pass de combat",
+			"text": "%d récompense%s à récupérer" % [n_claim, "s" if n_claim > 1 else ""]})
+	else:
+		messages.append({"icon": &"star", "title": bp.get_season().display_name,
+			"text": "Palier %d sur %d · +XP à chaque raid" % [bp.tier(), bp.max_tier()]})
 	var start: int = int(t / 600) % TIPS.size()
 	for i: int in TIPS.size():
 		messages.append({"icon": &"bulb", "title": "Astuce", "text": TIPS[(start + i) % TIPS.size()]})
+
+
+## Message ponctuel (ex. « Bientôt disponible »), puis reprise du défilement.
+func show_message(text: String, title: String = "Bientôt") -> void:
+	messages.insert(0, {"icon": &"clock", "title": title, "text": text})
+	_show(0)
+	_box.modulate.a = 1.0
+	if _timer != null:
+		_timer.start()
+	messages.remove_at(0)
+	index = -1
 
 
 func next() -> void:

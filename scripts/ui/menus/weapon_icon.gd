@@ -54,8 +54,8 @@ func current_skin() -> SkinData:
 	if weapon == null or not WeaponSkin.is_enabled():
 		return null
 	if skin != null:
-		return skin if skin.applies_to(weapon.category) else null
-	return Profile.get_weapon_skin(weapon.category) if use_equipped_skin else null
+		return skin if skin.applies_to(weapon.category, weapon.id) else null
+	return WeaponSkin.equipped_for(weapon) if use_equipped_skin else null
 
 
 ## Icône d'inventaire, sinon sprite tenu (assets/sprites/weapons/<sprite_id>.png), sinon null
@@ -80,8 +80,9 @@ func has_texture() -> bool:
 func refresh() -> void:
 	if tex_rect == null:
 		return
+	tex_rect.remove_meta(WeaponSkin.META_BASE_TEX)   # nouvelle arme : oublie la texture d'origine précédente
 	tex_rect.texture = texture_for(weapon)
-	WeaponSkin.apply(tex_rect, current_skin())
+	WeaponSkin.apply(tex_rect, current_skin(), weapon.id if weapon != null else &"", false)
 	queue_redraw()
 
 

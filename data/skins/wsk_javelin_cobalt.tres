@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_javelin_cobalt"
+display_name = "Cobalt"
+description = "Bleu cobalt laqué, rayures blanches."
+kind = &"weapon"
+rarity = 3
+price_gems = 500
+weapon_category = &"rocket_launcher"
+weapon_id = &"rocket_javelin"
+source = &"pass"
+color_primary = Color(0.165, 0.353, 0.847, 1)
+color_secondary = Color(0.910, 0.933, 0.973, 1)
+color_accent = Color(0.612, 0.769, 1.000, 1)
+pattern = &"stripes"
+glow = 0.0

@@ -25,6 +25,11 @@ const LOADOUT_SCENE := "res://scenes/ui/menus/loadout.tscn"
 const ARSENAL_SCENE := "res://scenes/ui/menus/arsenal.tscn"
 const SHOP_SCENE := "res://scenes/ui/menus/shop.tscn"
 const RAID_SCENE := "res://scenes/dungeon/raid.tscn"
+const BATTLE_PASS_SCENE := "res://scenes/ui/menus/battle_pass.tscn"
+## Écrans des autres modules (créés en parallèle : bouton « Bientôt » tant qu'ils manquent).
+const MERCHANT_SCENE := "res://scenes/ui/menus/merchant.tscn"
+const CRAFTING_SCENE := "res://scenes/ui/menus/crafting.tscn"
+const COOP_SCENE := "res://scenes/ui/menus/coop_lobby.tscn"
 
 enum Style { PRIMARY, SECONDARY, GHOST }
 

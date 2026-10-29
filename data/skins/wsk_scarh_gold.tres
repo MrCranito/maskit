@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_scarh_gold"
+display_name = "Or massif"
+description = "Plaqué or, crosse noire."
+kind = &"weapon"
+rarity = 4
+price_gems = 1000
+weapon_category = &"rifle"
+weapon_id = &"rifle_scarh"
+source = &"shop"
+color_primary = Color(0.941, 0.753, 0.314, 1)
+color_secondary = Color(0.416, 0.235, 0.078, 1)
+color_accent = Color(1.000, 0.949, 0.753, 1)
+pattern = &"gold"
+glow = 0.5

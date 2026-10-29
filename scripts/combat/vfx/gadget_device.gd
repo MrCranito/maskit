@@ -1,6 +1,6 @@
 class_name GadgetDevice
 extends Node2D
-## Objet d'équipement lancé ou posé (grenade frag, fumigène, mine, C4).
+## Objet d'équipement lancé ou posé (grenade frag, fumigène, mine, C4, leurre).
 ##   frag  : lancé en arc (hauteur z simulée, ombre au sol, rebonds sol/murs), explose
 ##           après fuse_time (réutilise CombatFx.explode).
 ##   smoke : lancé comme la frag ; à l'arrêt (ou après fuse_time) libère un SmokeField.
@@ -148,6 +148,14 @@ func _physics_process(delta: float) -> void:
 						explode()
 		&"c4":
 			_blink(delta, 2.0)
+		&"decoy":
+			# Leurre (agent Économie) : une fois au sol (ou mèche écoulée), DecoyDevice prend le relais.
+			fuse_left -= delta
+			if is_settled() or fuse_left <= -2.0:
+				detonated = true
+				DecoyDevice.spawn(get_parent(), global_position, weapon)
+				exploded.emit(self)
+				queue_free()
 
 
 func _step_motion(delta: float) -> void:
@@ -305,6 +313,8 @@ static func draw_gadget_shape(c: CanvasItem, k: StringName, light: Color = Color
 			c.draw_rect(Rect2(-4, -9, 8, 5), Color(0.15, 0.16, 0.18))
 			c.draw_circle(Vector2(2, -7), 1.8, light, true, -1.0, true)
 			c.draw_line(Vector2(-6, -9), Vector2(-9, -12), Color(0.9, 0.2, 0.15), 1.2)
+		&"decoy":
+			DecoyDevice.draw_shape(c, light)
 		&"drone":
 			c.draw_line(Vector2(-9, -6), Vector2(9, 6), dark, 2.0)
 			c.draw_line(Vector2(-9, 6), Vector2(9, -6), dark, 2.0)

@@ -1,12 +1,13 @@
 class_name ShopScreen
 extends Control
-## Boutique cosmétique : onglets Personnages / (Armes) / Gemmes.
-##  - Personnages (planche docs/reference/personnages_skins.jpg) : grand panneau du personnage de
-##    base à gauche (aperçu animé), puis cartes verticales des skins (personnage en pied, nom,
-##    bandeau de rareté, Acheter / Équiper / Équipé). Skins : SkinData.all_of_kind("character")
-##    (data/skins/char_*.tres) ; aperçu = SkinData.preview, sinon planche du skin (HeroPreview).
-##  - Armes : skins d'armes, onglet masqué tant que [shop] weapon_skins_enabled = false.
-##  - Achat avec confirmation ; prix en gemmes.
+## Boutique cosmétique : onglets Personnages / Armes / Gemmes.
+##  - Personnages (planche docs/reference/personnages_skins.jpg) : panneau d'aperçu à gauche
+##    (MÊME rendu que le lobby : pose haute résolution + idle procédurale, HeroPreview), grille de
+##    cartes à droite (personnage en pied, nom, bandeau de rareté, Acheter / Équiper / Équipé).
+##    Skins vendus = SkinData source « shop ». Les skins du pass de combat n'y sont pas vendus :
+##    ils n'apparaissent qu'une fois obtenus (badge « Pass »), sinon « Dans le pass » → écran du pass.
+##  - Armes : skins PAR ARME (SkinData weapon_id), cartes triées par arme ; aperçu à gauche sur
+##    l'arme (icône + arme tenue en jeu), équiper / retirer.
 ##  - Gemmes : packs ([shop] packs) via Store.purchase_pack (paiement SIMULÉ, badge visible).
 ## Message permanent : « Purement cosmétique : aucun avantage en jeu ».
 
@@ -14,30 +15,40 @@ const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"gems"]
 const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"gems": "Gemmes"}
 
 static var last_tab: StringName = &"character"
+## Skin à mettre en avant à l'ouverture (ex. clic sur un skin ailleurs) ; vidé à l'ouverture.
+static var focus_skin_id: StringName = &""
 
 ## Onglets visibles (l'onglet Armes n'apparaît que si les skins d'armes sont activés).
 var tabs: Array[StringName] = []
 var current_tab: StringName = &""
 var tab_chips: Dictionary = {}
 var cards: Array[Control] = []          ## cartes de l'onglet courant (skins ou packs)
-var action_buttons: Dictionary = {}     ## skin id → Button
+var action_buttons: Dictionary = {}     ## skin id → Button (carte)
 var pack_buttons: Array[Button] = []
 var back_button: Button = null
 var gem_counter: GemCounter = null
 var simulated_badge: Control = null
+## Skin sélectionné (panneau d'aperçu).
+var selected_skin: SkinData = null
+## Panneau d'aperçu : bouton d'action, aperçu du héros, icône d'arme, arme tenue.
+var detail_button: Button = null
+var detail_preview: HeroPreview = null
+var detail_icon: WeaponIcon = null
+var detail_held: TextureRect = null
+## Skin de base (char_default) s'il existe.
+var base_skin: SkinData = null
+
 var _modal: ModalPanel = null
 var _scroll: ScrollContainer = null
 var _row: GridContainer = null
-## Onglet Personnages : panneau de base + grille des skins.
-var _chars: HBoxContainer = null
-var _char_grid: GridContainer = null
-var _char_scroll: ScrollContainer = null
-var _base_preview: HeroPreview = null
-## Skin de base (char_default) s'il existe.
-var base_skin: SkinData = null
+var _body: HBoxContainer = null
+var _detail: PanelContainer = null
+var _d_kicker: Label = null
+var _d_name: Label = null
+var _d_meta: HBoxContainer = null
+var _d_desc: Label = null
+var _d_backdrop: TextureRect = null
 var _note: Label = null
-## Arme d'exemple pour l'aperçu des skins (première de la catégorie dans le catalogue).
-var _sample_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -51,8 +62,15 @@ func _ready() -> void:
 	for t: StringName in ALL_TABS:
 		if t != &"weapon" or WeaponSkin.is_enabled():
 			tabs.append(t)
+	base_skin = SkinData.get_skin(HeroSkin.DEFAULT_SKIN_ID)
 	_build()
+	var focus := SkinData.get_skin(focus_skin_id) if not String(focus_skin_id).is_empty() else null
+	focus_skin_id = &""
+	if focus != null:
+		last_tab = &"weapon" if focus.kind == SkinData.KIND_WEAPON else &"character"
 	show_tab(last_tab if tabs.has(last_tab) else &"character")
+	if focus != null:
+		select_skin(focus)
 	MenuKit.fade_in(self)
 	back_button.grab_focus.call_deferred()
 
@@ -96,23 +114,26 @@ func _build() -> void:
 	gem_counter.pressed.connect(func() -> void: show_tab(&"gems"))
 	head.add_child(gem_counter)
 
+	_body = HBoxContainer.new()
+	_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_body.add_theme_constant_override("separation", 14)
+	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_body)
+	_detail = _build_detail()
+	_body.add_child(_detail)
 	_scroll = ScrollContainer.new()
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.scroll_deadzone = 14
-	root.add_child(_scroll)
+	_body.add_child(_scroll)
 	_row = GridContainer.new()
-	_row.add_theme_constant_override("h_separation", 14)
-	_row.add_theme_constant_override("v_separation", 14)
+	_row.add_theme_constant_override("h_separation", 12)
+	_row.add_theme_constant_override("v_separation", 12)
 	_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scroll.add_child(_row)
 	_scroll.resized.connect(_update_columns)
-	_chars = HBoxContainer.new()
-	_chars.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_chars.add_theme_constant_override("separation", 14)
-	_chars.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(_chars)
 
 	# Pied : rappel cosmétique + badge paiement simulé
 	var foot := HBoxContainer.new()
@@ -125,6 +146,8 @@ func _build() -> void:
 	foot.add_child(fair)
 	_note = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(750), 3)
 	_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_note.clip_text = true
+	_note.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	foot.add_child(_note)
 	simulated_badge = MenuKit.pill("Paiement simulé (test)", Color(0.5, 0.32, 0.05, 0.95), 15, MenuKit.TEXT,
@@ -132,6 +155,88 @@ func _build() -> void:
 	simulated_badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	simulated_badge.visible = Store.SIMULATED
 	foot.add_child(simulated_badge)
+
+
+## Panneau d'aperçu (gauche) : nom, rareté, provenance, grand aperçu, description, action.
+func _build_detail() -> PanelContainer:
+	var p := PanelContainer.new()
+	p.name = "Detail"
+	var st := MenuKit.panel_style(Color(0.06, 0.08, 0.14, 0.96), Color(1, 1, 1, 0.16), 14, 1, 0)
+	p.add_theme_stylebox_override("panel", st)
+	p.custom_minimum_size = Vector2(Balance.get_float("menu", "base_panel_width", 300.0), 0)
+	p.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	var stack := Control.new()
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(stack)
+	_d_backdrop = MenuKit.rarity_backdrop(0)
+	stack.add_child(_d_backdrop)
+	detail_preview = HeroPreview.new()
+	detail_preview.name = "HeroPreview"
+	detail_preview.height_ratio = Balance.get_float("menu", "shop_hero_ratio", 0.84)
+	detail_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	detail_preview.offset_top = 104
+	detail_preview.offset_bottom = -150
+	stack.add_child(detail_preview)
+	detail_icon = WeaponIcon.new()
+	detail_icon.name = "WeaponPreview"
+	detail_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	detail_icon.offset_left = 18
+	detail_icon.offset_right = -18
+	detail_icon.offset_top = 120
+	detail_icon.offset_bottom = -250
+	stack.add_child(detail_icon)
+	detail_held = TextureRect.new()
+	detail_held.name = "HeldPreview"
+	detail_held.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	detail_held.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	detail_held.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	detail_held.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail_held.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	detail_held.offset_left = 60
+	detail_held.offset_right = -60
+	detail_held.offset_top = -238
+	detail_held.offset_bottom = -168
+	stack.add_child(detail_held)
+	var head := VBoxContainer.new()
+	head.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	head.offset_left = 16
+	head.offset_right = -16
+	head.offset_top = 14
+	head.add_theme_constant_override("separation", 2)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(head)
+	_d_kicker = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(900))
+	head.add_child(_d_kicker)
+	_d_name = MenuKit.label("", 26, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+	_d_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_d_name.clip_text = true
+	head.add_child(_d_name)
+	_d_meta = HBoxContainer.new()
+	_d_meta.add_theme_constant_override("separation", 6)
+	_d_meta.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(_d_meta)
+	var foot := VBoxContainer.new()
+	foot.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	foot.offset_left = 14
+	foot.offset_right = -14
+	foot.offset_bottom = -14
+	foot.add_theme_constant_override("separation", 8)
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_child(foot)
+	_d_desc = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(700))
+	_d_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_d_desc.max_lines_visible = 3
+	_d_desc.custom_minimum_size = Vector2(0, 58)
+	_d_desc.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	foot.add_child(_d_desc)
+	detail_button = MenuKit.button("", MenuKit.Style.SECONDARY, 20, Vector2(0, 64))
+	MenuKit.tighten(detail_button, 10)
+	detail_button.pressed.connect(func() -> void:
+		if selected_skin != null or current_tab == &"character":
+			_on_skin_action(selected_skin.id if selected_skin != null else &""))
+	foot.add_child(detail_button)
+	return p
 
 
 # --- Onglets -------------------------------------------------------------------------
@@ -142,60 +247,73 @@ func show_tab(tab: StringName) -> void:
 	var b: Button = tab_chips.get(tab)
 	if b != null and not b.button_pressed:
 		b.set_pressed_no_signal(true)
-	for holder: Node in [_row, _chars]:
-		for c: Node in holder.get_children():
-			holder.remove_child(c)
-			c.queue_free()
+	for c: Node in _row.get_children():
+		_row.remove_child(c)
+		c.queue_free()
 	cards.clear()
 	action_buttons.clear()
 	pack_buttons.clear()
-	_char_grid = null
-	_scroll.visible = tab != &"character"
-	_chars.visible = tab == &"character"
+	_detail.visible = tab != &"gems"
 	match tab:
 		&"character":
-			_build_characters()
-			_note.text = "Les skins changent seulement l'apparence de ton personnage."
+			for s: SkinData in character_skins_with_base():
+				_add_card(_character_card(s))
+			_note.text = "Les skins changent seulement l'apparence. D'autres sont dans le pass de combat."
+			select_skin(HeroSkin.current() if HeroSkin.current() != null else base_skin, false)
 		&"gems":
 			var packs := Store.packs()
 			for i: int in packs.size():
 				_add_card(_pack_card(i, packs[i]))
 			_note.text = "Les gemmes s'achètent ici ou se gagnent à chaque extraction réussie."
 		_:
-			var kind: StringName = SkinData.KIND_WEAPON
-			for s: SkinData in SkinData.all_of_kind(kind):
-				_add_card(_skin_card(s, kind))
-			_note.text = "Les skins changent seulement l'apparence." if cards.size() > 1 \
-				else "De nouveaux skins arrivent bientôt."
+			var list := weapon_skins()
+			for s: SkinData in list:
+				_add_card(_weapon_card(s))
+			_note.text = "Un skin habille une arme précise. D'autres sont dans le pass de combat."
+			select_skin(list[0] if not list.is_empty() else null, false)
 	_scroll.scroll_vertical = 0
 	_update_columns()
 	# Entrée en cascade (courte)
 	for i: int in cards.size():
 		var c: Control = cards[i]
 		c.modulate.a = 0.0
-		create_tween().tween_property(c, "modulate:a", 1.0, 0.18).set_delay(0.03 * i)
+		create_tween().tween_property(c, "modulate:a", 1.0, 0.18).set_delay(0.025 * i)
 	_refresh_states()
 
 
-## Colonnes de la grille selon la largeur ; cartes étirées pour remplir la ligne.
+## Colonnes de la grille selon la largeur ; hauteur des cartes calée pour remplir l'écran.
 func _update_columns() -> void:
 	if _row == null:
 		return
-	if current_tab == &"character":
-		_update_char_columns()
-		return
-	var w: float = _scroll.size.x if _scroll.size.x > 0.0 else 1200.0
-	var cw: float = Balance.get_float("menu", "shop_card_width", 220.0)
-	for c: Control in cards:
-		cw = maxf(cw, c.get_combined_minimum_size().x)
-	_row.columns = maxi(1, floori((w + 14.0) / (cw + 14.0)))
-	if current_tab == &"gems":
-		_row.columns = maxi(1, mini(_row.columns, cards.size()))
-	# Une seule rangée : les cartes occupent toute la hauteur (grands aperçus).
-	var one_row: bool = cards.size() <= _row.columns
-	_row.size_flags_vertical = Control.SIZE_EXPAND_FILL if one_row else Control.SIZE_FILL
-	for c: Control in cards:
-		c.size_flags_vertical = Control.SIZE_EXPAND_FILL if one_row else Control.SIZE_FILL
+	# Largeur disponible calculée depuis l'écran (pas depuis la grille, qui pousserait sinon
+	# le conteneur hors de l'écran quand elle a trop de colonnes).
+	var m: Vector4 = MenuKit.safe_margins(self)
+	var w: float = get_viewport_rect().size.x - m.x - m.z
+	if _detail.visible:
+		w -= _detail.custom_minimum_size.x + 14.0
+	w -= 10.0   # barre de défilement verticale
+	var h: float = _scroll.size.y if _scroll.size.y > 0.0 else 540.0
+	var n: int = maxi(cards.size(), 1)
+	match current_tab:
+		&"character":
+			var cw: float = Balance.get_float("menu", "skin_card_width", 168.0)
+			var cols: int = maxi(1, floori((w + 12.0) / (cw + 12.0)))
+			var rows: int = ceili(n / float(cols))
+			cols = ceili(n / float(rows))
+			_row.columns = cols
+			var ch: float = floorf((h - 12.0 * (rows - 1)) / rows) if rows <= 2 else Balance.get_float("menu", "skin_card_min_height", 250.0)
+			for c: Control in cards:
+				c.custom_minimum_size.y = maxf(ch, Balance.get_float("menu", "skin_card_min_height", 250.0))
+		&"weapon":
+			var cw2: float = Balance.get_float("menu", "weapon_skin_card_width", 190.0)
+			_row.columns = maxi(1, floori((w + 12.0) / (cw2 + 12.0)))
+			for c: Control in cards:
+				c.custom_minimum_size.y = Balance.get_float("menu", "weapon_skin_card_height", 226.0)
+		_:
+			var cw3: float = Balance.get_float("menu", "shop_card_width", 220.0)
+			_row.columns = maxi(1, mini(floori((w + 14.0) / (cw3 + 14.0)), n))
+			for c: Control in cards:
+				c.custom_minimum_size.y = maxf(h, Balance.get_float("menu", "shop_pack_height", 340.0))
 
 
 func _add_card(c: Control) -> void:
@@ -214,12 +332,79 @@ func _card_panel(rarity: int, glow: bool) -> PanelContainer:
 	return p
 
 
-# --- Onglet Personnages (planche personnages_skins.jpg) ---------------------------------
+# --- Listes de skins ------------------------------------------------------------------
+
+## Skins de personnage proposés (hors skin de base) : ceux de la boutique + ceux du pass déjà
+## obtenus ; triés par rareté puis prix (ordre de la planche).
+func character_skins() -> Array[SkinData]:
+	var out: Array[SkinData] = []
+	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
+		if s.id == HeroSkin.DEFAULT_SKIN_ID:
+			continue
+		if s.is_in_shop() or (s.is_pass() and Profile.owns_skin(s.id)):
+			out.append(s)
+	out.sort_custom(_by_rarity)
+	return out
+
+
+## Skin de base en tête, puis character_skins().
+func character_skins_with_base() -> Array[SkinData]:
+	var out: Array[SkinData] = []
+	if base_skin != null:
+		out.append(base_skin)
+	out.append_array(character_skins())
+	return out
+
+
+## Skins d'armes proposés : boutique + pass déjà obtenus, triés par arme (ordre des catégories,
+## rareté de l'arme) puis par rareté du skin.
+func weapon_skins() -> Array[SkinData]:
+	var out: Array[SkinData] = []
+	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_WEAPON):
+		if s.is_in_shop() or (s.is_pass() and Profile.owns_skin(s.id)):
+			out.append(s)
+	out.sort_custom(func(a: SkinData, b: SkinData) -> bool:
+		var ka := _weapon_sort_key(a)
+		var kb := _weapon_sort_key(b)
+		if ka != kb:
+			return ka < kb
+		return a.rarity < b.rarity if a.rarity != b.rarity else String(a.id) < String(b.id))
+	return out
+
+
+static func _weapon_sort_key(s: SkinData) -> int:
+	var w := WeaponCatalog.get_weapon(s.weapon_id)
+	var cat := WeaponData.CATEGORIES.find(w.category if w != null else s.weapon_category)
+	return cat * 10 + (w.rarity if w != null else 0)
+
+
+static func _by_rarity(a: SkinData, b: SkinData) -> bool:
+	if a.rarity != b.rarity:
+		return a.rarity < b.rarity
+	return a.price_gems < b.price_gems if a.price_gems != b.price_gems else String(a.id) < String(b.id)
+
+
+## Arme d'un skin d'arme (arme précise, sinon la meilleure de sa catégorie).
+static func weapon_of(s: SkinData) -> WeaponData:
+	if s == null:
+		return null
+	var w := WeaponCatalog.get_weapon(s.weapon_id) if not String(s.weapon_id).is_empty() else null
+	if w != null:
+		return w
+	var best: WeaponData = null
+	for c: WeaponData in WeaponCatalog.all():
+		if (s.weapon_category == SkinData.ANY_CATEGORY or c.category == s.weapon_category) and not c.is_gadget():
+			if best == null or c.rarity > best.rarity:
+				best = c
+	return best
+
+
+# --- Cartes ---------------------------------------------------------------------------
 
 static var _crop_cache: Dictionary = {}
 
 
-## Aperçu recadré sur sa zone utile (les previews ont de grandes marges transparentes) :
+## Aperçu recadré sur sa zone utile (les poses ont de grandes marges transparentes) :
 ## le personnage remplit la carte. Calculé une fois par texture.
 static func cropped_preview(t: Texture2D) -> Texture2D:
 	if t == null:
@@ -235,169 +420,112 @@ static func cropped_preview(t: Texture2D) -> Texture2D:
 		if r.size.x > 0 and r.size.y > 0 and r.size != img.get_size():
 			var a := AtlasTexture.new()
 			a.atlas = t
-			a.region = Rect2(r.grow(2)).intersection(Rect2(Vector2.ZERO, img.get_size()))
+			a.region = Rect2(r.grow(4)).intersection(Rect2(Vector2.ZERO, img.get_size()))
 			out = a
 	_crop_cache[t] = out
 	return out
 
 
-## Skins de personnage hors skin de base, triés par rareté puis prix (ordre de la planche).
-func character_skins() -> Array[SkinData]:
-	var out: Array[SkinData] = []
-	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_CHARACTER):
-		if s.id == HeroSkin.DEFAULT_SKIN_ID:
-			continue
-		out.append(s)
-	out.sort_custom(func(a: SkinData, b: SkinData) -> bool:
-		if a.rarity != b.rarity:
-			return a.rarity < b.rarity
-		return a.price_gems < b.price_gems if a.price_gems != b.price_gems else String(a.id) < String(b.id))
-	return out
+## Pose haute résolution du lobby pour ce skin (repli : aperçu de la planche).
+static func pose_texture(s: SkinData) -> Texture2D:
+	var p := LobbyHero.DIR + LobbyHero.sheet_for(s) + ".png"
+	if ResourceLoader.exists(p):
+		return load(p) as Texture2D
+	return HeroSkin.preview_for(s)
 
 
-func _build_characters() -> void:
-	base_skin = SkinData.get_skin(HeroSkin.DEFAULT_SKIN_ID)
-	_chars.add_child(_base_panel())
-	_char_scroll = ScrollContainer.new()
-	_char_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_char_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_char_scroll.scroll_deadzone = 14
-	_chars.add_child(_char_scroll)
-	_char_grid = GridContainer.new()
-	_char_grid.add_theme_constant_override("h_separation", 12)
-	_char_grid.add_theme_constant_override("v_separation", 12)
-	_char_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_char_grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_char_grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_char_scroll.add_child(_char_grid)
-	_char_scroll.resized.connect(_update_char_columns)
-	var list := character_skins()
-	for s: SkinData in list:
-		var c := _character_card(s)
-		c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_char_grid.add_child(c)
-		cards.append(c)
-	if list.is_empty():
-		var l := MenuKit.label("De nouveaux skins arrivent bientôt.", 20, MenuKit.TEXT_DIM, MenuKit.nunito(800), 3)
-		_char_grid.add_child(l)
-	_update_char_columns()
-
-
-## Colonnes de skins : 4 en 1280 px (2 rangées pour 8 skins), plus sur écran large ;
-## hauteur des cartes calée pour que deux rangées tiennent sans défiler.
-func _update_char_columns() -> void:
-	if _char_grid == null or _char_scroll == null:
-		return
-	var w: float = _char_scroll.size.x if _char_scroll.size.x > 0.0 else 900.0
-	var h: float = _char_scroll.size.y if _char_scroll.size.y > 0.0 else 560.0
-	var cw: float = Balance.get_float("menu", "skin_card_width", 168.0)
-	var cols: int = maxi(1, floori((w + 12.0) / (cw + 12.0)))
-	var n: int = maxi(cards.size(), 1)
-	# Préférer des rangées équilibrées (8 skins : 4 × 2 plutôt que 5 + 3).
-	var rows: int = ceili(n / float(cols))
-	cols = ceili(n / float(rows))
-	_char_grid.columns = cols
-	var ch: float = maxf(Balance.get_float("menu", "skin_card_min_height", 250.0), floorf((h - 12.0 * (rows - 1)) / rows))
-	if rows > 2:
-		ch = Balance.get_float("menu", "skin_card_min_height", 250.0)
-	for c: Control in cards:
-		c.custom_minimum_size.y = ch
-
-
-## Grand panneau du personnage de base (aperçu animé qui tourne).
-func _base_panel() -> Control:
-	var p := PanelContainer.new()
-	var st := MenuKit.panel_style(Color(0.06, 0.08, 0.14, 0.96), Color(1, 1, 1, 0.16), 14, 1, 0)
-	p.add_theme_stylebox_override("panel", st)
-	p.custom_minimum_size = Vector2(Balance.get_float("menu", "base_panel_width", 300.0), 0)
-	p.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-	var stack := Control.new()
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_child(stack)
-	stack.add_child(MenuKit.rarity_backdrop(0))
-	_base_preview = HeroPreview.new(false)
-	_base_preview.height_ratio = Balance.get_float("menu", "base_preview_ratio", 1.35)
-	_base_preview.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_base_preview.offset_top = 100
-	_base_preview.offset_bottom = -110
-	stack.add_child(_base_preview)
-	_base_preview.set_skin(base_skin)
-	var head := VBoxContainer.new()
-	head.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	head.offset_left = 16
-	head.offset_right = -16
-	head.offset_top = 14
-	head.add_theme_constant_override("separation", 0)
-	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stack.add_child(head)
-	head.add_child(MenuKit.label("PERSONNAGE DE BASE", 15, MenuKit.TEXT_DIM, MenuKit.nunito(900)))
-	var nm := MenuKit.label(base_skin.display_name if base_skin != null else "Soldat standard", 26,
-		MenuKit.TEXT, MenuKit.nunito(1000), 4)
-	head.add_child(nm)
-	var d := MenuKit.label(base_skin.description if base_skin != null and not base_skin.description.is_empty()
-		else "Un équipement polyvalent pour toutes les situations.", 14, MenuKit.TEXT_DIM, MenuKit.nunito(700))
-	d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	d.max_lines_visible = 2
-	head.add_child(d)
-	var foot := VBoxContainer.new()
-	foot.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	foot.offset_left = 14
-	foot.offset_right = -14
-	foot.offset_bottom = -14
-	foot.add_theme_constant_override("separation", 8)
-	stack.add_child(foot)
-	var band := MenuKit.rarity_band(0, 15, 28)
-	(band.get_theme_stylebox("panel") as StyleBoxFlat).set_corner_radius_all(6)
-	foot.add_child(band)
-	var b := MenuKit.button("", MenuKit.Style.SECONDARY, 20, Vector2(0, 64))
-	MenuKit.tighten(b, 10)
-	foot.add_child(b)
-	var id: StringName = base_skin.id if base_skin != null else &""
-	b.pressed.connect(func() -> void: _on_skin_action(id))
-	action_buttons[id] = b
-	b.set_meta(&"skin_id", String(id))
-	return p
+## Carte « bouton » : un tap sélectionne le skin (aperçu à gauche).
+func _selectable(s: SkinData, rc: Color, radius: int) -> Button:
+	var card := Button.new()
+	card.focus_mode = Control.FOCUS_ALL
+	card.text = ""
+	card.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	var st := MenuKit.panel_style(Color(0.06, 0.08, 0.14, 0.97), Color(rc, 0.85), radius, 2, 0)
+	st.shadow_offset = Vector2.ZERO
+	st.shadow_color = Color(rc, 0.4 if s.rarity >= 3 else 0.15)
+	st.shadow_size = 10 if s.rarity >= 3 else 4
+	var hv := st.duplicate() as StyleBoxFlat
+	hv.border_color = rc.lightened(0.35)
+	var sel := st.duplicate() as StyleBoxFlat
+	sel.border_color = MenuKit.GOLD
+	sel.set_border_width_all(3)
+	card.add_theme_stylebox_override("normal", st)
+	card.add_theme_stylebox_override("hover", hv)
+	card.add_theme_stylebox_override("pressed", sel)
+	card.add_theme_stylebox_override("hover_pressed", sel)
+	var f := StyleBoxFlat.new()
+	f.draw_center = false
+	f.border_color = MenuKit.GOLD
+	f.set_border_width_all(3)
+	f.set_corner_radius_all(radius + 2)
+	f.set_expand_margin_all(2)
+	card.add_theme_stylebox_override("focus", f)
+	card.toggle_mode = true
+	card.set_meta(&"skin_id", String(s.id))
+	card.pressed.connect(func() -> void:
+		MenuKit.sfx(&"tick")
+		select_skin(s))
+	MenuKit.add_feedback(card, 1.02)
+	return card
 
 
 ## Carte verticale d'un skin de personnage : personnage en pied sur fond teinté de rareté,
 ## nom en capitales, bandeau de rareté, bouton d'action.
 func _character_card(s: SkinData) -> Control:
 	var rc: Color = MenuKit.rarity_color(s.rarity)
-	var p := PanelContainer.new()
-	var st := MenuKit.panel_style(Color(0.06, 0.08, 0.14, 0.97), Color(rc, 0.85), 10, 2, 0)
-	st.shadow_offset = Vector2.ZERO
-	st.shadow_color = Color(rc, 0.4 if s.rarity >= 3 else 0.15)
-	st.shadow_size = 10 if s.rarity >= 3 else 4
-	p.add_theme_stylebox_override("panel", st)
+	var p := _selectable(s, rc, 10)
 	p.custom_minimum_size = Vector2(Balance.get_float("menu", "skin_card_width", 168.0), 250)
-	p.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-	var stack := Control.new()
-	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_child(stack)
-	stack.add_child(MenuKit.rarity_backdrop(s.rarity))
+	p.add_child(MenuKit.rarity_backdrop(s.rarity))
 	var bottom_h: float = 104.0
-	if s.preview != null:
-		var tr := TextureRect.new()
-		tr.name = "Preview"
-		tr.texture = cropped_preview(s.preview)
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		tr.offset_top = 18
-		tr.offset_left = 14
-		tr.offset_right = -14
-		tr.offset_bottom = -bottom_h - 6
-		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stack.add_child(tr)
-	else:
-		var hp := HeroPreview.new(false)
-		hp.name = "Preview"
-		hp.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		hp.offset_top = 8
-		hp.offset_bottom = -bottom_h
-		stack.add_child(hp)
-		hp.set_skin(s)
+	var tr := TextureRect.new()
+	tr.name = "Preview"
+	tr.texture = cropped_preview(pose_texture(s))
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	tr.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tr.offset_top = 14
+	tr.offset_left = 10
+	tr.offset_right = -10
+	tr.offset_bottom = -bottom_h - 4
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(tr)
+	if s.is_pass():
+		p.add_child(_corner_badge("Pass", MenuKit.GOLD))
+	_card_foot(p, s, s.display_name.to_upper(), "")
+	return p
+
+
+## Carte d'un skin d'arme : l'arme habillée, nom du skin, arme, bandeau de rareté, action.
+func _weapon_card(s: SkinData) -> Control:
+	var rc: Color = MenuKit.rarity_color(s.rarity)
+	var p := _selectable(s, rc, 12)
+	p.custom_minimum_size = Vector2(Balance.get_float("menu", "weapon_skin_card_width", 190.0), 226)
+	p.add_child(MenuKit.rarity_backdrop(s.rarity))
+	var ic := WeaponIcon.new()
+	ic.name = "Preview"
+	ic.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	ic.offset_left = 12
+	ic.offset_right = -12
+	ic.offset_top = 14
+	ic.offset_bottom = 96
+	p.add_child(ic)
+	ic.set_weapon(weapon_of(s), s, false)
+	if s.is_pass():
+		p.add_child(_corner_badge("Pass", MenuKit.GOLD))
+	var w := weapon_of(s)
+	_card_foot(p, s, s.display_name, w.display_name if w != null else "")
+	return p
+
+
+func _corner_badge(txt: String, col: Color) -> Control:
+	var b := MenuKit.pill(txt, Color(col.darkened(0.55), 0.95), 12, col.lightened(0.3), Color(col, 0.8))
+	b.name = "SourceBadge"
+	b.position = Vector2(8, 8)
+	return b
+
+
+func _card_foot(p: Control, s: SkinData, title: String, sub: String) -> void:
 	var foot := VBoxContainer.new()
 	foot.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -405,12 +533,18 @@ func _character_card(s: SkinData) -> Control:
 	foot.offset_right = -10
 	foot.offset_bottom = -10
 	foot.add_theme_constant_override("separation", 4)
-	stack.add_child(foot)
-	var n := MenuKit.label(s.display_name.to_upper(), 16, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.add_child(foot)
+	var n := MenuKit.label(title, 15, MenuKit.TEXT, MenuKit.nunito(1000), 4)
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	n.clip_text = true
 	n.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	foot.add_child(n)
+	if not sub.is_empty():
+		var sl := MenuKit.label(sub, 13, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+		sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sl.clip_text = true
+		foot.add_child(sl)
 	var band := MenuKit.rarity_band(s.rarity, 14, 24)
 	(band.get_theme_stylebox("panel") as StyleBoxFlat).set_corner_radius_all(5)
 	foot.add_child(band)
@@ -418,68 +552,11 @@ func _character_card(s: SkinData) -> Control:
 	MenuKit.tighten(b, 6)
 	b.custom_minimum_size.x = 0
 	foot.add_child(b)
-	b.pressed.connect(func() -> void: _on_skin_action(s.id))
+	b.pressed.connect(func() -> void:
+		select_skin(s)
+		_on_skin_action(s.id))
 	action_buttons[s.id] = b
 	b.set_meta(&"skin_id", String(s.id))
-	return p
-
-
-## Carte d'un skin d'arme (onglet Armes, si activé).
-func _skin_card(s: SkinData, kind: StringName) -> Control:
-	var rarity: int = s.rarity if s != null else 0
-	var p := _card_panel(rarity, s != null and rarity >= 3)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	p.add_child(col)
-	var stage := Panel.new()
-	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stage.custom_minimum_size = Vector2(0, 110)
-	var ss := StyleBoxFlat.new()
-	ss.bg_color = Color(MenuKit.NIGHT_DEEP, 0.7)
-	ss.set_corner_radius_all(12)
-	stage.add_theme_stylebox_override("panel", ss)
-	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stage.clip_contents = true
-	col.add_child(stage)
-	if kind == SkinData.KIND_CHARACTER:
-		var hp := HeroPreview.new(false)
-		hp.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		stage.add_child(hp)
-		hp.set_skin(s)
-	else:
-		var ic := WeaponIcon.new()
-		ic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		ic.offset_left = 10
-		ic.offset_right = -10
-		stage.add_child(ic)
-		ic.set_weapon(_sample_weapon(s.weapon_category), s, false)
-	var n := MenuKit.label(s.display_name if s != null else "Tenue d'origine", 19, MenuKit.TEXT, MenuKit.nunito(1000), 3)
-	n.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	n.clip_text = true
-	col.add_child(n)
-	var meta := HBoxContainer.new()
-	meta.add_theme_constant_override("separation", 8)
-	col.add_child(meta)
-	var rc: Color = MenuKit.rarity_color(rarity)
-	meta.add_child(MenuKit.pill(MenuKit.rarity_name(rarity), rc.darkened(0.35), 13))
-	if kind == SkinData.KIND_WEAPON:
-		var cat: String = "Toutes les armes" if s.weapon_category == SkinData.ANY_CATEGORY \
-			else String(WeaponData.CATEGORY_NAMES.get(s.weapon_category, s.weapon_category))
-		var cl := MenuKit.label(cat, 14, MenuKit.TEXT_DIM, MenuKit.nunito(800))
-		cl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		cl.clip_text = true
-		cl.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		meta.add_child(cl)
-	var b := MenuKit.button("", MenuKit.Style.SECONDARY, 20, Vector2(0, 64))
-	MenuKit.tighten(b, 10)
-	b.custom_minimum_size.x = 0
-	col.add_child(b)
-	var id: StringName = s.id if s != null else &""
-	b.pressed.connect(func() -> void: _on_skin_action(id))
-	action_buttons[id] = b
-	b.set_meta(&"skin_id", String(id))
-	return p
 
 
 func _pack_card(i: int, pack: Dictionary) -> Control:
@@ -509,57 +586,105 @@ func _pack_card(i: int, pack: Dictionary) -> Control:
 	return p
 
 
-## Arme d'exemple pour l'aperçu d'un skin d'arme.
-func _sample_weapon(cat: StringName) -> WeaponData:
-	if _sample_cache.has(cat):
-		return _sample_cache[cat]
-	var best: WeaponData = null
-	for w: WeaponData in WeaponCatalog.all():
-		if cat == SkinData.ANY_CATEGORY or w.category == cat:
-			if best == null or w.rarity > best.rarity:
-				best = w
-	if best == null:
-		best = WeaponData.new()
-		best.category = cat if cat != SkinData.ANY_CATEGORY else WeaponData.CAT_RIFLE
-	_sample_cache[cat] = best
-	return best
+# --- Sélection (panneau d'aperçu) -------------------------------------------------------
+
+## Met ce skin en avant dans le panneau de gauche (personnage en pied ou arme habillée).
+func select_skin(s: SkinData, animate: bool = true) -> void:
+	selected_skin = s
+	var is_char: bool = current_tab == &"character"
+	detail_preview.visible = is_char
+	detail_icon.visible = not is_char
+	detail_held.visible = not is_char
+	var r: int = s.rarity if s != null else 0
+	var bd := MenuKit.rarity_backdrop(r)
+	_d_backdrop.texture = bd.texture
+	bd.free()
+	for c: Node in _d_meta.get_children():
+		c.queue_free()
+	if is_char:
+		_d_kicker.text = "Personnage de base" if s == null or s.id == HeroSkin.DEFAULT_SKIN_ID else "Skin de personnage"
+		_d_name.text = s.display_name if s != null else "Soldat standard"
+		_d_desc.text = s.description if s != null and not s.description.is_empty() \
+			else "Un équipement polyvalent pour toutes les situations."
+		detail_preview.set_skin(s, animate)
+	else:
+		var w := weapon_of(s)
+		_d_kicker.text = ("Skin · %s" % w.display_name) if w != null else "Skin d'arme"
+		_d_name.text = s.display_name if s != null else "Aucun skin"
+		_d_desc.text = s.description if s != null else "De nouveaux skins arrivent bientôt."
+		detail_icon.set_weapon(w, s, false)
+		detail_held.remove_meta(WeaponSkin.META_BASE_TEX)
+		detail_held.texture = _held_texture(w)
+		WeaponSkin.apply(detail_held, s, w.id if w != null else &"", false)
+		if animate:
+			detail_icon.pivot_offset = detail_icon.size * 0.5
+			create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
+				.tween_property(detail_icon, "scale", Vector2.ONE, 0.28).from(Vector2(0.9, 0.9))
+	var rc := MenuKit.rarity_color(r)
+	_d_meta.add_child(MenuKit.pill(MenuKit.rarity_name(r), rc.darkened(0.35), 13))
+	if s != null and s.is_pass():
+		_d_meta.add_child(MenuKit.pill("Pass de combat", Color(MenuKit.GOLD.darkened(0.55), 0.95), 13, MenuKit.GOLD.lightened(0.3)))
+	elif s != null and s.is_in_shop() and not Profile.owns_skin(s.id):
+		_d_meta.add_child(MenuKit.pill("%d gemmes" % s.price_gems, Color(MenuKit.GEM.darkened(0.6), 0.95), 13, MenuKit.GEM.lightened(0.3)))
+	for c: Control in cards:
+		if c is Button:
+			(c as Button).set_pressed_no_signal(s != null and str(c.get_meta(&"skin_id", "")) == String(s.id))
+	_refresh_states()
+
+
+## Sprite de l'arme tenue en jeu (assets/sprites/weapons/<id>.png), pour l'aperçu « en jeu ».
+static func _held_texture(w: WeaponData) -> Texture2D:
+	if w == null:
+		return null
+	var p := "res://assets/sprites/weapons/%s.png" % w.get_sprite_id()
+	return load(p) as Texture2D if ResourceLoader.exists(p) else null
 
 
 # --- États et achats ------------------------------------------------------------------
 
-## État d'un skin : "buy", "equip", "equipped".
+## État d'un skin : "buy", "equip", "equipped", "pass" (skin du pass pas encore obtenu).
 func skin_state(s: SkinData) -> String:
 	if s == null or s.id == HeroSkin.DEFAULT_SKIN_ID:
 		var cur := String(Profile.skin_character)
 		return "equipped" if cur.is_empty() or cur == String(HeroSkin.DEFAULT_SKIN_ID) else "equip"
 	if not Profile.owns_skin(s.id):
-		return "buy"
+		return "pass" if s.is_pass() else "buy"
 	if s.kind == SkinData.KIND_CHARACTER:
 		return "equipped" if Profile.skin_character == s.id else "equip"
-	return "equipped" if str(Profile.skin_weapons.get(String(s.weapon_category), "")) == String(s.id) else "equip"
+	return "equipped" if WeaponSkin.is_equipped(s) else "equip"
 
 
 func _refresh_states() -> void:
 	for id: StringName in action_buttons:
-		var b: Button = action_buttons[id]
-		var sid: String = str(b.get_meta(&"skin_id", ""))
-		var s: SkinData = SkinData.get_skin(StringName(sid)) if not sid.is_empty() else null
-		match skin_state(s):
-			"buy":
-				b.text = "%d  gemmes" % s.price_gems if s.price_gems > 0 else "Obtenir"
-				b.disabled = false
-				b.modulate = Color.WHITE if Profile.gems >= s.price_gems else Color(1, 1, 1, 0.65)
-				_style_action(b, MenuKit.Style.PRIMARY)
-			"equip":
-				b.text = "Équiper"
-				b.disabled = false
-				b.modulate = Color.WHITE
-				_style_action(b, MenuKit.Style.SECONDARY)
-			_:
-				b.text = "Équipé"
-				b.disabled = true
-				b.modulate = Color.WHITE
-				_style_action(b, MenuKit.Style.GHOST)
+		_refresh_button(action_buttons[id] as Button, SkinData.get_skin(id) if not String(id).is_empty() else null)
+	if detail_button != null:
+		_refresh_button(detail_button, selected_skin)
+		detail_button.visible = current_tab != &"gems" and (selected_skin != null or current_tab == &"character")
+
+
+func _refresh_button(b: Button, s: SkinData) -> void:
+	match skin_state(s):
+		"buy":
+			b.text = "%d  gemmes" % s.price_gems if s.price_gems > 0 else "Obtenir"
+			b.disabled = false
+			b.modulate = Color.WHITE if Profile.gems >= s.price_gems else Color(1, 1, 1, 0.65)
+			_style_action(b, MenuKit.Style.PRIMARY)
+		"pass":
+			b.text = "Dans le pass"
+			b.disabled = false
+			b.modulate = Color.WHITE
+			_style_action(b, MenuKit.Style.SECONDARY)
+		"equip":
+			b.text = "Équiper"
+			b.disabled = false
+			b.modulate = Color.WHITE
+			_style_action(b, MenuKit.Style.SECONDARY)
+		_:
+			var weapon: bool = s != null and s.kind == SkinData.KIND_WEAPON
+			b.text = "Retirer" if weapon else "Équipé"
+			b.disabled = not weapon
+			b.modulate = Color.WHITE
+			_style_action(b, MenuKit.Style.GHOST)
 
 
 func _style_action(b: Button, style: MenuKit.Style) -> void:
@@ -575,19 +700,37 @@ func _style_action(b: Button, style: MenuKit.Style) -> void:
 
 func _on_skin_action(id: StringName) -> void:
 	var s: SkinData = SkinData.get_skin(id) if not String(id).is_empty() else null
-	if s != null and s.kind == SkinData.KIND_CHARACTER and _base_preview != null and is_instance_valid(_base_preview):
-		_base_preview.set_skin(s)  # aperçu en grand du skin touché
 	match skin_state(s):
 		"buy":
 			ask_buy(s)
+		"pass":
+			open_pass(s)
 		"equip":
 			equip(s)
+		"equipped":
+			if s != null and s.kind == SkinData.KIND_WEAPON:
+				unequip_weapon(s)
+
+
+## Skin du pass pas encore obtenu : explique où le trouver, puis ouvre l'écran du pass.
+func open_pass(s: SkinData) -> ModalPanel:
+	var where := BattlePassSystem.get_instance().find_skin(s.id) if s != null else {}
+	var msg := "« %s » s'obtient dans le pass de combat" % (s.display_name if s != null else "")
+	if not where.is_empty():
+		msg += " (palier %d, piste %s)" % [int(where["tier"]), "premium" if where["track"] == BattlePassSystem.PREMIUM else "gratuite"]
+	var m := ConfirmPanel.new("Dans le pass", msg + ".", "Voir le pass")
+	m.confirmed.connect(func() -> void:
+		BattlePassScreen.focus_skin_id = s.id if s != null else &""
+		MenuKit.go_to(self, MenuKit.BATTLE_PASS_SCENE))
+	return _open_modal(m)
 
 
 ## Ouvre la confirmation d'achat (ou explique qu'il manque des gemmes).
 func ask_buy(s: SkinData) -> ModalPanel:
 	if s == null:
 		return null
+	if s.is_pass():
+		return open_pass(s)
 	if Profile.gems < s.price_gems:
 		var missing: int = s.price_gems - Profile.gems
 		var m := ConfirmPanel.new("Pas assez de gemmes",
@@ -603,9 +746,9 @@ func ask_buy(s: SkinData) -> ModalPanel:
 	return _open_modal(m2)
 
 
-## Achète (sans confirmation) puis équipe. Renvoie false si impossible.
+## Achète (sans confirmation) puis équipe. Renvoie false si impossible (skin du pass compris).
 func buy(s: SkinData) -> bool:
-	if s == null or not Profile.buy_skin(s.id):
+	if s == null or not s.is_in_shop() or not Profile.buy_skin(s.id):
 		MenuKit.sfx(&"error")
 		return false
 	MenuKit.sfx(&"coin_spend")
@@ -620,19 +763,34 @@ func equip(s: SkinData) -> bool:
 	elif s.kind == SkinData.KIND_CHARACTER:
 		ok = Profile.equip_character_skin(s.id)
 	else:
-		ok = Profile.equip_weapon_skin(s.id)
+		ok = WeaponSkin.equip(s.id)
 	if ok:
 		MenuKit.sfx(&"item_equip", -2.0)
-		var b: Button = action_buttons.get(s.id if s != null else &"")
-		if b != null and b.is_inside_tree():
-			var card := b.get_parent().get_parent().get_parent() as Control
-			if current_tab != &"character":
-				card = b.get_parent().get_parent() as Control
-			card.pivot_offset = card.size * 0.5
-			create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
-				.tween_property(card, "scale", Vector2.ONE, 0.3).from(Vector2(1.06, 1.06))
+		_pop_card(s)
 	_refresh_states()
 	return ok
+
+
+func unequip_weapon(s: SkinData) -> void:
+	if s == null:
+		return
+	WeaponSkin.unequip(s.weapon_id)
+	MenuKit.sfx(&"click")
+	_refresh_states()
+
+
+func _pop_card(s: SkinData) -> void:
+	var b: Button = action_buttons.get(s.id if s != null else (base_skin.id if base_skin != null else &""))
+	if b == null or not b.is_inside_tree():
+		return
+	var card: Control = b
+	while card != null and not cards.has(card):
+		card = card.get_parent() as Control
+	if card == null:
+		return
+	card.pivot_offset = card.size * 0.5
+	create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
+		.tween_property(card, "scale", Vector2.ONE, 0.3).from(Vector2(1.05, 1.05))
 
 
 ## Achat d'un pack de gemmes (paiement simulé).

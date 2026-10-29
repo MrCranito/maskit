@@ -41,3 +41,7 @@ muzzle_flash_scale = 0.7
 eject_shells = true
 sprite_id = &"smg_mp5"
 value = 70
+unlock_mode = &"shop"
+unlock_enemy_kind = &""
+unlock_kills = 0
+price_gold = 220

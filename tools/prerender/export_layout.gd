@@ -1,6 +1,8 @@
 extends SceneTree
 ## Exporte l'étage 0 (FloorLayout) d'une seed Far West en JSON pour le rendu Blender.
-## godot --headless --path . --script res://tools/prerender/export_layout.gd -- <seed> <out.json>
+## godot --headless --path . --script res://tools/prerender/export_layout.gd -- <seed> <out.json> [difficulté] [monde.tres]
+## (Ajout station) 4e argument : chemin du monde (défaut Far West). Champs génériques ajoutés :
+## low_gravity (cases), contract (métadonnée « render_contract » du layout, convertie en JSON).
 
 func _sp(s: FloorLayout.Spawn) -> Dictionary:
 	return {"cell": [s.cell.x, s.cell.y], "kind": String(s.kind), "off": [s.offset.x, s.offset.y],
@@ -116,15 +118,37 @@ func _export_contract(L: FloorLayout, d: Dictionary) -> void:
 			d[key] = out
 
 
+## Conversion récursive des types Godot (Vector2i, Rect2i, Vector2…) en types JSON.
+func _json(v: Variant) -> Variant:
+	if v is Dictionary:
+		var o := {}
+		for k: Variant in (v as Dictionary).keys():
+			o[String(k)] = _json(v[k])
+		return o
+	if v is Array:
+		var l: Array = []
+		for e: Variant in v:
+			l.append(_json(e))
+		return l
+	if v is Vector2i or v is Vector2:
+		return [v.x, v.y]
+	if v is Rect2i or v is Rect2:
+		return [v.position.x, v.position.y, v.size.x, v.size.y]
+	if v is StringName:
+		return String(v)
+	return v
+
+
 func _initialize() -> void:
 	var a := OS.get_cmdline_user_args()
-	var world: WorldData = load("res://data/worlds/world_01_far_west.tres")
+	var world_path := String(a[3]) if a.size() > 3 and String(a[3]) != "" else "res://data/worlds/world_01_far_west.tres"
+	var world: WorldData = load(world_path)
 	var gen: Script = load(world.generator_path)
 	# Même appel que le raid (generate_run, difficulté par défaut) : le plan doit être identique
 	# au tuile près (empreinte tiles_md5 vérifiée en jeu par PrerenderBackdrop).
 	var cfg := ConfigFile.new()
 	cfg.load("res://data/balance.cfg")
-	var diff := int(a[2]) if a.size() > 2 else int(cfg.get_value("raid", "default_difficulty", 1))
+	var diff := int(a[2]) if a.size() > 2 and String(a[2]) != "" else int(cfg.get_value("raid", "default_difficulty", 1))
 	var L: FloorLayout = null
 	for l: FloorLayout in gen.call("generate_run", int(a[0]), world, diff):
 		if l.floor_index == 0:
@@ -188,6 +212,12 @@ func _initialize() -> void:
 	d["extraction"] = ex
 	d["player_spawn"] = [L.player_spawn.x, L.player_spawn.y]
 	_export_contract(L, d)
+	# (Ajout station) Gravité faible et contrat de rendu propre au biome (métadonnée du layout).
+	d["low_gravity"] = _cells(L.low_gravity_cells)
+	d["biome"] = String(world.biome)
+	d["floor_names"] = {"0": String(world.floor_names.get(0, ""))}
+	if L.has_meta(&"render_contract"):
+		d["contract"] = _json(L.get_meta(&"render_contract"))
 	var f := FileAccess.open(a[1], FileAccess.WRITE)
 	f.store_string(JSON.stringify(d))
 	f.close()

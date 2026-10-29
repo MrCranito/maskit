@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_aug_flames"
+display_name = "Flammes"
+description = "Flammes « hot rod » rouge et or sur fond noir."
+kind = &"weapon"
+rarity = 4
+price_gems = 1000
+weapon_category = &"rifle"
+weapon_id = &"rifle_aug"
+source = &"pass"
+color_primary = Color(0.878, 0.157, 0.102, 1)
+color_secondary = Color(0.086, 0.071, 0.102, 1)
+color_accent = Color(1.000, 0.816, 0.251, 1)
+pattern = &"flames"
+glow = 0.5

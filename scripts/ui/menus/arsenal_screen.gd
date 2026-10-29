@@ -11,8 +11,18 @@ extends Control
 ##    « Valider et partir » (désactivé sans arme) → Profile.set_loadout(uids) (armes + gadget),
 ##    GameState.begin_raid(), raid.tscn (fondu MenuKit).
 ## Panneau de droite : détail de l'arme touchée (stats en barres).
+##  - Consultation : onglets « Collection » / « Armurerie » (agent Économie). Armurerie = achat
+##    d'armes en pièces d'or selon WeaponData.unlock_mode (Economy.weapon_status) : prix (shop),
+##    « Tue 1 Tireur embusqué pour débloquer (0/1) » (kill), « Légendaire : uniquement en butin »
+##    (drop). Compteur d'or (GoldCounter) dans l'en-tête ; « Acheter » dans le panneau de détail.
+##  - Arsenal de départ : ligne « Consommables emportés » (soins de la réserve mis dans le sac au
+##    lancement, Profile.consumables_preview) + bascule « Soins : oui / non ».
 
 @export var loadout_mode: bool = true
+## Consultation : ouvrir directement l'onglet Armurerie.
+@export var start_in_shop: bool = false
+## Prochaine ouverture de l'écran d'arsenal sur l'onglet Armurerie (bouton du lobby, raccourci).
+static var open_shop_next: bool = false
 
 ## Scène lancée par « Valider et partir » ("" = aucun changement de scène, pour les tests).
 var raid_scene: String = MenuKit.RAID_SCENE
@@ -32,6 +42,21 @@ var skin_button: Button = null
 var slot_buttons: Array[Button] = []
 var gadget_slot_button: Button = null
 var gem_counter: GemCounter = null
+var gold_counter: GoldCounter = null
+## Onglet Armurerie actif (consultation seulement).
+var shop_mode: bool = false
+var buy_button: Button = null
+var consumables_label: Label = null
+var consumables_toggle: Button = null
+var _tab_collection: Button = null
+var _tab_shop: Button = null
+var _sub_label: Label = null
+var _d_shop: VBoxContainer = null
+var _d_shop_text: Label = null
+var _d_shop_bar: ProgressBar = null
+var _d_shop_hint: Label = null
+
+const MERCHANT_SCENE := "res://scenes/ui/menus/merchant.tscn"
 
 var _scroll: ScrollContainer = null
 var _list: VBoxContainer = null
@@ -59,6 +84,9 @@ func _ready() -> void:
 	var bg := MenuBackground.new()
 	bg.dim = Balance.get_float("menu", "screen_dim", 0.45) + 0.2
 	add_child(bg)
+	if not loadout_mode and (start_in_shop or open_shop_next):
+		shop_mode = true
+	open_shop_next = false
 	_read_stash()
 	if loadout_mode:
 		var nw := 0
@@ -137,18 +165,33 @@ func _build() -> void:
 	tcol.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(tcol)
 	tcol.add_child(MenuKit.title("ARSENAL DE DÉPART" if loadout_mode else "ARSENAL", 38))
-	var sub_text: String
-	var card: MapCard = GameState.current_map as MapCard
-	if loadout_mode:
-		sub_text = "%s  ·  %s  ·  %s" % [card.display_name, card.biome_name(), card.difficulty_name()] \
-			if card != null else "Choisis tes armes pour le raid."
-	else:
-		var n_models := 0
-		for id: String in owned:
-			n_models += 1
-		sub_text = "Un large choix d'armes pour ton style de jeu.  %d / %d modèles débloqués" % [
-			n_models, WeaponCatalog.all().size()]
-	tcol.add_child(MenuKit.label(sub_text, 16, MenuKit.TEXT_DIM, MenuKit.nunito(800)))
+	_sub_label = MenuKit.label("", 16, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+	# Le sous-titre ne doit jamais élargir l'en-tête (onglets + compteurs à droite).
+	_sub_label.clip_text = true
+	_sub_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	tcol.add_child(_sub_label)
+	_refresh_subtitle()
+	if not loadout_mode:
+		# Onglets Collection / Armurerie
+		var tabs := HBoxContainer.new()
+		tabs.add_theme_constant_override("separation", 8)
+		tabs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		head.add_child(tabs)
+		var group := ButtonGroup.new()
+		_tab_collection = MenuKit.chip("Collection", MenuKit.GOLD, group)
+		_tab_collection.button_pressed = not shop_mode
+		_tab_collection.pressed.connect(func() -> void: set_shop_mode(false))
+		tabs.add_child(_tab_collection)
+		_tab_shop = MenuKit.chip("Armurerie", GoldCounter.GOLD_COIN, group)
+		_tab_shop.button_pressed = shop_mode
+		_tab_shop.pressed.connect(func() -> void: set_shop_mode(true))
+		tabs.add_child(_tab_shop)
+		gold_counter = GoldCounter.new()
+		gold_counter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		gold_counter.pressed.connect(func() -> void:
+			if ResourceLoader.exists(MERCHANT_SCENE):
+				MenuKit.go_to(self, MERCHANT_SCENE))
+		head.add_child(gold_counter)
 	gem_counter = GemCounter.new()
 	gem_counter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gem_counter.pressed.connect(func() -> void: MenuKit.go_to(self, MenuKit.SHOP_SCENE))
@@ -220,6 +263,22 @@ func _build_slots_bar() -> Control:
 	_hint = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(750))
 	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	wcol.add_child(_hint)
+	var crow := HBoxContainer.new()
+	crow.add_theme_constant_override("separation", 8)
+	wcol.add_child(crow)
+	consumables_label = MenuKit.label("", 14, Color(0.6, 0.95, 0.65), MenuKit.nunito(850))
+	consumables_label.name = "Consumables"
+	consumables_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	consumables_label.max_lines_visible = 2
+	consumables_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	consumables_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	crow.add_child(consumables_label)
+	consumables_toggle = MenuKit.button("Soins : oui", MenuKit.Style.GHOST, 14, Vector2(104, 36))
+	MenuKit.tighten(consumables_toggle, 8)
+	consumables_toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	consumables_toggle.pressed.connect(toggle_consumables)
+	crow.add_child(consumables_toggle)
+	_refresh_consumables()
 	validate_button = MenuKit.button("Valider et partir", MenuKit.Style.PRIMARY, 24, Vector2(240, 76))
 	MenuKit.tighten(validate_button, 16)
 	validate_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -279,6 +338,33 @@ func _build_detail() -> Control:
 	_d_desc.max_lines_visible = 4
 	_d_desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	col.add_child(_d_desc)
+	if not loadout_mode:
+		_d_shop = VBoxContainer.new()
+		_d_shop.name = "ShopBox"
+		_d_shop.add_theme_constant_override("separation", 6)
+		col.add_child(_d_shop)
+		_d_shop_text = MenuKit.label("", 16, MenuKit.TEXT, MenuKit.nunito(900))
+		_d_shop_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_d_shop.add_child(_d_shop_text)
+		_d_shop_bar = ProgressBar.new()
+		_d_shop_bar.show_percentage = false
+		_d_shop_bar.custom_minimum_size = Vector2(0, 12)
+		var bb := StyleBoxFlat.new()
+		bb.bg_color = Color(0.02, 0.03, 0.08, 0.9)
+		bb.set_corner_radius_all(6)
+		var bf := StyleBoxFlat.new()
+		bf.bg_color = MenuKit.BAD
+		bf.set_corner_radius_all(6)
+		_d_shop_bar.add_theme_stylebox_override("background", bb)
+		_d_shop_bar.add_theme_stylebox_override("fill", bf)
+		_d_shop.add_child(_d_shop_bar)
+		_d_shop_hint = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+		_d_shop_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_d_shop.add_child(_d_shop_hint)
+		buy_button = MenuKit.button("Acheter", MenuKit.Style.PRIMARY, 22, Vector2(0, 64))
+		MenuKit.tighten(buy_button)
+		buy_button.pressed.connect(buy_selected)
+		_d_shop.add_child(buy_button)
 	# Skins d'armes : seulement quand ils sont activés ([shop] weapon_skins_enabled).
 	if not loadout_mode and WeaponSkin.is_enabled():
 		var srow := HBoxContainer.new()
@@ -293,6 +379,34 @@ func _build_detail() -> Control:
 		skin_button.pressed.connect(cycle_skin)
 		srow.add_child(skin_button)
 	return p
+
+
+func _refresh_subtitle() -> void:
+	if _sub_label == null:
+		return
+	var card: MapCard = GameState.current_map as MapCard
+	if loadout_mode:
+		_sub_label.text = "%s  ·  %s  ·  %s" % [card.display_name, card.biome_name(), card.difficulty_name()] \
+			if card != null else "Choisis tes armes pour le raid."
+	elif shop_mode:
+		_sub_label.text = "Achète des armes avec ton or. Légendaires : butin uniquement."
+	else:
+		_sub_label.text = "Un large choix d'armes pour ton style de jeu.  %d / %d modèles débloqués" % [
+			owned.size(), WeaponCatalog.all().size()]
+
+
+## Bascule Collection / Armurerie (consultation).
+func set_shop_mode(on: bool) -> void:
+	if loadout_mode or shop_mode == on:
+		return
+	shop_mode = on
+	if _tab_shop != null:
+		_tab_shop.set_pressed_no_signal(on)
+		_tab_collection.set_pressed_no_signal(not on)
+	MenuKit.sfx(&"click_soft", -4.0)
+	_refresh_subtitle()
+	_fill()
+	show_weapon_detail(detail_weapon, false)
 
 
 # --- Sections -------------------------------------------------------------------------
@@ -355,7 +469,9 @@ func _fill() -> void:
 		for w: WeaponData in models:
 			var ids: Array[int] = []
 			ids.assign(owned.get(String(w.id), []))
-			var t := WeaponTile.new(w, ids, ids.is_empty())
+			var t := WeaponTile.new(w, ids, ids.is_empty() and not shop_mode)
+			if shop_mode:
+				t.set_shop_status(Profile.weapon_shop_status(w.id))
 			t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			t.pressed.connect(func() -> void: _on_tile_pressed(t))
 			grid.add_child(t)
@@ -564,6 +680,7 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 		_d_bars.show_weapon(null)
 		if skin_button != null:
 			skin_button.disabled = true
+		_refresh_shop_box(null)
 		return
 	var rc: Color = MenuKit.rarity_color(w.rarity)
 	_d_style.border_color = Color(rc, 0.85)
@@ -582,8 +699,12 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 	_d_owned.text = ("Possédée ×%d" % n) if n > 0 else "Non possédée"
 	_d_owned.add_theme_color_override("font_color", MenuKit.TEXT if n > 0 else MenuKit.TEXT_DIM)
 	_d_bars.show_weapon(w, rc.lightened(0.15))
-	_d_desc.text = w.description if n > 0 or loadout_mode \
-		else (w.description + ("\n" if not w.description.is_empty() else "") + "Trouve-la en raid pour la débloquer.")
+	if shop_mode:
+		_d_desc.text = w.description
+	else:
+		_d_desc.text = w.description if n > 0 or loadout_mode \
+			else (w.description + ("\n" if not w.description.is_empty() else "") + _how_to_get(w))
+	_refresh_shop_box(w)
 	_refresh_skin_row()
 	if with_anim and is_inside_tree():
 		_d_icon.pivot_offset = _d_icon.size * 0.5
@@ -679,6 +800,109 @@ func _shake(c: Control) -> void:
 	tw.tween_property(c, "position:x", x, 0.04)
 
 
+# --- Armurerie (consultation) ---------------------------------------------------------------
+
+## Comment obtenir un modèle non possédé (onglet Collection).
+func _how_to_get(w: WeaponData) -> String:
+	var st := Profile.weapon_shop_status(w.id)
+	match st.get("state"):
+		Economy.STATE_BUYABLE:
+			return "En vente à l'armurerie : %s or." % Economy.fmt(int(st["price"]))
+		Economy.STATE_LOCKED:
+			return str(st["text"]) + ", puis achète-la à l'armurerie."
+	return "Trouve-la en raid : jamais en vente."
+
+
+func _refresh_shop_box(w: WeaponData) -> void:
+	if _d_shop == null:
+		return
+	_d_shop.visible = shop_mode and w != null
+	_d_desc.max_lines_visible = 2 if shop_mode else 4
+	# Armurerie : panneau plus compact (icône réduite, pas de ligne de skin).
+	_d_icon.custom_minimum_size.y = 80.0 if shop_mode else 124.0
+	if _d_skin != null:
+		(_d_skin.get_parent() as Control).visible = not shop_mode
+	if not _d_shop.visible:
+		return
+	var st := Profile.weapon_shop_status(w.id)
+	var state: StringName = st["state"]
+	var price := int(st["price"])
+	_d_shop_bar.visible = state == Economy.STATE_LOCKED
+	match state:
+		Economy.STATE_BUYABLE:
+			_d_shop_text.text = ("Prix : %s or" % Economy.fmt(price)) + (
+				("   ·   " + str(st["text"])) if st["mode"] == WeaponData.UNLOCK_KILL else "")
+			_d_shop_text.add_theme_color_override("font_color", GoldCounter.GOLD_COIN)
+			buy_button.visible = true
+			buy_button.disabled = Profile.gold < price
+			buy_button.text = "Acheter · %s or" % Economy.fmt(price)
+			_d_shop_hint.text = ("Il te manque %s or : vends ton butin au marchand." % Economy.fmt(price - Profile.gold)) \
+				if Profile.gold < price else ("Tu en as ×%d." % owned_count(w.id) if owned_count(w.id) > 0 else "")
+		Economy.STATE_LOCKED:
+			_d_shop_text.text = str(st["text"])
+			_d_shop_text.add_theme_color_override("font_color", Color(1.0, 0.62, 0.56))
+			_d_shop_bar.max_value = float(maxi(int(st["needed"]), 1))
+			_d_shop_bar.value = float(st["kills"])
+			buy_button.visible = true
+			buy_button.disabled = true
+			buy_button.text = "%s or" % Economy.fmt(price)
+			_d_shop_hint.text = "Les victimes comptent même si tu meurs."
+		_:
+			_d_shop_text.text = str(st["text"])
+			_d_shop_text.add_theme_color_override("font_color", MenuKit.rarity_color(4).lightened(0.2))
+			buy_button.visible = false
+			_d_shop_hint.text = "Fouille coffres, coffres-forts et élites pour la trouver."
+
+
+## Achète l'arme affichée (onglet Armurerie). Renvoie true si achetée.
+func buy_selected() -> bool:
+	var w := detail_weapon
+	if w == null or not shop_mode:
+		return false
+	if not Profile.buy_weapon(w.id):
+		MenuKit.sfx(&"error")
+		_shake(buy_button)
+		return false
+	MenuKit.sfx(&"confirm_big")
+	MenuKit.vibrate(40)
+	_read_stash()
+	var t := _tile_of(w)
+	if t != null:
+		var ids: Array[int] = []
+		ids.assign(owned.get(String(w.id), []))
+		t.set_uids(ids)
+		t.pivot_offset = t.size * 0.5
+		create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
+			.tween_property(t, "scale", Vector2.ONE, 0.3).from(Vector2(1.15, 1.15))
+	for t2: WeaponTile in tiles:
+		t2.set_shop_status(Profile.weapon_shop_status(t2.weapon.id))
+	show_weapon_detail(w, false)
+	return true
+
+
+# --- Consommables emportés (arsenal de départ) ------------------------------------------------
+
+func _refresh_consumables() -> void:
+	if consumables_label == null:
+		return
+	var parts: PackedStringArray = []
+	for e: Dictionary in Profile.consumables_preview():
+		parts.append("%s ×%d" % [(e["item"] as ItemData).display_name, int(e["count"])])
+	if not Profile.pack_consumables:
+		consumables_label.text = "Consommables emportés : aucun (désactivé)"
+	elif parts.is_empty():
+		consumables_label.text = "Consommables emportés : aucun soin en réserve (fabrique-en à l'atelier)"
+	else:
+		consumables_label.text = "Consommables emportés : " + ", ".join(parts)
+	consumables_toggle.text = "Soins : oui" if Profile.pack_consumables else "Soins : non"
+
+
+func toggle_consumables() -> void:
+	Profile.set_pack_consumables(not Profile.pack_consumables)
+	MenuKit.sfx(&"click_soft", -4.0)
+	_refresh_consumables()
+
+
 # --- Skins (consultation, si activés) -----------------------------------------------------
 
 ## Skins possédés applicables à l'arme affichée ; null en tête = apparence d'origine.
@@ -687,7 +911,7 @@ func applicable_skins(w: WeaponData) -> Array[SkinData]:
 	if w == null:
 		return out
 	for s: SkinData in SkinData.all_of_kind(SkinData.KIND_WEAPON):
-		if s.applies_to(w.category) and Profile.owns_skin(s.id):
+		if s.applies_to(w.category, w.id) and Profile.owns_skin(s.id):
 			out.append(s)
 	return out
 
@@ -696,7 +920,7 @@ func _refresh_skin_row() -> void:
 	if _d_skin == null:
 		return
 	var w: WeaponData = detail_weapon
-	var cur: SkinData = Profile.get_weapon_skin(w.category) if w != null else null
+	var cur: SkinData = WeaponSkin.equipped_for(w) if w != null else null
 	var list := applicable_skins(w)
 	_d_skin.text = "Skin : " + (cur.display_name if cur != null else "d'origine")
 	if list.size() <= 1:
@@ -710,15 +934,16 @@ func cycle_skin() -> void:
 	if w == null:
 		return
 	var list := applicable_skins(w)
-	var cur: SkinData = Profile.get_weapon_skin(w.category)
+	var cur: SkinData = WeaponSkin.equipped_for(w)
 	var idx: int = list.find(cur)
 	var nxt: SkinData = list[(idx + 1) % list.size()]
 	if nxt == null:
-		Profile.equip_weapon_skin(&"", w.category)
-		if cur != null and cur.weapon_category == SkinData.ANY_CATEGORY:
-			Profile.equip_weapon_skin(&"", SkinData.ANY_CATEGORY)
+		# Retour à l'apparence d'origine : skin propre à l'arme, de catégorie et universel retirés.
+		WeaponSkin.unequip(w.id)
+		if cur != null and String(cur.weapon_id).is_empty():
+			Profile.equip_weapon_skin(&"", cur.weapon_category)
 	else:
-		Profile.equip_weapon_skin(nxt.id)
+		WeaponSkin.equip(nxt.id)
 	MenuKit.sfx(&"item_equip", -4.0)
 	_d_icon.refresh()
 	for t: WeaponTile in tiles:

@@ -15,5 +15,7 @@ entries = {
 &"mall_batteries": 4.0,
 &"mall_canned_food": 8.0,
 &"mall_energy_drink": 5.0,
-&"mall_painkillers": 1.0
+&"mall_painkillers": 1.0,
+&"mat_cloth": 4.0,
+&"mat_scrap": 5.0
 }

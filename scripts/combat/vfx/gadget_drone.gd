@@ -16,6 +16,8 @@ var age: float = 0.0
 var target: Node2D = null
 var shots_fired: int = 0
 var leaving: bool = false
+## Coop : drone du coéquipier affiché sans tirer (ses tirs arrivent par le réseau).
+var net_visual_only: bool = false
 
 var _orbit_r: float = 46.0
 var _orbit_speed: float = 1.6
@@ -170,6 +172,8 @@ func _process(delta: float) -> void:
 
 
 func _shoot() -> void:
+	if net_visual_only:
+		return
 	shots_fired += 1
 	var dir: Vector2 = (target.global_position - global_position).normalized()
 	var pool: Node = owner_player.get("projectile_pool") if is_instance_valid(owner_player) else null

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://data/items/icons/mat_cloth.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"mat_cloth"
+display_name = "Bandes de tissu"
+description = "Chiffons et bandes propres : la base des bandages et des mèches. Matériau d'artisanat."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 0
+type = &"material"
+stack_max = 20
+value = 4
+weight = 0.05
+drop_min = 2
+drop_max = 4
+heal_amount = 0.0

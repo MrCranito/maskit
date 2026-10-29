@@ -41,3 +41,7 @@ muzzle_flash_scale = 1.5
 eject_shells = true
 sprite_id = &"sniper_m82"
 value = 1150
+unlock_mode = &"kill"
+unlock_enemy_kind = &"rifleman"
+unlock_kills = 1
+price_gold = 2400

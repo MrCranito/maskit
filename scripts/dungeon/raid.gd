@@ -121,6 +121,8 @@ var _fade_rect: ColorRect = null
 
 
 func _ready() -> void:
+	# Leurres d'un raid précédent : effacés (scripts/economy/noise_sources.gd).
+	NoiseSources.clear()
 	run_seed = GameState.run_seed
 	difficulty = GameState.difficulty
 	_load_world()
@@ -143,6 +145,7 @@ func _ready() -> void:
 	EventBus.debug_toggled.connect(_on_debug_toggled)
 	EventBus.raid_started.emit(run_seed)
 	EventBus.floor_changed.emit(current_floor)
+	NetHooks.attach_raid(self)  # Coop en ligne (scripts/net) : sans effet en solo.
 
 
 # --- Chargement des modules ----------------------------------------------------
@@ -172,8 +175,9 @@ func _generate_floors() -> void:
 	floors.clear()
 	var gen: Script = _load_script(_world_module_path(&"generator_path", GENERATOR_PATH))
 	map_seed = 0
-	if world != null and StringName(world.get("biome")) == &"far_west" and Balance.get_value("prerender", "enabled", true):
-		map_seed = PrerenderBackdrop.pick_seed(run_seed)
+	# Cartes pré-rendues (Blender) : tirage d'un paquet du biome (assets/prerender/<biome>/<seed>/).
+	if world != null and Balance.get_value("prerender", "enabled", true) and PrerenderBackdrop.has_packs(StringName(world.get("biome"))):
+		map_seed = PrerenderBackdrop.pick_seed(run_seed, StringName(world.get("biome")))
 	if gen != null and world != null:
 		var result: Variant = _call_module(gen, &"generate_run", [map_seed if map_seed != 0 else run_seed, world, difficulty])
 		if result is Array:
@@ -289,7 +293,7 @@ func _attach_prerender(index: int) -> void:
 	prerender = null
 	if map_seed == 0 or index != 0 or not uses_world_builder:
 		return
-	prerender = PrerenderBackdrop.create(map_seed, floors.get(0))
+	prerender = PrerenderBackdrop.create(map_seed, floors.get(0), StringName(world.get("biome")) if world != null else &"far_west")
 	if prerender == null:
 		return
 	floor_root.add_child(prerender)
@@ -376,6 +380,8 @@ static func _door_is_locked(door: Node2D) -> bool:
 func _on_door_state_changed(_door: Variant = null) -> void:
 	if fog != null and fog.has_method("invalidate"):
 		fog.call("invalidate")
+	if NetHooks.active:
+		NetHooks.on_door_changed(_door)
 
 
 ## Navigation cuite depuis le layout : toute la carte praticable, cases VOID/WALL
@@ -444,7 +450,9 @@ static func load_enemy_data(kind: StringName) -> Resource:
 func _spawn_enemies() -> void:
 	for i: int in layout.enemy_spawns.size():
 		var sp: FloorLayout.Spawn = layout.enemy_spawns[i]
-		_add_enemy(load_enemy_data(sp.kind), FloorLayout.cell_to_world(sp.cell), "%s_%d" % [String(sp.kind).to_pascal_case(), i])
+		var en := _add_enemy(load_enemy_data(sp.kind), FloorLayout.cell_to_world(sp.cell), "%s_%d" % [String(sp.kind).to_pascal_case(), i])
+		if en != null:
+			en.set_meta(&"net_id", i)  # Identité réseau (coop) : index d'apparition, identique chez les deux joueurs.
 
 
 func _add_enemy(data: Resource, pos: Vector2, enemy_name: String) -> Node2D:
@@ -468,6 +476,7 @@ func _restore_enemies(state: FloorState) -> void:
 			continue
 		enemy.set("spawn_position", e["spawn_position"])
 		enemy.set("hp", float(e["hp"]))
+		enemy.set_meta(&"net_id", int(e.get("net_id", i)))
 
 
 ## Ennemis vivants de l'étage courant.
@@ -493,6 +502,7 @@ func capture_floor_state() -> FloorState:
 			"position": e.global_position,
 			"spawn_position": e.get("spawn_position") if e.get("spawn_position") is Vector2 else e.global_position,
 			"hp": float(e.get("hp")) if e.get("hp") != null else 1.0,
+			"net_id": int(e.get_meta(&"net_id", -1)),
 		})
 	for cell: Vector2i in _door_by_cell:
 		var d: Node2D = _door_by_cell[cell]
@@ -578,6 +588,8 @@ func _arrival_offset(cell: Vector2i) -> Vector2i:
 func _on_stairs_entered(stairs: Variant) -> void:
 	if _transitioning or _stairs_cooldown > 0.0 or stairs == null:
 		return
+	if NetHooks.active and NetHooks.intercept_stairs(stairs):
+		return  # Coop : changement d'étage commun (compte à rebours).
 	var target_floor := int(stairs.get("target_floor"))
 	var target_cell: Vector2i = stairs.get("target_cell")
 	if not floors.has(target_floor):
@@ -660,6 +672,8 @@ func _on_player_died() -> void:
 func abandon_raid() -> void:
 	if _raid_over:
 		return
+	if NetHooks.active:
+		NetHooks.note_abandon()
 	_cancel_extraction(false)
 	_finish_death()
 
@@ -731,6 +745,9 @@ func _end_raid_state() -> void:
 
 
 func _show_end_screen(success: bool, summary: Dictionary) -> void:
+	summary["pass_xp"] = BattlePassSystem.get_instance().add_raid_xp(summary.merged({"success": success}))
+	if NetHooks.active and NetHooks.defer_end_screen(success, summary):
+		return  # Coop : spectateur du coéquipier, écran de fin plus tard.
 	end_screen = RaidEndScreen.create(success, summary)
 	add_child(end_screen)
 
@@ -746,7 +763,7 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(player) or layout == null:
 		return
 	if fog != null and not _transitioning:
-		fog.call("update_from", player.global_position)
+		fog.call("update_from", NetHooks.view_position(player.global_position) if NetHooks.active else player.global_position)
 	var cell := get_player_cell()
 	if cell != _last_player_cell:
 		_last_player_cell = cell
@@ -772,7 +789,8 @@ func get_extraction_progress() -> float:
 func _update_extraction(cell: Vector2i, delta: float) -> void:
 	if _raid_over or _transitioning:
 		return
-	var alive := not player.has_method("is_alive") or bool(player.call("is_alive"))
+	var alive := (not player.has_method("is_alive") or bool(player.call("is_alive"))) \
+		and not (NetHooks.active and NetHooks.is_downed(player))
 	var on_zone := alive and layout.extraction_cells.has(cell)
 	if not on_zone:
 		if is_extracting():

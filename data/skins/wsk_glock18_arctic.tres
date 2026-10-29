@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkinData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/cosmetics/skin_data.gd" id="1_skin"]
+
+[resource]
+script = ExtResource("1_skin")
+id = &"wsk_glock18_arctic"
+display_name = "Arctique"
+description = "Camouflage numérique blanc et bleu glacier."
+kind = &"weapon"
+rarity = 2
+price_gems = 180
+weapon_category = &"pistol"
+weapon_id = &"pistol_glock18"
+source = &"shop"
+color_primary = Color(0.875, 0.910, 0.941, 1)
+color_secondary = Color(0.498, 0.576, 0.659, 1)
+color_accent = Color(0.663, 0.831, 0.941, 1)
+pattern = &"digital"
+glow = 0.0

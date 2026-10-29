@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="BattlePassSeason" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/battle_pass_season.gd" id="1_season"]
+
+[resource]
+script = ExtResource("1_season")
+id = &"season_01"
+display_name = "Saison 1 — Dust Creek"
+subtitle = "La ruée vers l'or de Dust Creek"
+tiers = 30
+xp_base = 250
+xp_step = 25
+ends_on = "2026-12-31"
+free_rewards = Array[Dictionary]([{"type": "gold", "amount": 200}, {"type": "item", "id": "bandage", "amount": 3}, {"type": "gems", "amount": 10}, {"type": "gold", "amount": 300}, {"type": "item", "id": "black_powder", "amount": 2}, {"type": "gems", "amount": 15}, {"type": "gold", "amount": 400}, {"type": "item", "id": "gold_nugget", "amount": 1}, {"type": "gems", "amount": 15}, {"type": "gold", "amount": 500}, {"type": "item", "id": "rifle_ammo", "amount": 2}, {"type": "gems", "amount": 20}, {"type": "gold", "amount": 600}, {"type": "item", "id": "lockpicks", "amount": 1}, {"type": "gems", "amount": 25}, {"type": "gold", "amount": 700}, {"type": "item", "id": "snake_oil", "amount": 2}, {"type": "gems", "amount": 25}, {"type": "gold", "amount": 800}, {"type": "item", "id": "dynamite", "amount": 2}, {"type": "gems", "amount": 30}, {"type": "gold", "amount": 900}, {"type": "item", "id": "gold_bar", "amount": 1}, {"type": "gems", "amount": 30}, {"type": "gold", "amount": 1000}, {"type": "item", "id": "raw_diamond", "amount": 1}, {"type": "gems", "amount": 35}, {"type": "gold", "amount": 1200}, {"type": "item", "id": "treasure_map", "amount": 1}, {"type": "gems", "amount": 50}])
+premium_rewards = Array[Dictionary]([{"type": "skin", "id": "wsk_uzi_pixel"}, {"type": "gems", "amount": 25}, {"type": "gold", "amount": 500}, {"type": "gems", "amount": 25}, {"type": "skin", "id": "char_fantome"}, {"type": "gold", "amount": 600}, {"type": "gems", "amount": 30}, {"type": "skin", "id": "wsk_scarh_forest"}, {"type": "gold", "amount": 700}, {"type": "skin", "id": "char_forest"}, {"type": "gems", "amount": 30}, {"type": "skin", "id": "wsk_p320_blood"}, {"type": "gold", "amount": 800}, {"type": "gems", "amount": 35}, {"type": "skin", "id": "wsk_ax50_carbon"}, {"type": "gold", "amount": 900}, {"type": "gems", "amount": 35}, {"type": "skin", "id": "wsk_javelin_cobalt"}, {"type": "gold", "amount": 1000}, {"type": "skin", "id": "char_cyber"}, {"type": "gems", "amount": 40}, {"type": "gold", "amount": 1200}, {"type": "skin", "id": "wsk_vector_neon"}, {"type": "gems", "amount": 40}, {"type": "skin", "id": "wsk_aug_flames"}, {"type": "gold", "amount": 1500}, {"type": "gems", "amount": 50}, {"type": "item", "id": "gold_bar", "amount": 2}, {"type": "gems", "amount": 60}, {"type": "skin", "id": "char_scorpion"}])

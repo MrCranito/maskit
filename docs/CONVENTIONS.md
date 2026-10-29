@@ -262,7 +262,7 @@ Les anciennes catégories revolver/shotgun/lmg/grenade_launcher et leurs armes d
 | gadget_frag | Grenade frag | gadget (kind frag) | 0 |
 | gadget_smoke | Grenade fumigène | gadget (kind smoke) | 2 |
 | gadget_mine | Mine | gadget (kind mine) | 3 |
-| gadget_c4 | C4 | gadget (kind c4) | 4 |
+| gadget_c4 | C4 | gadget (kind c4) | 3 (Épique : fabricable à l'atelier ; les Légendaires restent uniquement en butin) |
 | gadget_drone | Drone | gadget (kind drone) | 4 |
 - `sprite_id` = `id` (un sprite tenu + une icône par arme : `assets/sprites/weapons/<id>.png/.json`, `assets/ui/weapons/<id>.png`).
   Gadgets : sprite tenu = l'objet en main (grenade, mine, pain de C4, télécommande/drone), + sprite au sol/en vol `assets/sprites/weapons/<id>_world.png`.

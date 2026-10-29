@@ -195,7 +195,7 @@ func _make_row(i: int, e: Dictionary) -> Control:
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	nm.custom_minimum_size = Vector2(150, 0)
 	names.add_child(nm)
-	names.add_child(InventoryStyle.label("%s · %d $" % [LootDB.rarity_name(it.rarity), it.value * count], 14, InventoryStyle.TEXT_SECONDARY, 700))
+	names.add_child(InventoryStyle.label("%s · ≈ %d or" % [LootDB.rarity_name(it.rarity), Economy.item_sell_price(it) * count], 14, InventoryStyle.TEXT_SECONDARY, 700))
 	var take := InventoryStyle.button("Prendre", InventoryStyle.NIGHT_BLUE_LIGHT, 17, Vector2(108, 52))
 	take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	take.pressed.connect(_on_take.bind(i))

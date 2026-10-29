@@ -392,14 +392,18 @@ func _refresh_detail() -> void:
 	rst.content_margin_bottom = 2
 	_detail_rarity.add_theme_stylebox_override("panel", rst)
 	_detail_desc.text = it.description
+	# Valeur = or estimé au marchand (Economy) ; matériaux : recettes de l'atelier qui les utilisent.
+	var price := Economy.item_sell_price(it)
 	if wd != null:
-		_set_facts(weapon_facts(wd) + [["Valeur", "%d $" % it.value], ["Poids", "%s kg" % String.num(it.weight, 2)]])
+		_set_facts(weapon_facts(wd) + [["Valeur", "≈ %d or" % price], ["Poids", "%s kg" % String.num(it.weight, 2)]])
 	else:
+		var uses := RecipeBook.usage_text(it.id)
 		_set_facts([
-			["Valeur", "%d $" % it.value + ("   ×%d = %d $" % [n, it.value * n] if n > 1 else "")],
+			["Valeur", "≈ %d or" % price + ("   ×%d = %d or" % [n, price * n] if n > 1 else "")],
 			["Poids", "%s kg" % String.num(it.weight * n, 2)],
 			["Pile", "%d / %d" % [n, it.stack_max]],
-		] + ([["Soin", "+%d PV" % int(it.heal_amount)]] if it.is_usable() else []))
+		] + ([["Soin", "+%d PV" % int(it.heal_amount)]] if it.is_usable() else [])
+		+ ([["Artisanat", uses]] if not uses.is_empty() else []))
 	_use_btn.visible = it.is_usable()
 	_equip_btn.visible = wd != null
 	_drop_btn.text = "Jeter" if n <= 1 else "Jeter 1"
@@ -412,7 +416,11 @@ func _set_facts(rows: Array) -> void:
 		ch.queue_free()
 	for r: Array in rows:
 		_facts_grid.add_child(InventoryStyle.label(String(r[0]), 16, InventoryStyle.TEXT_SECONDARY, 700))
-		_facts_grid.add_child(InventoryStyle.label(String(r[1]), 16, InventoryStyle.GOLD if r[0] == "Valeur" else InventoryStyle.TEXT, 800))
+		var v := InventoryStyle.label(String(r[1]), 16, InventoryStyle.GOLD if r[0] == "Valeur" else InventoryStyle.TEXT, 800)
+		if String(r[1]).length() > 24:
+			v.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			v.custom_minimum_size = Vector2(190, 0)
+		_facts_grid.add_child(v)
 
 
 func _draw_detail_tile() -> void:

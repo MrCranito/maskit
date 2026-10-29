@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="RecipeData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/economy/recipe_data.gd" id="1_recipe"]
+
+[resource]
+script = ExtResource("1_recipe")
+id = &"craft_bandage"
+display_name = "Bandages"
+description = "Des bandes de tissu roulées serré : rend 20 PV en raid."
+category = &"heal"
+result_item_id = &"bandage"
+result_weapon_id = &""
+result_count = 2
+ingredients = {
+"mat_cloth": 3
+}
+gold_cost = 0
+craft_time = 0.0
+sort_order = 10

@@ -4,13 +4,14 @@ extends Control
 ##  - fond vivant : camp de base à la lisière de Dust Creek au coucher du soleil (LobbyScene,
 ##    rendu Blender en couches + drapeau, feu, fumée, poussière, parallaxe lent) et le héros
 ##    avec son skin porté (LobbyHero ; tap = Personnages) ;
-##  - barre du haut : logo, statistiques (raids, extractions, taux), dollars, gemmes (+ → onglet
-##    Gemmes), bouton réglages ;
-##  - gauche : résumé de l'arsenal de départ (LoadoutSummary → écran d'arsenal) ;
+##  - barre du haut : logo, statistiques (raids, extractions, taux), or (pièces), gemmes (+ → onglet
+##    Gemmes), boutons Crédits et Réglages ;
+##  - gauche, sous la barre du haut : résumé de l'arsenal de départ (LoadoutSummary → arsenal) ;
 ##  - droite, au-dessus de JOUER : bandeau d'info (événement, rotation, astuces) ;
-##  - bas gauche : barre de navigation (Arsenal, Personnages, Boutique, Options, Crédits) ;
-##  - bas droite : grand bouton « JOUER » avec la carte (PlayCard → choix des cartes →
-##    arsenal de départ → raid).
+##  - bas gauche : barre de navigation (Arsenal, Atelier, Marchand, Boutique, Pass) ; un écran
+##    pas encore livré (scène absente) affiche « Bientôt » sans rien ouvrir ;
+##  - bas droite : bouton « Coop » puis grand bouton « JOUER » avec la carte (PlayCard → choix
+##    des cartes → arsenal de départ → raid).
 ## Animations d'entrée (glissements, fondus), retours tactiles et sons MenuKit, marges de
 ## sécurité (encoche / barre d'accueil). Aucun _process.
 
@@ -20,16 +21,23 @@ var logo: RaidersLogo = null
 var gem_counter: GemCounter = null
 var gem_plus: Button = null
 var gear_button: Button = null
+var credits_top_button: Button = null
+## Or (pièces) : Profile.gold (repli : Profile.dollars). `dollar_label` = même label (compatibilité).
+var gold_label: Label = null
 var dollar_label: Label = null
 var stat_values: Dictionary = {}
 var loadout_summary: LoadoutSummary = null
 var info_banner: InfoBanner = null
 var play_button: PlayCard = null
 var arsenal_button: NavButton = null
-var characters_button: NavButton = null
+var crafting_button: NavButton = null
+var merchant_button: NavButton = null
 var shop_button: NavButton = null
-var options_button: NavButton = null
-var credits_button: NavButton = null
+var pass_button: NavButton = null
+var coop_button: Button = null
+## Compatibilité : Options = bouton réglages, Crédits = bouton étoile de la barre du haut.
+var options_button: Button = null
+var credits_button: Button = null
 ## Boutons d'action principaux (Jouer puis la barre de navigation).
 var buttons: Array[Button] = []
 var ui: Control = null
@@ -96,7 +104,7 @@ func _build() -> void:
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(fill)
-	top.add_child(_dollar_pill())
+	top.add_child(_gold_pill())
 	var gems := HBoxContainer.new()
 	gems.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	gems.add_theme_constant_override("separation", -10)
@@ -110,16 +118,24 @@ func _build() -> void:
 	gem_plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gem_plus.pressed.connect(func() -> void: _go_shop(&"gems"))
 	gems.add_child(gem_plus)
+	credits_top_button = _round_button(&"star", Color(MenuKit.NIGHT, 0.9), 46)
+	credits_top_button.tooltip_text = "Crédits"
+	credits_top_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	credits_top_button.pressed.connect(open_credits)
+	top.add_child(credits_top_button)
 	gear_button = _round_button(&"gear", Color(MenuKit.NIGHT, 0.9), 54)
 	gear_button.tooltip_text = "Réglages"
 	gear_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	gear_button.pressed.connect(open_options)
 	top.add_child(gear_button)
+	options_button = gear_button
+	credits_button = credits_top_button
 
 	# Gauche : arsenal de départ
 	loadout_summary = LoadoutSummary.new()
 	loadout_summary.name = "LoadoutSummary"
-	loadout_summary.position = Vector2(m.x, m.y + 62 + gap)
+	# un peu plus bas que la barre du haut, pour qu'il respire ([menu] loadout_panel_drop)
+	loadout_summary.position = Vector2(m.x, m.y + 62 + gap + Balance.get_float("menu", "loadout_panel_drop", 22.0))
 	loadout_summary.pressed.connect(_on_arsenal)
 	ui.add_child(loadout_summary)
 
@@ -155,6 +171,20 @@ func _build() -> void:
 	play_button.pressed.connect(_on_play)
 	ui.add_child(play_button)
 
+	# Bas droite, à gauche de JOUER : Coop (scène de l'agent Coop ; « Bientôt » si absente)
+	coop_button = _coop_button(play_button.custom_minimum_size.y)
+	coop_button.anchor_left = 1.0
+	coop_button.anchor_top = 1.0
+	coop_button.anchor_right = 1.0
+	coop_button.anchor_bottom = 1.0
+	coop_button.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	coop_button.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	coop_button.offset_right = play_button.offset_left - 12.0
+	coop_button.offset_left = coop_button.offset_right - coop_button.custom_minimum_size.x
+	coop_button.offset_bottom = -m.w
+	coop_button.offset_top = -m.w - coop_button.custom_minimum_size.y
+	ui.add_child(coop_button)
+
 	# Bas gauche : navigation
 	var nav := PanelContainer.new()
 	nav.name = "NavBar"
@@ -171,19 +201,22 @@ func _build() -> void:
 	row.add_theme_constant_override("separation", 2)
 	nav.add_child(row)
 	arsenal_button = NavButton.new("Arsenal", &"rifle", MenuKit.GOLD)
-	characters_button = NavButton.new("Personnages", &"helmet", MenuKit.TEXT)
+	crafting_button = NavButton.new("Atelier", &"anvil", MenuKit.TEXT)
+	merchant_button = NavButton.new("Marchand", &"cart", MenuKit.GOLD)
 	shop_button = NavButton.new("Boutique", &"bag", MenuKit.GEM)
-	options_button = NavButton.new("Options", &"gear", MenuKit.TEXT_DIM)
-	credits_button = NavButton.new("Crédits", &"star", MenuKit.GOLD)
-	for b: NavButton in [arsenal_button, characters_button, shop_button, options_button, credits_button]:
+	pass_button = NavButton.new("Pass", &"ticket", MenuKit.GOLD)
+	for b: NavButton in [arsenal_button, crafting_button, merchant_button, shop_button, pass_button]:
 		row.add_child(b)
-	characters_button.custom_minimum_size.x += 18
+	merchant_button.custom_minimum_size.x += 8
 	arsenal_button.pressed.connect(_on_arsenal)
-	characters_button.pressed.connect(func() -> void: _go_shop(&"character"))
+	crafting_button.pressed.connect(func() -> void: _go_optional(crafting_button, MenuKit.CRAFTING_SCENE))
+	merchant_button.pressed.connect(func() -> void: _go_optional(merchant_button, MenuKit.MERCHANT_SCENE))
 	shop_button.pressed.connect(func() -> void: _go_shop(&""))
-	options_button.pressed.connect(open_options)
-	credits_button.pressed.connect(open_credits)
-	buttons = [play_button, arsenal_button, characters_button, shop_button, options_button, credits_button]
+	pass_button.pressed.connect(func() -> void: _go_optional(pass_button, MenuKit.BATTLE_PASS_SCENE))
+	crafting_button.set_soon(not scene_exists(MenuKit.CRAFTING_SCENE))
+	merchant_button.set_soon(not scene_exists(MenuKit.MERCHANT_SCENE))
+	pass_button.set_soon(not scene_exists(MenuKit.BATTLE_PASS_SCENE))
+	buttons = [play_button, coop_button, arsenal_button, crafting_button, merchant_button, shop_button, pass_button]
 	nav.offset_top = -m.w - nav.get_combined_minimum_size().y
 
 	# Version (discrète, centrée en bas)
@@ -228,10 +261,58 @@ func _stat_chip(key: StringName, glyph: StringName, caption: String) -> PanelCon
 	return p
 
 
-func _dollar_pill() -> PanelContainer:
+## Bouton « Coop » (à gauche de JOUER) : pictogramme duo + libellé ; « Bientôt » si la scène manque.
+func _coop_button(h: float) -> Button:
+	var b := Button.new()
+	b.name = "CoopButton"
+	b.focus_mode = Control.FOCUS_ALL
+	b.tooltip_text = "Jouer en coopération"
+	b.custom_minimum_size = Vector2(Balance.get_float("menu", "coop_button_width", 112.0), h)
+	var n := MenuKit.panel_style(Color(MenuKit.NIGHT, 0.88), Color(MenuKit.GEM, 0.55), 18, 2, 0)
+	n.shadow_size = 6
+	var hv := n.duplicate() as StyleBoxFlat
+	hv.bg_color = Color(0.12, 0.17, 0.3, 0.95)
+	var pr := n.duplicate() as StyleBoxFlat
+	pr.bg_color = Color(0.04, 0.06, 0.12, 0.95)
+	var f := StyleBoxFlat.new()
+	f.draw_center = false
+	f.border_color = MenuKit.GOLD
+	f.set_border_width_all(3)
+	f.set_corner_radius_all(21)
+	f.set_expand_margin_all(3)
+	b.add_theme_stylebox_override("normal", n)
+	b.add_theme_stylebox_override("hover", hv)
+	b.add_theme_stylebox_override("pressed", pr)
+	b.add_theme_stylebox_override("hover_pressed", pr)
+	b.add_theme_stylebox_override("focus", f)
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.alignment = BoxContainer.ALIGNMENT_CENTER
+	col.add_theme_constant_override("separation", 4)
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	b.add_child(col)
+	var g := PassGlyph.new(&"duo", MenuKit.GEM, 48)
+	g.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	col.add_child(g)
+	var l := MenuKit.label("Coop", 20, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	col.add_child(l)
+	var soon := not scene_exists(MenuKit.COOP_SCENE)
+	b.set_meta(&"soon", soon)
+	if soon:
+		g.modulate.a = 0.45
+		var pill := MenuKit.pill("Bientôt", Color(MenuKit.NIGHT_DEEP, 0.95), 12, MenuKit.GOLD, Color(MenuKit.GOLD, 0.7))
+		pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		col.add_child(pill)
+	b.pressed.connect(func() -> void: _go_optional(b, MenuKit.COOP_SCENE))
+	MenuKit.add_feedback(b, 1.05)
+	return b
+
+
+func _gold_pill() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.tooltip_text = "Dollars : valeur du butin extrait"
+	p.tooltip_text = "Or : vends ton butin au marchand"
 	var s := MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.88), Color(MenuKit.GOLD, 0.5), 30, 2, 0)
 	s.content_margin_left = 8
 	s.content_margin_right = 18
@@ -248,9 +329,10 @@ func _dollar_pill() -> PanelContainer:
 	var g := MenuGlyph.new(&"coin", MenuKit.GOLD, 30)
 	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(g)
-	dollar_label = MenuKit.label("0", 22, MenuKit.TEXT, MenuKit.nunito(1000), 4)
-	dollar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(dollar_label)
+	gold_label = MenuKit.label("0", 22, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(gold_label)
+	dollar_label = gold_label
 	return p
 
 
@@ -295,7 +377,19 @@ func _refresh_profile() -> void:
 	(stat_values[&"raids"] as Label).text = str(raids)
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"
-	dollar_label.text = format_thousands(Profile.dollars)
+	gold_label.text = format_thousands(gold_amount())
+	if pass_button != null:
+		pass_button.set_badge(BattlePassSystem.get_instance().claimable_count())
+
+
+## Or du joueur : Profile.gold (économie), sinon l'ancien compteur Profile.dollars.
+static func gold_amount() -> int:
+	return int(Profile.get("gold")) if &"gold" in Profile else int(Profile.dollars)
+
+
+## La scène existe-t-elle ? (écrans livrés en parallèle par d'autres modules)
+static func scene_exists(path: String) -> bool:
+	return ResourceLoader.exists(path)
 
 
 ## « 12 345 » (espace fine insécable entre les milliers).
@@ -313,7 +407,8 @@ static func format_thousands(n: int) -> String:
 func _intro() -> void:
 	# Chaque bloc glisse depuis son bord, en cascade ; le héros apparaît avec le zoom du décor.
 	var blocks: Array = [[_top, Vector2(0, -90), 0.15], [loadout_summary, Vector2(-340, 0), 0.3],
-		[info_banner, Vector2(380, 0), 0.38], [_nav, Vector2(0, 120), 0.45], [play_button, Vector2(460, 0), 0.55]]
+		[info_banner, Vector2(380, 0), 0.38], [_nav, Vector2(0, 120), 0.45], [coop_button, Vector2(0, 170), 0.5],
+		[play_button, Vector2(460, 0), 0.55]]
 	for b: Array in blocks:
 		var c: Control = b[0]
 		var final_pos: Vector2 = c.position
@@ -338,6 +433,23 @@ func _on_play() -> void:
 func _on_arsenal() -> void:
 	MenuKit.sfx(&"click")
 	MenuKit.go_to(self, MenuKit.ARSENAL_SCENE)
+
+
+## Écran d'un autre module : « Bientôt » (message) tant que la scène n'existe pas.
+func _go_optional(b: Control, path: String) -> void:
+	if not scene_exists(path):
+		MenuKit.sfx(&"error")
+		if b != null:
+			b.pivot_offset = b.size * 0.5
+			var tw := b.create_tween()
+			tw.tween_property(b, "rotation", 0.05, 0.05)
+			tw.tween_property(b, "rotation", -0.05, 0.08)
+			tw.tween_property(b, "rotation", 0.0, 0.05)
+		if info_banner != null and info_banner.has_method("show_message"):
+			info_banner.call("show_message", "Bientôt disponible")
+		return
+	MenuKit.sfx(&"click")
+	MenuKit.go_to(self, path)
 
 
 func _go_shop(tab: StringName) -> void:
@@ -372,6 +484,8 @@ func _open_modal(m: ModalPanel, return_focus: Control) -> ModalPanel:
 static func button_label(b: Button) -> String:
 	if b is NavButton:
 		return (b as NavButton).caption.text
+	if b.name == "CoopButton":
+		return "Coop"
 	if b is PlayCard:
 		return (b as PlayCard).title_label.text
 	return b.text

@@ -16,5 +16,6 @@ entries = {
 &"mall_headphones": 4.0,
 &"mall_luxury_watch": 0.4,
 &"mall_perfume": 3.0,
-&"mall_smartphone": 4.0
+&"mall_smartphone": 4.0,
+&"mat_cloth": 2.0
 }

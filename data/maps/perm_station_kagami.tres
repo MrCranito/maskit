@@ -1,6 +1,7 @@
-[gd_resource type="Resource" script_class="MapCard" format=3]
+[gd_resource type="Resource" script_class="MapCard" load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_id1sf"]
+[ext_resource type="Texture2D" path="res://assets/ui/maps/station_kagami_real.png" id="2_thumb"]
 
 [resource]
 script = ExtResource("1_id1sf")
@@ -9,5 +10,6 @@ display_name = "Station Kagami"
 description = "Station orbitale abandonnée : coursives étroites, sas et soutes pleines de matériel."
 world_path = "res://data/worlds/world_02_space_station.tres"
 accent_color = Color(0.4, 0.75, 1, 1)
+thumbnail = ExtResource("2_thumb")
 tags = PackedStringArray("Classique")
 reward_text = "Butin standard"

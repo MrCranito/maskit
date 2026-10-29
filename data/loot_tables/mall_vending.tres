@@ -14,5 +14,6 @@ entries = {
 &"mall_batteries": 2.0,
 &"mall_canned_food": 3.0,
 &"mall_cash_bundle": 1.0,
-&"mall_energy_drink": 8.0
+&"mall_energy_drink": 8.0,
+&"mat_scrap": 3.0
 }

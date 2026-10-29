@@ -47,10 +47,16 @@ const PROPS := {
 	&"command_pod": [[&"escape_pod", 1, 2, &"wall"], [&"warning_beacon", 1, 1, &"wall"]],
 	&"corridor": [[&"warning_beacon", 0, 1, &"wall"], [&"pipe_cluster", 0, 1, &"wall"], [&"floor_cables", 0, 1, &"any"]],
 	&"conduit": [[&"floor_cables", 0, 1, &"any"]],
+	# Pont en croix (ss_cross.gd)
+	&"control_center": [[&"console", 5, 7, &"wall"], [&"holo_table", 1, 1, &"center"], [&"captain_chair", 1, 2, &"center"]],
+	&"hall": [[&"cargo_stack", 2, 4, &"any"], [&"crate_pallet", 1, 3, &"any"], [&"fuel_drums", 0, 2, &"wall"], [&"warning_beacon", 0, 1, &"wall"]],
+	&"reactor_pod": [[&"coolant_tank", 2, 3, &"wall"], [&"pipe_cluster", 2, 3, &"wall"], [&"power_node", 1, 2, &"wall"], [&"warning_beacon", 1, 1, &"wall"]],
+	&"airlock": [[&"cargo_stack", 1, 2, &"wall"], [&"warning_beacon", 1, 1, &"wall"]],
+	&"tube": [],
 }
 
 ## Grands décors : rôle → [kind, largeur, hauteur (cases)] posés au centre de la salle.
-const BIG_PROPS := {&"hangar": [&"shuttle", 5, 3], &"reactor": [&"reactor_core", 2, 2]}
+const BIG_PROPS := {&"hangar": [&"shuttle", 5, 3], &"reactor": [&"reactor_core", 2, 2], &"reactor_pod": [&"reactor_core", 2, 2]}
 
 ## Décors autorisés dans une coursive étroite (non gênants).
 const NARROW_OK := {&"floor_cables": true}
@@ -76,11 +82,18 @@ const HIDING := {
 	&"coolant": {&"vent": 1.0},
 	&"generator": {&"vent": 1.0},
 	&"corridor": {&"vent": 1.0},
+	&"hall": {&"vent": 1.0, &"locker": 1.0},
+	&"control_center": {&"locker": 1.0},
+	&"reactor_pod": {&"vent": 1.0},
 }
 
 ## Rôle → conteneurs {kind: poids}.
 const CONTAINERS := {
 	&"hangar": {&"cargo_crate": 3.0, &"locker": 1.0},
+	&"control_center": {&"terminal": 3.0, &"locker": 1.0},
+	&"hall": {&"cargo_crate": 3.0, &"locker": 0.5},
+	&"reactor_pod": {&"cargo_crate": 1.0, &"cryo_pod": 0.5},
+	&"airlock": {&"locker": 2.0, &"cargo_crate": 1.0},
 	&"pod_bay": {&"locker": 2.0, &"med_cabinet": 1.0},
 	&"quarters": {&"locker": 3.0, &"cargo_crate": 0.5},
 	&"mess_hall": {&"cargo_crate": 1.0, &"locker": 1.0},
@@ -232,17 +245,29 @@ static func _reserve(c: Ctx) -> void:
 		for dy3 in range(-1, 2):
 			for dx3 in range(-1, 2):
 				c.reserved[e + Vector2i(dx3, dy3)] = true
-	# Ouvertures (hangar, côté est) : passage libre devant et derrière l'ouverture.
+	# Ouvertures (hangar, centre de contrôle, réacteurs : salles « open ») : passage libre devant
+	# et derrière chaque case du bord de la salle qui donne sur une case praticable hors salle.
 	for r in L.rooms:
 		if not r.tags.has("open"):
 			continue
-		var ox := r.rect.end.x - 1
-		for y in range(r.rect.position.y, r.rect.end.y):
-			if L.get_tile(Vector2i(ox, y)) != T.FLOOR:
-				continue
-			for k in range(-1, 2):
-				for kk in range(-1, 2):
-					c.reserved[Vector2i(ox + kk, y + k)] = true
+		var rr := r.rect
+		for y in range(rr.position.y, rr.end.y):
+			for x in range(rr.position.x, rr.end.x):
+				if x != rr.position.x and x != rr.end.x - 1 and y != rr.position.y and y != rr.end.y - 1:
+					continue
+				var p := Vector2i(x, y)
+				if L.get_tile(p) != T.FLOOR:
+					continue
+				var opening := false
+				for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var q := p + d
+					if not rr.has_point(q) and FloorLayout.is_walkable_tile(L.get_tile(q)):
+						opening = true
+				if not opening:
+					continue
+				for k in range(-1, 2):
+					for kk in range(-1, 2):
+						c.reserved[p + Vector2i(kk, k)] = true
 
 
 static func _passable(c: Ctx, p: Vector2i) -> bool:
