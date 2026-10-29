@@ -388,10 +388,9 @@ class MapView extends Control:
 		mask.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		mask.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-		var st := StyleBoxFlat.new()
-		st.bg_color = Color(0.05, 0.07, 0.13, 0.96)
-		st.set_corner_radius_all(2)
-		st.anti_aliasing = true
+		# maquette Hud : encre, coins haut droit et bas gauche coupés
+		var st := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.96), 18.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+		st.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
 		mask.add_theme_stylebox_override("panel", st)
 		add_child(mask)
 		content = Node2D.new()
@@ -399,14 +398,12 @@ class MapView extends Control:
 		frame = Panel.new()
 		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var fs := StyleBoxFlat.new()
+		var fs := CutBox.new()
 		fs.draw_center = false
-		fs.border_color = BORDER
-		fs.set_border_width_all(2)
-		fs.set_corner_radius_all(2)
-		fs.shadow_color = Color(0, 0, 0, 0.35)
-		fs.shadow_size = 6
-		fs.anti_aliasing = true
+		fs.border_color = Color(1, 1, 1, 0.35)
+		fs.border_width = 1.5
+		fs.cut = 18.0
+		fs.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
 		frame.add_theme_stylebox_override("panel", fs)
 		add_child(frame)
 		resized.connect(func() -> void:

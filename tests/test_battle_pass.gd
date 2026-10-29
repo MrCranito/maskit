@@ -236,7 +236,8 @@ func test_pass_screen() -> void:
 	# États des cases : disponible / verrouillé / premium verrouillé, un seul bouton global
 	var c1 := scr.cells["free:1"] as BattlePassScreen.PassCell
 	assert_eq(c1.state, BattlePassScreen.PassCell.AVAILABLE)
-	assert_true(c1.dot.visible and c1.glow.visible, "Contour lumineux + pastille")
+	assert_true(c1.glow.visible, "Barre violette en haut de la case (maquette)")
+	assert_false(c1.dot.visible, "Plus de pastille sur les cases (maquette)")
 	assert_eq((scr.cells["free:7"] as BattlePassScreen.PassCell).state, BattlePassScreen.PassCell.LOCKED)
 	assert_eq((scr.cells["premium:1"] as BattlePassScreen.PassCell).state, BattlePassScreen.PassCell.PREMIUM_LOCKED)
 	assert_eq(scr.find_children("*", "Button", true, false).filter(func(b: Node) -> bool:

@@ -1,6 +1,6 @@
 class_name GoldCounter
 extends PanelContainer
-## Compteur de pièces d'or (pastille bleu nuit : pièce dessinée + nombre). Se met à jour sur
+## Compteur de pièces d'or (pastille encre soulignée, direction D : pièce dessinée + nombre). Se met à jour sur
 ## Profile.gold_changed ; le total défile jusqu'à la nouvelle valeur (Tween, pas de _process).
 ## `pressed` : tap (ex. ouvrir le marchand).
 
@@ -16,14 +16,8 @@ var _tw: Tween = null
 
 func _init(font_size: int = 24) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var s := MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.88), Color(GOLD_COIN, 0.6), 30, 2, 0)
-	s.content_margin_left = 10
-	s.content_margin_right = 18
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	s.shadow_size = 4
-	add_theme_stylebox_override("panel", s)
-	custom_minimum_size = Vector2(0, 52)
+	add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.COIN))
+	custom_minimum_size = Vector2(0, 60)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -32,7 +26,7 @@ func _init(font_size: int = 24) -> void:
 	icon.custom_minimum_size = Vector2(font_size + 8, font_size + 8)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(icon)
-	value_label = MenuKit.label("0", font_size, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+	value_label = MenuKit.label("0", font_size, MenuKit.TEXT, MenuKit.nunito(700), 0)
 	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(value_label)
 	tooltip_text = "Pièces d'or : vends ton butin au marchand, achète des armes à l'armurerie"

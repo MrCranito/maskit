@@ -350,38 +350,24 @@ class WeaponSlotView extends Control:
 		var r := Rect2(Vector2.ZERO, size)
 		var font := LootVisuals.text_font(800)
 		var rc: Color = weapon.get_rarity_color() if weapon != null else Color(InventoryStyle.BORDER_LIGHT, 0.3)
-		# Lueur Épique / Légendaire.
-		if weapon != null and weapon.rarity >= WeaponData.Rarity.EPIQUE:
-			for k in 2:
-				var g := StyleBoxFlat.new()
-				g.bg_color = Color(rc, 0.12 + 0.06 * k)
-				g.set_corner_radius_all(2)
-				g.anti_aliasing = true
-				draw_style_box(g, r.grow(float(2 - k) * 2.5))
-		var bg := StyleBoxFlat.new()
-		bg.bg_color = InventoryStyle.NIGHT_BLUE.lerp(rc, 0.14) if weapon != null else Color(InventoryStyle.NIGHT_BLUE, 0.55)
-		bg.border_color = InventoryStyle.GOLD if current else Color(rc, 0.9 if weapon != null else 0.4)
-		bg.set_border_width_all(3 if current else 2)
-		bg.set_corner_radius_all(2)
-		bg.anti_aliasing = true
-		bg.shadow_color = Color(0, 0, 0, 0.35)
-		bg.shadow_size = 5 if current else 3
+		# Maquette Hud (direction D) : encre translucide à coin haut droit coupé, liseré gauche à la
+		# couleur de rareté ; arme tenue sur fond violet.
+		var bg := CutBox.make(Color(MenuKit.VIOLET, 0.7) if current else Color(MenuKit.NIGHT_DEEP, 0.62 if weapon != null else 0.42),
+			14.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+		bg.corners = CutBox.CUT_TOP_RIGHT
+		if weapon != null:
+			bg.accent_width = 4.0
+			bg.accent_color = rc
 		draw_style_box(bg, r)
 		# Touche / numéro d'emplacement.
 		var num := "G" if gadget else str(index + 1)
 		draw_string_outline(font, Vector2(9, 19), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, 4, InventoryStyle.NIGHT_BLUE_DEEP)
-		draw_string(font, Vector2(9, 19), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, InventoryStyle.GOLD if current else InventoryStyle.TEXT_SECONDARY)
+		draw_string(font, Vector2(9, 19), num, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE if current else Color(1, 1, 1, 0.6))
 		if weapon == null:
 			var t := "équip." if gadget else "vide"
 			var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
 			draw_string(font, Vector2((size.x - tw) * 0.5, size.y * 0.5 + 5.0), t, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(InventoryStyle.TEXT_SECONDARY, 0.55))
 			return
-		# Liseré de rareté en bas.
-		var strip := StyleBoxFlat.new()
-		strip.bg_color = Color(rc, 0.9)
-		strip.corner_radius_bottom_left = 0
-		strip.corner_radius_bottom_right = 0
-		draw_style_box(strip, Rect2(Vector2(3, size.y - 7), Vector2(size.x - 6, 4)))
 		if gadget:
 			var a := 1.0 if ammo > 0 else 0.35
 			LootVisuals.draw_weapon(self, Rect2(Vector2(14, 8), Vector2(size.x - 28, size.y - 22)), weapon, Color(1, 1, 1, a))
@@ -394,21 +380,22 @@ class WeaponSlotView extends Control:
 			_draw_ammo(font)
 			var name_fs := 13
 			draw_string_outline(font, Vector2(10, size.y - 13), weapon.display_name, HORIZONTAL_ALIGNMENT_LEFT, size.x - 20, name_fs, 4, InventoryStyle.NIGHT_BLUE_DEEP)
-			draw_string(font, Vector2(10, size.y - 13), weapon.display_name, HORIZONTAL_ALIGNMENT_LEFT, size.x - 20, name_fs, rc.lightened(0.3))
+			draw_string(font, Vector2(10, size.y - 13), weapon.display_name, HORIZONTAL_ALIGNMENT_LEFT, size.x - 20, name_fs, Color.WHITE)
 		else:
 			LootVisuals.draw_weapon(self, Rect2(Vector2(14, 10), Vector2(size.x - 24, size.y - 22)), weapon, Color(1, 1, 1, 0.85))
 
-	func _draw_ammo(font: Font) -> void:
+	func _draw_ammo(_font: Font) -> void:
+		var font: Font = MenuKit.display()
 		var right := size.x - 10.0
 		var center_y := 30.0
 		if reload >= 0.0:
 			# Anneau de rechargement.
 			var c := Vector2(right - 22.0, center_y)
 			draw_arc(c, 18.0, 0.0, TAU, 40, Color(InventoryStyle.NIGHT_BLUE_DEEP, 0.9), 6.0, true)
-			draw_arc(c, 18.0, -PI * 0.5, -PI * 0.5 + TAU * reload, 40, InventoryStyle.GOLD, 6.0, true)
+			draw_arc(c, 18.0, -PI * 0.5, -PI * 0.5 + TAU * reload, 40, Color.WHITE, 6.0, true)
 			var rt := "R"
 			var rw := font.get_string_size(rt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-			draw_string(font, c + Vector2(-rw * 0.5, 6.0), rt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, InventoryStyle.GOLD)
+			draw_string(font, c + Vector2(-rw * 0.5, 6.0), rt, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.WHITE)
 			return
 		if magazine <= 0:
 			var inf := "∞"
@@ -426,7 +413,7 @@ class WeaponSlotView extends Control:
 		var ax := right - aw
 		draw_string_outline(font, Vector2(ax, center_y + 4.0), a, HORIZONTAL_ALIGNMENT_LEFT, -1, big, 5, InventoryStyle.NIGHT_BLUE_DEEP)
 		draw_string(font, Vector2(ax, center_y + 4.0), a, HORIZONTAL_ALIGNMENT_LEFT, -1, big, col)
-		draw_string(font, Vector2(right - mw, center_y + 22.0), m, HORIZONTAL_ALIGNMENT_LEFT, -1, small, InventoryStyle.TEXT_SECONDARY)
+		draw_string(font, Vector2(right - mw, center_y + 22.0), m, HORIZONTAL_ALIGNMENT_LEFT, -1, small, Color(1, 1, 1, 0.7))
 
 
 ## Bouton rond « changer d'arme » (deux flèches en cycle).

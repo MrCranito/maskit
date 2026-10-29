@@ -165,6 +165,7 @@ func _build_detail() -> Control:
 	_detail_style.shadow_size = 0
 	_detail_style.content_margin_left = 20
 	panel.add_theme_stylebox_override("panel", _detail_style)
+	MenuKit.frosted(panel)
 	panel.custom_minimum_size = Vector2(0, Balance.get_float("maps", "detail_height", 132.0))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 22)

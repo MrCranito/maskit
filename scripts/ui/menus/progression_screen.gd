@@ -149,6 +149,7 @@ func _build() -> void:
 	sl.anchor_bottom = 1.0
 	sl.offset_left = -slab_w
 	add_child(sl)
+	MenuKit.frosted(sl)
 	var inner := VBoxContainer.new()
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

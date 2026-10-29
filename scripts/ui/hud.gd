@@ -1,7 +1,7 @@
 class_name Hud
 extends Control
-## HUD paysage (1280x720) : barre de vie compacte en haut à gauche (panneau bleu nuit,
-## liseré or), lisible sur mobile. Mise à jour par signaux uniquement
+## HUD paysage (1280x720) : vie compacte en haut à gauche (maquette Hud, direction D) : boîte
+## encre à coin coupé, PV en Anton puis 10 crans inclinés (rose sous 30 %), lisible sur mobile. Mise à jour par signaux uniquement
 ## (EventBus.player_spawned / player_damaged / player_died) : aucun traitement par frame.
 ## Zones laissées libres pour les autres modules : haut centre = bandeau monde/salle
 ## (Raid), haut droite = bouton sac (inventaire), bas droite au-dessus du stick de visée
@@ -67,63 +67,52 @@ func _build_ui() -> void:
 
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 14)
 	_panel.add_child(row)
 
-	# Petit cœur dessiné (une fois).
-	var heart := Control.new()
-	heart.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	heart.custom_minimum_size = Vector2(30, 34)
-	heart.draw.connect(_draw_heart.bind(heart))
-	row.add_child(heart)
+	# PV en gros chiffre (Anton), blanc ; rose sous 30 %
+	_hp_label = Label.new()
+	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_hp_label.custom_minimum_size = Vector2(56, 0)
+	var settings := LabelSettings.new()
+	settings.font = MenuKit.display()
+	settings.font_size = int(Balance.get_value("hud", "hp_font_size", 36))
+	settings.font_color = Color.WHITE
+	_hp_label.label_settings = settings
+	row.add_child(_hp_label)
 
+	# Crans inclinés (maquette) : un cran = 10 % des PV ; la ProgressBar porte la valeur et
+	# n'est pas dessinée, les crans sont dessinés par-dessus.
 	_bar = ProgressBar.new()
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_bar.custom_minimum_size = Vector2(w, 20)
 	_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_bar.show_percentage = false
 	_bar.min_value = 0.0
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(1, 1, 1, 0.14)
 	_fill_style = StyleBoxFlat.new()
 	_fill_style.bg_color = HP_FILL
-	_bar.add_theme_stylebox_override("background", bg)
-	_bar.add_theme_stylebox_override("fill", _fill_style)
+	_bar.add_theme_stylebox_override("background", StyleBoxEmpty.new())
+	_bar.add_theme_stylebox_override("fill", StyleBoxEmpty.new())
 	row.add_child(_bar)
-	# crans : fines séparations encre par-dessus la barre
 	var cells := Control.new()
 	cells.name = "Cells"
 	cells.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cells.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cells.draw.connect(func() -> void:
-		for i in range(1, HP_CELLS):
-			var x: float = cells.size.x * float(i) / float(HP_CELLS)
-			cells.draw_line(Vector2(x, 0), Vector2(x, cells.size.y), Color(0.02, 0.02, 0.04, 0.85), 3.0))
+		var gap := 3.0
+		var cw: float = (cells.size.x - gap * (HP_CELLS - 1)) / float(HP_CELLS)
+		var h: float = cells.size.y
+		var k: float = h * 0.32   # inclinaison (≈ -18°)
+		var full: int = ceili(_bar.value / maxf(_bar.max_value, 1.0) * HP_CELLS) if _bar.value > 0.0 else 0
+		for i in HP_CELLS:
+			var x: float = i * (cw + gap)
+			var col: Color = _fill_style.bg_color if i < full else Color(1, 1, 1, 0.15)
+			cells.draw_colored_polygon(PackedVector2Array([Vector2(x + k, 0), Vector2(x + cw, 0),
+				Vector2(x + cw - k, h), Vector2(x, h)]), col))
 	_bar.add_child(cells)
-
-	# PV en gros chiffres (Anton) à droite de la barre
-	_hp_label = Label.new()
-	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_hp_label.custom_minimum_size = Vector2(92, 0)
-	var settings := LabelSettings.new()
-	settings.font = LootVisuals.title_font()
-	settings.font_size = 26
-	settings.font_color = Color.WHITE
-	_hp_label.label_settings = settings
-	row.add_child(_hp_label)
-
-
-func _draw_heart(c: Control) -> void:
-	var s: Vector2 = c.size
-	var cx: float = s.x * 0.5
-	var cy: float = s.y * 0.5
-	var r: float = minf(s.x, s.y) * 0.24
-	c.draw_circle(Vector2(cx - r * 0.95, cy - r * 0.4), r, HP_FILL, true, -1.0, true)
-	c.draw_circle(Vector2(cx + r * 0.95, cy - r * 0.4), r, HP_FILL, true, -1.0, true)
-	c.draw_colored_polygon(PackedVector2Array([
-		Vector2(cx - r * 1.9, cy - r * 0.15), Vector2(cx + r * 1.9, cy - r * 0.15), Vector2(cx, cy + r * 2.1)]), HP_FILL)
-	c.draw_circle(Vector2(cx - r * 1.1, cy - r * 0.7), r * 0.32, Color(1, 1, 1, 0.55), true, -1.0, true)
+	_bar.value_changed.connect(func(_v: float) -> void: cells.queue_redraw())
 
 
 ## Barre de vie dans la zone sûre (encoche / coins arrondis), recalée au redimensionnement.
@@ -145,10 +134,11 @@ func set_health(current: float, maximum: float) -> void:
 	_hp = new_hp
 	_bar.max_value = _max_hp
 	_bar.value = _hp
-	_hp_label.text = "%d / %d" % [ceili(_hp), ceili(_max_hp)]
+	_hp_label.text = str(ceili(_hp))
 	var low: bool = _hp / _max_hp <= 0.3
 	_fill_style.bg_color = HP_LOW if low else HP_FILL
 	_hp_label.label_settings.font_color = HP_LOW if low else Color.WHITE
+	(_bar.get_node(^"Cells") as Control).queue_redraw()
 
 
 func get_health() -> float:

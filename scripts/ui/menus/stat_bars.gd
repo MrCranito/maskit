@@ -14,6 +14,9 @@ const GADGET_STATS: Array[Array] = [
 ## Compatibilité.
 const STATS: Array[Array] = WEAPON_STATS
 
+## Disposition « D » (bandeau de l'arsenal de départ) : libellé et valeur sur une ligne, fine barre
+## dessous, sans arrondi ; à régler avant l'entrée dans l'arbre.
+var stacked: bool = false
 var bars: Dictionary = {}     ## clé → Panel (remplissage)
 var values: Dictionary = {}   ## clé → Label
 var _mode: int = -1           ## 0 arme, 1 équipement
@@ -37,6 +40,9 @@ func _build(mode: int) -> void:
 	bars.clear()
 	values.clear()
 	for s: Array in (GADGET_STATS if mode == 1 else WEAPON_STATS):
+		if stacked:
+			_build_stacked_row(s)
+			continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -69,6 +75,42 @@ func _build(mode: int) -> void:
 		row.add_child(v)
 		bars[s[0]] = fill
 		values[s[0]] = v
+
+
+## Ligne empilée (disposition « D ») : « DÉGÂTS ……… 24 » puis barre de 6 px.
+func _build_stacked_row(s: Array) -> void:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(box)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(row)
+	var l := MenuKit.label(String(s[1]), 16, Color(1, 1, 1, 0.8), MenuKit.nunito(600), 0)
+	l.uppercase = true
+	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(l)
+	var v := MenuKit.label("", 16, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	v.uppercase = true
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(v)
+	var track := Panel.new()
+	track.custom_minimum_size = Vector2(0, 6)
+	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ts := StyleBoxFlat.new()
+	ts.bg_color = Color(MenuKit.NIGHT_DEEP, 0.35)
+	track.add_theme_stylebox_override("panel", ts)
+	box.add_child(track)
+	var fill := Panel.new()
+	var fs := StyleBoxFlat.new()
+	fs.bg_color = MenuKit.TEXT
+	fill.add_theme_stylebox_override("panel", fs)
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fill.anchor_bottom = 1.0
+	fill.anchor_right = 0.0
+	track.add_child(fill)
+	bars[s[0]] = fill
+	values[s[0]] = v
 
 
 static func stat_value(w: WeaponData, key: String) -> float:

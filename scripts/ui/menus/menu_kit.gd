@@ -92,6 +92,23 @@ static func title(text: String, size: int, color: Color = TEXT) -> Label:
 
 # --- Styles -----------------------------------------------------------------------
 
+const FROSTED_SHADER: Shader = preload("res://assets/shaders/frosted_panel.gdshader")
+static var _frosted_mat: ShaderMaterial = null
+
+
+## Verre dépoli : le fond derrière `ci` est flouté puis teinté de sa couleur (alpha = force de la
+## teinte). Menus seulement ([menu] blur_enabled, blur_radius, blur_lod) ; rien si désactivé.
+static func frosted(ci: CanvasItem) -> void:
+	if ci == null or not bool(Balance.get_value("menu", "blur_enabled", true)):
+		return
+	if _frosted_mat == null:
+		_frosted_mat = ShaderMaterial.new()
+		_frosted_mat.shader = FROSTED_SHADER
+		_frosted_mat.set_shader_parameter("radius", Balance.get_float("menu", "blur_radius", 10.0))
+		_frosted_mat.set_shader_parameter("lod", Balance.get_float("menu", "blur_lod", 2.5))
+	ci.material = _frosted_mat
+
+
 static func panel_style(bg: Color = NIGHT_PANEL, border: Color = BORDER, radius: int = 18,
 		border_w: int = 1, margin: int = 18) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -384,8 +401,61 @@ static func rarity_style(r: int, selected: bool = false, radius: int = 14) -> St
 
 
 ## Bouton « retour » (≥ 64 px de haut).
+## Retour standard des écrans : bouton carré à chevron de la direction D ; `text` (« Menu »,
+## « Cartes »…) devient l'infobulle.
 static func back_button(text: String = "Retour") -> Button:
-	return button("‹  " + text, Style.GHOST, 22, Vector2(150, 64))
+	return square_back_button(text)
+
+
+## Fond des pastilles de monnaie (direction D) : encre 82 %, liseré bas de 4 px à la couleur de
+## la monnaie, angles vifs.
+static func currency_style(accent: Color, margin_right: float = 20.0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(NIGHT_DEEP, 0.82)
+	s.border_color = accent
+	s.border_width_bottom = 4
+	s.content_margin_left = 14
+	s.content_margin_right = margin_right
+	s.content_margin_top = 4
+	s.content_margin_bottom = 4
+	return s
+
+
+## Retour de la direction « D » : carré à coins coupés, contour blanc fin, chevron gauche
+## (maquette : en-têtes Arsenal de départ, Pass). `tip` = infobulle (« Cartes », « Menu »…).
+static func square_back_button(tip: String = "Retour", px: float = 74.0) -> Button:
+	var b := Button.new()
+	b.name = "BackButton"
+	b.tooltip_text = tip
+	b.focus_mode = Control.FOCUS_ALL
+	b.custom_minimum_size = Vector2(px, px)
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, px * 0.22, Color(1, 1, 1, 0.5), 1.5, 0.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+		return c
+	var f := CutBox.new()
+	f.draw_center = false
+	f.border_color = TEXT
+	f.border_width = 2.0
+	f.cut = px * 0.22
+	f.grow = 4.0
+	f.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+	b.add_theme_stylebox_override("normal", mk.call(Color(NIGHT_DEEP, 0.55)))
+	b.add_theme_stylebox_override("hover", mk.call(Color(1, 1, 1, 0.12)))
+	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 0.5)))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 0.5)))
+	b.add_theme_stylebox_override("focus", f)
+	var chev := Control.new()
+	chev.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chev.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	chev.draw.connect(func() -> void:
+		var c := chev.size * 0.5
+		var k := chev.size.y * 0.16
+		chev.draw_polyline(PackedVector2Array([c + Vector2(k * 0.5, -k), c + Vector2(-k * 0.5, 0), c + Vector2(k * 0.5, k)]),
+			TEXT, maxf(3.0, px * 0.055), true))
+	b.add_child(chev)
+	add_feedback(b, 1.06)
+	return b
 
 
 ## Puce de filtre (bouton bascule) ; `accent` = couleur une fois activée.

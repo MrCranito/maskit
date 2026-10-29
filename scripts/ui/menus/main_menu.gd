@@ -4,13 +4,18 @@ extends Control
 ##  - fond vivant : camp de base à la lisière de Dust Creek au coucher du soleil (LobbyScene,
 ##    rendu Blender en couches + drapeau, feu, fumée, poussière, parallaxe lent) et le héros
 ##    avec son skin porté (LobbyHero ; tap = Personnages) ; voile sombre à gauche pour la lisibilité ;
-##  - barre du haut : logo et statistiques (gros chiffres), or, gemmes (+ → onglet Gemmes),
-##    boutons Crédits et Réglages ; elle s'arrête avant le bandeau ;
-##  - gauche : menu texte en Anton (Arsenal, Inventaire, Atelier, Boutique) ; un écran pas
-##    encore livré (scène absente) affiche « Bientôt » sans rien ouvrir ;
+##  Disposition = maquette « Lobby » (https://claude.ai/artifact/FTXHPHfN5wZRxSQDW8oaDq), ×1,67 :
+##  - barre du haut : logotype RAIDERSGO, niveau de raider (carré violet → Progression),
+##    statistiques (raids, extraits, réussite) ; or, gemmes (+ → onglet Gemmes), réglages ;
+##    elle s'arrête avant le bandeau ;
+##  - gauche : menu texte en Anton (Progression, Arsenal, Inventaire, Atelier, Boutique), blanc
+##    atténué, l'entrée active en blanc avec barre violette ; un écran pas encore livré (scène
+##    absente) affiche « Bientôt » sans rien ouvrir ;
 ##  - bas gauche : carte du pass de combat (PassCard → écran du pass) ;
-##  - droite : bandeau violet translucide en biais, pleine hauteur : info du jour (InfoBanner)
-##    en haut, bouton Coop puis « DÉPLOYER » (PlayCard → choix des cartes → arsenal de départ → raid).
+##  - droite : bandeau violet translucide en biais (verre dépoli), pleine hauteur : carte en
+##    cours en haut (→ choix des cartes), « DÉPLOYER » (PlayCard → choix des cartes → arsenal de
+##    départ → raid) puis Solo / Coop en bas ;
+##  - bas centré : version + lien Crédits.
 ##    L'arsenal emporté n'est plus résumé ici : il se choisit à l'étape 2.
 ## Animations d'entrée (glissements, fondus), retours tactiles et sons MenuKit, marges de
 ## sécurité (encoche / barre d'accueil). Aucun _process.
@@ -39,6 +44,10 @@ var progression_button: NavButton = null
 ## Carte du pass de combat (bas gauche). Pas d'entrée « Pass » dans le menu : la carte la remplace.
 var pass_card: PassCard = null
 var coop_button: Button = null
+## Haut du bandeau : carte en cours (→ choix des cartes).
+var map_link: Button = null
+var map_name_label: Label = null
+var map_sub_label: Label = null
 ## Compatibilité : Options = bouton réglages, Crédits = bouton étoile de la barre du haut.
 var options_button: Button = null
 var credits_button: Button = null
@@ -72,7 +81,6 @@ func _ready() -> void:
 	MenuKit.fade_in(self, 0.45)
 	lobby.play_intro()
 	_intro.call_deferred()
-	play_button.grab_focus.call_deferred()
 
 
 # --- Construction -------------------------------------------------------------------
@@ -91,6 +99,9 @@ var slab: Control = null
 
 func _build() -> void:
 	var m: Vector4 = MenuKit.safe_margins(self)
+	# marges de la maquette (48 et 22 px ×1,67), jamais sous les marges de sécurité
+	m.x = maxf(m.x, Balance.get_float("menu", "lobby_margin_left", 80.0))
+	m.w = maxf(m.w, Balance.get_float("menu", "lobby_margin_bottom", 36.0))
 	var vp: Vector2 = get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
 	var slab_w: float = clampf(vp.x * Balance.get_float("menu", "lobby_slab_ratio", 0.3),
 		Balance.get_float("menu", "lobby_slab_min", 370.0), Balance.get_float("menu", "lobby_slab_max", 440.0))
@@ -126,9 +137,18 @@ func _build() -> void:
 	sl.anchor_bottom = 1.0
 	sl.offset_left = -slab_w
 	ui.add_child(sl)
+	MenuKit.frosted(sl)
 	slab = sl
 
-	# Barre du haut (s'arrête avant le bandeau) : logo, statistiques, or, gemmes, crédits, réglages
+	# Repères d'angle violets (haut gauche, bas gauche) et trame de lignes très discrète
+	var deco := LobbyDeco.new()
+	deco.name = "Deco"
+	deco.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	deco.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ui.add_child(deco)
+	ui.move_child(deco, 1)
+
+	# Barre du haut (s'arrête avant le bandeau) : logotype + niveau, statistiques ; or, gemmes, réglages
 	var top := HBoxContainer.new()
 	top.name = "TopBar"
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -136,21 +156,31 @@ func _build() -> void:
 	top.anchor_right = 1.0
 	top.offset_left = m.x
 	top.offset_top = m.y
-	top.offset_right = -slab_w - 12.0
+	top.offset_right = -slab_w - 20.0
 	top.custom_minimum_size.y = 62
 	ui.add_child(top)
 	_top = top
 	var brand := VBoxContainer.new()
 	brand.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	brand.add_theme_constant_override("separation", 2)
+	brand.add_theme_constant_override("separation", 8)
 	top.add_child(brand)
-	logo = RaidersLogo.new(int(Balance.get_value("menu", "lobby_logo_size", 32)))
-	brand.add_child(logo)
+	var brand_row := HBoxContainer.new()
+	brand_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	brand_row.add_theme_constant_override("separation", 22)
+	brand.add_child(brand_row)
+	logo = RaidersLogo.wordmark(int(Balance.get_value("menu", "lobby_wordmark_size", 46)))
+	brand_row.add_child(logo)
+	var sep := ColorRect.new()
+	sep.color = Color(1, 1, 1, 0.2)
+	sep.custom_minimum_size = Vector2(2, 46)
+	sep.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	brand_row.add_child(sep)
+	brand_row.add_child(_level_badge())
 	var stats := HBoxContainer.new()
 	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stats.add_theme_constant_override("separation", 16)
+	stats.add_theme_constant_override("separation", 22)
 	brand.add_child(stats)
-	stats.add_child(_stat_chip(&"level", &"star", "niveau"))
 	stats.add_child(_stat_chip(&"raids", &"target", "raids"))
 	stats.add_child(_stat_chip(&"extractions", &"exit", "extraits"))
 	stats.add_child(_stat_chip(&"rate", &"percent", "réussite"))
@@ -161,31 +191,13 @@ func _build() -> void:
 	var gold := _gold_pill()
 	gold.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(gold)
-	var gems := HBoxContainer.new()
-	gems.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	gems.add_theme_constant_override("separation", -10)
-	gems.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	top.add_child(gems)
-	gem_counter = GemCounter.new(22)
-	gem_counter.pressed.connect(func() -> void: _go_shop(&"gems"))
-	gems.add_child(gem_counter)
-	gem_plus = _round_button(&"plus", MenuKit.VIOLET, 40)
-	gem_plus.tooltip_text = "Acheter des gemmes"
-	gem_plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gem_plus.pressed.connect(func() -> void: _go_shop(&"gems"))
-	gems.add_child(gem_plus)
-	credits_top_button = _round_button(&"star", Color(MenuKit.NIGHT_DEEP, 0.75), 46)
-	credits_top_button.tooltip_text = "Crédits"
-	credits_top_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	credits_top_button.pressed.connect(open_credits)
-	top.add_child(credits_top_button)
-	gear_button = _round_button(&"gear", Color(MenuKit.NIGHT_DEEP, 0.75), 50)
+	top.add_child(_gem_pill())
+	gear_button = _round_button(&"gear", Color(MenuKit.NIGHT_DEEP, 0.6), 66)
 	gear_button.tooltip_text = "Réglages"
 	gear_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	gear_button.pressed.connect(open_options)
 	top.add_child(gear_button)
 	options_button = gear_button
-	credits_button = credits_top_button
 
 	# Gauche : menu texte (l'arsenal de départ se choisit à l'étape 2, plus de résumé ici)
 	var nav := VBoxContainer.new()
@@ -193,7 +205,7 @@ func _build() -> void:
 	nav.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	nav.add_theme_constant_override("separation", 0)
 	ui.add_child(nav)
-	nav.position = Vector2(m.x - 6.0, m.y + top.get_combined_minimum_size().y + 14.0)
+	nav.position = Vector2(m.x, m.y + top.get_combined_minimum_size().y + 10.0)
 	_nav = nav
 	arsenal_button = NavButton.new("Arsenal", &"rifle", MenuKit.GOLD)
 	merchant_button = NavButton.new("Inventaire", &"chest", MenuKit.GOLD)
@@ -223,22 +235,27 @@ func _build() -> void:
 	pass_card.pressed.connect(func() -> void: _go_optional(pass_card, MenuKit.BATTLE_PASS_SCENE))
 	ui.add_child(pass_card)
 
-	# Dans le bandeau : info du jour en haut, Coop + DÉPLOYER en bas (alignés à droite)
+	# Dans le bandeau : carte en cours en haut (→ choix des cartes), DÉPLOYER puis Solo / Coop en bas
 	var inner := VBoxContainer.new()
 	inner.name = "SlabContent"
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner.offset_left = sl.cut * 0.75
-	inner.offset_top = m.y
-	inner.offset_right = -m.z
-	inner.offset_bottom = -m.w
-	inner.add_theme_constant_override("separation", 8)
+	inner.offset_left = 16.0   # le bas du bandeau est pleine largeur : DÉPLOYER peut mordre sur le biais
+	inner.offset_top = m.y + 10.0
+	inner.offset_right = -maxf(m.z, 44.0)
+	inner.offset_bottom = -maxf(m.w, 40.0)
+	inner.add_theme_constant_override("separation", 14)
 	sl.add_child(inner)
+	map_link = _map_link()
+	map_link.size_flags_horizontal = Control.SIZE_SHRINK_END
+	inner.add_child(map_link)
+	# Info ponctuelle (« Bientôt disponible ») : masquée hors message
 	info_banner = InfoBanner.new()
 	info_banner.name = "InfoBanner"
-	info_banner.custom_minimum_size.x = slab_w - sl.cut * 0.75 - m.z
+	info_banner.visible = false
+	info_banner.custom_minimum_size.x = slab_w - sl.cut - maxf(m.z, 44.0)
 	info_banner.text_label.custom_minimum_size.x = info_banner.custom_minimum_size.x - 54.0
-	info_banner.add_theme_stylebox_override("panel", MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.55), Color(0, 0, 0, 0), 0, 0, 10))
+	info_banner.add_theme_stylebox_override("panel", MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.7), Color(0, 0, 0, 0), 0, 0, 10))
 	info_banner.icon.modulate = Color(1, 1, 1)
 	info_banner.title_label.add_theme_color_override("font_color", MenuKit.TEXT)
 	inner.add_child(info_banner)
@@ -246,42 +263,162 @@ func _build() -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	inner.add_child(spacer)
-	var act := HBoxContainer.new()
-	act.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	act.alignment = BoxContainer.ALIGNMENT_END
-	act.add_theme_constant_override("separation", 10)
-	inner.add_child(act)
-	coop_button = _coop_button(64.0)
-	coop_button.size_flags_vertical = Control.SIZE_SHRINK_END
-	act.add_child(coop_button)
 	play_button = PlayCard.new()
 	play_button.name = "PlayButton"
+	play_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	play_button.pressed.connect(_on_play)
-	act.add_child(play_button)
+	inner.add_child(play_button)
+	var modes := HBoxContainer.new()
+	modes.name = "Modes"
+	modes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	modes.alignment = BoxContainer.ALIGNMENT_END
+	modes.add_theme_constant_override("separation", 10)
+	inner.add_child(modes)
+	modes.add_child(_solo_chip())
+	coop_button = _coop_button(52.0)
+	modes.add_child(coop_button)
 	buttons = [play_button, coop_button, pass_card, progression_button, arsenal_button, crafting_button, merchant_button, shop_button]
 
-	# Version (discrète, centrée en bas)
+	# Bas, centré : version + lien Crédits (discrets)
+	var foot := HBoxContainer.new()
+	foot.name = "Footer"
+	foot.add_theme_constant_override("separation", 14)
+	foot.anchor_left = 0.5
+	foot.anchor_right = 0.5
+	foot.anchor_top = 1.0
+	foot.anchor_bottom = 1.0
+	foot.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	foot.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	foot.offset_bottom = -2
+	ui.add_child(foot)
 	var version: String = str(ProjectSettings.get_setting("application/config/version", ""))
-	_version = MenuKit.label("v" + (version if not version.is_empty() else "0.1"), 12,
-		Color(MenuKit.TEXT_DIM, 0.45), MenuKit.nunito(500))
-	_version.anchor_left = 0.5
-	_version.anchor_right = 0.5
-	_version.anchor_top = 1.0
-	_version.anchor_bottom = 1.0
-	_version.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_version.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_version.offset_bottom = -4
-	ui.add_child(_version)
+	_version = MenuKit.label("v" + (version if not version.is_empty() else "0.1"), 13,
+		Color(1, 1, 1, 0.4), MenuKit.nunito(500))
+	_version.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	foot.add_child(_version)
+	credits_button = Button.new()
+	credits_button.name = "CreditsButton"
+	credits_button.text = "Crédits"
+	credits_button.flat = true
+	credits_button.focus_mode = Control.FOCUS_ALL
+	credits_button.custom_minimum_size = Vector2(0, 32)
+	credits_button.add_theme_font_override("font", MenuKit.nunito(600))
+	credits_button.add_theme_font_size_override("font_size", 13)
+	for k: String in ["font_color", "font_focus_color"]:
+		credits_button.add_theme_color_override(k, Color(1, 1, 1, 0.5))
+	credits_button.add_theme_color_override("font_hover_color", MenuKit.TEXT)
+	credits_button.pressed.connect(open_credits)
+	foot.add_child(credits_button)
+	credits_top_button = credits_button
+
+
+## Décor fixe de la maquette : repères d'angle violets à gauche + trame de lignes horizontales.
+class LobbyDeco extends Control:
+	## Couleur des repères d'angle (rose sur l'écran de mort).
+	var accent: Color = MenuKit.VIOLET
+
+	func _ready() -> void:
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		for y: int in range(0, int(size.y), 3):
+			draw_line(Vector2(0, y + 0.5), Vector2(size.x, y + 0.5), Color(1, 1, 1, 0.03), 1.0)
+		var k := 33.0
+		var x := 30.0
+		var c := accent
+		draw_polyline(PackedVector2Array([Vector2(x, 20 + k), Vector2(x, 20), Vector2(x + k, 20)]), c, 3.0)
+		var by := size.y - 20.0
+		draw_polyline(PackedVector2Array([Vector2(x, by - k), Vector2(x, by), Vector2(x + k, by)]), c, 3.0)
+
+
+## Niveau de raider : carré violet à coins coupés (chiffre en Anton) + « Niveau » ; tap → Progression.
+func _level_badge() -> Button:
+	var b := Button.new()
+	b.name = "LevelBadge"
+	b.flat = true
+	b.focus_mode = Control.FOCUS_ALL
+	b.tooltip_text = "Niveau de raider"
+	b.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		b.add_theme_stylebox_override(k, StyleBoxEmpty.new())
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 12)
+	b.add_child(row)
+	var sq := PanelContainer.new()
+	sq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := CutBox.make(MenuKit.VIOLET, 12.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+	box.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+	sq.add_theme_stylebox_override("panel", box)
+	sq.custom_minimum_size = Vector2(54, 54)
+	row.add_child(sq)
+	var v := MenuKit.label("1", 28, MenuKit.TEXT, MenuKit.display(), 0)
+	v.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	sq.add_child(v)
+	stat_values[&"level"] = v
+	var cap := MenuKit.label("Niveau", 24, MenuKit.TEXT, MenuKit.nunito(700))
+	cap.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(cap)
+	b.custom_minimum_size = Vector2(54 + 12 + cap.get_minimum_size().x, 54)
+	b.pressed.connect(func() -> void: _go_optional(b, MenuKit.PROGRESSION_SCENE))
+	MenuKit.add_feedback(b, 1.04)
+	return b
+
+
+## Haut du bandeau : carte en cours (capitales espacées) + « DIFFICULTÉ · CHANGER › » ; tap →
+## choix des cartes.
+func _map_link() -> Button:
+	var b := Button.new()
+	b.name = "MapLink"
+	b.flat = true
+	b.focus_mode = Control.FOCUS_ALL
+	b.tooltip_text = "Changer de carte"
+	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		b.add_theme_stylebox_override(k, StyleBoxEmpty.new())
+	var col := VBoxContainer.new()
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_theme_constant_override("separation", 2)
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	b.add_child(col)
+	map_name_label = MenuKit.label("", 18, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	map_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	map_name_label.uppercase = true
+	map_name_label.add_theme_constant_override("outline_size", 0)
+	col.add_child(map_name_label)
+	map_sub_label = MenuKit.label("", 18, Color(1, 1, 1, 0.75), MenuKit.nunito(600), 0)
+	map_sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	map_sub_label.uppercase = true
+	col.add_child(map_sub_label)
+	b.pressed.connect(_on_play)
+	MenuKit.add_feedback(b, 1.03)
+	return b
+
+
+## Mode en cours (Solo) : pastille encre pleine à coin coupé, à gauche de Coop.
+func _solo_chip() -> PanelContainer:
+	var p := PanelContainer.new()
+	p.name = "SoloChip"
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := CutBox.make(MenuKit.NIGHT_DEEP, 13.0, Color(0, 0, 0, 0), 0.0, 18.0, 0.0)
+	box.corners = CutBox.CUT_TOP_LEFT
+	p.add_theme_stylebox_override("panel", box)
+	p.custom_minimum_size = Vector2(0, 52)
+	var l := MenuKit.label("Solo", 18, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	l.uppercase = true
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	p.add_child(l)
+	return p
 
 
 ## Statistique du profil : gros chiffre (Anton) + libellé discret en minuscules.
 func _stat_chip(key: StringName, _glyph: StringName, caption: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 5)
-	var v := MenuKit.label("0", 20, MenuKit.GOLD if key == &"rate" or key == &"level" else MenuKit.TEXT, MenuKit.display())
+	row.add_theme_constant_override("separation", 7)
+	var v := MenuKit.label("0", 30, MenuKit.GOLD if key == &"rate" else MenuKit.TEXT, MenuKit.display(), 0)
 	row.add_child(v)
-	var c := MenuKit.label(caption, 12, MenuKit.TEXT_DIM, MenuKit.nunito(600))
+	var c := MenuKit.label(caption, 18, Color(1, 1, 1, 0.6), MenuKit.nunito(600), 0)
 	c.size_flags_vertical = Control.SIZE_SHRINK_END
 	c.offset_bottom = -3
 	row.add_child(c)
@@ -289,76 +426,90 @@ func _stat_chip(key: StringName, _glyph: StringName, caption: String) -> HBoxCon
 	return row
 
 
-## Bouton « Coop » (à gauche de DÉPLOYER, dans le bandeau) : contour blanc à coins coupés,
-## pictogramme duo + libellé ; « Bientôt » si la scène manque.
+## Bouton « Coop » (sous DÉPLOYER, à droite de Solo) : contour blanc à coin coupé, libellé en
+## capitales ; « Bientôt » (atténué) si la scène manque.
 func _coop_button(h: float) -> Button:
 	var b := Button.new()
 	b.name = "CoopButton"
+	b.text = "COOP"
 	b.focus_mode = Control.FOCUS_ALL
 	b.tooltip_text = "Jouer en coopération"
-	b.custom_minimum_size = Vector2(h, h)
-	var n := CutBox.make(Color(0, 0, 0, 0), 10.0, Color(1, 1, 1, 0.9), 2.0, 0.0, 0.0)
-	var hv := CutBox.make(Color(1, 1, 1, 0.12), 10.0, Color(1, 1, 1, 1.0), 2.0, 0.0, 0.0)
-	var pr := CutBox.make(Color(0, 0, 0, 0.25), 10.0, Color(1, 1, 1, 0.9), 2.0, 0.0, 0.0)
+	b.custom_minimum_size = Vector2(0, h)
+	b.add_theme_font_override("font", MenuKit.nunito(600))
+	b.add_theme_font_size_override("font_size", 18)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(k, MenuKit.TEXT)
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, 13.0, Color(1, 1, 1, 0.95), 2.0, 18.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT
+		return c
 	var f := CutBox.new()
 	f.draw_center = false
 	f.border_color = MenuKit.TEXT
 	f.border_width = 2.0
-	f.cut = 12.0
+	f.cut = 15.0
+	f.corners = CutBox.CUT_TOP_LEFT
 	f.grow = 4.0
-	b.add_theme_stylebox_override("normal", n)
-	b.add_theme_stylebox_override("hover", hv)
-	b.add_theme_stylebox_override("pressed", pr)
-	b.add_theme_stylebox_override("hover_pressed", pr)
+	b.add_theme_stylebox_override("normal", mk.call(Color(0, 0, 0, 0)))
+	b.add_theme_stylebox_override("hover", mk.call(Color(1, 1, 1, 0.14)))
+	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 0.25)))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 0.25)))
 	b.add_theme_stylebox_override("focus", f)
-	var col := VBoxContainer.new()
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 0)
-	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	b.add_child(col)
-	var g := PassGlyph.new(&"duo", MenuKit.TEXT, 30)
-	g.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	col.add_child(g)
-	var l := MenuKit.label("COOP", 15, MenuKit.TEXT, MenuKit.display())
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(l)
 	var soon := not scene_exists(MenuKit.COOP_SCENE)
 	b.set_meta(&"soon", soon)
 	if soon:
-		g.modulate.a = 0.45
-		l.modulate.a = 0.6
+		b.modulate.a = 0.6
 	b.pressed.connect(func() -> void: _go_optional(b, MenuKit.COOP_SCENE))
 	MenuKit.add_feedback(b, 1.05)
 	return b
 
 
-## Or : pastille encre soulignée de la couleur de la pièce.
+## Or : pastille encre soulignée de la couleur de la pièce (maquette : Space Grotesk gras).
 func _gold_pill() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.tooltip_text = "Or : vends ton butin au marchand"
-	var s := MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.82), Color(0, 0, 0, 0), 0, 0, 0)
-	s.border_color = MenuKit.COIN
-	s.border_width_bottom = 3
-	s.content_margin_left = 10
-	s.content_margin_right = 16
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	s.shadow_size = 0
-	p.add_theme_stylebox_override("panel", s)
-	p.custom_minimum_size = Vector2(0, 50)
+	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.COIN, 16))
+	p.custom_minimum_size = Vector2(0, 66)
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 12)
 	p.add_child(row)
-	var g := MenuGlyph.new(&"coin", MenuKit.COIN, 28)
+	var g := MenuGlyph.new(&"coin", MenuKit.COIN, 30)
 	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(g)
-	gold_label = MenuKit.label("0", 22, MenuKit.TEXT, MenuKit.display())
+	gold_label = MenuKit.label("0", 25, MenuKit.TEXT, MenuKit.nunito(700), 0)
 	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(gold_label)
 	dollar_label = gold_label
+	return p
+
+
+## Gemmes : même pastille soulignée cyan, compteur (tap → onglet Gemmes) + bouton « + » violet.
+func _gem_pill() -> PanelContainer:
+	var p := PanelContainer.new()
+	p.name = "GemPill"
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	p.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.GEM, 6))
+	p.custom_minimum_size = Vector2(0, 66)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 10)
+	p.add_child(row)
+	gem_counter = GemCounter.new(25)
+	gem_counter.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	gem_counter.value_label.add_theme_font_override("font", MenuKit.nunito(700))
+	gem_counter.value_label.add_theme_constant_override("outline_size", 0)
+	gem_counter.custom_minimum_size = Vector2.ZERO
+	gem_counter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gem_counter.pressed.connect(func() -> void: _go_shop(&"gems"))
+	row.add_child(gem_counter)
+	gem_plus = _round_button(&"plus", MenuKit.VIOLET, 52)
+	gem_plus.tooltip_text = "Acheter des gemmes"
+	gem_plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	gem_plus.pressed.connect(func() -> void: _go_shop(&"gems"))
+	row.add_child(gem_plus)
 	return p
 
 
@@ -404,6 +555,11 @@ func _refresh_profile() -> void:
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"
 	gold_label.text = format_thousands(gold_amount())
+	var card := PlayCard.displayed_card()
+	map_name_label.text = card.display_name if card != null else "Choisir une carte"
+	map_sub_label.text = ("%s · Changer ›" % card.difficulty_name()) if card != null else "Changer ›"
+	map_link.custom_minimum_size = Vector2(maxf(map_name_label.get_minimum_size().x, map_sub_label.get_minimum_size().x),
+		map_name_label.get_minimum_size().y + map_sub_label.get_minimum_size().y + 2.0)
 
 
 ## Or du joueur : Profile.gold (économie), sinon l'ancien compteur Profile.dollars.
@@ -476,8 +632,12 @@ func _go_optional(b: Control, path: String) -> void:
 			tw.tween_property(b, "rotation", 0.05, 0.05)
 			tw.tween_property(b, "rotation", -0.05, 0.08)
 			tw.tween_property(b, "rotation", 0.0, 0.05)
-		if info_banner != null and info_banner.has_method("show_message"):
-			info_banner.call("show_message", "Bientôt disponible")
+		if info_banner != null:
+			info_banner.visible = true
+			info_banner.show_message("Bientôt disponible")
+			get_tree().create_timer(2.5).timeout.connect(func() -> void:
+				if is_instance_valid(info_banner):
+					info_banner.visible = false)
 		return
 	MenuKit.sfx(&"click")
 	MenuKit.go_to(self, path)

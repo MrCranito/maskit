@@ -147,7 +147,8 @@ func test_main_menu_buttons() -> void:
 	var labels: Array[String] = []
 	for b: Button in m.buttons:
 		labels.append(MainMenu.button_label(b))
-		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
+		# pastilles Solo / Coop de la maquette : 52 px (au-dessus du minimum tactile de 48)
+		assert_gte(b.custom_minimum_size.y, 48.0 if b == m.coop_button else 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
 	assert_eq(labels, ["DÉPLOYER", "Coop", "Pass", "Progression", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
@@ -227,8 +228,8 @@ func test_lobby_hero_reflects_skin() -> void:
 
 
 func test_lobby_layout_nav_and_loadout() -> void:
-	# Direction D : menu texte à gauche sous la barre du haut, carte du pass en bas à gauche,
-	# bandeau violet à droite avec Coop puis DÉPLOYER ; plus de résumé d'arsenal au lobby.
+	# Direction D (maquette Lobby) : menu texte à gauche sous la barre du haut, carte du pass en
+	# bas à gauche, bandeau violet à droite : carte en cours en haut, DÉPLOYER puis Solo / Coop.
 	_test_profile(0)
 	for vp: Vector2 in [Vector2(1280, 720), Vector2(1560, 720)]:   # 16:9 et téléphone large (19,5:9)
 		await _check_lobby_layout(vp)
@@ -258,7 +259,12 @@ func _check_lobby_layout(vp: Vector2) -> void:
 	assert_false(top.intersects(slab), "La barre du haut s'arrête avant le bandeau")
 	var coop: Rect2 = m.coop_button.get_global_rect()
 	var play: Rect2 = m.play_button.get_global_rect()
-	assert_lt(coop.end.x, play.position.x + 1.0, "Coop à gauche de DÉPLOYER")
+	assert_gte(coop.position.y, play.end.y - 1.0, "Coop sous DÉPLOYER (maquette : Solo / Coop)")
+	assert_almost_eq(coop.end.x, play.end.x, 24.0, "Coop aligné à droite avec DÉPLOYER")
+	var ml: Rect2 = m.map_link.get_global_rect()
+	assert_lt(ml.end.y, play.position.y, "Carte en cours en haut du bandeau")
+	assert_true(slab.encloses(ml.grow(-1.0)), "Carte en cours dans le bandeau")
+	assert_false(m.info_banner.visible, "Bandeau d'info masqué hors message")
 	assert_true(slab.encloses(play.grow(-1.0)), "DÉPLOYER dans le bandeau")
 	assert_true(slab.encloses(coop.grow(-1.0)), "Coop dans le bandeau")
 	assert_eq(m.merchant_button.caption.text, "Inventaire", "Marchand renommé Inventaire")
@@ -303,10 +309,11 @@ func test_pass_card_on_lobby() -> void:
 	var c := PassCard.new()
 	add_child_autofree(c)
 	await wait_frames(1)
-	assert_eq(c.badge.tier, 4, "Palier actuel")
+	assert_eq(c.tier_label.text, "PALIER 4", "Palier actuel")
 	assert_true(c.claim_pill.visible)
 	assert_string_contains((c.claim_pill.get_node("Text") as Label).text, "%d à récupérer" % bp.claimable_count())
-	assert_string_contains(c.next_label.text, "Palier %d" % (c.badge.tier + 1))
+	assert_eq(c.next_label.text, "Palier 5")
+	assert_false(c.next_value.text.is_empty(), "Récompense du prochain palier")
 	assert_false(c.premium_pill.visible)
 	bp.premium = true
 	bp.claim_all()
@@ -544,6 +551,32 @@ func test_loadout_restores_previous_choice() -> void:
 	await wait_frames(2)
 	assert_eq(a.selected_uids, [first] as Array[int], "Arsenal précédent pré-rempli")
 	assert_false(a.validate_button.disabled)
+
+
+func test_loadout_layout_d() -> void:
+	# Maquette Loadout : bandeau violet à droite (fiche + Équiper + DÉPLOYER) ; 1er tap = fiche,
+	# 2e tap ou bouton du bandeau = équiper / retirer.
+	_test_profile()
+	var a := _loadout()
+	await wait_frames(3)
+	assert_true(a.slab.is_ancestor_of(a.validate_button), "DÉPLOYER dans le bandeau")
+	assert_true(a.slab.is_ancestor_of(a.equip_button), "Équiper dans le bandeau")
+	assert_eq(a.validate_button.text, "DÉPLOYER")
+	var t: WeaponTile = null
+	for x: WeaponTile in a.tiles:
+		if not x.weapon.is_gadget() and x.weapon != a.detail_weapon:
+			t = x
+			break
+	assert_true(t.style_d, "Cartes d'armes au format D")
+	a.call("_on_tile_pressed", t)
+	assert_eq(a.detail_weapon, t.weapon, "1er tap : fiche")
+	assert_eq(a.selected_weapon_count(), 0, "1er tap : rien d'équipé")
+	assert_eq(a.equip_button.text, "ÉQUIPER EN 01")
+	a.call("_on_tile_pressed", t)
+	assert_eq(a.selected_weapon_count(), 1, "2e tap : équipée")
+	assert_eq(a.equip_button.text, "RETIRER")
+	a.equip_button.pressed.emit()
+	assert_eq(a.selected_weapon_count(), 0, "Bouton du bandeau : retirée")
 
 
 func test_arsenal_catalog_sections() -> void:
