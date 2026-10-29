@@ -92,6 +92,24 @@ static func build(e: Enemy, data: EnemyData) -> Array[EnemySkill]:
 	return out
 
 
+## Instancie une liste de compétences (format EnemyData.skills), ex. celles d'une phase de boss.
+static func build_entries(e: Enemy, entries: Array, kind: StringName = &"") -> Array[EnemySkill]:
+	var out: Array[EnemySkill] = []
+	for entry: Variant in entries:
+		if not (entry is Dictionary):
+			continue
+		var d: Dictionary = entry
+		var sid := StringName(str(d.get("id", "")))
+		var s := create(sid)
+		if s == null:
+			push_warning("EnemySkills : compétence inconnue « %s » (%s)." % [sid, kind])
+			continue
+		s.id = sid
+		s.setup(e, d)
+		out.append(s)
+	return out
+
+
 static func create(sid: StringName) -> EnemySkill:
 	var reg := registry()
 	if not reg.has(sid):
