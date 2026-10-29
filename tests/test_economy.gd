@@ -130,11 +130,11 @@ func test_regles_d_armurerie_du_catalogue() -> void:
 	assert_gte(kills, 3, "quelques armes à débloquer par kill")
 	var m82 := WeaponCatalog.get_weapon(&"sniper_m82")
 	assert_eq(m82.unlock_mode, WeaponData.UNLOCK_KILL)
-	assert_eq(m82.unlock_enemy_kind, &"rifleman")
+	assert_eq(m82.unlock_enemy_kind, &"fw_sharpshooter")
 	assert_eq(m82.unlock_kills, 1)
 	var rpg := WeaponCatalog.get_weapon(&"rocket_rpg7")
-	assert_eq([rpg.unlock_enemy_kind, rpg.unlock_kills], [&"dynamiter", 3])
-	assert_eq(WeaponCatalog.get_weapon(&"rocket_m202").unlock_enemy_kind, &"gang_boss")
+	assert_eq([rpg.unlock_enemy_kind, rpg.unlock_kills], [&"fw_raider", 3])
+	assert_eq(WeaponCatalog.get_weapon(&"rocket_m202").unlock_enemy_kind, &"fw_deserter")
 	# Prix cohérents : une Commune ≈ une partie, la rareté coûte plus cher.
 	assert_lt(WeaponCatalog.get_weapon(&"smg_mp5").price_gold, WeaponCatalog.get_weapon(&"smg_vector").price_gold)
 	assert_lt(WeaponCatalog.get_weapon(&"smg_vector").price_gold, WeaponCatalog.get_weapon(&"smg_p90").price_gold)
@@ -164,25 +164,25 @@ func test_deblocage_par_kill() -> void:
 	Profile.gold = 100_000
 	var st := Profile.weapon_shop_status(&"sniper_m82")
 	assert_eq(st["state"], Economy.STATE_LOCKED)
-	assert_eq(str(st["text"]), "Tue 1 Tireur embusqué pour débloquer (0/1)")
+	assert_eq(str(st["text"]), "Tue 1 Tireur d'élite pour débloquer (0/1)")
 	assert_false(Profile.buy_weapon(&"sniper_m82"), "pas encore débloquée")
 	watch_signals(Profile)
-	var newly := Profile.record_kill(&"rifleman")
+	var newly := Profile.record_kill(&"fw_sharpshooter")
 	assert_eq(newly, [&"sniper_m82"] as Array[StringName])
 	assert_signal_emitted_with_parameters(Profile, "weapon_unlocked", [&"sniper_m82"])
 	assert_true(Profile.is_weapon_buyable(&"sniper_m82"))
 	assert_true(Profile.buy_weapon(&"sniper_m82"))
 	# Deuxième kill : pas de nouveau message.
-	assert_eq(Profile.record_kill(&"rifleman").size(), 0)
-	# RPG-7 : 3 dynamiteurs.
-	Profile.record_kill(&"dynamiter")
-	Profile.record_kill(&"dynamiter")
+	assert_eq(Profile.record_kill(&"fw_sharpshooter").size(), 0)
+	# RPG-7 : 3 pillards.
+	Profile.record_kill(&"fw_raider")
+	Profile.record_kill(&"fw_raider")
 	var rs := Profile.weapon_shop_status(&"rocket_rpg7")
 	assert_eq(rs["state"], Economy.STATE_LOCKED)
-	assert_eq(str(rs["text"]), "Tue 3 Dynamiteurs pour débloquer (2/3)")
-	Profile.record_kill(&"dynamiter")
+	assert_eq(str(rs["text"]), "Tue 3 Pillards pour débloquer (2/3)")
+	Profile.record_kill(&"fw_raider")
 	assert_true(Profile.is_weapon_buyable(&"rocket_rpg7"))
-	assert_true(Profile.to_dict()["kills_by_kind"].has("dynamiter"), "kills sauvegardés")
+	assert_true(Profile.to_dict()["kills_by_kind"].has("fw_raider"), "kills sauvegardés")
 
 
 func test_kill_ecoute_l_event_bus_et_compte_a_la_mort() -> void:
@@ -193,15 +193,15 @@ func test_kill_ecoute_l_event_bus_et_compte_a_la_mort() -> void:
 	var e := FakeEnemy.new()
 	e.add_to_group(&"enemy_units")
 	var d := EnemyData.new()
-	d.kind = &"gang_boss"
+	d.kind = &"fw_deserter"
 	e.data = d
 	add_child_autofree(e)
 	EventBus.enemy_died.emit(e, Vector2.ZERO)
-	assert_eq(int(Profile.kills_by_kind.get("gang_boss", 0)), 1, "kill compté via EventBus.enemy_died")
+	assert_eq(int(Profile.kills_by_kind.get("fw_deserter", 0)), 1, "kill compté via EventBus.enemy_died")
 	var res := Profile.finish_death()
 	var rep: Array = res["unlock_kills"]
-	assert_eq(rep.size(), 1, "encart de fin : le chef de bande compte pour la M202")
-	assert_eq(rep[0]["kind"], &"gang_boss")
+	assert_eq(rep.size(), 1, "encart de fin : le Déserteur compte pour la M202")
+	assert_eq(rep[0]["kind"], &"fw_deserter")
 	assert_true(bool((rep[0]["weapons"] as Array)[0]["done"]), "M202 débloquée même en mourant")
 	assert_true(Profile.is_weapon_buyable(&"rocket_m202"))
 
@@ -211,7 +211,7 @@ class FakeEnemy extends Node2D:
 
 
 func test_ennemi_sans_interet_ignore_dans_l_encart() -> void:
-	Profile.record_kill(&"outlaw_knife")
+	Profile.record_kill(&"fw_guard_dog")
 	assert_true(Economy.kill_report(Profile.raid_kills, Profile.kills_by_kind).is_empty(), "aucun déblocage lié")
 
 
@@ -241,7 +241,7 @@ func test_recettes_valides() -> void:
 
 func test_materiaux_dans_les_tables_de_chaque_biome() -> void:
 	var worlds := ["res://data/worlds/world_01_far_west.tres", "res://data/worlds/world_02_space_station.tres",
-		"res://data/worlds/world_03_mall.tres", "res://data/worlds/world_04_underwater.tres"]
+		"res://data/worlds/world_03_mall.tres"]
 	for wp: String in worlds:
 		var world := load(wp) as Resource
 		var found := {}
@@ -337,7 +337,7 @@ func _lure_world() -> Node2D:
 
 func _lure_enemy(world: Node2D, pos: Vector2) -> Enemy:
 	var d := EnemyData.new()
-	d.kind = &"outlaw_knife"
+	d.kind = &"fw_raider"
 	d.detection_radius = 200.0
 	d.detection_angle_deg = 90.0
 	d.patrol_radius = 0.0
@@ -495,13 +495,13 @@ func test_arsenal_de_depart_montre_les_consommables() -> void:
 
 
 func test_fin_de_raid_encart_des_kills_et_valeur_estimee() -> void:
-	Profile.record_kill(&"rifleman")
+	Profile.record_kill(&"fw_sharpshooter")
 	var rep := Economy.kill_report(Profile.raid_kills, Profile.kills_by_kind)
 	var sc := RaidEndScreen.create(true, {"weapons": [&"rifle_ak47"], "items": {&"gold_nugget": 2}, "value": 25,
 		"gems": 3, "unlock_kills": rep})
 	add_child_autofree(sc)
 	await wait_process_frames(3)
-	assert_string_contains(sc.get_kills_text(), "Tireur embusqué ×1")
+	assert_string_contains(sc.get_kills_text(), "Tireur d'élite ×1")
 	assert_string_contains(sc.get_kills_text(), "Barrett M82 débloquée")
 	var chip := sc.find_child("ValueChip", true, false)
 	assert_not_null(chip, "valeur estimée affichée")
@@ -519,7 +519,7 @@ func test_message_en_raid_quand_une_arme_devient_achetable() -> void:
 	var hud := InventoryHud.new()
 	add_child_autofree(hud)
 	await wait_frames(1)
-	Profile.record_kill(&"rifleman")
+	Profile.record_kill(&"fw_sharpshooter")
 	assert_string_contains(hud.get_last_feed_text(), "Nouvelle arme déblocable à l'armurerie : Barrett M82")
 
 

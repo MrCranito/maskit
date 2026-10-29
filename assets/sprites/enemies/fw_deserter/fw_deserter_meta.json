@@ -1,0 +1,136 @@
+{
+  "kind": "fw_deserter",
+  "name": "Le Déserteur",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    143
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 127,
+  "head_px": 29,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      161.6,
+      81.2
+    ],
+    "se": [
+      140.9,
+      115.2
+    ],
+    "s": [
+      93.9,
+      128.4
+    ],
+    "sw": [
+      48.1,
+      113.0
+    ],
+    "w": [
+      30.4,
+      78.0
+    ],
+    "nw": [
+      51.1,
+      44.0
+    ],
+    "n": [
+      98.1,
+      30.9
+    ],
+    "ne": [
+      143.9,
+      46.3
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      2,
+      85,
+      156,
+      171
+    ],
+    "se": [
+      2,
+      85,
+      156,
+      171
+    ],
+    "s": [
+      37,
+      80,
+      189,
+      178
+    ],
+    "sw": [
+      37,
+      80,
+      189,
+      178
+    ],
+    "w": [
+      37,
+      80,
+      189,
+      178
+    ],
+    "nw": [
+      36,
+      95,
+      190,
+      192
+    ],
+    "n": [
+      36,
+      95,
+      190,
+      192
+    ],
+    "ne": [
+      3,
+      97,
+      155,
+      187
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_deserter/fw_deserter_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

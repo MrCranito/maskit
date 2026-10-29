@@ -657,7 +657,7 @@ static func _hiding_spots(c: Ctx, seed_value: int) -> void:
 static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator, difficulty: int) -> void:
 	if room.type == FloorLayout.ROOM_SPAWN:
 		return
-	var roster := c.world.get_roster(room.type)
+	var roster := _depth_roster(c.world.get_roster(room.type), c.world, c.L.floor_index)
 	if roster.is_empty():
 		return
 	var roll := rng.randf()
@@ -710,6 +710,30 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	for i2 in mini(n, cells.size()):
 		c.enemy_cells[cells[i2]] = true
 		c.L.add_spawn(c.L.enemy_spawns, cells[i2], kinds[i2], room.id)
+
+
+static var _depth_cfg: Dictionary = {}
+
+
+## Bestiaire : poids des kinds « rangée 2 » (plus durs) multipliés selon l'étage —
+## balance.cfg [bestiary_<biome>] row2_kinds / row2_floor_mult ({"étage": mult}). Sans section : inchangé.
+static func _depth_roster(roster: Dictionary, world: WorldData, floor_index: int) -> Dictionary:
+	var biome := String(world.biome)
+	if not _depth_cfg.has(biome):
+		var cfg := ConfigFile.new()
+		cfg.load(Cfg.PATH)
+		var sec := "bestiary_" + biome
+		_depth_cfg[biome] = [cfg.get_value(sec, "row2_kinds", []), cfg.get_value(sec, "row2_floor_mult", {})]
+	var kinds: Array = _depth_cfg[biome][0]
+	var mults: Dictionary = _depth_cfg[biome][1]
+	var m := float(mults.get(str(floor_index), 1.0))
+	if kinds.is_empty() or is_equal_approx(m, 1.0):
+		return roster
+	var out := roster.duplicate()
+	for k: Variant in out:
+		if kinds.has(String(k)):
+			out[k] = float(out[k]) * m
+	return out
 
 
 static func _weighted(w: Dictionary, rng: RandomNumberGenerator) -> StringName:

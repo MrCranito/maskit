@@ -1,0 +1,135 @@
+{
+  "kind": "mall_store_warden",
+  "name": "Le Gardien de magasin",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 126,
+  "head_px": 54,
+  "fps": {
+    "idle": 7,
+    "run": 12,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      183.0,
+      79.4
+    ],
+    "se": [
+      163.7,
+      117.2
+    ],
+    "s": [
+      114.0,
+      133.7
+    ],
+    "sw": [
+      63.2,
+      119.3
+    ],
+    "w": [
+      41.0,
+      82.4
+    ],
+    "nw": [
+      60.3,
+      44.7
+    ],
+    "n": [
+      110.0,
+      28.1
+    ],
+    "ne": [
+      160.8,
+      42.5
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      35,
+      106,
+      175,
+      189
+    ],
+    "se": [
+      35,
+      106,
+      175,
+      189
+    ],
+    "s": [
+      50,
+      98,
+      187,
+      195
+    ],
+    "sw": [
+      50,
+      98,
+      187,
+      195
+    ],
+    "w": [
+      50,
+      98,
+      187,
+      195
+    ],
+    "nw": [
+      49,
+      107,
+      189,
+      202
+    ],
+    "n": [
+      49,
+      107,
+      189,
+      202
+    ],
+    "ne": [
+      37,
+      121,
+      174,
+      198
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/mall_store_warden/mall_store_warden_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

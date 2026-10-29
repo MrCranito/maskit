@@ -46,7 +46,6 @@ const BIOME_NAMES := {
 	&"far_west": "Far West",
 	&"space_station": "Station spatiale",
 	&"mall": "Centre commercial",
-	&"underwater": "Station sous-marine",
 }
 ## Vignettes par défaut (remplaçables par les agents biomes) : assets/ui/maps/<biome>.png
 const THUMB_DIR := "res://assets/ui/maps/"

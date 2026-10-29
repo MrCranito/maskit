@@ -1,0 +1,135 @@
+{
+  "kind": "ss_architect",
+  "name": "L'Architecte",
+  "frame_size": [
+    320,
+    320
+  ],
+  "feet_offset": [
+    160,
+    219
+  ],
+  "display_height": 369.2,
+  "world_per_px": 1.15375,
+  "height_px": 187,
+  "head_px": 58,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      219.1,
+      151.2
+    ],
+    "se": [
+      182.9,
+      176.5
+    ],
+    "s": [
+      133.2,
+      175.3
+    ],
+    "sw": [
+      99.3,
+      148.3
+    ],
+    "w": [
+      100.9,
+      111.4
+    ],
+    "nw": [
+      137.1,
+      86.2
+    ],
+    "n": [
+      186.8,
+      87.4
+    ],
+    "ne": [
+      220.7,
+      114.3
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      11,
+      124,
+      227,
+      263
+    ],
+    "se": [
+      11,
+      124,
+      227,
+      263
+    ],
+    "s": [
+      92,
+      127,
+      309,
+      258
+    ],
+    "sw": [
+      92,
+      127,
+      309,
+      258
+    ],
+    "w": [
+      92,
+      127,
+      309,
+      258
+    ],
+    "nw": [
+      93,
+      155,
+      309,
+      304
+    ],
+    "n": [
+      93,
+      155,
+      309,
+      304
+    ],
+    "ne": [
+      11,
+      138,
+      228,
+      309
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_architect/ss_architect_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

@@ -60,7 +60,7 @@ func after_each() -> void:
 
 func _make_data() -> EnemyData:
 	var d := EnemyData.new()
-	d.kind = &"outlaw_knife"
+	d.kind = &"fw_raider"
 	d.detection_radius = 300.0
 	d.detection_angle_deg = 360.0
 	d.patrol_radius = 0.0
@@ -106,7 +106,7 @@ func test_new_fields_have_defaults() -> void:
 	assert_gt(d.hearing_gain, 0.0)
 	assert_gt(d.awareness_decay, 0.0)
 	assert_almost_eq(d.awareness_alert_threshold, 1.0, 0.001)
-	for kind: String in ["outlaw_knife", "gunslinger", "shotgun_brute", "sandstone_colossus", "golem", "masked_grunt", "masked_archer", "masked_brute"]:
+	for kind: String in ["fw_bandit", "fw_raider", "fw_sharpshooter", "fw_marauder", "fw_bruiser", "fw_guard_dog", "fw_deserter", "fw_sheriff"]:
 		var r := load("res://data/enemies/%s.tres" % kind) as EnemyData
 		assert_not_null(r, kind)
 		if r != null:

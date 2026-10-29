@@ -1,0 +1,139 @@
+{
+  "kind": "fw_sheriff",
+  "name": "Le Shérif Sable-Fou",
+  "frame_size": [
+    320,
+    320
+  ],
+  "feet_offset": [
+    160,
+    225
+  ],
+  "display_height": 184.6,
+  "world_per_px": 0.576875,
+  "height_px": 144,
+  "head_px": 94,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12,
+    "charge": 16
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8,
+    "charge": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false,
+    "charge": true
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      221.2,
+      157.4
+    ],
+    "se": [
+      199.7,
+      188.4
+    ],
+    "s": [
+      154.9,
+      199.1
+    ],
+    "sw": [
+      113.1,
+      183.1
+    ],
+    "w": [
+      98.8,
+      149.8
+    ],
+    "nw": [
+      120.3,
+      118.7
+    ],
+    "n": [
+      165.1,
+      108.1
+    ],
+    "ne": [
+      206.9,
+      124.1
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      53,
+      152,
+      230,
+      276
+    ],
+    "se": [
+      53,
+      152,
+      230,
+      276
+    ],
+    "s": [
+      92,
+      146,
+      265,
+      277
+    ],
+    "sw": [
+      92,
+      146,
+      265,
+      277
+    ],
+    "w": [
+      92,
+      146,
+      265,
+      277
+    ],
+    "nw": [
+      90,
+      170,
+      267,
+      289
+    ],
+    "n": [
+      90,
+      170,
+      267,
+      289
+    ],
+    "ne": [
+      55,
+      171,
+      229,
+      283
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_sheriff/fw_sheriff_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

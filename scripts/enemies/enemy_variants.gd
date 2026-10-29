@@ -4,8 +4,7 @@ extends RefCounted
 ##  - un kind du générateur peut devenir une variante de la même famille (pistolero → tireur
 ##    embusqué, bandit → dynamiteur…) selon les poids de [enemy_variants] <kind> ; tirage
 ##    déterministe par case d'apparition (même raid → mêmes ennemis, étage revisité inchangé) ;
-##  - garde d'élite : le premier ennemi de chaque salle de type elite_room_types (super_loot)
-##    devient elite_kind (chef de bande), pour les biomes de elite_biomes.
+## Les élites et le boss unique sont placés à la génération du raid (BestiaryRules).
 ## Les ennemis déjà traités (meta variant_rolled sur leurs données) sont ignorés.
 ## Le jour où le roster du monde liste directement ces kinds, il suffit de vider les poids.
 
@@ -17,26 +16,15 @@ static func apply_to_floor(layout: FloorLayout, enemies: Array[Node], run_seed: 
 	if layout == null or enemies.is_empty():
 		return 0
 	var changed := 0
-	var biome := _biome()
-	var elite_kind := StringName(str(Balance.get_value(SECTION, "elite_kind", "gang_boss")))
-	var elite_rooms: Array = Balance.get_value(SECTION, "elite_room_types", ["super_loot"]) as Array
-	var elite_biomes: Array = Balance.get_value(SECTION, "elite_biomes", ["far_west"]) as Array
-	var elite_ok := elite_biomes.has(String(biome)) and ResourceLoader.exists(DATA_DIR + String(elite_kind) + ".tres")
-	var guarded := {}
 	var sorted := enemies.duplicate()
 	sorted.sort_custom(func(a: Node, b: Node) -> bool: return String(a.name) < String(b.name))
 	for n: Node in sorted:
 		var e := n as Enemy
 		if e == null or not e.is_alive() or e.data == null or e.data.has_meta(&"variant_rolled"):
 			continue
-		var cell := FloorLayout.world_to_cell(e.spawn_position)
-		var room := layout.room_at(cell)
-		if elite_ok and room != null and elite_rooms.has(String(room.type)) and not guarded.has(room.id):
-			guarded[room.id] = true
-			if e.data.kind != elite_kind:
-				e.set_variant(load(DATA_DIR + String(elite_kind) + ".tres") as EnemyData)
-				changed += 1
+		if e.data.elite or e.data.boss:
 			continue
+		var cell := FloorLayout.world_to_cell(e.spawn_position)
 		var pick := roll_kind(e.data.kind, hash([run_seed, layout.floor_index, cell.x, cell.y, "variant"]))
 		if pick != e.data.kind and ResourceLoader.exists(DATA_DIR + String(pick) + ".tres"):
 			e.set_variant(load(DATA_DIR + String(pick) + ".tres") as EnemyData)

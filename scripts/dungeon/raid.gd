@@ -26,7 +26,7 @@ const FOG_PATH := "res://scripts/dungeon/fog_of_war.gd"
 const PLAYER_SCENE_PATH := "res://scenes/player/player.tscn"
 const ENEMY_SCENE_PATH := "res://scenes/enemies/enemy.tscn"
 const ENEMY_DATA_DIR := "res://data/enemies/"
-const FALLBACK_ENEMY_KIND := &"masked_grunt"
+const FALLBACK_ENEMY_KIND := &"fw_bandit"
 const JOYSTICK_SCENE_PATH := "res://scenes/ui/virtual_joystick.tscn"
 const DEBUG_OVERLAY_SCENE_PATH := "res://scenes/ui/debug_overlay.tscn"
 const HUD_SCRIPT := preload("res://scripts/ui/hud.gd")
@@ -189,6 +189,9 @@ func _generate_floors() -> void:
 		uses_generator = not floors.is_empty()
 		if map_seed != 0 and floors.has(0):
 			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
+		# Bestiaire : un seul boss par raid, élites du monde (scripts/dungeon/bestiary_rules.gd).
+		if world is WorldData:
+			BestiaryRules.apply(floors, world as WorldData, run_seed)
 	if floors.is_empty():
 		if gen != null and world == null:
 			push_warning("Raid: générateur présent mais pas de monde, carte d'exemple.")
@@ -438,7 +441,7 @@ func _build_fog(state: FloorState) -> void:
 
 # --- Ennemis --------------------------------------------------------------------
 
-## EnemyData du kind demandé ; kind inconnu → masked_grunt + avertissement.
+## EnemyData du kind demandé ; kind inconnu → FALLBACK_ENEMY_KIND (fw_bandit) + avertissement.
 static func load_enemy_data(kind: StringName) -> Resource:
 	var path := ENEMY_DATA_DIR + String(kind) + ".tres"
 	if not ResourceLoader.exists(path):

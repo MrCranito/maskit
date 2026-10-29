@@ -13,7 +13,8 @@ const COLOR_GLOW := Color(1.0, 0.38, 0.12)
 ## Style « bullet » (hors-la-loi) : balle jaune-orangé, traînée fine.
 const STYLE_BULLET := &"bullet"
 ## Laser (station spatiale) et acide (station sous-marine) : même orbe, autre couleur.
-const STYLE_COLORS := {&"laser": Color(0.35, 0.85, 1.0), &"acid": Color(0.55, 1.0, 0.25)}
+const STYLE_COLORS := {&"laser": Color(0.35, 0.85, 1.0), &"acid": Color(0.55, 1.0, 0.25),
+	&"laser_red": Color(1.0, 0.28, 0.2), &"plasma": Color(0.82, 0.45, 1.0)}
 const BULLET_CORE := Color(1.0, 0.97, 0.75)
 const BULLET_GLOW := Color(1.0, 0.72, 0.15)
 

@@ -36,6 +36,7 @@ const MASK_PLAYER := 2
 const GROUP_ENEMIES := &"enemies"
 const GROUP_DAMAGEABLE := &"damageable"
 const GROUP_UNITS := &"enemy_units"
+const GROUP_BOSS := &"boss"
 
 const STATE_PATROL := &"Patrol"
 const STATE_INVESTIGATE := &"Investigate"
@@ -158,6 +159,14 @@ var invulnerable_left: float = 0.0
 ## Rage (compétence « rage ») : multiplicateurs de vitesse et de recharge.
 var rage_speed_mult: float = 1.0
 var rage_cooldown_mult: float = 1.0
+## Boss (EnemyData.boss) : indice de la phase courante dans data.phases (-1 = pas de phases)
+## et multiplicateurs de la phase.
+var boss_phase: int = -1
+var phase_speed_mult: float = 1.0
+var phase_cooldown_mult: float = 1.0
+var phase_damage_mult: float = 1.0
+var phase_pattern: StringName = &""
+var _boss_engaged: bool = false
 ## Étourdissement demandé par une compétence (charge contre un mur), appliqué à sa fin.
 var pending_stun: float = 0.0
 var _skill_check_left: float = 0.0
@@ -318,6 +327,9 @@ func _ready() -> void:
 	_build_awareness_bar()
 	skills = EnemySkills.build(self, data)
 	_build_state_machine()
+	if data.boss:
+		add_to_group(GROUP_BOSS)
+		_enter_boss_phase(0, false)
 	_build_sleep_timer()
 	_register_active(true)
 	_register_debug.call_deferred()
@@ -534,6 +546,9 @@ func _register_active(on: bool) -> void:
 func _on_state_changed(_from: StringName, _to: StringName) -> void:
 	if _health_bar != null:
 		_health_bar.queue_redraw()
+	if data.boss and not _boss_engaged and _alive and is_in_combat():
+		_boss_engaged = true
+		EventBus.boss_engaged.emit(self)
 
 
 # --- Boucle --------------------------------------------------------------------
@@ -1051,7 +1066,7 @@ func is_at(pos: Vector2, tolerance: float = -1.0) -> bool:
 
 ## Vitesse de course effective (difficulté, phase d'élite).
 func run_speed() -> float:
-	var s := data.move_speed * diff_speed_mult * rage_speed_mult
+	var s := data.move_speed * diff_speed_mult * rage_speed_mult * phase_speed_mult
 	if phase >= 2:
 		s *= data.phase2_speed_mult
 	return s
@@ -1249,6 +1264,8 @@ func next_pattern() -> StringName:
 	_pattern_counter += 1
 	if phase >= 2 and data.phase2_alt_pattern != &"" and _pattern_counter % 2 == 0:
 		return data.phase2_alt_pattern
+	if phase_pattern != &"":
+		return phase_pattern
 	return data.get_pattern()
 
 
@@ -1275,11 +1292,11 @@ func attack_reach(pattern: StringName) -> float:
 
 
 func get_attack_damage() -> float:
-	return data.attack_damage * diff_damage_mult
+	return data.attack_damage * diff_damage_mult * phase_damage_mult
 
 
 func _start_cooldown() -> void:
-	var cd := data.attack_cooldown * diff_cooldown_mult * rage_cooldown_mult
+	var cd := data.attack_cooldown * diff_cooldown_mult * rage_cooldown_mult * phase_cooldown_mult
 	if phase >= 2:
 		cd *= data.phase2_cooldown_mult
 	attack_cooldown_left = cd
@@ -1287,7 +1304,7 @@ func _start_cooldown() -> void:
 
 ## Multiplicateur des temps de recharge des compétences (difficulté, rage).
 func skill_cooldown_mult() -> float:
-	return diff_skill_cooldown_mult * rage_cooldown_mult
+	return diff_skill_cooldown_mult * rage_cooldown_mult * phase_cooldown_mult
 
 
 ## Exécute le coup à la fin du télégraphe (schéma simple, compatibilité). Renvoie vrai si un
@@ -1542,6 +1559,69 @@ func enter_phase2() -> void:
 				n.become_aware(target, false)
 
 
+# --- Boss : phases ------------------------------------------------------------------
+
+## Fraction de PV à laquelle commence la phase `i` (data.phases[i].from).
+func boss_phase_from(i: int) -> float:
+	if i < 0 or i >= data.phases.size() or not (data.phases[i] is Dictionary):
+		return 1.0
+	return float((data.phases[i] as Dictionary).get("from", 1.0))
+
+
+func boss_phase_name(i: int = -1) -> String:
+	var k := boss_phase if i < 0 else i
+	if k < 0 or k >= data.phases.size() or not (data.phases[k] is Dictionary):
+		return ""
+	return str((data.phases[k] as Dictionary).get("name", "Phase %d" % (k + 1)))
+
+
+## Passe à la phase la plus avancée atteinte par les PV (plusieurs d'un coup si gros dégâts).
+func _check_boss_phase() -> void:
+	if data.phases.is_empty() or not _alive:
+		return
+	var ratio := hp / maxf(max_hp, 0.001)
+	var target := boss_phase
+	for i in range(boss_phase + 1, data.phases.size()):
+		if ratio <= boss_phase_from(i):
+			target = i
+	if target > boss_phase:
+		_enter_boss_phase(target, true)
+
+
+## Applique la phase `i` : compétences, multiplicateurs, schéma ; avec effets si `fx`.
+func _enter_boss_phase(i: int, fx: bool) -> void:
+	if data.phases.is_empty() or i < 0 or i >= data.phases.size():
+		return
+	boss_phase = i
+	var ph: Dictionary = data.phases[i] if data.phases[i] is Dictionary else {}
+	phase_speed_mult = float(ph.get("speed_mult", 1.0))
+	phase_cooldown_mult = float(ph.get("cooldown_mult", 1.0))
+	phase_damage_mult = float(ph.get("damage_mult", 1.0))
+	phase_pattern = StringName(str(ph.get("attack_pattern", "")))
+	if ph.has("skills") and ph["skills"] is Array:
+		if active_skill != null and state_machine != null and current_state_name() == STATE_SKILL:
+			state_machine.transition_to(STATE_CHASE)
+		skills = EnemySkills.build_entries(self, ph["skills"], data.kind)
+	if not fx:
+		return
+	phase_changed.emit(i + 1)
+	var inv := float(ph.get("invuln", Balance.get_float("boss", "phase_invuln", 1.2)))
+	invulnerable_left = maxf(invulnerable_left, inv)
+	shout(&"phase2", true)
+	_visual_call(&"play_alert")
+	EventBus.boss_phase_changed.emit(self, i, boss_phase_name(i))
+	# Compétences d'entrée de phase : la première est lancée, les autres sont prêtes.
+	var first := true
+	for sid: Variant in ph.get("on_enter", []):
+		var sk := get_skill(StringName(str(sid)))
+		if sk == null:
+			continue
+		sk.cooldown_left = 0.0
+		if first and not sk.is_passive():
+			first = false
+			force_skill(sk.id)
+
+
 # --- Modificateurs de carte (MapCard) -------------------------------------------------
 
 func apply_modifiers(hp_mult: float, damage_mult: float, speed_mult: float, awareness_mult: float) -> void:
@@ -1632,6 +1712,9 @@ func take_damage(amount: float, source: Node) -> void:
 	# Élite : phase 2.
 	if data.elite and data.phase2_hp_ratio > 0.0 and phase < 2 and hp <= max_hp * data.phase2_hp_ratio:
 		enter_phase2()
+	# Boss : phases successives (data.phases[i].from).
+	if data.boss:
+		_check_boss_phase()
 	# Être touché = jauge à 1 : alerte vers la source si hors combat.
 	if not is_in_combat():
 		become_aware(from, true)
@@ -1683,6 +1766,8 @@ func _die() -> void:
 	state_machine.transition_to(STATE_DEAD)
 	died.emit(self)
 	EventBus.enemy_died.emit(self, global_position)
+	if data.boss:
+		EventBus.boss_defeated.emit(self)
 
 
 ## Fin de l'animation de mort : le cadavre persistant remplace l'ennemi (LootManager), puis
@@ -1844,13 +1929,10 @@ class FallbackVisual extends Node2D:
 
 	func setup(kind: StringName) -> void:
 		match kind:
-			&"golem":
-				radius = 34.0
-				color = Color(0.72, 0.58, 0.40)
-			&"masked_brute":
+			&"fw_bruiser":
 				radius = 28.0
 				color = Color(0.55, 0.18, 0.16)
-			&"masked_archer":
+			&"fw_sharpshooter":
 				radius = 18.0
 				color = Color(0.35, 0.30, 0.45)
 			_:

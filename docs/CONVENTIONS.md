@@ -148,7 +148,9 @@ Remplacés par l'arsenal (voir la dernière section). Plus de MaskData, data/mas
 | Far West | `data/worlds/world_01_far_west.tres` | `scripts/dungeon/` (générateur, WorldBuilder), `assets/sprites/far_west/` |
 | Station spatiale | `data/worlds/world_02_space_station.tres` | `scripts/biomes/space_station/`, `assets/sprites/space_station/`, `art/blender/space_station/` |
 | Centre commercial abandonné | `data/worlds/world_03_mall.tres` | `scripts/biomes/mall/`, `assets/sprites/mall/`, `art/blender/mall/` |
-| Station sous-marine | `data/worlds/world_04_underwater.tres` | `scripts/biomes/underwater/`, `assets/sprites/underwater/`, `art/blender/underwater/` |
+| ~~Station sous-marine~~ (retirée) | `data/worlds/world_04_underwater.tres` | `scripts/biomes/underwater/`, `assets/sprites/underwater/`, `art/blender/underwater/` |
+
+> **29/10/2026 : le 4e monde « Station sous-marine » (Abysse Nérée, `world_04_underwater`) a été retiré** (refonte du bestiaire) : scripts, données (ennemis `uw_*`, objets, clefs, tables, cartes, tourelles), sprites, textures, modèles Blender, tests et section `[underwater]` de balance.cfg supprimés. Les chemins ci-dessous qui le mentionnent sont historiques.
 
 Chaque biome fournit, à ces chemins :
 - **Monde** (`WorldData`) avec `generator_path`, `builder_path`, `containers_dir`, `floor_names`, `enemy_roster`, `container_kinds`, `prop_kinds`, `palette`, `music_explore/combat`.

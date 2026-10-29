@@ -1,12 +1,11 @@
 extends GutTest
-## Tourelles murales : placement (TurretPlacer, sur les 4 générateurs de biome réels) et
+## Tourelles murales : placement (TurretPlacer, sur les 3 générateurs de biome réels) et
 ## comportement (Turret : dégâts, destruction unique, ligne de vue, joueur caché, cône, tir).
 
 const WORLDS := [
 	"res://data/worlds/world_01_far_west.tres",
 	"res://data/worlds/world_02_space_station.tres",
 	"res://data/worlds/world_03_mall.tres",
-	"res://data/worlds/world_04_underwater.tres",
 ]
 const SEEDS := [11, 4242]
 

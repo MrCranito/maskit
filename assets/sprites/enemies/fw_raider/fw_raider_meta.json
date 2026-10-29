@@ -1,0 +1,136 @@
+{
+  "kind": "fw_raider",
+  "name": "Pillard",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 115,
+  "head_px": 32,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      158.5,
+      131.2
+    ],
+    "se": [
+      135.7,
+      162.7
+    ],
+    "s": [
+      89.7,
+      173.0
+    ],
+    "sw": [
+      47.4,
+      156.1
+    ],
+    "w": [
+      33.5,
+      121.9
+    ],
+    "nw": [
+      56.3,
+      90.5
+    ],
+    "n": [
+      102.3,
+      80.2
+    ],
+    "ne": [
+      144.6,
+      97.1
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      14,
+      82,
+      154,
+      164
+    ],
+    "se": [
+      14,
+      82,
+      154,
+      164
+    ],
+    "s": [
+      40,
+      78,
+      176,
+      169
+    ],
+    "sw": [
+      40,
+      78,
+      176,
+      169
+    ],
+    "w": [
+      40,
+      78,
+      176,
+      169
+    ],
+    "nw": [
+      38,
+      90,
+      177,
+      181
+    ],
+    "n": [
+      38,
+      90,
+      177,
+      181
+    ],
+    "ne": [
+      16,
+      99,
+      153,
+      177
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_raider/fw_raider_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

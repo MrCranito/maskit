@@ -24,21 +24,21 @@ const PILLARS: Array[Dictionary] = [
 	{"at": Vector2(0.24, 0.70), "size": Vector2(130, 130)},
 	{"at": Vector2(0.76, 0.30), "size": Vector2(130, 130)},
 ]
-## Cible d'entraînement : position (fraction) et apparence (0 = mannequin de pierre, 1 = golem).
+## Cible d'entraînement : position (fraction) et apparence (0 = bandit, 1 = robuste ; TargetDummy.Look).
 ## Visible et à portée dès l'apparition : valide le tir auto sans bouger.
 const DUMMIES: Array[Dictionary] = [
 	{"at": Vector2(0.70, 0.68), "variant": 0},
 ]
 ## Ennemis : position (fraction) et données (data/enemies/*.tres).
 const ENEMIES: Array[Dictionary] = [
-	# Deux fantassins proches l'un de l'autre : teste l'alerte des voisins.
-	{"at": Vector2(0.24, 0.50), "data": "res://data/enemies/masked_grunt.tres"},
-	{"at": Vector2(0.33, 0.47), "data": "res://data/enemies/masked_grunt.tres"},
-	# Archer caché derrière le pilier central (vu depuis le point d'apparition).
-	{"at": Vector2(0.5, 0.40), "data": "res://data/enemies/masked_archer.tres"},
+	# Deux bandits proches l'un de l'autre : teste l'alerte des voisins.
+	{"at": Vector2(0.24, 0.50), "data": "res://data/enemies/fw_bandit.tres"},
+	{"at": Vector2(0.33, 0.47), "data": "res://data/enemies/fw_bandit.tres"},
+	# Tireur d'élite caché derrière le pilier central (vu depuis le point d'apparition).
+	{"at": Vector2(0.5, 0.40), "data": "res://data/enemies/fw_sharpshooter.tres"},
 	# Plus loin, au fond de la cour.
-	{"at": Vector2(0.76, 0.17), "data": "res://data/enemies/golem.tres"},
-	{"at": Vector2(0.25, 0.15), "data": "res://data/enemies/masked_brute.tres"},
+	{"at": Vector2(0.76, 0.17), "data": "res://data/enemies/fw_bruiser.tres"},
+	{"at": Vector2(0.25, 0.15), "data": "res://data/enemies/fw_raider.tres"},
 ]
 const PLAYER_SPAWN := Vector2(0.5, 0.85)
 

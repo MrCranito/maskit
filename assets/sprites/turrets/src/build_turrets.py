@@ -80,15 +80,6 @@ BIOMES = {
         "barrel": ("#2e2e36", "#0e0e1a", "#56566a"),
         "glow": "#ff3030",
     },
-    "underwater": {
-        "plate": ("#2e5a5e", "#0e2236", "#4a8a8c"),
-        "arm": ("#b8703c", "#4a2a2e", "#f0a060"),        # cuivre
-        "housing": ("#c8a040", "#5a4030", "#ffe08a"),    # laiton
-        "metal": ("#2e4a50", "#0c1a2a", "#4e7478"),
-        "accent": ("#3a8a96", "#123044", "#6ac4d0"),
-        "barrel": ("#36424a", "#10161e", "#5a6a72"),
-        "glow": "#5cffc8",
-    },
 }
 CHAR = ("#2c2428", "#120e18", "#4a3c3a")     # épave noircie
 EMBER = "#ff6a20"
@@ -178,14 +169,6 @@ def build_mount(P: Parts, biome: str, wall_face: bool = True) -> None:
                   rot=(0, math.radians(30), 0))
         P.box("arm", (0.14, ARM, 0.1), (0, -ARM / 2 - 0.07, z - 0.16), M("arm"), bevel=0.015)
         P.cyl("cam_box", 0.05, 0.05, 0.1, (0.2, -0.1, z + 0.1), M("glow"), rot=(math.pi / 2, 0, 0), seg=10)
-    else:  # underwater
-        P.cyl("plate", 0.34, 0.34, 0.08, (0, -0.04, z - 0.12), M("plate"), rot=(math.pi / 2, 0, 0), seg=20)
-        for i in range(8):
-            a = 2 * math.pi * i / 8
-            P.sphere("rivet%d" % i, 0.03, (0.27 * math.cos(a), -0.09, z - 0.12 + 0.27 * math.sin(a)),
-                     M("arm"), seg=8, rings=5)
-        P.box("arm", (0.14, ARM, 0.12), (0, -ARM / 2 - 0.07, z - 0.16), M("arm"), bevel=0.02)
-        P.cyl("pipe", 0.045, 0.045, 0.5, (0.22, -0.12, z - 0.2), M("arm"), seg=10)
     # Couronne d'orientation sous la tête
     P.cyl("ring", 0.2, 0.17, 0.1, (0, -ARM - 0.04, z - 0.15), M("metal"), seg=20)
 
@@ -200,10 +183,6 @@ def _build_pedestal(P: Parts, biome: str) -> None:
         P.box("strap", (0.16, 0.16, 0.05), (0, 0.06, 0.5), M("arm"))
         P.box("arm", (0.1, 0.06 - hy, 0.08), (0, (0.06 + hy) / 2, z - 0.24), M("arm"))
         P.box("brace", (0.06, 0.06, 0.42), (0, -0.12, z - 0.42), M("arm"), rot=(math.radians(-40), 0, 0))
-    elif biome == "underwater":
-        P.cyl("foot", 0.24, 0.26, 0.08, (0, 0.14, 0.04), M("plate"), seg=18)
-        P.cyl("post", 0.07, 0.08, z - 0.2, (0, 0.06, (z - 0.2) / 2), M("arm"), seg=12)
-        P.box("arm", (0.12, 0.06 - hy, 0.1), (0, (0.06 + hy) / 2, z - 0.24), M("arm"), bevel=0.02)
     else:
         P.box("foot", (0.46, 0.4, 0.08), (0, 0.15, 0.04), M("plate"), bevel=0.02)
         P.box("post", (0.14, 0.14, z - 0.2), (0, 0.06, (z - 0.2) / 2), M("arm"), bevel=0.02)

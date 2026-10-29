@@ -4,7 +4,7 @@
 Usage : python3 assets/ui/maps/build_map_thumbs.py [capture_far_west.png]
   - far_west : recadrage d'une capture du jeu (rue de Dust Creek) étalonnée en coucher de soleil,
     si une capture est donnée ; sinon silhouette de ville peinte.
-  - space_station, mall, underwater : illustrations peintes en code (dégradés, silhouettes, lumières).
+  - space_station, mall : illustrations peintes en code (dégradés, silhouettes, lumières).
 Les agents biomes peuvent remplacer chaque PNG par un vrai rendu (même nom, 16:9) : MapCard
 charge assets/ui/maps/<biome>.png à l'exécution.
 """
@@ -221,72 +221,7 @@ def mall():
     finish(img.convert("RGB"), "mall")
 
 
-# --- Station sous-marine --------------------------------------------------------------
-
-def underwater():
-    w, h = W * S, H * S
-    rnd = random.Random(5)
-    img = vgrad(w, h, [(0, (40, 150, 170)), (0.5, (14, 70, 110)), (1, (6, 22, 48))]).convert("RGBA")
-    # Rayons de lumière
-    rays = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    rd = ImageDraw.Draw(rays)
-    for i in range(7):
-        x = rnd.randint(0, w)
-        sp = rnd.randint(60, 160)
-        rd.polygon([(x, 0), (x + 40, 0), (x + sp + 200, h), (x + 120, h)], fill=(180, 255, 250, 40))
-    img = Image.alpha_composite(img, rays.filter(ImageFilter.GaussianBlur(14)))
-    d = ImageDraw.Draw(img)
-    # Fond marin
-    pts = [(0, h)]
-    for x in range(0, w + 40, 40):
-        pts.append((x, h * 0.82 + math.sin(x * 0.01) * 20 + rnd.randint(-8, 8)))
-    pts.append((w, h))
-    d.polygon(pts, fill=(10, 30, 50, 255))
-    # Dôme et modules de la station
-    cx, cy = w * 0.5, h * 0.8
-    d.rectangle([cx - 380, cy - 60, cx + 380, cy + 20], fill=(60, 78, 96, 255), outline=(120, 150, 170, 255), width=6)
-    d.pieslice([cx - 220, cy - 260, cx + 220, cy + 180], 180, 360, fill=(70, 100, 120, 255), outline=(150, 190, 210, 255), width=8)
-    d.pieslice([cx - 180, cy - 220, cx + 180, cy + 140], 180, 360, fill=(30, 110, 140, 255))
-    for k in range(-2, 3):
-        d.line([cx + k * 70, cy - 40, cx + k * 45, cy - 210 + abs(k) * 25], fill=(150, 190, 210, 255), width=6)
-    for sx in (-1, 1):
-        mx = cx + sx * 300
-        d.ellipse([mx - 90, cy - 150, mx + 90, cy + 10], fill=(70, 92, 110, 255), outline=(140, 175, 195, 255), width=6)
-        d.rectangle([mx - 14, cy - 20, mx + 14, h], fill=(50, 64, 80, 255))
-    # Hublots allumés
-    lights = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(lights)
-    for k in range(-5, 6):
-        x = cx + k * 64
-        ld.ellipse([x - 14, cy - 34, x + 14, cy - 6], fill=(255, 220, 140, 255))
-    for sx in (-1, 1):
-        mx = cx + sx * 300
-        ld.ellipse([mx - 30, cy - 100, mx + 30, cy - 40], fill=(120, 255, 240, 255))
-    img = Image.alpha_composite(img, lights.filter(ImageFilter.GaussianBlur(10)))
-    img = Image.alpha_composite(img, lights)
-    d = ImageDraw.Draw(img)
-    # Algues
-    for i in range(14):
-        x = rnd.randint(0, w)
-        base = h * 0.86 + rnd.randint(0, 40)
-        hh = rnd.randint(120, 300)
-        col = rnd.choice([(20, 90, 70, 255), (30, 120, 80, 255), (16, 70, 60, 255)])
-        prev = (x, base)
-        for s in range(1, 12):
-            t = s / 11
-            p = (x + math.sin(t * 5 + i) * 22 * t, base - hh * t)
-            d.line([prev, p], fill=col, width=max(3, int(14 * (1 - t))))
-            prev = p
-    # Bulles
-    for _ in range(70):
-        x, y = rnd.random() * w, rnd.random() * h * 0.85
-        r = rnd.choice([3, 4, 6, 8, 10])
-        d.ellipse([x - r, y - r, x + r, y + r], outline=(200, 255, 255, 170), width=2)
-    finish(img.convert("RGB"), "underwater")
-
-
 if __name__ == "__main__":
     far_west(sys.argv[1] if len(sys.argv) > 1 else "")
     space_station()
     mall()
-    underwater()

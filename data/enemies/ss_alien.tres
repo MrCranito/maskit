@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_alien"
+display_name = "Alien"
+max_hp = 180.0
+move_speed = 132.0
+body_radius = 26.0
+detection_radius = 400.0
+detection_angle_deg = 240.0
+lose_sight_time = 4.0
+alert_duration = 0.3
+alert_neighbors_radius = 300.0
+patrol_radius = 130.0
+sight_gain = 1.8
+hearing_radius = 460.0
+hearing_gain = 2.6
+awareness_decay = 0.1
+attack_type = 0
+attack_range = 72.0
+attack_damage = 15.0
+attack_cooldown = 1.15
+attack_windup = 0.4
+aura_color = Color(0.85, 0.4, 1, 1)
+tactic = &"rusher"
+zigzag_amplitude = 20.0
+attack_pattern = &"lunge"
+lunge_distance = 110.0
+lunge_speed = 480.0
+combo_hits = 2
+combo_interval = 0.3
+stagger_ratio = 0.45
+knockback = 40.0
+skills = [{"id": &"ss_frenzy", "near": 170.0, "duration": 2.5, "speed_mult": 1.45, "cooldown_mult": 0.6, "shout": "GRRAAAH !"}, {"id": &"ss_brood_summon", "cooldown": 14.0, "initial_cooldown": 4.0, "windup": 0.9, "count": 2, "max_total": 4, "kinds": ["ss_alien_brood"], "dist": 60.0, "hp_below": 0.95}, {"id": &"rush", "status": "knockdown", "status_time": 0.4, "cooldown": 9.0, "windup": 0.7, "min_range": 170.0, "max_range": 380.0, "speed": 480.0, "damage": 14.0}]
+sfx_attack = &"blade_swing_heavy"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"enemy_death_generic"
+corpse_name = "Cadavre d'alien"

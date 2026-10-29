@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_detector"
+display_name = "Détecteur"
+max_hp = 32.0
+move_speed = 140.0
+body_radius = 20.0
+detection_radius = 580.0
+detection_angle_deg = 360.0
+lose_sight_time = 4.0
+alert_duration = 0.3
+alert_neighbors_radius = 620.0
+patrol_radius = 200.0
+sight_gain = 3.2
+hearing_radius = 560.0
+hearing_gain = 3.0
+awareness_decay = 0.08
+attack_type = 1
+attack_range = 320.0
+attack_damage = 4.0
+attack_cooldown = 1.4
+attack_windup = 0.45
+projectile_speed = 500.0
+retreat_distance = 230.0
+projectile_style = &"laser_red"
+aura_color = Color(1, 0.2, 0.14, 1)
+tactic = &"gunner"
+use_cover = true
+attack_pattern = &"single"
+stagger_ratio = 0.35
+knockback = 90.0
+skills = [{"id": &"ss_alarm_scan", "cooldown": 14.0, "initial_cooldown": 0.3, "windup": 0.8, "radius": 900.0, "scan_radius": 150.0, "call_count": 1, "max_total": 2, "kinds": ["ss_security_droid"], "call_dist": 90.0, "priority": 3.0, "shout": "INTRUS DÉTECTÉ !"}]
+sfx_attack = &"pistol_shot_light"
+sfx_hurt = &"metal_impact"
+sfx_death = &"enemy_destroy"
+corpse_name = "Carcasse de détecteur"

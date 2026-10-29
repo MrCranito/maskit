@@ -133,12 +133,12 @@ UNLOCKS = {
     "sniper_m24": ("shop", 280), "gadget_frag": ("shop", 120), "gadget_decoy": ("shop", 150),
     "pistol_glock18": ("shop", 700), "smg_vector": ("shop", 800), "rifle_m4a1": ("shop", 900),
     "sniper_ax50": ("shop", 1000), "gadget_smoke": ("shop", 350),
-    "rocket_rpg7": ("kill", 1200, "dynamiter", 3),
+    "rocket_rpg7": ("kill", 1200, "fw_raider", 3),
     "smg_p90": ("shop", 1800), "gadget_mine": ("shop", 800),
-    "pistol_deagle": ("kill", 1600, "gunslinger", 5),
-    "rifle_scarh": ("kill", 2000, "shotgun_brute", 3),
-    "sniper_m82": ("kill", 2400, "rifleman", 1),
-    "rocket_m202": ("kill", 2800, "gang_boss", 1),
+    "pistol_deagle": ("kill", 1600, "fw_bandit", 5),
+    "rifle_scarh": ("kill", 2000, "fw_bruiser", 3),
+    "sniper_m82": ("kill", 2400, "fw_sharpshooter", 1),
+    "rocket_m202": ("kill", 2800, "fw_deserter", 1),
 }
 STARTER_ID = "pistol_p9"
 
@@ -150,7 +150,7 @@ TIER_WEIGHTS = {
 }
 # Équipement : plutôt caisses militaires / coffres (multiplicateur appliqué aux gadgets).
 GADGET_MULT = {"rich": 1.6, "medium": 0.5, "enemy": 0.6}
-MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "uw_locker", "uw_crate", "safe", "chest"}
+MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "safe", "chest"}
 TABLE_TIERS = {
     # Far West
     "chest": ("rich", 1.0), "safe": ("rich", 1.2), "stagecoach": ("medium", 1.5),
@@ -162,9 +162,6 @@ TABLE_TIERS = {
     # Centre commercial
     "mall_jewel_safe": ("rich", 0.8), "mall_stock_box": ("medium", 0.8), "mall_corpse": ("medium", 1.3),
     "enemy_mall": ("enemy", 1.0),
-    # Station sous-marine
-    "uw_sample_chest": ("rich", 0.8), "uw_locker": ("medium", 1.2), "uw_crate": ("medium", 1.0),
-    "uw_diver_corpse": ("medium", 1.3), "enemy_underwater": ("enemy", 1.0),
 }
 # Objets retirés de toutes les tables (masques, anciennes armes sans weapon_id).
 REMOVED_ITEMS = {"mask_fox", "mask_iron", "mask_robber", "mask_skull", "space_cracked_mask",
@@ -308,7 +305,7 @@ def patch_table(path: str, kind: str) -> None:
         mm = ENTRY_RE.match(line.strip())
         if mm:
             entries[mm.group(1)] = float(mm.group(2))
-    # Tables hors TABLE_TIERS (ex. butin propre à un ennemi : enemy_gang_boss…) : leurs entrées
+    # Tables hors TABLE_TIERS (ex. butin propre à un ennemi : enemy_fw_deserter…) : leurs entrées
     # wpn_* sont écrites à la main et conservées (seuls les objets retirés sont enlevés).
     managed = kind in TABLE_TIERS
     for k in list(entries):

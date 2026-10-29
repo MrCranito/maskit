@@ -454,7 +454,8 @@ func _on_reload_started() -> void:
 ## Vitesse max effective (vitesse de base × arme tenue).
 func get_effective_speed() -> float:
 	var w: WeaponData = weapon
-	return move_speed * (clampf(w.move_speed_mult, 0.1, 2.0) if w != null else 1.0)
+	var slow := status.speed_mult() if status != null else 1.0
+	return move_speed * (clampf(w.move_speed_mult, 0.1, 2.0) if w != null else 1.0) * slow
 
 
 func _on_weapon_changed(animate: bool) -> void:

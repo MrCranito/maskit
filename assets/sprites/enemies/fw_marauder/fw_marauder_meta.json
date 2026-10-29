@@ -1,0 +1,136 @@
+{
+  "kind": "fw_marauder",
+  "name": "Maraudeur",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    153
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 110,
+  "head_px": 78,
+  "fps": {
+    "idle": 7,
+    "run": 16,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      220.1,
+      102.9
+    ],
+    "se": [
+      188.4,
+      159.6
+    ],
+    "s": [
+      112.0,
+      183.2
+    ],
+    "sw": [
+      35.6,
+      159.6
+    ],
+    "w": [
+      3.9,
+      102.9
+    ],
+    "nw": [
+      35.6,
+      46.1
+    ],
+    "n": [
+      112.0,
+      22.5
+    ],
+    "ne": [
+      188.4,
+      46.1
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      49,
+      77,
+      208,
+      168
+    ],
+    "se": [
+      49,
+      77,
+      208,
+      168
+    ],
+    "s": [
+      50,
+      113,
+      198,
+      211
+    ],
+    "sw": [
+      50,
+      113,
+      198,
+      211
+    ],
+    "w": [
+      50,
+      113,
+      198,
+      211
+    ],
+    "nw": [
+      16,
+      111,
+      175,
+      194
+    ],
+    "n": [
+      16,
+      111,
+      175,
+      194
+    ],
+    "ne": [
+      26,
+      59,
+      174,
+      166
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_marauder/fw_marauder_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

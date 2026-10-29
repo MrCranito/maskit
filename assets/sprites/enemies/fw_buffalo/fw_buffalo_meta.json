@@ -1,0 +1,136 @@
+{
+  "kind": "fw_buffalo",
+  "name": "Le Buffle",
+  "frame_size": [
+    288,
+    288
+  ],
+  "feet_offset": [
+    144,
+    191
+  ],
+  "display_height": 166.1,
+  "world_per_px": 0.576875,
+  "height_px": 165,
+  "head_px": 68,
+  "fps": {
+    "idle": 7,
+    "run": 16,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      204.5,
+      30.5
+    ],
+    "se": [
+      222.1,
+      73.2
+    ],
+    "s": [
+      194.0,
+      112.7
+    ],
+    "sw": [
+      136.6,
+      125.8
+    ],
+    "w": [
+      83.5,
+      104.9
+    ],
+    "nw": [
+      65.9,
+      62.2
+    ],
+    "n": [
+      94.0,
+      22.7
+    ],
+    "ne": [
+      151.4,
+      9.6
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      48,
+      54,
+      288,
+      200
+    ],
+    "se": [
+      48,
+      54,
+      288,
+      200
+    ],
+    "s": [
+      57,
+      132,
+      263,
+      288
+    ],
+    "sw": [
+      57,
+      132,
+      263,
+      288
+    ],
+    "w": [
+      57,
+      132,
+      263,
+      288
+    ],
+    "nw": [
+      0,
+      130,
+      240,
+      271
+    ],
+    "n": [
+      0,
+      130,
+      240,
+      271
+    ],
+    "ne": [
+      25,
+      18,
+      246,
+      199
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/fw_buffalo/fw_buffalo_atlas.png",
+  "source": "art/blender/bestiary/far_west/build_fw_bestiary.py",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la gueule (image attack 3)."
+}

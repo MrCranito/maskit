@@ -1,0 +1,135 @@
+{
+  "kind": "ss_alien",
+  "name": "Alien",
+  "frame_size": [
+    256,
+    256
+  ],
+  "feet_offset": [
+    128,
+    182
+  ],
+  "display_height": 147.7,
+  "world_per_px": 0.576875,
+  "height_px": 133,
+  "head_px": 69,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      191.7,
+      111.8
+    ],
+    "se": [
+      203.3,
+      154.6
+    ],
+    "s": [
+      170.8,
+      191.0
+    ],
+    "sw": [
+      113.3,
+      199.6
+    ],
+    "w": [
+      64.3,
+      175.5
+    ],
+    "nw": [
+      52.7,
+      132.7
+    ],
+    "n": [
+      85.2,
+      96.4
+    ],
+    "ne": [
+      142.7,
+      87.7
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      33,
+      99,
+      199,
+      240
+    ],
+    "se": [
+      33,
+      99,
+      199,
+      240
+    ],
+    "s": [
+      57,
+      97,
+      224,
+      240
+    ],
+    "sw": [
+      57,
+      97,
+      224,
+      240
+    ],
+    "w": [
+      57,
+      97,
+      224,
+      240
+    ],
+    "nw": [
+      57,
+      123,
+      223,
+      256
+    ],
+    "n": [
+      57,
+      123,
+      223,
+      256
+    ],
+    "ne": [
+      32,
+      108,
+      199,
+      256
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_alien/ss_alien_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

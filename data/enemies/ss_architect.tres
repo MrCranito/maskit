@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ss_architect"
+display_name = "L'Architecte"
+max_hp = 3000.0
+move_speed = 70.0
+body_radius = 62.0
+detection_radius = 760.0
+detection_angle_deg = 360.0
+lose_sight_time = 12.0
+alert_duration = 0.8
+alert_neighbors_radius = 900.0
+patrol_radius = 0.0
+sight_gain = 3.0
+hearing_radius = 700.0
+hearing_gain = 3.0
+awareness_decay = 0.02
+attack_type = 1
+attack_range = 560.0
+attack_damage = 10.0
+attack_cooldown = 1.7
+attack_windup = 0.6
+projectile_speed = 520.0
+projectile_count = 5
+projectile_spread_deg = 36.0
+projectile_style = &"laser_red"
+aura_color = Color(1, 0.23, 0.14, 1)
+tactic = &"heavy"
+preferred_range_min = 180.0
+preferred_range_max = 480.0
+can_flank = false
+strafe_ratio = 0.25
+attack_pattern = &"fan"
+burst_count = 3
+burst_interval = 0.12
+boss = true
+boss_title = "IA de défense de la station"
+phases = [{"from": 1.0, "name": "Phase 1 — Apparition", "skills": [{"id": &"ss_orbital_laser", "cooldown": 6.0, "initial_cooldown": 2.0, "windup": 1.1, "max_range": 1100.0, "length": 1100.0, "width": 46.0, "beam_time": 0.9, "tick": 0.15, "damage": 9.0, "lock_ratio": 0.3, "priority": 1.5}, {"id": &"shockwave", "cooldown": 9.0, "windup": 0.9, "max_range": 190.0, "radius": 260.0, "damage": 16.0, "priority": 2.5}], "invuln": 1.5}, {"from": 0.7, "name": "Phase 2 — Drones et bouclier", "skills": [{"id": &"ss_orbital_laser", "cooldown": 7.0, "initial_cooldown": 2.0, "windup": 1.1, "max_range": 1100.0, "length": 1100.0, "width": 46.0, "beam_time": 0.9, "tick": 0.15, "damage": 9.0, "lock_ratio": 0.3, "priority": 1.5}, {"id": &"shockwave", "cooldown": 9.0, "windup": 0.9, "max_range": 190.0, "radius": 260.0, "damage": 16.0, "priority": 2.5}, {"id": &"ss_drone_launch", "cooldown": 14.0, "initial_cooldown": 1.0, "windup": 0.9, "count": 3, "max_total": 4, "kinds": ["ss_spectre", "ss_spectre", "ss_security_droid"], "dist": 110.0, "priority": 2.0}, {"id": &"energy_shield", "style": 1.0, "front_dot": -1.01, "duration": 5.0, "block": 0.75, "cooldown": 14.0, "windup": 0.4, "max_range": 9999.0, "need_los": false, "priority": 1.8}, {"id": &"ss_zone_barrage", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 1.0, "min_range": 100.0, "max_range": 760.0, "count": 5, "spread": 150.0, "radius": 85.0, "damage": 15.0, "interval": 0.14, "priority": 1.4}], "speed_mult": 1.1, "cooldown_mult": 0.85, "on_enter": ["ss_drone_launch", "energy_shield"], "invuln": 1.5}, {"from": 0.3, "name": "Phase 3 — Overload", "skills": [{"id": &"ss_overload", "cooldown": 14.0, "initial_cooldown": 8.0, "windup": 1.8, "radius": 240.0, "damage": 40.0, "wave_radius": 460.0, "wave_damage": 14.0, "wave_duration": 0.7, "knock_time": 0.8, "priority": 3.0}, {"id": &"ss_orbital_laser", "cooldown": 5.0, "initial_cooldown": 2.0, "windup": 1.1, "max_range": 1100.0, "length": 1100.0, "width": 46.0, "beam_time": 1.3, "tick": 0.15, "damage": 10.0, "lock_ratio": 0.3, "priority": 1.5, "sweep_deg": 70.0}, {"id": &"ss_zone_barrage", "cooldown": 6.0, "initial_cooldown": 3.0, "windup": 1.0, "min_range": 100.0, "max_range": 760.0, "count": 6, "spread": 150.0, "radius": 85.0, "damage": 17.0, "interval": 0.14, "priority": 1.4}, {"id": &"ss_drone_launch", "cooldown": 18.0, "initial_cooldown": 4.0, "windup": 0.9, "count": 2, "max_total": 3, "kinds": ["ss_spectre", "ss_drone_tieur"], "dist": 110.0, "priority": 2.0}, {"id": &"energy_shield", "style": 1.0, "front_dot": -1.01, "duration": 4.0, "block": 0.75, "cooldown": 16.0, "windup": 0.4, "max_range": 9999.0, "need_los": false, "priority": 1.8}, {"id": &"shockwave", "cooldown": 9.0, "windup": 0.9, "max_range": 190.0, "radius": 260.0, "damage": 16.0, "priority": 2.5}], "speed_mult": 1.25, "cooldown_mult": 0.7, "damage_mult": 1.3, "attack_pattern": &"burst", "on_enter": ["ss_overload"], "invuln": 1.5}]
+stagger_ratio = 0.0
+knockback = 0.0
+skills = [{"id": &"ss_orbital_laser", "cooldown": 6.0, "initial_cooldown": 2.0, "windup": 1.1, "max_range": 1100.0, "length": 1100.0, "width": 46.0, "beam_time": 0.9, "tick": 0.15, "damage": 9.0, "lock_ratio": 0.3, "priority": 1.5}, {"id": &"shockwave", "cooldown": 9.0, "windup": 0.9, "max_range": 190.0, "radius": 260.0, "damage": 16.0, "priority": 2.5}]
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"metal_impact"
+sfx_death = &"golem_crumble"
+corpse_name = "Carcasse de L'Architecte"

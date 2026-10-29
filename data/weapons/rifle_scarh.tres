@@ -46,6 +46,6 @@ eject_shells = true
 sprite_id = &"rifle_scarh"
 value = 880
 unlock_mode = &"kill"
-unlock_enemy_kind = &"shotgun_brute"
+unlock_enemy_kind = &"fw_bruiser"
 unlock_kills = 3
 price_gold = 2000

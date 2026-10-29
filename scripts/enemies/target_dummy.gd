@@ -20,14 +20,14 @@ const HP_BAR_SIZE := Vector2(64.0, 9.0)
 ## Marge entre le haut de la tête (EnemyVisual.get_head_offset) et la barre de vie.
 const HP_BAR_GAP := 6.0
 ## Kind d'EnemyVisual utilisé par chaque apparence.
-const LOOK_KINDS: Dictionary = {Look.MANNEQUIN: &"masked_grunt", Look.GOLEM: &"golem"}
+const LOOK_KINDS: Dictionary = {Look.MANNEQUIN: &"fw_bandit", Look.GOLEM: &"fw_bruiser"}
 
-## Apparence : soldat masqué (MANNEQUIN) ou golem de pierre (GOLEM).
+## Apparence : bandit (MANNEQUIN) ou robuste (GOLEM, cible massive) du Far West.
 @export var variant: Look = Look.MANNEQUIN:
 	set(value):
 		variant = value
 		if _visual != null:
-			_visual.setup(LOOK_KINDS.get(variant, &"masked_grunt"))
+			_visual.setup(LOOK_KINDS.get(variant, &"fw_bandit"))
 			_overlay.queue_redraw()
 
 var max_hp: float = 60.0
@@ -50,7 +50,7 @@ func _ready() -> void:
 	_visual = EnemyVisual.new()
 	_visual.name = "Visual"
 	add_child(_visual)
-	_visual.setup(LOOK_KINDS.get(variant, &"masked_grunt"))
+	_visual.setup(LOOK_KINDS.get(variant, &"fw_bandit"))
 	# Barre de vie et jauge de réapparition, au-dessus du sprite.
 	_overlay = Node2D.new()
 	_overlay.name = "Overlay"
@@ -101,7 +101,7 @@ func _spawn() -> void:
 	add_to_group(GROUP_DAMAGEABLE)
 	_set_collision_enabled(true)
 	if _respawn_was_dead:
-		_visual.setup(LOOK_KINDS.get(variant, &"masked_grunt"))
+		_visual.setup(LOOK_KINDS.get(variant, &"fw_bandit"))
 	_respawn_was_dead = false
 	_overlay.queue_redraw()
 	EventBus.enemy_spawned.emit(self)

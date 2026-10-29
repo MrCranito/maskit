@@ -18,7 +18,7 @@ const KIND_LASER := &"laser"
 @export var id: StringName = &""
 @export var display_name: String = ""
 @export var kind: StringName = KIND_BURST
-## Biomes où la tourelle peut apparaître (WorldData.biome : far_west, space_station, mall, underwater).
+## Biomes où la tourelle peut apparaître (WorldData.biome : far_west, space_station, mall).
 @export var biomes: Array[StringName] = []
 ## Préfixe des sprites dans assets/sprites/turrets/ (ex. far_west_burst).
 @export var sprite_id: String = ""

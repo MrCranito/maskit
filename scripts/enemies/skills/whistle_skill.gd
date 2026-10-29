@@ -3,6 +3,10 @@ extends EnemySkill
 ## renforts. Ils arrivent par la porte la plus proche (groupe « doors », pas trop près du
 ## joueur) ou, à défaut, de derrière le chef ; ils connaissent la position du joueur.
 ## Au plus max_total renforts vivants par chef.
+## `kinds` vide (défaut) : roster « combat » du monde courant (GameState.world_path), sans élites
+## ni boss ; à défaut, FALLBACK_KINDS.
+
+const FALLBACK_KINDS: Array = ["fw_bandit", "fw_raider"]
 
 var _spawned: Array[Enemy] = []
 var _done: bool = false
@@ -10,7 +14,7 @@ var _done: bool = false
 
 func defaults() -> Dictionary:
 	return {"cooldown": 28.0, "initial_cooldown": 4.0, "windup": 0.9, "need_los": false, "hp_below": 0.92,
-		"count": 2, "max_total": 4, "kinds": ["outlaw_knife", "gunslinger"], "door_radius": 900.0,
+		"count": 2, "max_total": 4, "kinds": [], "door_radius": 900.0,
 		"min_player_dist": 260.0}
 
 
@@ -42,13 +46,45 @@ func step(_dt: float) -> bool:
 		return false
 	if not _done:
 		_done = true
-		var kinds: Array = p.get("kinds", ["outlaw_knife"])
+		var kinds: Array = reinforcement_kinds()
 		for i: int in int(f("count")):
 			var pos := _spawn_point(i)
 			var r := e.spawn_reinforcement(StringName(str(kinds[i % kinds.size()])), pos)
 			if r != null:
 				_spawned.append(r)
 	return t >= windup() + 0.2
+
+
+## Kinds des renforts : paramètre `kinds`, sinon le roster « combat » du monde courant.
+func reinforcement_kinds() -> Array:
+	var ks: Variant = p.get("kinds", [])
+	if ks is Array and not (ks as Array).is_empty():
+		return ks
+	var roster := world_combat_kinds()
+	return roster if not roster.is_empty() else FALLBACK_KINDS
+
+
+## Kinds classiques (ni élite ni boss) du roster « combat » du monde courant ([] si inconnu).
+static func world_combat_kinds() -> Array:
+	var path := String(GameState.get("world_path")) if GameState != null else ""
+	if path == "" or not ResourceLoader.exists(path):
+		return []
+	var w := load(path) as WorldData
+	if w == null:
+		return []
+	var out: Array = []
+	for k: Variant in w.get_roster(&"combat"):
+		var kind := StringName(str(k))
+		if kind in w.elite_kinds or kind == w.boss_kind:
+			continue
+		var dp := "res://data/enemies/%s.tres" % kind
+		if not ResourceLoader.exists(dp):
+			continue
+		var d := load(dp) as EnemyData
+		if d != null and not d.elite and not d.boss:
+			out.append(String(kind))
+	out.sort()
+	return out
 
 
 func _spawn_point(i: int) -> Vector2:

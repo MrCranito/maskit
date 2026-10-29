@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"fw_guard_dog"
+display_name = "Chien de garde"
+max_hp = 30.0
+move_speed = 240.0
+body_radius = 19.0
+detection_radius = 520.0
+detection_angle_deg = 300.0
+lose_sight_time = 4.0
+alert_duration = 0.12
+alert_neighbors_radius = 600.0
+patrol_radius = 180.0
+sight_gain = 2.8
+hearing_radius = 620.0
+hearing_gain = 3.2
+awareness_decay = 0.08
+awareness_alert_threshold = 0.85
+attack_type = 0
+attack_range = 44.0
+attack_damage = 6.0
+attack_cooldown = 0.9
+attack_windup = 0.3
+projectile_speed = 0.0
+tactic = &"rusher"
+can_flank = true
+zigzag_amplitude = 20.0
+zigzag_period = 0.5
+attack_pattern = &"lunge"
+lunge_distance = 100.0
+lunge_speed = 600.0
+combo_hits = 1
+stagger_ratio = 0.35
+stagger_time = 0.35
+knockback = 80.0
+ground_drop_chance = 0.1
+sfx_attack = &"golem_growl"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"enemy_death_generic"
+corpse_name = "Chien de garde abattu"
+skills = [{"id": &"fw_alarm_bark", "cooldown": 9.0, "initial_cooldown": 0.2, "windup": 0.35, "radius": 760.0, "reveal_radius": 140.0, "priority": 3.0}]

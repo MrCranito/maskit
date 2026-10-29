@@ -46,6 +46,6 @@ eject_shells = false
 sprite_id = &"rocket_rpg7"
 value = 600
 unlock_mode = &"kill"
-unlock_enemy_kind = &"dynamiter"
+unlock_enemy_kind = &"fw_raider"
 unlock_kills = 3
 price_gold = 1200

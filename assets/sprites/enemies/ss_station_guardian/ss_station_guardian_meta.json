@@ -1,0 +1,135 @@
+{
+  "kind": "ss_station_guardian",
+  "name": "Gardien de station",
+  "frame_size": [
+    256,
+    256
+  ],
+  "feet_offset": [
+    128,
+    189
+  ],
+  "display_height": 147.7,
+  "world_per_px": 0.576875,
+  "height_px": 148,
+  "head_px": 65,
+  "fps": {
+    "idle": 7,
+    "run": 14,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      181.4,
+      125.6
+    ],
+    "se": [
+      147.9,
+      148.2
+    ],
+    "s": [
+      102.8,
+      146.6
+    ],
+    "sw": [
+      72.4,
+      121.7
+    ],
+    "w": [
+      74.6,
+      88.2
+    ],
+    "nw": [
+      108.1,
+      65.6
+    ],
+    "n": [
+      153.2,
+      67.2
+    ],
+    "ne": [
+      183.6,
+      92.1
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      23,
+      99,
+      203,
+      230
+    ],
+    "se": [
+      23,
+      99,
+      203,
+      230
+    ],
+    "s": [
+      52,
+      96,
+      234,
+      219
+    ],
+    "sw": [
+      52,
+      96,
+      234,
+      219
+    ],
+    "w": [
+      52,
+      96,
+      234,
+      219
+    ],
+    "nw": [
+      53,
+      123,
+      233,
+      253
+    ],
+    "n": [
+      53,
+      123,
+      233,
+      253
+    ],
+    "ne": [
+      22,
+      103,
+      204,
+      253
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ss_station_guardian/ss_station_guardian_atlas.png",
+  "notes": "Bestiaire Station spatiale (art/blender/bestiary/space_station/build_ss_enemies.py). display_height = hauteur du cadre en unités monde ; feet_offset = pieds (px). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : dernière image = carcasse."
+}

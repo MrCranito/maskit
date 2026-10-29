@@ -1,0 +1,135 @@
+{
+  "kind": "mall_omnistore",
+  "name": "L'Omnistore",
+  "frame_size": [
+    276,
+    276
+  ],
+  "feet_offset": [
+    138,
+    204
+  ],
+  "display_height": 221.5,
+  "world_per_px": 0.802609,
+  "height_px": 178,
+  "head_px": 66,
+  "fps": {
+    "idle": 6,
+    "run": 10,
+    "attack": 12,
+    "hit": 14,
+    "death": 9
+  },
+  "frames": {
+    "idle": 4,
+    "run": 6,
+    "attack": 6,
+    "hit": 3,
+    "death": 6
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      224.2,
+      157.7
+    ],
+    "se": [
+      199.0,
+      203.0
+    ],
+    "s": [
+      138.0,
+      221.7
+    ],
+    "sw": [
+      77.0,
+      203.0
+    ],
+    "w": [
+      51.8,
+      157.7
+    ],
+    "nw": [
+      77.0,
+      112.4
+    ],
+    "n": [
+      138.0,
+      93.6
+    ],
+    "ne": [
+      199.0,
+      112.4
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      53,
+      85,
+      224,
+      276
+    ],
+    "se": [
+      7,
+      90,
+      251,
+      276
+    ],
+    "s": [
+      7,
+      107,
+      269,
+      269
+    ],
+    "sw": [
+      24,
+      72,
+      269,
+      276
+    ],
+    "w": [
+      52,
+      75,
+      223,
+      276
+    ],
+    "nw": [
+      24,
+      75,
+      269,
+      276
+    ],
+    "n": [
+      7,
+      100,
+      269,
+      268
+    ],
+    "ne": [
+      7,
+      98,
+      252,
+      276
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/mall_omnistore/mall_omnistore_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

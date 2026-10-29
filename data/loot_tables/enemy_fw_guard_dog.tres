@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_fw_guard_dog"
+display_name = "Chien de garde abattu"
+rolls_min = 1
+rolls_max = 1
+empty_chance = 0.5
+search_time = 0.7
+entries = {
+&"mat_cloth": 3.0,
+&"mat_scrap": 2.0,
+&"silver_dollars": 1.0,
+&"lockpicks": 0.4
+}
