@@ -19,7 +19,7 @@ on:
 
 env:
   GODOT_VERSION: "4.7.2"
-  EXPORT_NAME: royaumes-des-masques
+  EXPORT_NAME: raidersgo
 
 permissions:
   contents: read
@@ -37,10 +37,10 @@ jobs:
         include:
           - preset: "Windows Desktop"
             slug: windows
-            file: royaumes-des-masques.exe
+            file: raidersgo.exe
           - preset: "Linux"
             slug: linux
-            file: royaumes-des-masques.x86_64
+            file: raidersgo.x86_64
           - preset: "Web"
             slug: web
             file: index.html
