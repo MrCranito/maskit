@@ -11,6 +11,12 @@ extends Area2D
 ##            ou en fin de portée ;
 ##   grenade : arc simulé (hauteur z, gravité, ombre au sol, rebonds sol/murs), explose
 ##            après la mèche (projectile_lifetime) ou au contact d'un ennemi.
+## Collision balayée (styles autres que grenade) : à chaque pas physique, la forme de la balle est
+## lancée (cast_motion) sur tout le segment parcouru ; le premier contact (mur ou ennemi) est traité
+## à sa position exacte. Aucune traversée à haute vitesse ni à faible cadence physique, et la balle
+## s'arrête au contact au lieu d'un pas plus loin (signal d'Area2D en retard d'une frame).
+## La perforation (WeaponData.pierce) laisse continuer la balle à travers N ennemis, jamais à travers
+## un mur. La grenade (arc, rebonds, hauteur) garde la détection d'Area2D.
 ## Performance : un seul redessin par tir (le corps de la roquette/grenade est un enfant
 ## dessiné une fois et seulement déplacé) ; fumée émise à intervalle fixe dans CombatFx.
 
@@ -44,6 +50,8 @@ var visual_height: float = 0.0
 var z: float = 0.0
 var vz: float = 0.0
 var origin: Vector2 = Vector2.ZERO
+## Recul de l'arme (WeaponData.recoil_px) : base du léger à-coup visuel de l'ennemi touché.
+var kick_px: float = 0.0
 ## Cibles déjà touchées pendant ce vol (évite les doubles touches).
 var _hit_ids: Dictionary = {}
 var _max_speed: float = 0.0
@@ -62,6 +70,11 @@ var _bounce_range: float = 0.0
 var _bounce_mult: float = 1.0
 ## Ricochets effectués pendant ce vol (tests, debug).
 var ricochets: int = 0
+## Ennemis déjà traversés pendant ce vol (exclus du balayage : perforation, cadavres).
+var _sweep_exclude: Array[RID] = []
+var _query: PhysicsShapeQueryParameters2D = null
+## Point de contact exact du dernier impact balayé (INF : détection par Area2D, sans point).
+var _contact: Vector2 = Vector2.INF
 
 # Réglages ([projectile_fx]) partagés par toutes les instances (lus une fois).
 static var _cfg_loaded: bool = false
@@ -73,6 +86,8 @@ static var _grenade_gravity: float = 1100.0
 static var _grenade_bounce: float = 0.45
 static var _grenade_friction: float = 0.55
 static var _grenade_contact_z: float = 64.0
+static var _sweep_enabled: bool = true
+static var _sweep_max_contacts: int = 6
 
 
 func _ready() -> void:
@@ -91,6 +106,12 @@ func _ready() -> void:
 	_body.visible = false
 	add_child(_body)
 	_load_cfg()
+	_query = PhysicsShapeQueryParameters2D.new()
+	_query.collide_with_bodies = true
+	_query.collide_with_areas = false
+	_query.collision_mask = MASK_WORLD_AND_ENEMIES
+	if _shape != null:
+		_query.shape = _shape.shape
 	_set_active(false)
 
 
@@ -106,6 +127,8 @@ static func _load_cfg() -> void:
 	_grenade_bounce = Balance.get_float("projectile_fx", "grenade_bounce", 0.45)
 	_grenade_friction = Balance.get_float("projectile_fx", "grenade_bounce_friction", 0.55)
 	_grenade_contact_z = Balance.get_float("projectile_fx", "grenade_contact_height", 64.0)
+	_sweep_enabled = bool(Balance.get_value("projectile_hit", "swept_collision", true))
+	_sweep_max_contacts = maxi(int(Balance.get_value("projectile_hit", "max_contacts_per_step", 6)), 1)
 
 
 ## Lance le projectile depuis `pos` dans la direction `dir`.
@@ -131,6 +154,8 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node, height: 
 	_homing_target = null
 	_homing_rate = 0.0
 	_hit_ids.clear()
+	_sweep_exclude.clear()
+	kick_px = weapon.recoil_px
 	affixes = weapon.get_affix_list()
 	_bounces_left = 0
 	_bounce_range = 0.0
@@ -189,7 +214,8 @@ func _set_active(value: bool) -> void:
 	active = value
 	visible = value
 	# Appelé potentiellement pendant un callback physique : différé obligatoire.
-	set_deferred("monitoring", value)
+	# Balayage actif : l'Area2D ne sert plus qu'à la grenade (évite les doubles impacts).
+	set_deferred("monitoring", value and not uses_sweep())
 	set_physics_process(value)
 
 
@@ -219,7 +245,55 @@ func _physics_process(delta: float) -> void:
 				fx.rocket_trail(global_position + Vector2(0.0, -visual_height) - direction * 14.0, direction)
 	elif style == STYLE_GRENADE:
 		_step_grenade(delta)
-	global_position += direction * speed * delta
+	_advance(direction * speed * delta)
+
+
+## Collision balayée pour ce projectile (tous les styles sauf la grenade).
+func uses_sweep() -> bool:
+	return _sweep_enabled and style != STYLE_GRENADE and _query != null and _query.shape != null
+
+
+## Avance de `motion` en traitant chaque contact rencontré sur le segment, dans l'ordre.
+## Un cast_motion par pas tant que rien n'est touché ; quelques requêtes de plus seulement
+## au contact (perforation, cadavre traversé).
+func _advance(motion: Vector2) -> void:
+	if not uses_sweep() or not is_inside_tree():
+		global_position += motion
+		return
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	var remaining: Vector2 = motion
+	for _i: int in _sweep_max_contacts:
+		var off: Vector2 = _shape.position.rotated(rotation)
+		_query.exclude = _sweep_exclude
+		_query.transform = Transform2D(rotation, global_position + off)
+		_query.motion = remaining
+		var frac: PackedFloat32Array = space.cast_motion(_query)
+		if frac.size() < 2 or frac[1] >= 1.0:
+			global_position += remaining
+			return
+		# Au contact : la forme chevauche juste l'obstacle.
+		global_position += remaining * frac[1]
+		remaining *= 1.0 - frac[1]
+		_query.transform = Transform2D(rotation, global_position + off)
+		_query.motion = Vector2.ZERO
+		var info: Dictionary = space.get_rest_info(_query)
+		if info.is_empty():
+			global_position += remaining
+			return
+		var other: Object = instance_from_id(int(info["collider_id"]))
+		var bounced: int = ricochets
+		if other is Node:
+			_contact = info["point"]
+			_on_hit(other as Node)
+			_contact = Vector2.INF
+		if not active or ricochets != bounced:
+			return  # Arrêtée (impact) ou redirigée (ricochet) : fin du pas.
+		# Traversée (perforation, ennemi mort ou déjà touché) : on l'exclut et on continue.
+		var rid: RID = info["rid"]
+		if not (other is Node and (other as Node).is_in_group(&"enemies")):
+			return  # Sécurité : jamais de boucle sur un mur.
+		_sweep_exclude.append(rid)
+	global_position += remaining
 
 
 func _step_grenade(delta: float) -> void:
@@ -298,6 +372,8 @@ func _on_hit(other: Node) -> void:
 		_bounce_off_wall()
 		return
 	var hit_pos: Vector2 = global_position - direction * 6.0
+	if _contact != Vector2.INF:
+		hit_pos = _contact - direction * 2.0
 	if style == STYLE_ROCKET or explosion_radius > 0.0:
 		_explode(global_position - direction * 12.0)
 	else:
@@ -453,11 +529,19 @@ func _fx_enemy_hit(other: Node) -> void:
 	if fx == null:
 		return
 	var p: Vector2 = global_position
-	if other is Node2D:
+	if _contact != Vector2.INF:
+		p = _contact
+	elif other is Node2D:
 		p = (other as Node2D).global_position
 	var show_number: bool = not other.has_method("_spawn_damage_number")
+	var killed: bool = other.has_method("is_alive") and not bool(other.call("is_alive"))
 	fx.impact_enemy(p + Vector2(0.0, -maxf(visual_height, 24.0)), direction, damage, show_number,
-		other.get_instance_id())
+		other.get_instance_id(), CombatFx.material_of(other), killed)
+	# Léger à-coup visuel de l'ennemi dans le sens du tir (aucun déplacement réel : le recul
+	# physique reste réglé par [enemy_tactics] hit_knockback_mult).
+	var vis: Variant = other.get("visual")
+	if vis is Node and is_instance_valid(vis) and (vis as Node).has_method("hit_kick"):
+		(vis as Node).call("hit_kick", direction, fx.hit_kick_px(kick_px))
 
 
 func _draw() -> void:
