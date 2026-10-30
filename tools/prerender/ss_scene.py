@@ -222,7 +222,9 @@ class NT:
             self.l(rough_sock, self.b.inputs["Roughness"])
         else:
             self.b.inputs["Roughness"].default_value = rough
-        self.b.inputs["Metallic"].default_value = metal
+        # dans le vide (environnement noir), un métal pur reste noir : on borne le métallique pour
+        # que coques et murs gardent leur teinte peinte (lecture de la planche)
+        self.b.inputs["Metallic"].default_value = metal * METAL_K
         if normal is not None:
             self.l(normal, self.b.inputs["Normal"])
         return self.m
@@ -246,6 +248,24 @@ class NT:
 
 
 # ======================================================================= matériaux de la station
+METAL_K = float(os.environ.get("SS_METAL_K", "0.4"))
+AO_K = float(os.environ.get("SS_AO", "0.6"))      # occlusion ambiante (pied des murs, autour des objets)
+AO_D = float(os.environ.get("SS_AO_D", "0.7"))
+
+
+def ao_mix(s, col):
+    """Assombrit la couleur de base selon l'occlusion ambiante (contacts, coins) : profondeur."""
+    if AO_K <= 0:
+        return col
+    a = s.ao(AO_D)
+    return s.mix(s.add(1.0 - AO_K, s.mul(a, AO_K)), (0.0, 0.0, 0.0), col)
+
+
+REACTOR_H = float(os.environ.get("SS_REACTOR_H", "4.2"))   # hauteur des cylindres-réacteurs
+PLATE_VAR = float(os.environ.get("SS_PLATE_VAR", "0.5"))   # teinte par grande plaque de sol
+FLOOR_BUMP = float(os.environ.get("SS_FLOOR_BUMP", "0.7"))
+
+
 def mat_simple(name, c, rough=0.6, metal=0.0, var=0.25, scale=4.0, c2=None, bump=0.15, emit=None):
     s = NT(name)
     n = s.noise(s.obj(), scale, 5, 0.6)
@@ -302,6 +322,7 @@ def mat_panels(name, base, dark, pw=1.0, ph=0.5, seam=0.025, var=0.12, rough=0.4
         rv = s.voronoi(s.comb(s.mul(u, 1.0 / pw * 6.0), s.mul(v, 1.0 / ph * 3.0), 0.0), 1.0)
         h = s.add(h, s.mul(s.smooth(rv, 0.12, 0.05), 0.4))
     rgh = s.add(rough, s.mul(s.sub(r, 0.5), 0.2))
+    col = ao_mix(s, col)
     s.done(col, normal=s.bump(h, 0.35, 0.02), metal=metal, rough_sock=rgh)
     return s.m
 
@@ -364,7 +385,11 @@ def mat_floor(name, base, dark, cell=1.0, sub=2, var=0.10, rough=0.5, metal=0.35
         col = s.mix(lu, col, lc)
     sc_ = s.noise(s.comb(s.mul(u, 60.0), s.mul(v, 3.0), 0.0), 6.0, 3, 0.5)
     h = s.add(h, s.mul(sc_, 0.04))
-    s.done(col, normal=s.bump(h, 0.3, 0.02), metal=metal, rough_sock=s.add(rough, s.mul(n, 0.2)))
+    # grandes variations de teinte (usure, traces de passage) : casse l'uniformité des places
+    r3 = s.white(s.comb(s.m_("FLOOR", s.m_("DIVIDE", u, cell)), s.m_("FLOOR", s.m_("DIVIDE", v, cell)), 5.1))
+    col = s.mix(s.mul(r3, PLATE_VAR), col, s.vmul(col, 0.6))
+    col = ao_mix(s, col)
+    s.done(col, normal=s.bump(h, FLOOR_BUMP, 0.02), metal=metal, rough_sock=s.add(rough, s.mul(n, 0.2)))
     return s.m
 
 
@@ -522,7 +547,7 @@ def mat_planet(name, R):
     nz = mth("SQRT", mth("MAXIMUM", mth("SUBTRACT", 1.0, r2), 0.0))
     n3 = vec(x, y, nz)
     # Lumière : soleil au nord-est, un peu vers la caméra (croissant éclairé en haut à droite)
-    L = Vector([float(v) for v in os.environ.get("SS_EARTH_L", "1.0,0.12,0.02").split(",")]).normalized()
+    L = Vector([float(v) for v in os.environ.get("SS_EARTH_L", "0.55,0.75,0.3").split(",")]).normalized()
     dp = N("ShaderNodeVectorMath")
     dp.operation = "DOT_PRODUCT"
     nt.links.new(n3, dp.inputs[0])
@@ -533,14 +558,15 @@ def mat_planet(name, R):
     vs.operation = "SCALE"
     nt.links.new(n3, vs.inputs[0])
     vs.inputs["Scale"].default_value = 1.0
-    land = sstep(noise(vs.outputs[0], 1.6, 8.0, 0.62), 0.52, 0.56)
+    land = sstep(noise(vs.outputs[0], 2.4, 8.0, 0.62), 0.6, 0.63)
     det = noise(vs.outputs[0], 7.0, 6.0, 0.6)
     ocean = mixc(det, (0.012, 0.05, 0.2), (0.02, 0.1, 0.3))
-    terr = mixc(det, (0.1, 0.16, 0.1), (0.3, 0.3, 0.24))
+    terr = mixc(det, (0.12, 0.13, 0.1), (0.3, 0.26, 0.2))
     surf = mixc(land, ocean, terr)
-    cl1 = noise(vs.outputs[0], 3.2, 10.0, 0.66)
-    clouds = sstep(cl1, 0.5, 0.66)
-    surf = mixc(mth("MULTIPLY", clouds, 0.9), surf, (0.85, 0.88, 0.92))
+    cl1 = noise(vs.outputs[0], 6.0, 12.0, 0.7)
+    clouds = sstep(cl1, 0.52, 0.7)
+    surf = mixc(mth("MULTIPLY", clouds, 0.75), surf, (0.7, 0.76, 0.84))
+    surf = mixc(mth("SUBTRACT", 1.0, mth("ADD", mth("MULTIPLY", nz, 0.6), 0.4)), surf, (0.0, 0.0, 0.0))
     night = mixc(mth("MULTIPLY", det, 0.6), (0.004, 0.008, 0.022), (0.01, 0.02, 0.05))
     day = mixc(lit, night, surf)
     # Liseré d'atmosphère (bord du disque côté éclairé) + halo extérieur
@@ -636,38 +662,40 @@ def mat_stars(name):
 
 
 # Couleurs de néons
-NEON = {"white": (0.85, 0.93, 1.0), "cyan": (0.25, 0.85, 1.0), "red": (1.0, 0.12, 0.08),
+NEON = {"white": (0.85, 0.93, 1.0), "cyan": (0.25, 0.85, 1.0), "red": (1.0, 0.12, 0.08), "magenta": (1.0, 0.2, 0.75),
         "orange": (1.0, 0.5, 0.12), "green": (0.3, 1.0, 0.5), "blue": (0.3, 0.5, 1.0)}
 
 
 def build_materials():
-    mat_panels("wall_in", (0.44, 0.48, 0.55), (0.12, 0.14, 0.17), pw=1.0, ph=0.42, metal=0.3, rough=0.42,
+    mat_panels("wall_in", (0.34, 0.37, 0.43), (0.1, 0.11, 0.14), pw=1.0, ph=0.42, metal=0.3, rough=0.42,
                stripe=((0.2, 0.23, 0.28), 0.0, 0.1))
-    mat_panels("wall_top", (0.6, 0.63, 0.68), (0.22, 0.24, 0.27), pw=1.0, ph=1.0, metal=0.3, rough=0.45, var=0.05)
+    mat_panels("wall_top", (0.24, 0.26, 0.31), (0.08, 0.09, 0.11), pw=0.5, ph=1.0, metal=0.35, rough=0.45, var=0.1, rivets=True)
+    mat_panels("ring_top", (0.52, 0.55, 0.6), (0.16, 0.17, 0.2), pw=0.6, ph=1.0, metal=0.4, rough=0.4, var=0.08, rivets=True)
     mat_panels("hull_out", (0.22, 0.26, 0.33), (0.06, 0.07, 0.1), pw=0.8, ph=0.36, metal=0.5, rough=0.4, rivets=True,
                stripe=((0.11, 0.13, 0.17), 0.0, 0.18))
     mat_panels("hull_dark", (0.14, 0.16, 0.2), (0.04, 0.045, 0.06), pw=0.6, ph=0.6, metal=0.6, rough=0.45)
-    mat_panels("roof_plate", (0.3, 0.33, 0.39), (0.09, 0.1, 0.12), pw=1.2, ph=0.9, metal=0.45, rough=0.38, rivets=True, var=0.18)
-    mat_panels("roof_dark", (0.15, 0.17, 0.21), (0.05, 0.06, 0.07), pw=0.6, ph=0.6, metal=0.5, rough=0.4)
-    mat_panels("radiator", (0.62, 0.64, 0.66), (0.2, 0.2, 0.22), pw=0.12, ph=4.0, metal=0.7, rough=0.3, var=0.04)
-    mat_panels("reactor_shell", (0.32, 0.35, 0.41), (0.09, 0.1, 0.13), pw=0.9, ph=0.5, metal=0.6, rough=0.36, rivets=True)
-    mat_floor("floor_corr", (0.32, 0.32, 0.33), (0.08, 0.08, 0.085), cell=2.0, sub=2, var=0.35, rough=0.45, wear=0.5)
+    mat_panels("roof_plate", (0.19, 0.22, 0.29), (0.05, 0.06, 0.09), pw=1.2, ph=0.9, metal=0.45, rough=0.38, rivets=True, var=0.18)
+    mat_panels("roof_dark", (0.11, 0.13, 0.18), (0.04, 0.045, 0.06), pw=0.6, ph=0.6, metal=0.5, rough=0.4)
+    mat_panels("radiator", (0.36, 0.38, 0.42), (0.1, 0.11, 0.13), pw=0.12, ph=4.0, metal=0.7, rough=0.3, var=0.04)
+    mat_panels("reactor_shell", (0.44, 0.47, 0.53), (0.11, 0.12, 0.15), pw=0.9, ph=0.5, metal=0.6, rough=0.36, rivets=True)
+    mat_floor("floor_corr", (0.32, 0.32, 0.33), (0.08, 0.08, 0.085), cell=2.0, sub=1, var=0.35, rough=0.45, wear=0.8)
     mat_floor("floor_deck", (0.25, 0.26, 0.28), (0.06, 0.065, 0.07), cell=2.0, sub=2, var=0.35, rough=0.5)
-    mat_floor("floor_lab", (0.38, 0.41, 0.44), (0.13, 0.14, 0.16), cell=1.0, sub=2, var=0.2, rough=0.3, metal=0.1, wear=0.25)
+    mat_floor("floor_lab", (0.38, 0.41, 0.44), (0.13, 0.14, 0.16), cell=2.0, sub=2, var=0.2, rough=0.3, metal=0.1, wear=0.25)
     mat_floor("floor_ind", (0.3, 0.32, 0.35), (0.09, 0.1, 0.11), cell=1.0, sub=1, rough=0.55, grate=True, wear=0.5)
     mat_floor("floor_hangar", (0.26, 0.28, 0.31), (0.08, 0.08, 0.1), cell=2.0, sub=4, rough=0.5, wear=0.55)
-    mat_floor("floor_cc", (0.22, 0.25, 0.31), (0.07, 0.08, 0.11), cell=1.0, sub=2, rough=0.35, metal=0.5)
-    mat_floor("floor_quarters", (0.26, 0.26, 0.29), (0.07, 0.07, 0.08), cell=1.0, sub=2, var=0.3, rough=0.55, metal=0.2)
-    mat_floor("floor_dmg", (0.33, 0.34, 0.36), (0.07, 0.07, 0.08), cell=1.0, sub=2, rough=0.6, wear=0.9)
+    mat_floor("floor_cc", (0.22, 0.25, 0.31), (0.07, 0.08, 0.11), cell=2.0, sub=2, rough=0.35, metal=0.5)
+    mat_floor("floor_quarters", (0.26, 0.26, 0.29), (0.07, 0.07, 0.08), cell=2.0, sub=2, var=0.3, rough=0.55, metal=0.2)
+    mat_floor("floor_dmg", (0.33, 0.34, 0.36), (0.07, 0.07, 0.08), cell=2.0, sub=2, rough=0.6, wear=0.9)
     mat_hazard("hazard")
     mat_simple("metal", (0.55, 0.58, 0.62), 0.35, 0.8, 0.15)
     mat_simple("metal_dark", (0.13, 0.14, 0.17), 0.45, 0.7, 0.2)
     mat_simple("metal_mid", (0.32, 0.34, 0.39), 0.4, 0.7, 0.2)
     mat_simple("rubber", (0.04, 0.04, 0.05), 0.8, 0.0, 0.1)
     mat_simple("white_panel", (0.78, 0.8, 0.82), 0.35, 0.2, 0.08)
-    mat_simple("crate_orange", (0.78, 0.36, 0.08), 0.6, 0.1, 0.25)
+    mat_simple("crate_orange", (0.85, 0.34, 0.05), 0.6, 0.1, 0.25)
     mat_simple("crate_yellow", (0.8, 0.6, 0.12), 0.6, 0.1, 0.25)
     mat_simple("crate_grey", (0.42, 0.45, 0.48), 0.6, 0.3, 0.2)
+    mat_simple("crate_tan", (0.62, 0.42, 0.2), 0.6, 0.1, 0.25)
     mat_simple("crate_teal", (0.14, 0.34, 0.38), 0.6, 0.2, 0.2)
     mat_simple("mattress", (0.16, 0.22, 0.34), 0.9, 0.0, 0.15)
     mat_simple("sheet", (0.82, 0.84, 0.86), 0.9, 0.0, 0.08)
@@ -682,7 +710,7 @@ def build_materials():
     mat_decal("oil", (0.04, 0.035, 0.03), 0.6)
     mat_simple("fluid", (0.05, 0.4, 0.2), 0.1, emit=((0.15, 1.0, 0.45), 2.5))
     mat_simple("core", (0.2, 0.5, 1.0), 0.1, emit=((0.35, 0.75, 1.0), 9.0))
-    mat_glass("glass")
+    mat_glass("glass", (0.55, 0.75, 0.9), float(os.environ.get("SS_GLASS", "0.1")))
     mat_glass("glass_tank", (0.6, 0.9, 0.8), 0.22)
     mat_solar("solar")
     mat_stars("_stars")
@@ -694,6 +722,7 @@ def build_materials():
     mat_screen("screen_orange", (1.0, 0.55, 0.15), 2.6)
     mat_screen("screen_red", (1.0, 0.15, 0.1), 2.6)
     mat_emit("window", (0.65, 0.8, 1.0), 2.2)
+    mat_emit("lamp_fix", (1.0, 0.95, 0.86), 12.0)
     mat_emit("window_warm", (1.0, 0.8, 0.55), 2.0)
     mat_emit("holo", (0.25, 0.8, 1.0), 2.5)
     mat_emit("engine", (0.4, 0.7, 1.0), 6.0)
@@ -1019,9 +1048,9 @@ for d in DOOR_CELLS:
         for dx in (-1, 0, 1):
             GAME_CELLS.add((d[0] + dx, d[1] + dy))
 
-H_OPEN = 1.3         # murs des zones ouvertes (vues en coupe, comme la maquette)
-H_HULL = 1.7         # murs de coque (bord extérieur)
-H_ROOF = 1.9         # murs des modules à toit
+H_OPEN = float(os.environ.get("SS_H_OPEN", "1.7"))         # murs des zones ouvertes (vues en coupe, comme la maquette)
+H_HULL = float(os.environ.get("SS_H_HULL", "2.1"))         # murs de coque (bord extérieur)
+H_ROOF = float(os.environ.get("SS_H_ROOF", "2.3"))         # murs des modules à toit
 H_CUT = 0.7          # hauteur du mur sud dans la passe « int »
 H_DOOR = 0.95        # linteau des portes
 
@@ -1268,7 +1297,7 @@ def build_walls():
                                   [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
                 # liseré clair du bord supérieur côté salle (contour net, comme la maquette)
                 for side, dx, dy in SIDES:
-                    if not walk(x + dx, y + dy):
+                    if not walk(x + dx, y + dy) and tile(x + dx, y + dy) != 0:
                         continue
                     rim = trims.setdefault("_rims", MB())
                     if side == "S":
@@ -1349,7 +1378,7 @@ def build_walls():
         mbs.setdefault("ground_door", MB()).box(X0 + 0.05, YS + 0.05, 0.0, X1 - 0.05, YN - 0.05, 0.015, "doorway")
         # voyant coloré au-dessus de la porte (rouge = verrouillée / alerte, cyan sinon)
         rng_d = random.Random(dx_ * 97 + dy_ * 13 + SEED)
-        dcol = "red" if locked or rng_d.random() < 0.35 else rng_d.choice(["cyan", "cyan", "white"])
+        dcol = "red" if locked or rng_d.random() < 0.35 else rng_d.choice(["cyan", "cyan", "white", "magenta"])
         gl = mbs.setdefault("_doorlights", MB())
         if not d["vertical"]:
             gl.box(X0 + 0.25, YS - 0.04, hh - 0.18, X1 - 0.25, YS, hh - 0.08, "neon_" + dcol)
@@ -1419,6 +1448,64 @@ def build_hull():
                     sk.box(x + 1 - e, Y(y + 1), -0.5, x + 1, Y(y), 0.55, "hull_dark")
                 else:
                     sk.box(x, Y(y + 1), -0.5, x + e, Y(y), 0.55, "hull_dark")
+    # machinerie accrochée sous le pont (cases VOID au bord de la coque, sous le niveau du sol :
+    # hors jeu) : caissons, réservoirs couchés, conduites, hublots et balises — l'épaisseur
+    # « technique » de la station de la planche
+    near = {}
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 3:
+                continue
+            for dy in range(-2, 4):
+                for dx in range(-2, 3):
+                    q = (x + dx, y + dy)
+                    if tile(*q) == 0:
+                        d = max(abs(dx), abs(dy))
+                        near[q] = min(near.get(q, 9), d)
+    busy = set()
+    for b in LAYOUT.get("buildings", []):
+        if b["arch"] in ("ss_reactor", "ss_tube"):
+            bx, by, bw, bh = b["rect"]
+            for yy in range(by - 3, by + bh + 3):
+                for xx in range(bx - 3, bx + bw + 3):
+                    busy.add((xx, yy))
+    for (x, y), d in sorted(near.items()):
+        if (x, y) in busy or x < 0 or y < 0 or x >= W or y >= H:
+            continue
+        r = random.Random(x * 4241 + y * 977 + SEED * 5)
+        if r.random() > GREEBLE_P / d:
+            continue
+        if d > 1:
+            continue
+        sx, sy = r.uniform(0.8, 1.7), r.uniform(0.7, 1.5)
+        cx_, cy_ = x + 0.5 + r.uniform(-0.25, 0.25), y + 0.5 + r.uniform(-0.25, 0.25)
+        ztop = r.uniform(-0.7, 0.3) - 0.25 * (d - 1)
+        k = r.random()
+        if k < 0.5:
+            sk.box(cx_ - sx / 2, Y(cy_ + sy / 2), ztop - r.uniform(1.0, 2.2), cx_ + sx / 2, Y(cy_ - sy / 2), ztop,
+                   r.choice(["hull_dark", "hull_out", "metal_mid", "hull_dark"]))
+            if r.random() < 0.35:
+                win.box(cx_ - sx * 0.35, Y(cy_ + sy / 2) - 0.012, ztop - 0.45, cx_ + sx * 0.35, Y(cy_ + sy / 2), ztop - 0.3,
+                        r.choice(["window", "neon_cyan", "window", "neon_white"]))
+            if r.random() < 0.3:
+                sk.box(cx_ - sx * 0.3, Y(cy_ + sy * 0.3), ztop, cx_ + sx * 0.3, Y(cy_ - sy * 0.3), ztop + 0.12, "metal_dark")
+        elif k < 0.75:
+            ax = "X" if r.random() < 0.6 else "Y"
+            ln = r.uniform(0.9, 1.8)
+            rad = r.uniform(0.22, 0.4)
+            if ax == "X":
+                sk.seg((cx_ - ln / 2, Y(cy_), ztop - rad), (cx_ + ln / 2, Y(cy_), ztop - rad), rad,
+                       "white_panel" if r.random() < 0.3 else "reactor_shell", 12)
+            else:
+                sk.seg((cx_, Y(cy_ - ln / 2), ztop - rad), (cx_, Y(cy_ + ln / 2), ztop - rad), rad, "reactor_shell", 12)
+        elif k < 0.92:
+            for j in range(r.randint(2, 3)):
+                oy = (j - 1) * 0.18
+                sk.seg((x, Y(cy_ + oy), ztop - 0.2), (x + 1, Y(cy_ + oy), ztop - 0.2), 0.06,
+                       r.choice(["metal", "cable_yellow", "metal_mid", "cable_red"]), 6)
+        else:
+            sk.cyl(cx_, Y(cy_), ztop - 1.2, ztop, 0.08, "metal", 6)
+            sk.sphere(cx_, Y(cy_), ztop + 0.05, 0.09, r.choice(["neon_red", "neon_red", "neon_cyan"]), 1)
     sk.to_object("skirt", "world")
     win.to_object("hullwin", "world")
 
@@ -1447,8 +1534,8 @@ def roof_rect(mb, b, rng):
             v1 = v0 + (h - 0.7) / np_ - 0.12
             mb.box(x + 0.35, Y(v1), zt, x + w - 0.35, Y(v0), zt + 0.05, "roof_plate")
     zt2 = zt + 0.05
-    # banc de radiateurs (lames claires) sur 40-60 % du toit
-    f = rng.uniform(0.4, 0.6)
+    # banc de radiateurs (lames) sur 20-35 % du toit (toits de coque bleu nuit de la planche)
+    f = rng.uniform(0.2, 0.35)
     if horiz:
         rx0, rx1 = x + 0.5, x + 0.5 + (w - 1.0) * f
         nb = int((h - 1.0) / 0.26)
@@ -1489,6 +1576,11 @@ def roof_rect(mb, b, rng):
     mb.seg((x + 0.3, Y(y + 0.32), zt2 + 0.08), (x + w - 0.3, Y(y + 0.32), zt2 + 0.08), 0.07, "cable_yellow", 6)
     if rng.random() < 0.6:
         mb.box(x + 0.3, Y(y + h - 0.32), zt2, x + w - 0.3, Y(y + h - 0.52), zt2 + 0.02, "hazard")
+    # rampe lumineuse et hublots le long du bord sud (lueurs bleues des toits de la planche)
+    for k in range(int(w)):
+        if rng.random() < 0.45:
+            mb.box(x + k + 0.2, Y(y + h - 0.22), zt + 0.12, x + k + 0.8, Y(y + h - 0.12), zt + 0.16,
+                   rng.choice(["window", "neon_cyan", "window"]))
     # antenne + balises
     if rng.random() < 0.7:
         ax = x + rng.uniform(0.8, w - 0.8)
@@ -1543,7 +1635,7 @@ def build_dome(b, roof, rng):
         a1 = (i + 1) / seg * math.tau
         if openings_mask(rcx, rcy, r, (a0 + a1) / 2):
             continue
-        ring_wall_seg(walls, front, cx, cy, r + 0.05, r + 0.75, a0, a1, 0.45, z1, "hull_out")
+        ring_wall_seg(walls, front, cx, cy, r + 0.05, r + 0.95, a0, a1, 0.45, z1, "reactor_shell", cap_mat="ring_top")
     # socle des coins (cases mur du rectangle hors anneau) : plinthe continue + bancs de consoles
     x, y, w, h = b["rect"]
     for yy in range(y, y + h):
@@ -1609,7 +1701,7 @@ def build_dome(b, roof, rng):
     roof.cyl(cx, cy, z1 + hz + 0.18, z1 + hz + 0.22, 0.45, "neon_cyan", 24)
 
 
-def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_from=0.0):
+def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_from=0.0, cap_mat="wall_top"):
     south = math.sin((a0 + a1) / 2) < 0
     P = [(cx + math.cos(a) * r0, cy + math.sin(a) * r0, cx + math.cos(a) * r1, cy + math.sin(a) * r1) for a in (a0, a1)]
 
@@ -1620,7 +1712,7 @@ def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_
         mb.poly([(bx0, by0, z0), (ax0, ay0, z0), (ax0, ay0, z1), (bx0, by0, z1)], "wall_in",
                 [(a1 * r0, z0), (a0 * r0, z0), (a0 * r0, z1), (a1 * r0, z1)])
         if cap:
-            mb.poly([(ax0, ay0, z1), (ax1, ay1, z1), (bx1, by1, z1), (bx0, by0, z1)], "wall_top",
+            mb.poly([(ax0, ay0, z1), (ax1, ay1, z1), (bx1, by1, z1), (bx0, by0, z1)], cap_mat,
                     [(a0 * r0, 0), (a0 * r1, 0), (a1 * r1, 1), (a1 * r0, 1)])
     if south and z_top > z_cut and z_from < z_cut:
         quad(mb_low, z_from, z_cut)
@@ -1640,7 +1732,7 @@ def build_reactor(b, roof, rng):
     walls = MB()
     front = MB()
     seg = 72
-    ztop = 3.3
+    ztop = REACTOR_H
     for i in range(seg):
         a0 = i / seg * math.tau
         a1 = (i + 1) / seg * math.tau
@@ -1671,12 +1763,12 @@ def build_reactor(b, roof, rng):
                 cx + math.cos(a) * (r + 0.85) + 0.09, cy + math.sin(a) * (r + 0.85) + 0.09, ztop + 0.05, "metal_dark")
         if not openings_mask(rcx, rcy, r, a + math.pi / 16):
             a2 = a + math.pi / 16
-            for (z0, z1) in ((1.3, 1.75), (2.25, 2.7)):
+            for (z0, z1) in ((1.3, 1.6), (2.3, 2.6), (3.3, 3.6)):
                 tgt2 = front if math.sin(a2) < 0 else walls
                 tgt2.box(cx + math.cos(a2) * (r + 0.88) - 0.18, cy + math.sin(a2) * (r + 0.88) - 0.18, z0,
                          cx + math.cos(a2) * (r + 0.88) + 0.18, cy + math.sin(a2) * (r + 0.88) + 0.18, z1,
                          "window" if (i + int(z0)) % 3 else "neon_cyan")
-    for zz in (0.95, 2.0):
+    for zz in (0.95, 2.0, 3.0, ztop - 0.25):
         for i in range(seg):
             a0 = i / seg * math.tau
             a1 = (i + 1) / seg * math.tau
@@ -1696,7 +1788,8 @@ def build_reactor(b, roof, rng):
         a1 = (i + 1) / 48 * math.tau
         ra, rb = R * 0.9, R * 0.95
         roof.poly([(cx + math.cos(a0) * ra, cy + math.sin(a0) * ra, ztop + 0.19), (cx + math.cos(a1) * ra, cy + math.sin(a1) * ra, ztop + 0.19),
-                   (cx + math.cos(a1) * rb, cy + math.sin(a1) * rb, ztop + 0.19), (cx + math.cos(a0) * rb, cy + math.sin(a0) * rb, ztop + 0.19)], "neon_cyan")
+                   (cx + math.cos(a1) * rb, cy + math.sin(a1) * rb, ztop + 0.19), (cx + math.cos(a0) * rb, cy + math.sin(a0) * rb, ztop + 0.19)],
+                  "neon_cyan" if i % 6 == 0 else "metal_dark")
     tiers = [(0.86, 0.18, 0.36), (0.66, 0.36, 0.58), (0.44, 0.58, 0.8)]
     for (k, z0, z1) in tiers:
         roof.cyl(cx, cy, ztop + z0, ztop + z1, R * k, "reactor_shell" if k < 0.8 else "roof_dark", 48)
@@ -1716,11 +1809,16 @@ def build_reactor(b, roof, rng):
         roof.seg((cx + math.cos(a) * R * 0.42, cy + math.sin(a) * R * 0.42, ztop + 0.62), (cx + math.cos(a) * R * 0.86, cy + math.sin(a) * R * 0.86, ztop + 0.42),
                  0.07, rng.choice(["metal", "cable_yellow", "metal"]), 6)
     # hublot central : cœur bleu sous un verre nervuré
-    roof.cyl(cx, cy, ztop + 0.8, ztop + 0.84, R * 0.34, "core", 32)
-    roof.cyl(cx, cy, ztop + 0.84, ztop + 0.86, R * 0.36, "glass", 32)
-    for i in range(6):
-        a = i / 6 * math.tau
-        roof.seg((cx, cy, ztop + 0.87), (cx + math.cos(a) * R * 0.35, cy + math.sin(a) * R * 0.35, ztop + 0.87), 0.05, "metal_mid", 5)
+    roof.cyl(cx, cy, ztop + 0.8, ztop + 0.84, R * 0.2, "core", 32)
+    roof.cyl(cx, cy, ztop + 0.84, ztop + 0.86, R * 0.22, "glass", 32)
+    for i in range(8):
+        a = i / 8 * math.tau
+        roof.seg((cx, cy, ztop + 0.87), (cx + math.cos(a) * R * 0.21, cy + math.sin(a) * R * 0.21, ztop + 0.87), 0.05, "metal_mid", 5)
+    # nervures radiales de la calotte (lecture « cylindre côtelé » de la planche)
+    for i in range(16):
+        a = (i + 0.5) / 16 * math.tau
+        roof.seg((cx + math.cos(a) * R * 0.45, cy + math.sin(a) * R * 0.45, ztop + 0.6), (cx + math.cos(a) * R * 0.97, cy + math.sin(a) * R * 0.97, ztop + 0.2),
+                 0.06, "metal_dark", 4)
     roof.cyl(cx, cy, ztop + 0.86, ztop + 1.0, 0.35, "metal_mid", 16)
     roof.cyl(cx + R * 0.5, cy + R * 0.3, ztop + 0.58, ztop + 1.8, 0.05, "metal", 6)
     roof.sphere(cx + R * 0.5, cy + R * 0.3, ztop + 1.82, 0.1, "neon_red", 1)
@@ -1823,7 +1921,7 @@ def back_side(rect):
     return best if score[best] > 0 else "N"
 
 
-CRATES = ["crate_orange", "crate_yellow", "crate_grey", "crate_teal", "crate_orange", "crate_grey"]
+CRATES = ["crate_orange", "crate_yellow", "crate_tan", "crate_tan", "crate_orange", "crate_grey", "crate_tan", "crate_teal"]
 
 
 def crate(mb, L, u, v, s, z, rng, mat=None):
@@ -2084,6 +2182,11 @@ CLUTTER = {
 }
 CLUTTER_P = {"corridor": 0.06, "hall": 0.12, "hangar": 0.2}
 CLUTTER_CELLS = []
+HALL_SPOTS = []
+GREEBLE_P = float(os.environ.get("SS_GREEBLE", "0.3"))   # densité de machinerie sous la coque
+HALL_STAIN = float(os.environ.get("SS_HALL_STAIN", "0.02"))  # taches d'huile / brûlures sur les places
+HALL_BIG = float(os.environ.get("SS_HALL_BIG", "0.4"))     # part des conteneurs 2×2 sur les places
+HALL_DENS = float(os.environ.get("SS_HALL_DENS", "20"))   # cases de place par pile de caisses
 
 
 def clutter_item(mb, kind, L, rng):
@@ -2194,7 +2297,7 @@ def build_clutter():
             continue
         x, y, w, h = r["rect"]
         rng = random.Random(r["id"] * 977 + SEED)
-        n = max(2, int(w * h / 45))
+        n = max(2, int(w * h / HALL_DENS))
         tries = 0
         placed = 0
         while placed < n and tries < 200:
@@ -2211,13 +2314,25 @@ def build_clutter():
                 continue
             for c in cells:
                 blocked.add(c)
+            HALL_SPOTS.append((cx + 1.0 + rng.uniform(-0.8, 0.8), cy + 1.0 + rng.uniform(0.6, 1.4)))
+            k = rng.random()
+            if k < HALL_BIG:
+                # conteneur de fret 2×2 (lecture « gros mobilier » de la planche)
+                Lc = Local([cx, cy, 2, 2], "N")
+                st = len(mb.V)
+                mat_ = rng.choice(["crate_orange", "crate_tan", "crate_yellow", "crate_tan", "crate_grey"])
+                crate(mb, Lc, 0.0, 0.1, 1.7, 0.0, rng, mat_)
+                cells_fit(mb, st, [cx, cy, 2, 2], margin=0.06)
+                CLUTTER_CELLS.extend(cells)
+                placed += 1
+                continue
             k = rng.random()
             for (qx, qy) in cells:
                 if rng.random() < 0.25:
                     continue
                 Lc = Local([qx, qy, 1, 1], "N")
                 st = len(mb.V)
-                clutter_item(mb, "crates" if k < 0.75 else "drums", Lc, rng)
+                clutter_item(mb, "crates" if k < 0.6 else ("drums" if k < 0.8 else rng.choice(["cabinet", "toolbox", "crates"])), Lc, rng)
                 cells_fit(mb, st, [qx, qy, 1, 1], margin=0.06)
                 CLUTTER_CELLS.append((qx, qy))
             placed += 1
@@ -2264,6 +2379,8 @@ def build_floor_details():
                             rng.choice(["metal_mid", "crate_orange", "white_panel", "metal_dark"]))
                 if rng.random() < 0.05:
                     deb.sphere(x + rng.random(), Y(y + rng.random()), rng.uniform(1.05, 1.3), 0.035, "neon_orange", 1)
+            elif role in ("corridor", "hall") and rng.random() < HALL_STAIN:
+                decal(det, x + rng.uniform(0.2, 0.8), y + rng.uniform(0.2, 0.8), rng.uniform(0.9, 2.2), rng.choice(["oil", "oil", "scorch"]))
             elif role in ("corridor", "hall") and rng.random() < 0.04:
                 det.seg((x + 0.1, Y(y + rng.random()), 0.02), (x + 0.9, Y(y + rng.random()), 0.02), 0.025,
                         rng.choice(["cable", "cable_red", "cable_yellow"]), 5)
@@ -2278,7 +2395,12 @@ def build_floor_details():
                         det.box(x + 0.2, Y(y + 0.36 + j * 0.09) - 0.02, 0.008, x + 0.8, Y(y + 0.36 + j * 0.09) + 0.02, 0.011, "rubber")
             if role == "hall" and (abs(x + 0.5 - 29.7) < 0.5 or abs(x + 0.5 - 34.3) < 0.5) and y % 2 == 0:
                 det.box(x + 0.35, Y(y + 0.95), 0.0, x + 0.65, Y(y + 0.05), 0.009, "cable_yellow")
-    det.to_object("_floordet", "world")
+    ob_ = det.to_object("_floordet", "world")
+    # décalques posés au ras du sol : invisibles aux rayons d'ombre / diffus (sinon l'occlusion
+    # ambiante des sols y voit un carré opaque)
+    if ob_ is not None:
+        for attr in ("visible_shadow", "visible_diffuse", "visible_glossy", "visible_transmission", "visible_volume_scatter"):
+            setattr(ob_, attr, False)
     deb.to_object("_debris", "world")
 
 
@@ -2295,7 +2417,7 @@ def build_space():
             [(x0, sh - r1), (x1, sh - r1), (x1, sh - r0), (x0, sh - r0)])
     sp.to_object("_space", "world")
     # la Terre : disque à plat (rendu sphérique dans le shader), centre et rayon en cases écran
-    ex, ey, er = [float(v) for v in os.environ.get("SS_EARTH", "35,39,41.5").split(",")]
+    ex, ey, er = [float(v) for v in os.environ.get("SS_EARTH", "40,50,46").split(",")]
     zE = -60.0
     mat_planet("_planet_mat", er)
     pm = MB()
@@ -2368,6 +2490,20 @@ def build_decor():
             for i in range(ob_start, len(mb.V)):
                 v = M @ Vector(mb.V[i])
                 mb.V[i] = (v.x + X, v.y + Yb, v.z + 3.4)
+            # nervures radiales et bord sombre du réflecteur (lecture « parabole » de la planche)
+            for i in range(12):
+                a_ = i / 12 * math.tau
+                pa = M @ Vector((math.cos(a_) * R * 0.2, math.sin(a_) * R * 0.2, -R * 0.3 * 0.9))
+                pb = M @ Vector((math.cos(a_) * R * 0.98, math.sin(a_) * R * 0.98, -R * 0.02))
+                mb.seg((pa.x + X, pa.y + Yb, pa.z + 3.45), (pb.x + X, pb.y + Yb, pb.z + 3.45), 0.045, "metal_mid", 4)
+            for i in range(32):
+                a0_, a1_ = i / 32 * math.tau, (i + 1) / 32 * math.tau
+                pa = M @ Vector((math.cos(a0_) * R, math.sin(a0_) * R, 0.0))
+                pb = M @ Vector((math.cos(a1_) * R, math.sin(a1_) * R, 0.0))
+                mb.seg((pa.x + X, pa.y + Yb, pa.z + 3.42), (pb.x + X, pb.y + Yb, pb.z + 3.42), 0.08, "metal_dark", 5)
+            for a_ in (0.0, 2.1, 4.2):
+                pb = M @ Vector((math.cos(a_) * R * 0.9, math.sin(a_) * R * 0.9, 0.0))
+                mb.seg((pb.x + X, pb.y + Yb, pb.z + 3.42), (X - 0.3, Yb + 0.8, 5.3), 0.04, "metal", 4)
             mb.seg((X, Yb, 3.4), (X - 0.3, Yb + 0.8, 5.3), 0.07, "metal", 6)
             mb.sphere(X - 0.3, Yb + 0.8, 5.35, 0.22, "metal_mid", 1)
             mb.cyl(X, Yb, 2.2, 3.2, 0.55, "metal_dark", 12)
@@ -2381,8 +2517,11 @@ def build_decor():
         elif k == "solar_wing":
             hx = 10.5 if px < W / 2 else W - 10.5
             truss(mb, (X, Yb, 0.6), (hx, Yb, 0.6), 0.08)
-            for j in (-1, 0, 1):
-                solar_panel(mb, X, Yb + j * sz * 0.34, 0.65, 4.6, sz * 0.31, rot)
+            out = -1.0 if px < W / 2 else 1.0
+            for col_ in (0.0, 4.9 * out):
+                for j in (-1, 0, 1):
+                    solar_panel(mb, X + col_, Yb + j * sz * 0.34, 0.65, 4.6, sz * 0.31, rot)
+            truss(mb, (X + 4.9 * out, Yb, 0.6), (X, Yb, 0.6), 0.08)
         elif k == "antenna":
             mb.cyl(X, Yb, 0.0, 2.6, 0.06, "metal", 6)
             for zz in (0.9, 1.6, 2.2):
@@ -2408,20 +2547,41 @@ def build_decor():
 
 
 # ======================================================================= lumières
+LAMPS = None
+
+
 def build_lights():
+    global LAMPS
+    LAMPS = MB()
     n = 0
     for r in ROOMS:
         rid = r["id"]
         x, y, w, h = r["rect"]
         col, k = light_of(rid)
         bid = CELL_BLD.get((x + w // 2, y + h // 2))
-        roofed = bid is not None
-        z = 1.35 if roofed else 1.05
         role = role_of(rid)
-        step = 7.5 if role in ("hall", "corridor") else 5.5
+        # (le centre d'une place peut tomber dans l'emprise du dôme : une place n'a jamais de toit)
+        roofed = bid is not None and role not in ("hall", "corridor")
+        z = 1.35 if roofed else LIGHT_Z
+        step = 8.5 if role in ("hall", "corridor") else 6.0
         nx = max(1, int(round(w / step)))
         ny = max(1, int(round(h / step)))
         lrng = random.Random(rid * 31 + SEED)
+        if role in ("hall", "corridor") and not roofed and HALL_RECT > 0:
+            # éclairage d'ensemble doux (grand plafonnier rectangulaire) : sol régulier qui
+            # s'assombrit vers les murs, sans flaques en grille ; les flaques viennent des lampes
+            # posées près des piles de caisses (plus bas)
+            L_ = bpy.data.lights.new("l%d" % n, "AREA")
+            L_.shape = "RECTANGLE"
+            L_.size, L_.size_y = w * 0.85, h * 0.85
+            L_.color = HALL_COL
+            L_.energy = LIGHT_E * k * HALL_RECT * w * h * (CORR_K if role == "corridor" else 1.0)
+            o = bpy.data.objects.new("l%d" % n, L_)
+            o.visible_glossy = False
+            o.location = (x + w / 2, Y(y + h / 2), HALL_Z)
+            scene.collection.objects.link(o)
+            n += 1
+            continue
         for i in range(nx):
             for j in range(ny):
                 px = x + (i + 0.5) * w / nx + lrng.uniform(-0.8, 0.8)
@@ -2429,19 +2589,58 @@ def build_lights():
                 if not walk(int(px), int(py)):
                     continue
                 L_ = bpy.data.lights.new("l%d" % n, "AREA")
-                c_ = NEON[col] if role not in ("hall", "corridor") else lrng.choice([(1.0, 0.78, 0.52), (1.0, 0.78, 0.52), (0.8, 0.9, 1.0)])
+                c_ = NEON[col] if role not in ("hall", "corridor") else lrng.choice([(1.0, 0.86, 0.68), (0.85, 0.92, 1.0), (0.85, 0.92, 1.0)])
+                if col == "orange":
+                    c_ = (1.0, 0.84, 0.64)
+                elif col == "red":
+                    c_ = (1.0, 0.7, 0.62)
+                c_ = tuple(LIGHT_TINT * a_ + (1.0 - LIGHT_TINT) * b_ for a_, b_ in zip(c_, (0.9, 0.95, 1.0)))
                 L_.color = c_
-                L_.energy = LIGHT_E * k * (1.0 + 0.15 * (w * h / (nx * ny)) / 16.0) * lrng.uniform(0.7, 1.2)
+                L_.energy = LIGHT_E * k * (1.0 + 0.15 * (w * h / (nx * ny)) / 16.0) * lrng.uniform(0.45, 1.35) * (1.0 if roofed else LIGHT_ZK) * ROOM_K
                 L_.shape = "DISK"
-                L_.size = 2.4 if role in ("hall", "corridor") else 1.8
+                L_.size = (2.4 * LIGHT_SZ) if role in ("hall", "corridor") else (1.8 * ROOM_SZ)
                 o = bpy.data.objects.new("l%d" % n, L_)
                 o.location = (px, Y(py), z)
                 scene.collection.objects.link(o)
                 n += 1
+        # appliques le long du mur nord (face visible) : dégradé clair au fond de la pièce,
+        # plus sombre vers le sud — la profondeur des modules de la planche
+        if role not in ("hall", "corridor", "tube", "control_center", "reactor_pod") and WALL_E > 0:
+            for i in range(max(1, int(w // 4))):
+                px = x + (i + 0.5) * w / max(1, int(w // 4)) + lrng.uniform(-0.4, 0.4)
+                if not walk(int(px), y):
+                    continue
+                L_ = bpy.data.lights.new("w%d" % n, "AREA")
+                L_.shape = "RECTANGLE"
+                L_.size, L_.size_y = 1.4, 0.3
+                c_ = NEON[col]
+                c_ = tuple(0.35 * a_ + 0.65 * b_ for a_, b_ in zip(c_, (1.0, 0.95, 0.88)))
+                L_.color = c_
+                L_.energy = LIGHT_E * WALL_E * lrng.uniform(0.7, 1.2)
+                o = bpy.data.objects.new("w%d" % n, L_)
+                o.location = (px, Y(y + 0.35), min(1.15, (H_CUT - 0.1) if roofed else 1.15))
+                o.rotation_euler = (math.radians(-35), 0, 0)
+                o.visible_glossy = False
+                scene.collection.objects.link(o)
+                n += 1
+                # applique visible (réglette lumineuse sur la face sud du mur nord)
+                zf = o.location.z
+                LAMPS.box(px - 0.32, Y(y) - 0.05, zf - 0.04, px + 0.32, Y(y), zf + 0.05, "lamp_fix")
+    LAMPS.to_object("_lampfix", "world")
+    # lampes chaudes au-dessus des piles de caisses des places (flaques localisées de la planche)
+    for (gx, gy) in HALL_SPOTS:
+        L_ = bpy.data.lights.new("s%d" % n, "POINT")
+        L_.color = (1.0, 0.82, 0.6) if (int(gx) + int(gy)) % 3 else (0.85, 0.92, 1.0)
+        L_.energy = LIGHT_E * SPOT_E
+        L_.shadow_soft_size = 0.6
+        o = bpy.data.objects.new("s%d" % n, L_)
+        o.location = (gx, Y(gy), 1.6)
+        scene.collection.objects.link(o)
+        n += 1
     for (gx, gy, gc) in DOOR_GLOWS:
         L_ = bpy.data.lights.new("d%d" % n, "POINT")
         L_.color = NEON[gc]
-        L_.energy = LIGHT_E * 0.25
+        L_.energy = LIGHT_E * DOOR_E
         L_.shadow_soft_size = 0.2
         o = bpy.data.objects.new("d%d" % n, L_)
         o.location = (gx, gy, 0.9)
@@ -2461,7 +2660,20 @@ def build_lights():
     print("  lights", n, flush=True)
 
 
-LIGHT_E = float(os.environ.get("SS_LIGHT", "85"))
+LIGHT_E = float(os.environ.get("SS_LIGHT", "95"))
+LIGHT_Z = float(os.environ.get("SS_LIGHT_Z", "2.3"))      # hauteur des plafonniers des zones ouvertes
+LIGHT_SZ = float(os.environ.get("SS_LIGHT_SZ", "2.6"))    # taille relative (flaques plus douces)
+HALL_RECT = float(os.environ.get("SS_HALL_RECT", "0.05"))  # plafonnier d'ensemble des places (W/case²·LIGHT_E)
+HALL_COL = tuple(float(v) for v in os.environ.get("SS_HALL_COL", "1.0,0.93,0.84").split(","))
+ROOM_SZ = float(os.environ.get("SS_ROOM_SZ", "0.7"))       # taille des plafonniers des modules (flaques)
+ROOM_K = float(os.environ.get("SS_ROOM_K", "0.7"))         # plafonniers des modules
+WALL_E = float(os.environ.get("SS_WALL_E", "1.6"))         # appliques du mur nord des modules
+CORR_K = float(os.environ.get("SS_CORR_K", "0.5"))         # coursives : plus sombres que les places
+HALL_Z = float(os.environ.get("SS_HALL_Z", "3.5"))
+SPOT_E = float(os.environ.get("SS_SPOT_E", "0.35"))        # lampes des piles de caisses
+DOOR_E = float(os.environ.get("SS_DOOR_E", "1.5"))       # flaques colorées des voyants de porte
+LIGHT_TINT = float(os.environ.get("SS_LIGHT_TINT", "0.6"))   # saturation des lumières de salle
+LIGHT_ZK = float(os.environ.get("SS_LIGHT_ZK", "1.9"))    # compense la hauteur
 
 
 def build_world():
@@ -2479,8 +2691,8 @@ def build_world():
 
 # ======================================================================= rendu
 EXPOSURE = float(os.environ.get("SS_EXPOSURE", "-0.4"))
-SUN_E = float(os.environ.get("SS_SUN", "1.5"))
-SKY = float(os.environ.get("SS_SKY", "0.25"))
+SUN_E = float(os.environ.get("SS_SUN", "0.9"))
+SKY = float(os.environ.get("SS_SKY", "0.06"))
 SAT = float(os.environ.get("SS_SAT", "1.18"))
 CON = float(os.environ.get("SS_CON", "1.15"))
 LIFT = float(os.environ.get("SS_LIFT", "4"))
@@ -2535,12 +2747,12 @@ def setup_render():
     # « lumière de Terre » : contre-jour bleuté venant du sud (planète sous la station), éclaire
     # les faces sud des modules (visibles depuis la caméra) comme sur la maquette
     es = bpy.data.lights.new("earthshine", "SUN")
-    es.energy = float(os.environ.get("SS_EARTHSHINE", "1.4"))
+    es.energy = float(os.environ.get("SS_EARTHSHINE", "2.2"))
     es.color = (0.45, 0.62, 1.0)
     es.angle = math.radians(8.0)
     eo = bpy.data.objects.new("earthshine", es)
     sc.collection.objects.link(eo)
-    d2 = Vector((0.15, 0.8, -0.58)).normalized()
+    d2 = Vector([float(v) for v in os.environ.get("SS_EARTHSHINE_D", "-0.55,0.6,-0.55").split(",")]).normalized()
     eo.rotation_euler = d2.to_track_quat("-Z", "Y").to_euler()
     cam = bpy.data.cameras.new("cam")
     cam.type = "ORTHO"

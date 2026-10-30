@@ -75,6 +75,11 @@ def coll(name):
 
 
 MATS = {}
+TOP_EMIT = float(os.environ.get("MALL_TOP_EMIT", "0.35"))
+GAL_ROUGH = float(os.environ.get("MALL_GAL_ROUGH", "0.2"))
+GAL_TILE = float(os.environ.get("MALL_GAL_TILE", "1.5"))
+AO_K = float(os.environ.get("MALL_AO", "0.6"))
+AO_DIST = float(os.environ.get("MALL_AO_DIST", "0.7"))
 
 
 class NT:
@@ -212,6 +217,21 @@ class NT:
         return a.outputs["AO"]
 
     def done(self, col, rough=0.85, normal=None, metal=0.0, rough_sock=None):
+        if AO_K > 0:
+            # occlusion ambiante dans la couleur de base : ombres de contact au pied des murs et
+            # du mobilier (profondeur de la maquette)
+            ao = self.n("ShaderNodeAmbientOcclusion")
+            ao.inputs["Distance"].default_value = AO_DIST
+            ao.samples = 8
+            f = self.add(self.mul(ao.outputs["AO"], AO_K), 1.0 - AO_K)
+            vm = self.n("ShaderNodeVectorMath")
+            vm.operation = "SCALE"
+            if isinstance(col, tuple):
+                vm.inputs[0].default_value = col[:3]
+            else:
+                self.l(col, vm.inputs[0])
+            self.l(f, vm.inputs["Scale"])
+            col = vm.outputs[0]
         self.l(col, self.b.inputs["Base Color"]) if not isinstance(col, tuple) else self._in(self.b.inputs["Base Color"], col)
         if rough_sock is not None:
             self.l(rough_sock, self.b.inputs["Roughness"])
@@ -522,7 +542,7 @@ def mat_water(name):
     n2 = s.noise(o, 1.5, 3, 0.5)
     em = s.mix(s.add(s.mul(s.smooth(w, 0.1, 0.9), 0.35), s.mul(n2, 0.65)), (0.04, 0.38, 0.7), (0.015, 0.1, 0.26))
     s.l(em, s.b.inputs["Emission Color"])
-    s.b.inputs["Emission Strength"].default_value = 0.6
+    s.b.inputs["Emission Strength"].default_value = 0.22
     return s.m
 
 
@@ -613,16 +633,16 @@ def mat_carpet_arcade(name):
     w = s.voronoi(s.comb(s.mul(u, 3.0), s.mul(v, 3.0), 0.0), 1.0)
     dots = s.smooth(w, 0.16, 0.1)
     col = s.mix(dots, base, w1)
-    col = s.mix(s.mul(dots, 0.5), col, (0.9, 0.15, 0.7))
+    col = s.mix(s.mul(dots, 0.3), col, (0.9, 0.15, 0.7))
     zz = s.m_("SINE", s.add(s.mul(u, 9.0), s.mul(s.m_("SINE", s.mul(v, 9.0)), 1.5)))
     band = s.smooth(s.m_("ABSOLUTE", zz), 0.08, 0.0)
-    col = s.mix(s.mul(band, 0.8), col, (0.15, 0.75, 0.95))
+    col = s.mix(s.mul(band, 0.35), col, (0.15, 0.75, 0.95))
     n = s.noise(o, 1.0, 5, 0.6)
     col = s.mix(s.smooth(n, 0.5, 0.8, 0.0, 0.6), col, (0.02, 0.02, 0.03))
     return s.done(col, 0.95)
 
 
-def mat_roof_gravel(name, c=(0.36, 0.33, 0.31)):
+def mat_roof_gravel(name, c=(0.21, 0.19, 0.19)):
     """Toit plat en gravillons (grain fin, coulures sombres, mousses)."""
     s = NT(name)
     o = s.obj()
@@ -634,26 +654,34 @@ def mat_roof_gravel(name, c=(0.36, 0.33, 0.31)):
 
 
 def build_materials():
-    mat_stone("tiles_gal", (0.5, 0.45, 0.41), (0.41, 0.37, 0.34), 2.0, 0.3, (0.13, 0.115, 0.11),
+    mat_stone("tiles_gal", (0.5, 0.43, 0.4), (0.38, 0.33, 0.31), GAL_TILE, GAL_ROUGH, (0.09, 0.08, 0.08),
               tint=(0.44, 0.42, 0.42))
-    mat_stone("tiles_shop", (0.46, 0.43, 0.41), (0.4, 0.37, 0.36), 1.0, 0.4, (0.2, 0.18, 0.17), crack=0.35, grime=0.5)
+    mat_stone("tiles_atr", (0.4, 0.35, 0.33), (0.33, 0.29, 0.28), 1.5, GAL_ROUGH + 0.06, (0.11, 0.1, 0.1),
+              tint=(0.36, 0.34, 0.35))
+    mat_stone("tiles_shop", (0.37, 0.31, 0.27), (0.3, 0.25, 0.22), 1.0, 0.4, (0.2, 0.18, 0.17), crack=0.35, grime=0.5)
     mat_stone("tiles_dark", (0.17, 0.165, 0.19), (0.13, 0.125, 0.15), 1.0, 0.22, (0.06, 0.06, 0.07), crack=0.3, grime=0.4)
-    mat_stone("tiles_white", (0.6, 0.6, 0.58), (0.54, 0.54, 0.53), 1.0, 0.22, (0.3, 0.29, 0.28), crack=0.3, grime=0.45)
+    mat_stone("tiles_white", (0.47, 0.45, 0.43), (0.41, 0.39, 0.37), 1.0, 0.22, (0.3, 0.29, 0.28), crack=0.3, grime=0.45)
     mat_wood("wood_floor", (0.3, 0.19, 0.11))
     mat_wood("wood_light", (0.5, 0.34, 0.2))
     mat_floor("concrete", (0.3, 0.29, 0.29), (0.12, 0.12, 0.12), cell=2.0, sub=1, var=0.2, rough=0.8, metal=0.0, wear=0.6)
-    mat_simple("carpet_red", (0.3, 0.05, 0.07), 0.95, 0.0, 0.3, 30.0, c2=(0.16, 0.02, 0.04))
+    mat_simple("carpet_red", (0.22, 0.07, 0.07), 0.95, 0.0, 0.3, 30.0, c2=(0.12, 0.03, 0.04))
     mat_carpet_arcade("carpet_blue")
-    mat_asphalt("asphalt", (0.13, 0.13, 0.15))
-    mat_asphalt("street", (0.05, 0.055, 0.065))
-    mat_simple("sidewalk", (0.22, 0.21, 0.21), 0.85, 0.0, 0.3, 3.0)
+    mat_asphalt("asphalt", (0.19, 0.19, 0.205))
+    mat_asphalt("street", (0.085, 0.085, 0.1))
+    mat_floor("sidewalk", (0.27, 0.255, 0.25), (0.1, 0.1, 0.1), cell=1.5, sub=1, var=0.15, rough=0.85, metal=0.0, wear=0.5)
     mat_lines("paint_white")
     mat_lines("paint_yellow", (0.85, 0.65, 0.12))
-    mat_plaster("plaster", (0.5, 0.42, 0.37))
-    mat_plaster("plaster_pink", (0.5, 0.36, 0.36))
+    mat_plaster("plaster", (0.36, 0.28, 0.24))
+    mat_plaster("plaster_pink", (0.38, 0.25, 0.26))
     mat_plaster("plaster_dark", (0.24, 0.21, 0.22))
     mat_panels("ext_wall", (0.4, 0.33, 0.3), (0.17, 0.13, 0.12), pw=2.0, ph=0.6, metal=0.0, rough=0.8, var=0.08)
     mat_panels("wall_top", (0.6, 0.57, 0.54), (0.42, 0.4, 0.38), pw=2.0, ph=2.0, seam=0.012, metal=0.0, rough=0.7, var=0.05, grime=0.35)
+    # arase des murs : au-dessus des plafonniers, elle ne reçoit que la lune ; légère émission
+    # pour garder le liseré clair des murs de la maquette (lisibilité du plan)
+    _wt = MATS["wall_top"].node_tree.nodes.get("Principled BSDF")
+    if _wt is not None and TOP_EMIT > 0:
+        _wt.inputs["Emission Color"].default_value = (0.62, 0.55, 0.5, 1)
+        _wt.inputs["Emission Strength"].default_value = TOP_EMIT
     mat_roof_gravel("roof_gravel")
     mat_panels("roof_metal", (0.38, 0.38, 0.4), (0.15, 0.15, 0.16), pw=0.3, ph=4.0, metal=0.5, rough=0.4, var=0.05)
     mat_hazard("hazard")
@@ -1058,9 +1086,9 @@ def in_parking(x, y):
     return px <= x < px + pw and py <= y < py + ph
 
 
-H_SHOP = 1.35        # cloisons entre boutiques / murs intérieurs (vus en coupe)
-H_EXT = 1.6          # murs extérieurs du bâtiment
-H_ROOF = 1.8         # boutiques à plafond (toit)
+H_SHOP = float(os.environ.get("MALL_H_SHOP", "1.75"))       # cloisons entre boutiques / murs intérieurs (vus en coupe)
+H_EXT = float(os.environ.get("MALL_H_EXT", "2.0"))        # murs extérieurs du bâtiment
+H_ROOF = float(os.environ.get("MALL_H_ROOF", "1.95"))        # boutiques à plafond (toit)
 H_CUT = 0.7          # haut du mur sud masqué en passe int
 H_FRONT = 0.4        # allège des vitrines
 H_DOOR = 1.0
@@ -1071,6 +1099,8 @@ def floor_mat(rid, cell):
     m = mod_of(rid)
     if in_parking(*cell):
         return "asphalt"
+    if role == "atrium" or (ATR[0] < cell[0] < ATR[0] + ATR[2] - 1 and ATR[1] < cell[1] < ATR[1] + ATR[3] - 1):
+        return "tiles_atr"
     if role in ("gallery", "atrium", "entrance"):
         return "tiles_gal"
     if m is None:
@@ -1097,6 +1127,21 @@ def build_floors():
     for y in range(H):
         for x in range(W):
             t = tile(x, y)
+            if thin_wall(x, y):
+                nb = [(CELL_ROOM.get((x + dx, y + dy)), dx, dy) for sd, dx, dy in SIDES if tile(x + dx, y + dy) in (1, 2, 5, 6)]
+                nb = [q for q in nb if q[0] is not None]
+                mb = mbs.setdefault("ground", MB())
+                ext_ = wall_kind(x, y) == "ext"
+                for (rid, dx, dy) in (nb if ext_ else nb[:1]):
+                    mat = floor_mat(rid, (x, y))
+                    if ext_:   # mur extérieur : sol de la pièce côté intérieur seulement (trottoir dehors)
+                        u0, u1 = (0.5, 1.0) if dx == 1 else ((0.0, 0.5) if dx == -1 else (0.0, 1.0))
+                        v0, v1 = (0.5, 1.0) if dy == 1 else ((0.0, 0.5) if dy == -1 else (0.0, 1.0))
+                    else:
+                        u0, u1, v0, v1 = 0.0, 1.0, 0.0, 1.0
+                    mb.poly([(x + u0, Y(y + v1), 0.0), (x + u1, Y(y + v1), 0.0), (x + u1, Y(y + v0), 0.0), (x + u0, Y(y + v0), 0.0)], mat,
+                            [(x + u0, Y(y + v1)), (x + u1, Y(y + v1)), (x + u1, Y(y + v0)), (x + u0, Y(y + v0))])
+                continue
             if t not in (1, 2, 4, 5, 6):
                 continue
             rid = CELL_ROOM.get((x, y), -1)
@@ -1118,6 +1163,8 @@ def build_floors():
     # lignes de la rue (pointillés jaunes)
     for xx in range(-10, W + 10, 3):
         st.box(xx, Y(-3.05), -0.04, xx + 1.4, Y(-2.95), -0.03, "paint_yellow")
+        st.box(xx, Y(H + 3.55), -0.04, xx + 1.4, Y(H + 3.45), -0.03, "paint_yellow")
+    st.box(-m, Y(H + 1.2), -0.05, W + m, Y(H), -0.006, "sidewalk")
     for yy in range(-8, H + 8, 3):
         for xx in (-3.0, W + 3.0):
             st.box(xx - 0.05, Y(yy + 1.4), -0.04, xx + 0.05, Y(yy), -0.03, "paint_yellow")
@@ -1221,9 +1268,42 @@ def wall_kind(x, y):
     return "shop"
 
 
+WALL_T = float(os.environ.get("MALL_WALL_T", "0.2"))   # demi-épaisseur des cloisons (case = 1)
+H_PARK_RIM = float(os.environ.get("MALL_H_PARK_RIM", "0.5"))
+WALL_T_EXT = float(os.environ.get("MALL_WALL_T_EXT", "0.3"))   # demi-épaisseur des murs extérieurs
+
+
+def park_rim(x, y):
+    """Bordure du parking (murs dont tous les voisins praticables sont sur le parking) : simple
+    muret bas, comme le parking ouvert de la maquette."""
+    nb = [(x + dx, y + dy) for sd, dx, dy in SIDES if walk(x + dx, y + dy)]
+    return bool(nb) and all(in_parking(*q) for q in nb) and y >= PARK[1] - 1
+
+
+def thin_wall(x, y):
+    """Cloison ou mur extérieur rendu mince (pas les façades sur le parking ni les boutiques à
+    plafond, ni les vitrines)."""
+    if tile(x, y) != 3:
+        return False
+    k = wall_kind(x, y)
+    if k == "shop":
+        return WALL_T < 0.5
+    if k == "ext":
+        if WALL_T_EXT >= 0.5:
+            return False
+        if park_rim(x, y):
+            return True
+        return not any(in_parking(x + dx, y + dy) for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+    return False
+H_PLANTER = float(os.environ.get("MALL_H_PLANTER", "1.1"))
+WALL_LAMPS = []      # appliques murales côté galerie (x, y, z, nx, ny) : lumière + plaque émissive
+
+
 def wall_h(x, y):
     k = wall_kind(x, y)
-    return {"ext": H_EXT, "roof": H_ROOF, "front": H_SHOP, "shop": H_SHOP, "planter": 0.45, "esc": 0.0, "tree": 0.35}[k]
+    if k == "ext" and park_rim(x, y):
+        return H_PARK_RIM
+    return {"ext": H_EXT, "roof": H_ROOF, "front": H_SHOP, "shop": H_SHOP, "planter": H_PLANTER, "esc": 0.0, "tree": 0.35}[k]
 
 
 def build_walls():
@@ -1286,6 +1366,33 @@ def build_walls():
                         else:
                             neon.box(x - 0.03, Y(y + 1), h - 0.12, x, Y(y), h - 0.05, "neon_" + col)
                 continue
+            if thin_wall(x, y):
+                # cloison MINCE (maquette : murs fins à arase claire, faces brunes) : poteau central
+                # + bras vers les murs / portes voisins ; le sol de la pièce passe dessous. La
+                # collision du jeu reste la case entière (plan).
+                tg = target(x, y)
+                t = WALL_T if k == "shop" else WALL_T_EXT
+                parts = [(0.5 - t, 0.5 - t, 0.5 + t, 0.5 + t)]
+                for sd, dx, dy in SIDES:
+                    if tile(x + dx, y + dy) in (3, 4) and wall_kind(x + dx, y + dy) not in ("esc", "planter", "tree"):
+                        if dx == 1:
+                            parts.append((0.5 + t, 0.5 - t, 1.0, 0.5 + t))
+                        elif dx == -1:
+                            parts.append((0.0, 0.5 - t, 0.5 - t, 0.5 + t))
+                        elif dy == 1:
+                            parts.append((0.5 - t, 0.5 + t, 0.5 + t, 1.0))
+                        else:
+                            parts.append((0.5 - t, 0.0, 0.5 + t, 0.5 - t))
+                for (u0, v0, u1, v1) in parts:
+                    tg.box(x + u0, Y(y + v1), 0.0, x + u1, Y(y + v0), h - 0.04, wmat if k == "shop" else "ext_wall")
+                    tg.box(x + u0 - 0.02, Y(y + v1) - 0.02, h - 0.04, x + u1 + 0.02, Y(y + v0) + 0.02, h, "wall_top")
+                    tg.box(x + u0 - 0.025, Y(y + v1) - 0.025, 0.0, x + u1 + 0.025, Y(y + v0) + 0.025, 0.1, "metal_dark")
+                if (x * 3 + y * 5) % 4 == 0:
+                    for sd, dx, dy in SIDES:
+                        if tile(x + dx, y + dy) in (1, 5, 6) and not in_parking(x + dx, y + dy):
+                            WALL_LAMPS.append((x, y, min(h, 1.5) * 0.72, dx * (t / 0.5), dy * (t / 0.5)))
+                            break
+                continue
             for side, dx, dy in SIDES:
                 nx, ny = x + dx, y + dy
                 nt_ = tile(nx, ny)
@@ -1311,9 +1418,14 @@ def build_walls():
                     face(target(x, y, True), x, y, side, max(z0, H_CUT), h, mat)
                 else:
                     face(target(x, y), x, y, side, z0, h, mat)
+            if k in ("shop", "roof", "ext") and (x * 3 + y * 5) % 4 == 0:
+                for sd, dx, dy in SIDES:
+                    if tile(x + dx, y + dy) in (1, 5, 6) and not in_parking(x + dx, y + dy):
+                        WALL_LAMPS.append((x, y, min(h, 1.5) * 0.72, dx, dy))
+                        break
             tg2 = target(x, y, south_row)
             tg2.poly([(x, Y(y + 1), h), (x + 1, Y(y + 1), h), (x + 1, Y(y), h), (x, Y(y), h)],
-                     "roof_gravel" if k == "ext" else "wall_top", [(x, Y(y + 1)), (x + 1, Y(y + 1)), (x + 1, Y(y)), (x, Y(y))])
+                     "wall_top", [(x, Y(y + 1)), (x + 1, Y(y + 1)), (x + 1, Y(y)), (x, Y(y))])
             if south_row:
                 target(x, y).poly([(x, Y(y + 1), H_CUT), (x + 1, Y(y + 1), H_CUT), (x + 1, Y(y), H_CUT), (x, Y(y), H_CUT)], "metal_dark")
             # liseré néon sur les façades de boutique côté galerie (boutiques à plafond)
@@ -1541,12 +1653,27 @@ def build_planters():
     lamps = []
     for (x, y) in sorted(PLANTER_CELLS):
         # jardinière continue de l'atrium : muret de pierre, terre, massifs touffus, palmiers
-        mb.box(x, Y(y + 1.0), 0.0, x + 1.0, Y(y), 0.42, "stone")
-        mb.box(x + 0.08, Y(y + 0.92), 0.42, x + 0.92, Y(y + 0.08), 0.44, "soil")
+        hp = H_PLANTER
+        mb.box(x, Y(y + 1.0), 0.0, x + 1.0, Y(y), hp - 0.06, "plaster")
+        mb.box(x - 0.03, Y(y + 1.03), hp - 0.06, x + 1.03, Y(y - 0.03), hp, "wall_top")
+        mb.box(x + 0.14, Y(y + 0.86), hp, x + 0.86, Y(y + 0.14), hp + 0.02, "soil")
         rng = random.Random(x * 31 + y * 7)
-        bush(veg, x + 0.5, Y(y + 0.5), 0.44, rng.uniform(0.38, 0.5), rng, flowers=0.5 if rng.random() < 0.3 else 0.0, dry=0.15)
-        if rng.random() < 0.18:
-            palm(veg, x + 0.5, Y(y + 0.5), 0.44, rng.uniform(1.3, 1.7), rng.uniform(0.8, 1.0), rng)
+        bush(veg, x + 0.5, Y(y + 0.5), hp + 0.02, rng.uniform(0.34, 0.46), rng, flowers=0.5 if rng.random() < 0.3 else 0.0, dry=0.2)
+        if rng.random() < 0.22:
+            palm(veg, x + 0.5, Y(y + 0.5), hp, rng.uniform(1.25, 1.6), rng.uniform(0.75, 0.95), rng)
+        # massifs bas au pied du muret, côté intérieur de l'atrium (non bloquants)
+        for sd, dx, dy in SIDES:
+            q = (x + dx, y + dy)
+            if (ax < q[0] < ax + aw - 1 and ay < q[1] < ay + ah - 1) and walk(*q) and q not in GAME_CELLS \
+                    and q not in PLANTER_CELLS and rng.random() < ATR_SHRUBS:
+                bush(veg, q[0] + 0.5 - dx * 0.2, Y(q[1] + 0.5 - dy * 0.2), 0.0, rng.uniform(0.3, 0.42), rng,
+                     flowers=0.4 if rng.random() < 0.3 else 0.0, dry=0.25)
+        # applique murale sur la face extérieure (côté galerie), une case sur quatre
+        if (x + y) % 4 == 0:
+            for sd, dx, dy in SIDES:
+                if not (ax <= x + dx < ax + aw and ay <= y + dy < ay + ah) and walk(x + dx, y + dy):
+                    WALL_LAMPS.append((x, y, hp * 0.6, dx, dy))
+                    break
     for (x, y) in sorted(TREE_CELLS):
         mb.box(x + 0.0, Y(y + 1.0), 0.0, x + 1.0, Y(y), 0.25, "sidewalk")
         mb.box(x + 0.05, Y(y + 0.95), 0.25, x + 0.95, Y(y + 0.05), 0.27, "soil")
@@ -1575,12 +1702,13 @@ def build_planters():
         mb.box(lx - 0.6, Y(ly) - 0.06, 2.35, lx + 0.6, Y(ly) + 0.06, 2.42, "metal_dark")
         for sx in (-0.55, 0.55):
             mb.box(lx + sx - 0.12, Y(ly) - 0.1, 2.28, lx + sx + 0.12, Y(ly) + 0.1, 2.35, "lamp_warm")
-            LAMPS.append((lx + sx, Y(ly), 2.2))
+            LAMPS.append((lx + sx, Y(ly), 2.2, 0.8))
     mb.to_object("hullwalls_planters", "world")
     veg.to_object("_veg", "world", smooth=True)
 
 
 LAMPS = []
+ATR_SHRUBS = float(os.environ.get("MALL_ATR_SHRUBS", "0.6"))
 import zlib
 
 # ======================================================================= décors (prop_spawns)
@@ -1673,7 +1801,7 @@ def car(mb, L, rng, color=None):
     a = L.A / 2 - 0.05
     d = L.D
     mat = color or "car_%d" % rng.randint(0, len(CAR_COLORS) - 1)
-    w = min(d - 0.1, 1.15)
+    w = min(d - 0.1, 1.5)
     vc = d / 2
     hw = w / 2
 
@@ -1748,7 +1876,7 @@ def prop(mb, kind, L, rng):
             mb.sphere(x0 + sx_, y0 + sy_, 0.68, 0.1, "bronze", 1)
         mb.box(x0 - ha + t, y0 - hd + t, 0.0, x0 + ha - t, y0 + hd - t, 0.05, "stone_dark")
         mb.box(x0 - ha + t, y0 - hd + t, 0.05, x0 + ha - t, y0 + hd - t, 0.3, "water")
-        r = hd - 0.45
+        r = (hd - 0.45) * 0.72
         mb.cyl(x0, y0, 0.0, 0.48, r, "stone", 32)
         mb.cyl(x0, y0, 0.48, 0.52, r + 0.05, "stone_dark", 32)
         mb.cyl(x0, y0, 0.3, 0.5, r - 0.1, "water", 32)
@@ -1897,7 +2025,7 @@ def prop(mb, kind, L, rng):
             s_ = rng.uniform(0.12, 0.28)
             L.box(mb, uu, vv, 0.0, uu + s_, vv + s_, s_ * rng.uniform(0.6, 1.2), rng.choice(["toy_a", "toy_b", "toy_c"]))
     elif k == "car_wreck":
-        car(mb, L, rng)
+        car(mb, L, rng, "car_0" if getattr(L, "red", False) else None)
     elif k == "traffic_cone":
         L.cyl(mb, 0.0, D / 2, 0.0, 0.03, 0.2, "toy_a", 8)
         x0, y0 = L.p(0.0, D / 2)
@@ -1963,7 +2091,23 @@ def prop(mb, kind, L, rng):
         L.box(mb, -a * 0.8, 0.1, 0.0, a * 0.8, min(d, 0.6), 0.5, "cardboard")
 
 
+def _red_car():
+    hx, hy, hw, hh = HALLR
+    best, bd = None, 1e9
+    for p in LAYOUT.get("prop_spawns", []):
+        if p["kind"] == "car_wreck":
+            d = abs(p["cell"][0] - (hx + hw / 2 + 6)) + abs(p["cell"][1] - (hy + hh + 4))
+            if d < bd:
+                best, bd = tuple(p["cell"]), d
+    return best
+
+
+RED_CAR = None
+
+
 def build_props():
+    global RED_CAR
+    RED_CAR = _red_car()
     groups = {}
     for p in LAYOUT.get("prop_spawns", []):
         rect = _rect_of_spawn(p)
@@ -1977,7 +2121,8 @@ def build_props():
         if p["kind"] == "car_wreck":
             # la voiture déborde un peu de son emprise 2 × 1 (le pourtour est libre par construction)
             x_, y_, w_, h_ = rect
-            Lc = Local([x_ - 0.25, y_ - 0.3, w_ + 0.5, h_ + 0.6], "N")
+            Lc = Local([x_ - 0.55, y_ - 0.42, w_ + 1.1, h_ + 0.84], "N")
+            Lc.red = tuple(p["cell"]) == RED_CAR   # la voiture rouge de la maquette, près de l'entrée
             prop(mb, "car_wreck", Lc, rng)
             continue
         Lc = Local(rect, back)
@@ -2058,7 +2203,7 @@ def build_floor_details():
                     cx_, cy_ = x + rng.uniform(0.15, 0.85), y + rng.uniform(0.15, 0.85)
                     det.box(cx_ - s_ / 2, Y(cy_) - s_ * 0.7, 0.0, cx_ + s_ / 2, Y(cy_), 0.004 + j * 0.001,
                             rng.choice(["paper", "paper", "cream"]), rot=rng.uniform(0, math.pi))
-            elif r_ < 0.16 and not park and tile(x, y) in (1, 2):
+            elif (r_ < 0.16 or (r_ < 0.3 and tile(x, y) == 2)) and not park and tile(x, y) in (1, 2):
                 # tas de débris bas, non bloquant (< 0,12) : la galerie « pillée » de la maquette
                 debris_pile(det, x + rng.uniform(0.35, 0.65), y + rng.uniform(0.35, 0.65), rng, rng.uniform(0.3, 0.5))
             elif r_ < 0.11 and park:
@@ -2071,7 +2216,10 @@ def build_floor_details():
             x0, y0, x1, y1 = x - (fw_ - 1) // 2 - 1.5, y - fh_ - 0.5, x + fw_ - (fw_ - 1) // 2 + 1.5, y + 2.5
             det.box(x0, Y(y1), 0.0, x1, Y(y0), 0.02, "stone_dark")
             det.box(x0 + 0.2, Y(y1 - 0.2), 0.02, x1 - 0.2, Y(y0 + 0.2), 0.025, "tiles_dark")
-    det.to_object("_floordet", "world")
+    ob = det.to_object("_floordet", "world")
+    # détails plats : invisibles aux rayons secondaires (sinon l'occlusion ambiante du sol les
+    # « voit » à 4 mm et noircit des carrés sous les taches translucides)
+    ob.visible_diffuse = ob.visible_glossy = ob.visible_shadow = ob.visible_transmission = False
 
 
 # Fouillis adossé (rendu seulement ; compose.py en fait des collisions sans couper de passage)
@@ -2086,7 +2234,7 @@ CLUTTER = {
 CLUTTER_P = {"gallery": 0.14, "atrium": 0.06, "entrance": 0.05}
 # îlots libres (pas adossés) dans les grandes galeries : tas de mobilier, kiosques, tables de café
 FREE_P = {"gallery": 0.028, "atrium": 0.014}
-FREE_SHOP_P = 0.03
+FREE_SHOP_P = float(os.environ.get("MALL_FREE_SHOP", "0.07"))
 FREE_KINDS = ["junk", "junk", "cafe", "kiosk", "plant"]
 CLUTTER_CELLS = []
 
@@ -2186,6 +2334,88 @@ def build_clutter():
     mb.to_object("clutter", "world")
 
 
+JUNK_SHOP = float(os.environ.get("MALL_JUNK_SHOP", "0.13"))
+JUNK_GAL = float(os.environ.get("MALL_JUNK_GAL", "0.055"))
+FURN_WOOD = ["wood_floor", "wood_light", "crate", "wood_floor"]
+FURN_FAB = ["fabric_c", "wood_floor", "crate", "carpet_red", "fabric_c", "cardboard"]
+
+
+def junk_group(mb, cx, cy, rng):
+    """Mobilier renversé / entassé, BAS (≤ 0,32) et non bloquant (objet « _junk », hors masque
+    d'emprise) : la maquette montre des boutiques et une galerie pleines de meubles bruns."""
+    rot = rng.uniform(0, math.tau)
+    c_, s_ = math.cos(rot), math.sin(rot)
+
+    def at(u, v):
+        return cx + u * c_ - v * s_, Y(cy + u * s_ + v * c_)
+
+    def bx(u, v, du, dv, z0, z1, mat, r=0.0):
+        x, y = at(u, v)
+        mb.box(x - du / 2, y - dv / 2, z0, x + du / 2, y + dv / 2, z1, mat, rot=-(rot + r))
+    k = rng.random()
+    if k < 0.2:       # étagère / gondole couchée, marchandise répandue
+        m = rng.choice(["wood_floor", "metal_mid", "wood_light"])
+        bx(0, 0, 1.3, 0.42, 0.0, 0.22, m)
+        bx(0, 0.0, 1.22, 0.36, 0.22, 0.24, "metal_dark")
+        for j in range(rng.randint(3, 6)):
+            bx(rng.uniform(-0.7, 0.7), rng.uniform(0.3, 0.6), rng.uniform(0.1, 0.2), rng.uniform(0.1, 0.18), 0.0,
+               rng.uniform(0.05, 0.12), rng.choice(GOODS), rng.uniform(0, 3))
+    elif k < 0.38:    # table renversée + chaises
+        m = rng.choice(FURN_WOOD)
+        bx(0, 0, 0.8, 0.55, 0.0, 0.07, m)
+        for (u, v) in ((-0.32, -0.2), (0.32, -0.2), (-0.32, 0.2), (0.32, 0.2)):
+            bx(u, v, 0.06, 0.06, 0.07, 0.3, "metal_dark")
+        for j in range(rng.randint(1, 3)):
+            a = rng.uniform(0, math.tau)
+            bx(math.cos(a) * 0.65, math.sin(a) * 0.5, 0.36, 0.36, 0.0, rng.choice([0.08, 0.26]), rng.choice(FURN_WOOD + ["metal_mid"]), rng.uniform(0, 3))
+    elif k < 0.55:    # canapé / banquette
+        m = rng.choice(FURN_FAB)
+        bx(0, 0, 1.15, 0.5, 0.0, 0.2, m)
+        bx(0, -0.2, 1.15, 0.12, 0.2, 0.34, m)
+        for u in (-0.55, 0.55):
+            bx(u, 0.0, 0.1, 0.5, 0.2, 0.28, m)
+    elif k < 0.75:    # cartons entassés
+        for j in range(rng.randint(2, 5)):
+            sz = rng.uniform(0.28, 0.46)
+            z0 = 0.0 if j < 3 else 0.2
+            bx(rng.uniform(-0.35, 0.35), rng.uniform(-0.3, 0.3), sz, sz * rng.uniform(0.7, 1.0), z0, z0 + min(0.2, sz * 0.6),
+               "cardboard" if rng.random() < 0.8 else "crate", rng.uniform(-0.4, 0.4))
+    elif k < 0.88:    # vêtements / tissus en tas
+        for j in range(rng.randint(4, 8)):
+            bx(rng.uniform(-0.45, 0.45), rng.uniform(-0.35, 0.35), rng.uniform(0.25, 0.45), rng.uniform(0.18, 0.35), 0.0,
+               rng.uniform(0.02, 0.07), rng.choice(["fabric_a", "fabric_b", "fabric_c", "cream", "carpet_red"]), rng.uniform(0, 3))
+    else:             # comptoir / présentoir renversé
+        m = rng.choice(["wood_floor", "crate"])
+        bx(0, 0, 1.0, 0.6, 0.0, 0.3, m)
+        bx(0, 0, 0.92, 0.52, 0.3, 0.32, "glass_dark")
+
+
+def build_junk():
+    protect = set(GAME_CELLS)
+    for (x, y) in list(STAIRS) + list(EXTRACT):
+        for dy in range(-2, 3):
+            for dx in range(-2, 3):
+                protect.add((x + dx, y + dy))
+    protect.update(CLUTTER_CELLS)
+    mb = MB()
+    n = 0
+    for y in range(H):
+        for x in range(W):
+            if (x, y) in protect or in_parking(x, y) or tile(x, y) not in (1, 2):
+                continue
+            rng = random.Random(x * 5167 + y * 389 + SEED * 13)
+            p = JUNK_SHOP if tile(x, y) == 2 else JUNK_GAL
+            if rng.random() >= p:
+                continue
+            junk_group(mb, x + 0.5, y + 0.5, rng)
+            if tile(x, y) == 1:   # galerie : petits îlots de 2-3 meubles (salons, terrasses renversées)
+                for j in range(rng.randint(0, 2)):
+                    junk_group(mb, x + 0.5 + rng.uniform(-1.0, 1.0), y + 0.5 + rng.uniform(-1.0, 1.0), rng)
+            n += 1
+    mb.to_object("_junk", "world")
+    print("  junk", n, flush=True)
+
+
 def build_street_cars():
     mb = MB()
     for c in C.get("street_cars", []):
@@ -2194,6 +2424,35 @@ def build_street_cars():
         rot = c.get("rot", 0.0)
         Lc = Local([x - 1.0, y - 0.55, 2, 1], "N") if abs(math.sin(math.radians(rot))) < 0.5 else Local([x - 0.55, y - 1.0, 1, 2], "W")
         car(mb, Lc, rng, "car_%d" % c.get("color", 0))
+    # voitures garées le long des rues latérales et lampadaires de rue (hors jeu, marge)
+    srng = random.Random(SEED * 3 + 11)
+    lamps = []
+    for side_x, back in ((-4.3, "W"), (W + 4.3, "E")):
+        yy = 2.0
+        while yy < PARK[1] - 3:
+            if srng.random() < 0.45:
+                Lc = Local([side_x - 0.6, yy, 1.2, 2.3], back)
+                car(mb, Lc, srng)
+            yy += srng.uniform(3.0, 5.5)
+        for ly in range(4, PARK[1], 9):
+            lamps.append((side_x + (1.9 if side_x < 0 else -1.9), ly + 0.5))
+    for lx in range(4, W, 11):
+        lamps.append((lx + 0.5, -1.7))
+    for (lx, ly) in lamps:
+        mb.cyl(lx, Y(ly), 0.0, 2.3, 0.05, "metal_dark", 8)
+        mb.box(lx - 0.18, Y(ly) - 0.1, 2.25, lx + 0.18, Y(ly) + 0.1, 2.33, "lamp_warm")
+        LAMPS.append((lx, Y(ly), 2.15, STREET_LAMP))
+    # bennes et poubelles le long des façades (hors jeu)
+    for side_x in (-1.0, W + 1.0):
+        for yy in range(6, PARK[1] - 4, 13):
+            if srng.random() < 0.7:
+                bx_ = side_x + (-0.5 if side_x < 0 else 0.5)
+                yy_ = yy + srng.uniform(0, 4)
+                col_ = srng.choice(["car_3", "car_2", "metal_mid"])
+                mb.box(bx_ - 0.45, Y(yy_ + 1.6), 0.0, bx_ + 0.45, Y(yy_), 0.75, col_)
+                mb.box(bx_ - 0.48, Y(yy_ + 1.65), 0.75, bx_ + 0.48, Y(yy_ - 0.05), 0.82, "metal_dark", tilt=("X", 0.05))
+                for j in range(srng.randint(1, 3)):
+                    mb.box(bx_ - 0.2, Y(yy_ + 2.4 + j * 0.4), 0.0, bx_ + 0.2, Y(yy_ + 2.0 + j * 0.4), 0.3, "rubber" if srng.random() < 0.5 else "cardboard")
     # camionnette aux quais de livraison (extraction)
     for m in MODS:
         if m.get("arch") == "dock":
@@ -2216,16 +2475,16 @@ def build_lights():
         lrng = random.Random(rid * 31 + SEED)
         if role in ("gallery", "atrium", "entrance"):
             step = GAL_STEP
-            col = (1.0, 0.72, 0.45)
+            col = (1.0, 0.7, 0.42)
             k = GAL_K
         elif role == "arcade":
             step = 3.6
             col = None    # alterné violet / rose / cyan
-            k = 0.7
+            k = 0.42
         else:
-            step = 5.0
-            col = NEON[neon_of(m)] if lrng.random() < 0.22 else (1.0, 0.8, 0.58)
-            k = 0.0 if lrng.random() < 0.15 else 0.8   # quelques boutiques éteintes (zones sombres)
+            step = SHOP_STEP
+            col = NEON[neon_of(m)] if lrng.random() < SHOP_NEON_P else (1.0, 0.62, 0.32)
+            k = 0.0 if lrng.random() < 0.15 else SHOP_K   # quelques boutiques éteintes (zones sombres)
         if k <= 0.0:
             continue
         roofed = CELL_BLD.get((x + w // 2, y + h // 2)) is not None
@@ -2245,12 +2504,32 @@ def build_lights():
                 L_ = bpy.data.lights.new("l%d" % n, "AREA")
                 L_.shape = "DISK"
                 L_.size = LIGHT_SIZE * (0.7 if role in ("gallery", "atrium", "entrance") else 0.6)
+                if role in ("gallery", "atrium", "entrance"):
+                    z = LIGHT_Z + lrng.uniform(-0.25, 0.25)
                 L_.color = col if col is not None else NEON[("violet", "pink", "cyan", "violet")[(i + j * 3) % 4]]
                 L_.energy = LIGHT_E * k * lrng.uniform(0.45, 1.3)
                 o = bpy.data.objects.new("l%d" % n, L_)
                 o.location = (px, Y(py), z)
                 scene.collection.objects.link(o)
                 n += 1
+    # appliques murales : plaque émissive sur la face du mur + lumière chaude rasante
+    wl = MB()
+    for (x, y, z, dx, dy) in WALL_LAMPS:
+        cx, cy = x + 0.5 + dx * 0.5, y + 0.5 + dy * 0.5
+        dx, dy = (1 if dx > 0 else (-1 if dx < 0 else 0)), (1 if dy > 0 else (-1 if dy < 0 else 0))
+        if dx == 0:
+            wl.box(cx - 0.14, Y(cy) - 0.04, z - 0.07, cx + 0.14, Y(cy) + 0.04, z + 0.07, "lamp_warm")
+        else:
+            wl.box(cx - 0.04, Y(cy) - 0.14, z - 0.07, cx + 0.04, Y(cy) + 0.14, z + 0.07, "lamp_warm")
+        L_ = bpy.data.lights.new("w%d" % n, "POINT")
+        L_.color = (1.0, 0.66, 0.36)
+        L_.energy = LIGHT_E * SCONCE_E
+        L_.shadow_soft_size = 0.12
+        o = bpy.data.objects.new("w%d" % n, L_)
+        o.location = (cx + dx * 0.25, Y(cy + dy * 0.25), z)
+        scene.collection.objects.link(o)
+        n += 1
+    wl.to_object("_walllamps", "world")
     for (gx, gy, gc) in DOOR_GLOWS:
         L_ = bpy.data.lights.new("d%d" % n, "POINT")
         L_.color = NEON[gc]
@@ -2279,10 +2558,11 @@ def build_lights():
         o.location = (gx, gy, 1.15)
         scene.collection.objects.link(o)
         n += 1
-    for (lx, ly, lz) in LAMPS:
+    for lp in LAMPS:
+        lx, ly, lz = lp[:3]
         L_ = bpy.data.lights.new("p%d" % n, "SPOT")
         L_.color = (1.0, 0.72, 0.42)
-        L_.energy = LIGHT_E * 1.6
+        L_.energy = LIGHT_E * 1.6 * (lp[3] if len(lp) > 3 else 1.0)
         L_.spot_size = math.radians(120)
         L_.spot_blend = 0.6
         L_.shadow_soft_size = 0.3
@@ -2297,7 +2577,7 @@ def build_lights():
             x, y = p["cell"]
             L_ = bpy.data.lights.new("fnt", "POINT")
             L_.color = (0.4, 0.75, 1.0)
-            L_.energy = LIGHT_E * 1.5
+            L_.energy = LIGHT_E * 0.5
             o = bpy.data.objects.new("fnt", L_)
             o.location = (x + 0.5, Y(y - 0.5), 1.2)
             scene.collection.objects.link(o)
@@ -2308,11 +2588,16 @@ FIX = []
 
 
 LIGHT_E = float(os.environ.get("MALL_LIGHT", "75"))
-LIGHT_Z = float(os.environ.get("MALL_LIGHT_Z", "2.1"))
-LIGHT_SIZE = float(os.environ.get("MALL_LIGHT_SIZE", "2.6"))
-GAL_STEP = float(os.environ.get("MALL_GAL_STEP", "4.2"))
-GAL_K = float(os.environ.get("MALL_GAL_K", "0.68"))
+LIGHT_Z = float(os.environ.get("MALL_LIGHT_Z", "1.75"))
+LIGHT_SIZE = float(os.environ.get("MALL_LIGHT_SIZE", "0.6"))
+GAL_STEP = float(os.environ.get("MALL_GAL_STEP", "3.4"))
+GAL_K = float(os.environ.get("MALL_GAL_K", "0.5"))
 NEON_GLOW = float(os.environ.get("MALL_NEON_GLOW", "0.4"))
+STREET_LAMP = float(os.environ.get("MALL_STREET_LAMP", "0.8"))
+SHOP_STEP = float(os.environ.get("MALL_SHOP_STEP", "4.0"))
+SHOP_K = float(os.environ.get("MALL_SHOP_K", "0.55"))
+SHOP_NEON_P = float(os.environ.get("MALL_SHOP_NEON_P", "0.08"))
+SCONCE_E = float(os.environ.get("MALL_SCONCE", "0.5"))
 
 
 def build_world():
@@ -2324,6 +2609,7 @@ def build_world():
     build_props()
     build_clutter()
     build_floor_details()
+    build_junk()
     build_street_cars()
     build_lights()
 

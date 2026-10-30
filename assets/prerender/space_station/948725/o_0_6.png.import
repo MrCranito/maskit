@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bks6k7mrjlg4m"
-path="res://.godot/imported/in_9.webp-88d18ec03bb10c792a1621ede5168a39.ctex"
+uid="uid://bep65v1kclr8y"
+path="res://.godot/imported/o_0_6.png-d0d65466cf43802a63e8bdf5915d4ad3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/prerender/space_station/948725/in_9.webp"
-dest_files=["res://.godot/imported/in_9.webp-88d18ec03bb10c792a1621ede5168a39.ctex"]
+source_file="res://assets/prerender/space_station/948725/o_0_6.png"
+dest_files=["res://.godot/imported/o_0_6.png-d0d65466cf43802a63e8bdf5915d4ad3.ctex"]
 
 [params]
 

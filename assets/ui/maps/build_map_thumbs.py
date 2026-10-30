@@ -163,7 +163,28 @@ def space_station():
 
 # --- Centre commercial ----------------------------------------------------------------
 
-def mall():
+def mall(capture=""):
+    """Vignette des Galeries Lumière : recadrage 16:9 du rendu pré-calculé (mini-carte du paquet
+    assets/prerender/mall/<seed>/minimap.webp, ou toute image donnée) centré sur l'atrium ; sinon
+    illustration peinte."""
+    if not capture:
+        root = os.path.join(OUT, "..", "..", "prerender", "mall")
+        if os.path.isdir(root):
+            for s in sorted(os.listdir(root)):
+                p = os.path.join(root, s, "minimap.webp")
+                if os.path.exists(p):
+                    capture = p
+    if capture and os.path.exists(capture):
+        src = Image.open(capture).convert("RGB")
+        sw, sh = src.size
+        cw = int(sw * 0.9)
+        ch = int(cw * H / W)
+        cx, cy = sw * 0.5, sh * 0.44
+        box = (int(cx - cw / 2), int(cy - ch / 2), int(cx + cw / 2), int(cy + ch / 2))
+        img = src.crop(box).resize((W, H), Image.LANCZOS)
+        img = ImageEnhance.Contrast(img).enhance(1.08)
+        finish(img, "mall")
+        return
     w, h = W * S, H * S
     rnd = random.Random(11)
     img = vgrad(w, h, [(0, (28, 16, 46)), (0.55, (60, 30, 80)), (1, (24, 16, 34))]).convert("RGBA")
