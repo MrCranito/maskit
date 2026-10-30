@@ -179,6 +179,8 @@ func _ready() -> void:
 		Engine.max_fps = 0
 		_install_logger()
 	process_priority = -10
+	# Le jeu se met en pause à la mort (écran de fin) : le bot doit continuer pour clore le journal.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	process_physics_priority = -10
 	_setup.call_deferred()
 
@@ -550,7 +552,7 @@ func _physics_process(delta: float) -> void:
 	_last_frame_us = now
 	t += delta
 	if _trace and int(t / 10.0) != int((t - delta) / 10.0):
-		print("TRACE t=%.0f etat=%s etage=%d pv=%.0f pos=%s ms=%.1f ennemis=%d" % [t, _state, raid.current_floor, player.hp, player.global_position, frame_ms_sum / maxf(frames, 1), raid.get_alive_enemies().size()])
+		print("TRACE reel=%d t=%.0f etat=%s etage=%d pv=%.0f pos=%s ms=%.1f ennemis=%d" % [Time.get_ticks_msec(), t, _state, raid.current_floor, player.hp, player.global_position, frame_ms_sum / maxf(frames, 1), raid.get_alive_enemies().size()])
 	hp_min = minf(hp_min, player.hp)
 	if not shots_dir.is_empty() and t >= _next_shot:
 		_next_shot += shot_every
