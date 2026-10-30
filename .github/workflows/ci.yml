@@ -82,7 +82,7 @@ jobs:
 
       - name: Journal de compilation
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: compile-log
           path: compile.log
@@ -168,7 +168,7 @@ jobs:
 
       - name: Publier le rapport JUnit
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gut-results
           path: |
@@ -241,7 +241,7 @@ jobs:
           du -sh "build/${{ matrix.slug }}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Publier l'export (7 jours)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: raidersgo-${{ matrix.slug }}-debug
           path: build/${{ matrix.slug }}
@@ -249,7 +249,7 @@ jobs:
 
       - name: Journal d'export en cas d'échec
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: export-log-${{ matrix.slug }}
           path: export.log

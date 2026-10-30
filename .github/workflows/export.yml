@@ -76,7 +76,7 @@ jobs:
           zip -r -q "../../${EXPORT_NAME}-${{ matrix.slug }}-${GITHUB_REF_NAME}.zip" .
 
       - name: Publier l'artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}
           path: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}-*.zip
@@ -150,7 +150,7 @@ jobs:
           zip -r -q "../../${EXPORT_NAME}-android-${GITHUB_REF_NAME}.zip" .
 
       - name: Publier l'artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXPORT_NAME }}-android
           path: ${{ env.EXPORT_NAME }}-android-*.zip
