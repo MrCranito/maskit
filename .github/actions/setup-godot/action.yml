@@ -20,6 +20,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Clé de cache
+      id: key
+      shell: bash
+      env:
+        TEMPLATES: ${{ inputs.templates }}
+      run: |
+        # Les clés de cache n'acceptent pas les virgules.
+        echo "tpl=$(echo "${TEMPLATES:-none}" | tr -d '[:space:]' | tr ',' '-')" >> "$GITHUB_OUTPUT"
+
     - name: Cache Godot + modèles
       id: cache
       uses: actions/cache@v4
@@ -27,7 +36,7 @@ runs:
         path: |
           ~/godot-bin
           ~/.local/share/godot/export_templates
-        key: godot-${{ inputs.version }}-tpl-${{ inputs.templates }}-v2
+        key: godot-${{ inputs.version }}-tpl-${{ steps.key.outputs.tpl }}-v2
 
     - name: Télécharger Godot
       if: steps.cache.outputs.cache-hit != 'true'
