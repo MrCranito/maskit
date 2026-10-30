@@ -350,3 +350,39 @@ func test_clefs_de_la_reserve_emportees_puis_rendues_ou_perdues() -> void:
 	assert_eq(Profile.item_count(&"key_bank_vault"), 0, "mort : clef perdue")
 	GameState.set("raid_inventory", saved_inv)
 	Profile.from_dict(saved)
+
+
+# --- Ouverture (maquette « Butin révélé ») ------------------------------------------------
+
+func _entries(ids: Array) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for id: StringName in ids:
+		out.append({"item": LootDB.get_item(id), "count": 1})
+	return out
+
+
+func test_ouverture_montre_les_plus_rares_d_abord() -> void:
+	var e := _entries([&"bandage", &"pearl_necklace", &"pocket_watch", &"gold_nugget"])
+	var shown := ChestReveal.pick(e, 3)
+	assert_eq(shown.size(), 3, "au plus N objets montrés")
+	assert_eq(shown[0].id, &"pearl_necklace", "le plus rare en premier")
+	for i in range(1, shown.size()):
+		assert_lte(shown[i].rarity, shown[i - 1].rarity, "rareté décroissante")
+	var order := InventoryLootWindow.display_order(e)
+	assert_eq((e[order[0]]["item"] as ItemData).id, &"pearl_necklace", "fenêtre de butin : le plus rare en haut")
+	assert_eq((e[order[order.size() - 1]]["item"] as ItemData).id, &"bandage", "le moins rare en bas")
+
+
+func test_ouverture_lance_l_effet_puis_le_libere() -> void:
+	var c := LootContainer.create(&"chest", Vector2.ZERO)
+	c.has_preset = true
+	c.preset_entries = _entries([&"pearl_necklace", &"bandage"])
+	add_child_autofree(c)
+	await wait_frames(1)
+	c.force_open()
+	await wait_frames(1)
+	var rv := c.get_node_or_null(^"ChestReveal")
+	assert_not_null(rv, "effet d'ouverture ajouté")
+	assert_eq(rv.get_child_count(), 3, "faisceau + 2 icônes")
+	await wait_seconds(LootDB.getf("reveal_duration", 1.6) + 0.6)
+	assert_null(c.get_node_or_null(^"ChestReveal"), "effet libéré à la fin")
