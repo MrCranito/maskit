@@ -35,6 +35,12 @@ func _run() -> void:
 	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
 	await _sleep(2.0)
 	await _shot("menu")
+	var cl := CoopLoadout.new()
+	get_tree().root.add_child(cl)
+	await _sleep(1.0)
+	await _shot("arsenal_depart_coop")
+	cl.queue_free()
+	await _sleep(0.2)
 	for ok: bool in [false, true]:
 		var s := RaidEndScreen.create(ok, _summary(ok))
 		get_tree().root.add_child(s)
