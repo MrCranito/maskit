@@ -9,7 +9,10 @@ extends Node2D
 ##     assombri et teinté bleu nuit ; une zone jamais vue est quasi illisible ;
 ##     brume légère par-dessus (fog_darkened.gdshader, lit l'écran déjà dessiné) ;
 ##   mist (option B, « brume stylisée ») : brume bleu nuit → violet moins opaque,
-##     dégradé depuis le bord de vision, grain fin (fog_mist.gdshader).
+##     dégradé depuis le bord de vision, grain fin (fog_mist.gdshader) ;
+##   natural (« naturel ») : décor nuit lisible comme A, mais bord large et irrégulier,
+##     pénombre qui décroît au-delà du bord, lumière qui faiblit avec la distance
+##     (fog_natural.gdshader).
 ## Dans les deux cas, ennemis et conteneurs hors vue sont cachés (groupe fog_hideable).
 ##
 ## Logique (inchangée, sert à l'IA / la sauvegarde / les tests) : grille par case
@@ -41,12 +44,15 @@ extends Node2D
 
 const STYLE_DARKENED := &"darkened"
 const STYLE_MIST := &"mist"
+const STYLE_NATURAL := &"natural"
 const SHADERS := {
 	STYLE_DARKENED: preload("res://assets/shaders/fog_darkened.gdshader"),
 	STYLE_MIST: preload("res://assets/shaders/fog_mist.gdshader"),
+	STYLE_NATURAL: preload("res://assets/shaders/fog_natural.gdshader"),
 }
 ## Clés de [fog_<style>] lues par le script (les autres sont des uniformes du shader).
-const SCRIPT_STYLE_KEYS: Array[String] = ["halo_px"]
+## edge_feather_px : remplace [fog] edge_feather_px pour ce style s'il est présent.
+const SCRIPT_STYLE_KEYS: Array[String] = ["halo_px", "edge_feather_px"]
 const NOISE_PATH := "res://assets/textures/fog/fog_noise.png"
 const GROUP_HIDEABLE := &"fog_hideable"
 const GROUP_PLAYER := &"player"
@@ -376,6 +382,7 @@ func _load_balance() -> void:
 		st = STYLE_DARKENED
 	fog_style = st
 	halo_px = maxf(float(_style_cfg("halo_px", 0.0)), 0.0)
+	edge_feather_px = maxf(float(_style_cfg("edge_feather_px", edge_feather_px)), 0.0)
 
 
 ## Section des réglages de rendu du style courant.

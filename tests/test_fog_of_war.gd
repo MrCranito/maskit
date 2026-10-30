@@ -264,7 +264,7 @@ func test_default_style_from_balance() -> void:
 
 
 func test_both_styles_load_with_their_settings() -> void:
-	for style: StringName in [FogOfWar.STYLE_DARKENED, FogOfWar.STYLE_MIST]:
+	for style: StringName in [FogOfWar.STYLE_DARKENED, FogOfWar.STYLE_MIST, FogOfWar.STYLE_NATURAL]:
 		var fog := _fog_with_style(String(style))
 		assert_eq(fog.fog_style, style, "Style %s chargé" % style)
 		assert_eq(fog.style_section(), "fog_" + String(style))
@@ -279,6 +279,11 @@ func test_both_styles_load_with_their_settings() -> void:
 			assert_eq(mat.get_shader_parameter(StringName(key)), Balance.get_value(fog.style_section(), key), "%s.%s transmis au shader" % [style, key])
 		assert_eq(fog.halo_px, float(Balance.get_value(fog.style_section(), "halo_px", 0.0)))
 	assert_gt(_fog_with_style("mist").halo_px, 0.0, "La brume stylisée utilise le halo (dégradé)")
+	var nat := _fog_with_style("natural")
+	assert_gt(nat.halo_px, 0.0, "Le style naturel utilise le halo (pénombre)")
+	assert_almost_eq(nat.edge_feather_px, float(Balance.get_value("fog_natural", "edge_feather_px", 0.0)), 0.01,
+		"Bord large propre au style naturel")
+	assert_gt(nat.edge_feather_px, float(Balance.get_value("fog", "edge_feather_px", 22.0)), "Bord plus doux que le réglage commun")
 
 
 func test_unknown_style_falls_back() -> void:
@@ -288,7 +293,7 @@ func test_unknown_style_falls_back() -> void:
 
 
 func test_hideables_hidden_out_of_view_in_both_styles() -> void:
-	for style: String in ["darkened", "mist"]:
+	for style: String in ["darkened", "mist", "natural"]:
 		var fog := _fog_with_style(style)
 		fog.update_from(_at(_layout.player_spawn))
 		var seen := Node2D.new()
