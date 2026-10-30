@@ -5,14 +5,17 @@ const VIEWPORTS: Array[Vector2] = [Vector2(1280, 720), Vector2(1560, 720), Vecto
 const SAFES: Array[Vector4] = [Vector4(16, 16, 16, 16), Vector4(64, 16, 64, 28)]
 
 var _saved_inv: Inventory
+var _saved_player = null
 
 
 func before_each() -> void:
 	_saved_inv = GameState.raid_inventory
+	_saved_player = GameState.player if is_instance_valid(GameState.player) else null
 
 
 func after_each() -> void:
 	GameState.raid_inventory = _saved_inv
+	GameState.player = _saved_player if is_instance_valid(_saved_player) else null
 	get_tree().paused = false
 
 
@@ -73,3 +76,46 @@ func test_inventaire_tient_a_l_ecran() -> void:
 			assert_lte(need.x, screen._panel.size.x + 0.5, "inventaire en largeur (%s, %s)" % [vp2, safe2])
 			assert_lte(need.y, screen._panel.size.y + 0.5, "inventaire en hauteur (%s, %s)" % [vp2, safe2])
 			assert_gte(screen.slot_size, 62.0, "cases du sac assez grandes au doigt")
+
+
+# --- Fenêtre de butin : fermeture automatique en s'éloignant ------------------------------
+
+func test_fenetre_de_butin_hysteresis() -> void:
+	assert_false(InventoryLootWindow.out_of_range(80.0, 78.0, 0.0, 24.0), "juste après la portée : reste ouverte")
+	assert_false(InventoryLootWindow.out_of_range(101.0, 78.0, 0.0, 24.0), "dans la marge")
+	assert_true(InventoryLootWindow.out_of_range(103.0, 78.0, 0.0, 24.0), "au-delà de la marge : se ferme")
+	assert_false(InventoryLootWindow.out_of_range(120.0, 78.0, 26.0, 24.0), "la portée propre du conteneur compte")
+
+
+func test_fenetre_de_butin_se_ferme_quand_on_s_eloigne() -> void:
+	var p := Node2D.new()
+	add_child_autofree(p)
+	GameState.player = p
+	var c := LootContainer.create(&"crate", Vector2(40, 0))
+	c.has_preset = true
+	c.preset_entries = [{"item": _it(&"bandage"), "count": 1}, {"item": _it(&"gold_nugget"), "count": 1}]
+	add_child_autofree(c)
+	var win := InventoryLootWindow.new()
+	add_child_autofree(win)
+	await wait_frames(1)
+	win.open_for(c, Inventory.new())
+	assert_true(win.is_open())
+	var limit := LootDB.getf("interact_range", 78.0) + c.get_interact_reach()
+	var margin := LootDB.getf("loot_window_close_margin", 24.0)
+	# Juste hors de portée, dans la marge, cible perdue : la fenêtre reste (pas de clignotement).
+	p.global_position = c.global_position + Vector2(limit + margin * 0.5, 0)
+	win._on_target_changed(null)
+	win.check_distance()
+	assert_true(win.is_open(), "dans la marge d'hystérésis : reste ouverte")
+	# Au-delà de la marge : fermeture animée, puis masquée.
+	p.global_position = c.global_position + Vector2(limit + margin + 20.0, 0)
+	await wait_seconds(LootDB.getf("loot_window_check_interval", 0.1) * 3.0)
+	assert_false(win.is_open(), "fermée toute seule par le minuteur")
+	await wait_seconds(0.35)
+	assert_false(win.visible, "fondu terminé")
+	# La croix reste disponible : réouverture puis fermeture immédiate.
+	p.global_position = c.global_position
+	win.open_for(c, Inventory.new())
+	assert_true(win.visible and win.is_open(), "réouverture")
+	win.close()
+	assert_false(win.visible, "✕ : fermeture immédiate")
