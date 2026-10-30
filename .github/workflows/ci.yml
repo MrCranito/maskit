@@ -60,7 +60,7 @@ jobs:
           version: ${{ env.GODOT_VERSION }}
 
       - name: Cache des imports (.godot/)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .godot
           key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
@@ -134,7 +134,7 @@ jobs:
           version: ${{ env.GODOT_VERSION }}
 
       - name: Restaurer le cache des imports (.godot/)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .godot
           key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
@@ -222,7 +222,7 @@ jobs:
           templates: linux,web
 
       - name: Restaurer le cache des imports (.godot/)
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .godot
           key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
