@@ -739,7 +739,7 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	assert_eq(s.tabs, [&"character", &"weapon", &"gems"] as Array[StringName], "Onglets Personnages, Armes, Gemmes")
+	assert_eq(s.tabs, [&"character", &"weapon", &"packs", &"chests", &"gems"] as Array[StringName], "Onglets Personnages, Armes, Packs, Coffres, Gemmes")
 	assert_eq(s.current_tab, &"character")
 	assert_eq(s.cards.size(), s.character_skins().size() + 1, "Une carte par skin + le personnage de base")
 	assert_true(s.action_buttons.has(s.base_skin.id), "Carte du personnage de base")
@@ -843,16 +843,64 @@ func test_store_simulated_pack() -> void:
 	_test_profile(0)
 	var packs := Store.packs()
 	assert_gte(packs.size(), 1, "Packs dans balance.cfg")
+	var first := int(packs[0]["gems"]) * Store.first_bonus_multiplier()
 	assert_true(Store.purchase_pack(0))
-	assert_eq(Profile.gems, int(packs[0]["gems"]), "Gemmes créditées (paiement simulé)")
+	assert_eq(Profile.gems, first, "Gemmes créditées (paiement simulé), doublées au premier achat")
 	assert_false(Store.purchase_pack(-1))
 	assert_false(Store.purchase_pack(packs.size()))
-	assert_eq(Profile.gems, int(packs[0]["gems"]))
+	assert_eq(Profile.gems, first)
 	var s := _shop()
 	await wait_frames(2)
 	s.show_tab(&"gems")
 	assert_true(s.buy_pack(packs.size() - 1))
-	assert_eq(Profile.gems, int(packs[0]["gems"]) + int(packs[packs.size() - 1]["gems"]))
+	assert_eq(Profile.gems, first + int(packs[packs.size() - 1]["gems"]), "Bonus de premier achat une seule fois")
+
+
+func test_shop_coffres_gratuits() -> void:
+	_test_profile(0)
+	Profile.free_chests = 0
+	var s := _shop()
+	await wait_frames(2)
+	s.show_tab(&"chests")
+	assert_not_null(s.offers, "Onglet Coffres")
+	assert_true(s.offers.action_button.disabled, "Sans coffre gagné, rien à ouvrir (jamais vendus)")
+	assert_eq(s.offers.find_children("Odds*", "", true, false).size(), Store.chest_odds().size(), "Taux affichés")
+	Profile.free_chests = 1
+	s.show_tab(&"chests")
+	assert_false(s.offers.action_button.disabled)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 9
+	var r := s.offers.open_chest(rng)
+	assert_false(r.is_empty())
+	assert_true(Profile.owns_skin((r["skin"] as SkinData).id))
+	assert_not_null(s.offers.reveal, "Révélation du skin")
+	s.offers.close_reveal()
+	assert_true(s.offers.action_button.disabled)
+
+
+func test_shop_packs_a_contenu() -> void:
+	_test_profile(0)
+	var s := _shop()
+	await wait_frames(2)
+	s.show_tab(&"packs")
+	assert_eq(s.offers.cards.size(), Store.bundles().size())
+	assert_eq(s.offers.selected, 0, "Pack Recrue choisi d'office")
+	assert_true(s.offers.buy_bundle(&"recrue"))
+	assert_false(Store.bundle_available(&"recrue"))
+	s.show_tab(&"packs")
+	assert_ne(s.offers.selected, 0, "Pack Recrue déjà pris : un autre pack est choisi")
+
+
+func test_shop_gemmes_premier_achat() -> void:
+	_test_profile(0)
+	var s := _shop()
+	await wait_frames(2)
+	s.show_tab(&"gems")
+	assert_not_null(s.offers.find_child("WelcomeBanner", true, false), "Bandeau premier achat")
+	s.offers.select(0)
+	assert_true(s.buy_pack(0))
+	assert_eq(Profile.gems, int(Store.packs()[0]["gems"]) * Store.first_bonus_multiplier())
+	assert_null(s.offers.find_child("WelcomeBanner", true, false), "Bandeau retiré après le premier achat")
 
 
 # --- Pause ----------------------------------------------------------------------------

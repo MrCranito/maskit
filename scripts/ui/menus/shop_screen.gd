@@ -1,6 +1,6 @@
 class_name ShopScreen
 extends Control
-## Boutique cosmétique : onglets Personnages / Armes / Gemmes.
+## Boutique cosmétique : onglets Personnages / Armes / Packs / Coffres / Gemmes.
 ##  - Personnages (planche docs/reference/personnages_skins.jpg) : panneau d'aperçu à gauche
 ##    (MÊME rendu que le lobby : pose haute résolution + idle procédurale, HeroPreview), grille de
 ##    cartes à droite (personnage en pied, nom, bandeau de rareté, Acheter / Équiper / Équipé).
@@ -8,11 +8,14 @@ extends Control
 ##    ils n'apparaissent qu'une fois obtenus (badge « Pass »), sinon « Dans le pass » → écran du pass.
 ##  - Armes : skins PAR ARME (SkinData weapon_id), cartes triées par arme ; aperçu à gauche sur
 ##    l'arme (icône + arme tenue en jeu), équiper / retirer.
-##  - Gemmes : packs ([shop] packs) via Store.purchase_pack (paiement SIMULÉ, badge visible).
+##  - Packs, Coffres, Gemmes : ShopOffers (maquettes Packs, ShopChests, Gems) — packs à contenu,
+##    coffres de skins gratuits (gagnés en jouant, jamais vendus), packs de gemmes avec premier
+##    achat doublé (paiement SIMULÉ, badge visible).
 ## Message permanent : « Purement cosmétique : aucun avantage en jeu ».
 
-const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"gems"]
-const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"gems": "Gemmes"}
+const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"packs", &"chests", &"gems"]
+const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"packs": "Packs", &"chests": "Coffres", &"gems": "Gemmes"}
+const OFFER_TABS: Array[StringName] = [&"packs", &"chests", &"gems"]
 
 static var last_tab: StringName = &"character"
 ## Skin à mettre en avant à l'ouverture (ex. clic sur un skin ailleurs) ; vidé à l'ouverture.
@@ -25,6 +28,8 @@ var tab_chips: Dictionary = {}
 var cards: Array[Control] = []          ## cartes de l'onglet courant (skins ou packs)
 var action_buttons: Dictionary = {}     ## skin id → Button (carte)
 var pack_buttons: Array[Button] = []
+## Onglets Packs / Coffres / Gemmes (null sur les onglets de skins).
+var offers: ShopOffers = null
 var back_button: Button = null
 var gem_counter: GemCounter = null
 var simulated_badge: Control = null
@@ -101,8 +106,8 @@ func _build() -> void:
 	var group := ButtonGroup.new()
 	for tab: StringName in tabs:
 		var b := MenuKit.chip(String(TAB_TITLES[tab]), MenuKit.GEM if tab == &"gems" else MenuKit.GOLD, group)
-		b.custom_minimum_size = Vector2(150, 58)
-		b.add_theme_font_size_override("font_size", 20)
+		b.custom_minimum_size = Vector2(Balance.get_float("menu", "shop_tab_width", 124.0), 54)
+		b.add_theme_font_size_override("font_size", 18)
 		b.toggled.connect(func(on: bool) -> void:
 			if on and current_tab != tab:
 				MenuKit.sfx(&"tick")
@@ -245,27 +250,40 @@ func _build_detail() -> PanelContainer:
 func show_tab(tab: StringName) -> void:
 	current_tab = tab
 	last_tab = tab
-	var b: Button = tab_chips.get(tab)
-	if b != null and not b.button_pressed:
-		b.set_pressed_no_signal(true)
+	# set_pressed_no_signal ne relâche pas les autres puces du groupe : on le fait à la main
+	for t: StringName in tab_chips:
+		(tab_chips[t] as Button).set_pressed_no_signal(t == tab)
 	for c: Node in _row.get_children():
 		_row.remove_child(c)
 		c.queue_free()
 	cards.clear()
 	action_buttons.clear()
 	pack_buttons.clear()
-	_detail.visible = tab != &"gems"
+	if is_instance_valid(offers):
+		_body.remove_child(offers)
+		offers.queue_free()
+		offers = null
+	var is_offer := OFFER_TABS.has(tab)
+	_detail.visible = not is_offer
+	_scroll.visible = not is_offer
+	if is_offer:
+		offers = ShopOffers.new(tab)
+		offers.changed.connect(_refresh_states)
+		offers.open_tab.connect(show_tab)
+		_body.add_child(offers)
+		if tab == &"gems":
+			pack_buttons = offers.cards
+		_note.text = {&"packs": "Un skin déjà possédé est remboursé en gemmes.",
+			&"chests": "Coffres gagnés en jouant, jamais vendus. Taux affichés.",
+			&"gems": "Les gemmes s'achètent ici ou se gagnent à chaque extraction réussie."}[tab]
+		_refresh_states()
+		return
 	match tab:
 		&"character":
 			for s: SkinData in character_skins_with_base():
 				_add_card(_character_card(s))
 			_note.text = "Les skins changent seulement l'apparence. D'autres sont dans le pass de combat."
 			select_skin(HeroSkin.current() if HeroSkin.current() != null else base_skin, false)
-		&"gems":
-			var packs := Store.packs()
-			for i: int in packs.size():
-				_add_card(_pack_card(i, packs[i]))
-			_note.text = "Les gemmes s'achètent ici ou se gagnent à chaque extraction réussie."
 		_:
 			var list := weapon_skins()
 			for s: SkinData in list:
@@ -560,33 +578,6 @@ func _card_foot(p: Control, s: SkinData, title: String, sub: String) -> void:
 	b.set_meta(&"skin_id", String(s.id))
 
 
-func _pack_card(i: int, pack: Dictionary) -> Control:
-	var p := _card_panel(mini(i + 1, 4), i >= 2)
-	p.custom_minimum_size.y = Balance.get_float("menu", "shop_pack_height", 340.0)
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 8)
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	p.add_child(col)
-	var stage := HBoxContainer.new()
-	stage.alignment = BoxContainer.ALIGNMENT_CENTER
-	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	stage.add_theme_constant_override("separation", -26)
-	col.add_child(stage)
-	for k: int in mini(i + 1, 4):
-		var g := GemIcon.new()
-		g.custom_minimum_size = Vector2(76, 76) if k == 0 else Vector2(60, 60)
-		g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		stage.add_child(g)
-	var n := MenuKit.label("%d gemmes" % int(pack["gems"]), 28, MenuKit.GEM.lightened(0.4), MenuKit.nunito(1000), 4)
-	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	col.add_child(n)
-	var b := MenuKit.button(String(pack["price"]), MenuKit.Style.PRIMARY, 24, Vector2(0, 68))
-	col.add_child(b)
-	b.pressed.connect(func() -> void: buy_pack(i))
-	pack_buttons.append(b)
-	return p
-
-
 # --- Sélection (panneau d'aperçu) -------------------------------------------------------
 
 ## Met ce skin en avant dans le panneau de gauche (personnage en pied ou arme habillée).
@@ -660,7 +651,7 @@ func _refresh_states() -> void:
 		_refresh_button(action_buttons[id] as Button, SkinData.get_skin(id) if not String(id).is_empty() else null)
 	if detail_button != null:
 		_refresh_button(detail_button, selected_skin)
-		detail_button.visible = current_tab != &"gems" and (selected_skin != null or current_tab == &"character")
+		detail_button.visible = not OFFER_TABS.has(current_tab) and (selected_skin != null or current_tab == &"character")
 
 
 func _refresh_button(b: Button, s: SkinData) -> void:
@@ -796,6 +787,10 @@ func _pop_card(s: SkinData) -> void:
 
 ## Achat d'un pack de gemmes (paiement simulé).
 func buy_pack(i: int) -> bool:
+	if current_tab == &"gems" and is_instance_valid(offers):
+		var ok2 := offers.buy_pack(i)
+		pack_buttons = offers.cards
+		return ok2
 	var ok := Store.purchase_pack(i)
 	MenuKit.sfx(&"gold_pickup" if ok else &"error")
 	_refresh_states()
