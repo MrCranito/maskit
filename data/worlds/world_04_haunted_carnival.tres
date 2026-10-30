@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_04_haunted_carnival"
+display_name = "Carnaval hanté"
+biome = &"haunted_carnival"
+palette = {
+"canvas_red": Color(0.72, 0.12, 0.16, 1),
+"canvas_white": Color(0.9, 0.84, 0.8, 1),
+"dirt": Color(0.36, 0.28, 0.4, 1),
+"extraction": Color(0.3, 0.85, 0.45, 0.45),
+"floor": Color(0.42, 0.32, 0.36, 1),
+"gold": Color(1, 0.78, 0.3, 1),
+"neon_magenta": Color(1, 0.3, 0.85, 1),
+"neon_violet": Color(0.7, 0.4, 1, 1),
+"pavers": Color(0.46, 0.4, 0.52, 1),
+"shadow": Color(0.1, 0.06, 0.22, 1),
+"sky_bottom": Color(0.5, 0.2, 0.55, 1),
+"sky_mid": Color(0.3, 0.12, 0.42, 1),
+"sky_top": Color(0.1, 0.05, 0.2, 1),
+"stairs": Color(0.6, 0.5, 0.62, 1),
+"street": Color(0.4, 0.3, 0.44, 1),
+"void": Color(0.08, 0.05, 0.14, 1),
+"wall": Color(0.38, 0.26, 0.4, 1),
+"warm_bulb": Color(1, 0.75, 0.42, 1)
+}
+enemy_roster = {
+&"boss": {
+&"mall_flayer": 2.0,
+&"mall_night_spider": 2.0,
+&"mall_zombie": 2.0
+},
+&"combat": {
+&"mall_brute": 1.0,
+&"mall_clone": 1.5,
+&"mall_flayer": 2.5,
+&"mall_night_spider": 1.5,
+&"mall_security_bot": 1.0,
+&"mall_zombie": 3.0
+},
+&"corridor": {
+&"mall_flayer": 2.0,
+&"mall_night_spider": 1.0,
+&"mall_zombie": 3.0
+},
+&"extraction": {
+&"mall_brute": 1.2,
+&"mall_clone": 1.5,
+&"mall_flayer": 2.0,
+&"mall_night_spider": 1.0,
+&"mall_zombie": 2.0
+},
+&"loot": {
+&"mall_flayer": 1.5,
+&"mall_night_spider": 0.8,
+&"mall_zombie": 3.0
+},
+&"rest": {
+&"mall_zombie": 1.0
+},
+&"spawn": {
+&"mall_zombie": 1.0
+},
+&"super_loot": {
+&"mall_brute": 1.5,
+&"mall_clone": 1.0,
+&"mall_security_bot": 2.0
+},
+&"trap": {
+&"mall_clone": 2.0,
+&"mall_night_spider": 3.0,
+&"mall_zombie": 1.0
+}
+}
+building_archetypes = Array[StringName]([&"shooting", &"candy", &"ducks", &"prizes", &"fortune", &"popcorn", &"hammer", &"souvenirs", &"mirrors", &"freaks", &"theatre", &"caravan", &"director_caravan", &"ticket_booth", &"service_yard", &"big_top", &"hangar", &"workshop", &"museum", &"arcade"])
+building_names = {}
+container_kinds = Array[StringName]([&"hc_fair_crate", &"hc_stand_counter", &"hc_caravan_chest", &"hc_trash_can", &"hc_corpse", &"hc_plush_corpse"])
+prop_kinds = Array[StringName]([&"hc_lamp_post", &"hc_debris", &"hc_balloon_bunch", &"hc_barrier", &"hc_trash_bin", &"hc_food_cart", &"hc_dead_tree", &"hc_sign_post", &"hc_bench", &"hc_bumper_car", &"hc_shooting_counter", &"hc_prize_shelf", &"hc_candy_machine", &"hc_duck_pool", &"hc_plush_pile", &"hc_crystal_table", &"hc_hammer_tower", &"hc_mirror", &"hc_cage", &"hc_puppet_stage", &"hc_bunk", &"hc_trunk", &"hc_crate_stack", &"hc_bleachers", &"hc_ring_barrier"])
+floors_min = 0
+floors_max = 0
+boss_kind = &"mall_omnistore"
+elite_kinds = Array[StringName]([&"mall_violent", &"mall_store_warden"])
+generator_path = "res://scripts/biomes/haunted_carnival/hc_generator.gd"
+builder_path = "res://scripts/biomes/haunted_carnival/hc_builder.gd"
+containers_dir = "res://assets/sprites/haunted_carnival/containers/"
+floor_names = {
+0: "Le parc"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"
