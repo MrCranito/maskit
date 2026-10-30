@@ -327,13 +327,12 @@ func _player_card(info: Dictionary, role_text: String, present: bool, connected:
 		plus.add_theme_stylebox_override("hover", CutBox.make(Color(MenuKit.VIOLET, 0.4), 22.0, MenuKit.GOLD, 2.0, 0.0, 0.0))
 		plus.add_theme_stylebox_override("pressed", CutBox.make(Color(MenuKit.VIOLET, 0.6), 22.0, MenuKit.GOLD, 2.0, 0.0, 0.0))
 		plus.add_theme_stylebox_override("focus", CutBox.make(Color(0, 0, 0, 0), 22.0, MenuKit.TEXT, 2.0, 0.0, 0.0))
-		var g := MenuGlyph.new(&"plus", MenuKit.TEXT, 64.0)
+		var g := PlusMark.new()
 		g.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		g.offset_left = 28
-		g.offset_top = 28
-		g.offset_right = -28
-		g.offset_bottom = -28
-		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		g.offset_left = 32
+		g.offset_top = 32
+		g.offset_right = -32
+		g.offset_bottom = -32
 		plus.add_child(g)
 		plus.pressed.connect(share_code)
 		MenuKit.add_feedback(plus, 1.06)

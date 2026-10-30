@@ -787,8 +787,8 @@ func _build_mate_slot() -> void:
 	var f := CutBox.make(Color(0, 0, 0, 0), px * 0.2, MenuKit.TEXT, 3.0, 0.0, 0.0)
 	f.grow = 4.0
 	b.add_theme_stylebox_override("focus", f)
-	var g := MenuGlyph.new(&"plus", MenuKit.TEXT, px * 0.5)
-	g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var g := PlusMark.new()
+	g.name = "Plus"
 	g.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for side: String in ["offset_left", "offset_top"]:
 		g.set(side, px * 0.25)
@@ -815,7 +815,6 @@ func _build_mate_slot() -> void:
 	hit.name = "MateHit"
 	hit.flat = true
 	hit.focus_mode = Control.FOCUS_NONE
-	hit.tooltip_text = "Salon coop"
 	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
 		hit.add_theme_stylebox_override(k, StyleBoxEmpty.new())

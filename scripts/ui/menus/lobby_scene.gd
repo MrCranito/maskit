@@ -489,7 +489,7 @@ func stop_loops() -> void:
 ## Pieds du coéquipier (repère de l'image, comme hero.position) : à droite du héros, un peu en
 ## retrait ([menu] lobby_mate_dx / lobby_mate_dy, px de l'image).
 func mate_feet() -> Vector2:
-	return hero.position + Vector2(Balance.get_float("menu", "lobby_mate_dx", 250.0),
+	return hero.position + Vector2(Balance.get_float("menu", "lobby_mate_dx", 285.0),
 		Balance.get_float("menu", "lobby_mate_dy", -14.0))
 
 
