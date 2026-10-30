@@ -20,7 +20,7 @@ const T := FloorLayout.Tile
 ## Emprise (cases) des grands décors : [largeur, hauteur]. Le point d'appui (spawn) est
 ## la case du bas, au centre (colonne (w-1)/2 depuis la gauche).
 const BIG := {
-	&"fountain": Vector2i(5, 3), &"car_wreck": Vector2i(2, 1), &"store_shelf": Vector2i(2, 1),
+	&"fountain": Vector2i(7, 5), &"car_wreck": Vector2i(2, 1), &"store_shelf": Vector2i(2, 1),
 	&"cinema_seats": Vector2i(2, 1),
 }
 
@@ -28,7 +28,7 @@ const BIG := {
 const PROPS := {
 	&"entrance": [[&"planter", 1, 2, &"wall"], [&"mall_map", 1, 1, &"wall"], [&"bench", 0, 1, &"wall"], [&"debris", 1, 2, &"any"], [&"puddle", 0, 1, &"any"], [&"trash_bin", 0, 1, &"wall"]],
 	&"atrium": [[&"palm_pot", 6, 9, &"any"], [&"bench", 6, 9, &"center"], [&"planter", 4, 6, &"center"], [&"food_table", 2, 4, &"center"], [&"display_table", 1, 2, &"center"], [&"puddle", 2, 3, &"any"], [&"debris", 2, 3, &"any"], [&"neon_sign", 1, 2, &"any"]],
-	&"gallery": [[&"planter", 3, 6, &"center"], [&"bench", 3, 6, &"center"], [&"trash_bin", 1, 3, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 1, 3, &"any"], [&"debris", 2, 4, &"any"], [&"mall_map", 1, 2, &"wall"], [&"palm_pot", 2, 4, &"wall"], [&"display_table", 2, 4, &"center"], [&"food_table", 1, 3, &"center"]],
+	&"gallery": [[&"planter", 5, 8, &"center"], [&"bench", 6, 9, &"center"], [&"trash_bin", 2, 4, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 2, 4, &"any"], [&"debris", 5, 8, &"any"], [&"mall_map", 1, 2, &"wall"], [&"palm_pot", 3, 5, &"wall"], [&"display_table", 3, 5, &"center"], [&"food_table", 3, 5, &"center"]],
 	&"balcony": [[&"planter", 0, 2, &"wall"], [&"bench", 0, 1, &"wall"], [&"neon_sign", 0, 1, &"wall"], [&"debris", 0, 1, &"any"], [&"puddle", 0, 1, &"any"]],
 	&"food_court": [[&"food_table", 3, 6, &"center"], [&"trash_bin", 1, 2, &"wall"], [&"palm_pot", 0, 1, &"wall"], [&"neon_sign", 1, 1, &"wall"]],
 	&"shop_clothes": [[&"clothes_rack", 2, 4, &"any"], [&"mannequin", 1, 3, &"wall"], [&"checkout", 0, 1, &"wall"]],
