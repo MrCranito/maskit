@@ -125,7 +125,7 @@ func _end_screens() -> void:
 	await _raid_stop()
 	# Après : l'hôte a fini et reste sur son écran de fin (salon ouvert, raid en marche).
 	await _raid_start(true)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	await _sleep(0.3)
 	_coop.quit_spectating()
 	await _sleep(2.4)
@@ -134,7 +134,7 @@ func _end_screens() -> void:
 	# Après : l'invité finit à son tour et a bien son écran de fin.
 	await _raid_start(false)
 	_evt(NetProtocol.PlayerOp.EXTRACTED)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	await _sleep(2.4)
 	await _shot("apres_fin_invite")
 	await _raid_stop()

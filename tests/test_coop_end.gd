@@ -111,7 +111,7 @@ func test_guest_dies_then_host_extracts() -> void:
 
 func test_guest_extracts_then_host_dies() -> void:
 	await _start(false)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	assert_true(_coop.spectating)
 	_inject_evt(NetProtocol.PlayerOp.DEAD)
 	await wait_process_frames(2)
@@ -139,7 +139,7 @@ func test_guest_spectating_host_leaves_room() -> void:
 func test_guest_ends_after_host() -> void:
 	await _start(false)
 	_inject_evt(NetProtocol.PlayerOp.EXTRACTED)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	await wait_process_frames(2)
 	assert_false(_coop.spectating)
 	assert_true(_end_screen_shown(), "hôte déjà extrait : écran de fin direct")
@@ -181,7 +181,7 @@ func test_host_dies_then_guest_extracts() -> void:
 
 func test_host_spectating_guest_disconnects() -> void:
 	await _start(true)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	_session.peer_left.emit("timeout")
 	await wait_process_frames(2)
 	assert_true(_end_screen_shown())
@@ -213,7 +213,7 @@ func test_host_final_keeps_room_while_guest_plays() -> void:
 	await _start(true)
 	_session.status = NetSession.Status.IN_ROOM
 	_session.room_code = "ABCDEF"
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	assert_true(_coop.spectating, "hôte extrait : spectateur de l'invité")
 	_coop.quit_spectating()
 	await wait_seconds(1.2)
@@ -234,7 +234,7 @@ func test_guest_final_keeps_room() -> void:
 	_session.status = NetSession.Status.IN_ROOM
 	_session.room_code = "ABCDEF"
 	_inject_evt(NetProtocol.PlayerOp.DEAD)
-	_raid._finish_extraction()
+	await _raid._finish_extraction()
 	# Écran de fin de l'invité : arbre en pause, minuterie qui tourne quand même.
 	await get_tree().create_timer(1.2, true).timeout
 	assert_true(_end_screen_shown())
