@@ -6,8 +6,9 @@ extends Control
 ##   - seules les cases explorées sont visibles (masque issu de FogOfWar.is_cell_explored),
 ##     le reste sous une brume bleu nuit aux bords doux ;
 ##   - position et orientation (visée) du joueur, au centre ;
-##   - zones d'extraction toujours affichées (icône verte) ; si la plus proche sort du cadre,
-##     flèche au bord vers elle avec sa distance ;
+##   - zones d'extraction toujours affichées avec leur minuteur (orange avant fermeture, grise
+##     et barrée une fois fermée, zone d'urgence cachée tant qu'elle est éteinte) ; si la plus
+##     proche zone OUVERTE sort du cadre, flèche au bord vers elle (distance · temps restant) ;
 ##   - toucher / clic (ou touche M) = carte plein écran (jeu en pause), re-toucher pour fermer.
 ## Performance : rafraîchie par un Timer ([minimap] refresh_interval ≈ 0,1 s), sans allocation :
 ## on déplace un nœud (transformations), on ne redessine pas ; le masque d'exploration n'est
@@ -48,6 +49,9 @@ var _timer: Timer = null
 var _arrow: EdgeArrow = null
 var _arrow_label: Label = null
 var _last_dist: int = -1
+var _last_arrow_text: String = ""
+## Zones d'extraction (ExtractionZone) alignées sur _zone_centers ; vide = cases seules.
+var _zones: Array[Node2D] = []
 var _scan_radius: int = 12
 var _box: float = 168.0
 ## Raisons d'effacement en cours (fouille, inventaire) : mini-carte invisible et sans saisie.
@@ -118,11 +122,13 @@ func rebuild() -> void:
 	_build_background()
 	_build_fog_mask()
 	_zone_centers.clear()
+	_zones.clear()
 	var zones: Variant = raid.get("extraction_zones")
 	if zones is Array:
 		for z: Variant in zones:
 			if z is Node2D and is_instance_valid(z):
 				_zone_centers.append((z as Node2D).global_position)
+				_zones.append(z as Node2D)
 	if _zone_centers.is_empty():
 		for c: Vector2i in layout.extraction_cells:
 			_zone_centers.append(FloorLayout.cell_to_world(c))
@@ -130,6 +136,7 @@ func rebuild() -> void:
 	_scan_radius = (int(fv) if fv != null else 10) + 2
 	var view_cells := Balance.get_float("minimap", "view_cells", 24.0)
 	view.setup(bg_texture, bg_world_rect, _fog_tex, Vector2(layout.size), _zone_centers, TS * view_cells / _box)
+	view.set_zone_states(zone_states())
 	if full_map != null and is_instance_valid(full_map):
 		full_map.close()
 	_tick()
@@ -210,9 +217,33 @@ func _tick() -> void:
 	var pos := player.global_position
 	_update_fog(pos)
 	view.follow(pos, _aim_angle())
-	_update_arrow(pos)
+	var states := zone_states()
+	view.set_zone_states(states)
+	_update_arrow(pos, states)
 	if full_map != null and is_instance_valid(full_map) and full_map.visible:
 		full_map.view.set_player(pos, _aim_angle())
+		full_map.view.set_zone_states(states)
+
+
+## État affiché de chaque zone : {"state": ExtractionZone.State, "text": minuteur}.
+func zone_states() -> Array:
+	var out: Array = []
+	var clock: Variant = raid.get("raid_clock") if raid != null and is_instance_valid(raid) else null
+	var t := float(clock) if clock != null else 0.0
+	for i in _zone_centers.size():
+		var z: ExtractionZone = _zones[i] as ExtractionZone if i < _zones.size() else null
+		if z == null or not is_instance_valid(z):
+			out.append({"state": ExtractionZone.State.OPEN, "text": ""})
+			continue
+		var txt := ""
+		if z.state == ExtractionZone.State.CLOSED:
+			txt = ""
+		elif z.closes_at != INF:
+			txt = ExtractionZone.format_time(z.closes_at - t)
+		elif z.emergency:
+			txt = "!"
+		out.append({"state": z.state, "text": txt})
+	return out
 
 
 func _aim_angle() -> float:
@@ -240,10 +271,12 @@ func _update_fog(pos: Vector2) -> void:
 
 
 ## Flèche au bord vers l'extraction la plus proche quand elle sort du cadre.
-func _update_arrow(pos: Vector2) -> void:
+func _update_arrow(pos: Vector2, states: Array = []) -> void:
 	var best := -1
 	var best_d := INF
 	for i in _zone_centers.size():
+		if i < states.size() and int(states[i]["state"]) >= ExtractionZone.State.CLOSED:
+			continue
 		var d := pos.distance_squared_to(_zone_centers[i])
 		if d < best_d:
 			best_d = d
@@ -266,9 +299,12 @@ func _update_arrow(pos: Vector2) -> void:
 	_arrow.position = edge
 	_arrow.rotation = rel.angle()
 	var meters := int(round(sqrt(best_d) / TS * Balance.get_float("minimap", "meters_per_cell", 2.0)))
-	if meters != _last_dist:
+	var tt := String(states[best]["text"]) if best < states.size() else ""
+	var at := "%d m · %s" % [meters, tt] if tt != "" and tt != "!" else "%d m" % meters
+	if meters != _last_dist or at != _last_arrow_text:
 		_last_dist = meters
-		_arrow_label.text = "%d m" % meters
+		_last_arrow_text = at
+		_arrow_label.text = at
 	_arrow_label.visible = true
 	var lp := edge - rel.normalized() * 26.0 - _arrow_label.size * 0.5
 	_arrow_label.position = lp.clamp(Vector2(2, 2), Vector2(_box, _box) - _arrow_label.size - Vector2(2, 2))
@@ -474,6 +510,13 @@ class MapView extends Control:
 			player_mark.position = pos
 			player_mark.rotation = angle
 
+	## État des icônes d'extraction (minuteur, fermée, cachée), dans l'ordre de setup.
+	func set_zone_states(states: Array) -> void:
+		for i in mini(states.size(), _icons.size()):
+			var ic := _icons[i] as ExtractIcon
+			if ic != null:
+				ic.set_state(int(states[i]["state"]), String(states[i]["text"]))
+
 	func world_to_local(p: Vector2) -> Vector2:
 		return content.position + p * px_per_world
 
@@ -487,12 +530,40 @@ class PlayerMark extends Node2D:
 
 
 ## Icône d'extraction (pastille verte + pictogramme de sortie).
+## Minuteur sous l'icône ; orange avant fermeture ; grise et barrée une fois fermée ; cachée
+## tant que la zone (d'urgence) est éteinte.
 class ExtractIcon extends Node2D:
+	var state: int = 0
+	var text: String = ""
+
+	func set_state(st: int, t: String) -> void:
+		if st == state and t == text:
+			return
+		state = st
+		text = t
+		visible = st != ExtractionZone.State.DORMANT
+		queue_redraw()
+
 	func _draw() -> void:
+		var closed := state == ExtractionZone.State.CLOSED
+		var col := EXTRACT
+		if closed:
+			col = Color(0.55, 0.56, 0.62)
+		elif state == ExtractionZone.State.CLOSING or text == "!":
+			col = ExtractionZone.COL_WARN
 		draw_circle(Vector2(0, 1.5), 11.0, Color(0, 0, 0, 0.4))
-		draw_circle(Vector2.ZERO, 10.0, Color(0.04, 0.12, 0.09, 0.95))
-		draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 28, EXTRACT, 2.5, true)
-		ExtractionZone.draw_exit_glyph(self, Vector2.ZERO, 6.0, EXTRACT.lightened(0.3))
+		draw_circle(Vector2.ZERO, 10.0, Color(0.04, 0.05, 0.09, 0.95) if closed else Color(0.04, 0.12, 0.09, 0.95))
+		draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 28, col, 2.5, true)
+		ExtractionZone.draw_exit_glyph(self, Vector2.ZERO, 6.0, col.lightened(0.3))
+		if closed:
+			draw_line(Vector2(-8, -8), Vector2(8, 8), Color(0.85, 0.3, 0.28), 2.5, true)
+			draw_line(Vector2(-8, 8), Vector2(8, -8), Color(0.85, 0.3, 0.28), 2.5, true)
+		if text != "" and text != "!":
+			var font := ThemeDB.fallback_font
+			var fs := 11
+			var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+			draw_rect(Rect2(-w * 0.5 - 3.0, 12.0, w + 6.0, 13.0), Color(0.024, 0.027, 0.05, 0.85))
+			draw_string(font, Vector2(-w * 0.5, 22.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col.lightened(0.2))
 
 
 ## Flèche de bord vers l'extraction la plus proche (pointe vers +X, tournée par `rotation`).
@@ -583,6 +654,7 @@ class FullMapOverlay extends Control:
 		_panel.reset_size()
 		_panel.position = ((vp - _panel.size) * 0.5).floor()
 		view.setup(mm.bg_texture, mm.bg_world_rect, mm._fog_tex, Vector2(mm.layout.size), mm._zone_centers, 1.0)
+		view.set_zone_states(mm.zone_states())
 		view.fit(world)
 		if is_instance_valid(mm.player):
 			view.set_player(mm.player.global_position, mm._aim_angle())

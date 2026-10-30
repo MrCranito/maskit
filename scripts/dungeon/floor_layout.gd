@@ -111,6 +111,9 @@ var doors: Array[Door] = []
 var stairs: Array[Stairs] = []
 var player_spawn: Vector2i = Vector2i.ZERO
 var extraction_cells: Array[Vector2i] = []
+## Zones d'extraction à durée de vie (ExtractionPlan.Spec), calculées par ExtractionPlan.apply
+## (Raid) ; vide = une zone par groupe de cases, toujours ouverte.
+var extraction_specs: Array = []
 var enemy_spawns: Array[Spawn] = []
 var container_spawns: Array[Spawn] = []
 var prop_spawns: Array[Spawn] = []
