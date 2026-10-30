@@ -5,6 +5,11 @@ extends Node
 ## Armes : weapon_next = touche en haut à gauche (Q en QWERTY, A en AZERTY — le Q AZERTY
 ## sert déjà à aller à gauche) + molette vers le bas ; weapon_prev = molette vers le haut ;
 ## weapon_1..3 = rangée de chiffres (1/&, 2/é, 3/") ; reload = R ; gadget (équipement) = G.
+## Emplacements rapides (consommables / équipements du sac) : quick_1 = 4, quick_2 = 5 ;
+## inventory (sac) = I / Tab.
+## Manette : chaque action de jeu est un nom de l'InputMap (jamais une touche lue en dur), il
+## suffira d'ajouter des InputEventJoypadButton / JoypadMotion à ces mêmes actions (JOYPAD
+## ci-dessous, vide tant que le support manette n'est pas fait).
 
 const ACTIONS := {
 	"move_up": [KEY_W, KEY_Z, KEY_UP],
@@ -22,7 +27,13 @@ const ACTIONS := {
 	"weapon_1": [KEY_1, KEY_KP_1],
 	"weapon_2": [KEY_2, KEY_KP_2],
 	"weapon_3": [KEY_3, KEY_KP_3],
+	"quick_1": [KEY_4, KEY_KP_4],
+	"quick_2": [KEY_5, KEY_KP_5],
+	"inventory": [KEY_I, KEY_TAB],
 }
+
+## Boutons de manette par action (à remplir avec le support manette) : action → [JoyButton…].
+const JOYPAD := {}
 
 ## Molette : action → bouton.
 const WHEEL := {
@@ -39,6 +50,13 @@ func _enter_tree() -> void:
 			var ev := InputEventKey.new()
 			ev.physical_keycode = keycode
 			InputMap.action_add_event(action, ev)
+	for action: String in JOYPAD:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action, 0.2)
+		for button: JoyButton in JOYPAD[action]:
+			var jb := InputEventJoypadButton.new()
+			jb.button_index = button
+			InputMap.action_add_event(action, jb)
 	for action: String in WHEEL:
 		var wheel := InputEventMouseButton.new()
 		wheel.button_index = WHEEL[action]
