@@ -23,9 +23,12 @@ exports/
 android/build/
 android/.build_version
 
-# Keystores (ne JAMAIS versionner de clefs de signature)
+# Keystores (ne JAMAIS versionner de clefs de signature de RELEASE)
 *.keystore
 *.jks
+# Exception : clé DEBUG de test (mot de passe standard « android »), utilisée par la CI
+# pour que chaque APK de test s'installe par-dessus le précédent. Aucune valeur de sécurité.
+!tools/android/debug.keystore
 
 # Identifiants d'export (Godot 4.4 sépare les secrets dans ce fichier)
 .godot/export_credentials.cfg
