@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_06_egypt_pyramids"
+display_name = "Les Pyramides d'Égypte"
+biome = &"egypt_pyramids"
+palette = {
+"ember": Color(1, 0.55, 0.18, 1),
+"extraction": Color(0.3, 0.85, 0.45, 0.45),
+"floor": Color(0.74, 0.6, 0.4, 1),
+"gold": Color(1, 0.8, 0.32, 1),
+"sand": Color(0.9, 0.74, 0.46, 1),
+"sandstone": Color(0.82, 0.64, 0.42, 1),
+"sandstone_dark": Color(0.52, 0.36, 0.22, 1),
+"shadow": Color(0.26, 0.14, 0.1, 1),
+"sky_bottom": Color(1, 0.66, 0.3, 1),
+"sky_mid": Color(0.96, 0.5, 0.36, 1),
+"sky_top": Color(0.5, 0.26, 0.4, 1),
+"stairs": Color(0.72, 0.56, 0.36, 1),
+"street": Color(0.88, 0.7, 0.44, 1),
+"torch": Color(1, 0.72, 0.3, 1),
+"void": Color(0.42, 0.26, 0.14, 1),
+"wall": Color(0.6, 0.42, 0.26, 1)
+}
+enemy_roster = {
+&"boss": {
+&"fw_bandit": 2.0,
+&"fw_bruiser": 2.0,
+&"fw_marauder": 1.0,
+&"fw_raider": 1.5
+},
+&"combat": {
+&"fw_bandit": 4.0,
+&"fw_bruiser": 1.0,
+&"fw_guard_dog": 1.0,
+&"fw_marauder": 1.5,
+&"fw_raider": 3.0,
+&"fw_sharpshooter": 1.5
+},
+&"corridor": {
+&"fw_bandit": 3.0,
+&"fw_guard_dog": 0.8,
+&"fw_raider": 2.0,
+&"fw_sharpshooter": 1.0
+},
+&"extraction": {
+&"fw_bandit": 3.0,
+&"fw_bruiser": 1.0,
+&"fw_guard_dog": 1.5,
+&"fw_marauder": 1.5,
+&"fw_raider": 2.5,
+&"fw_sharpshooter": 1.5
+},
+&"loot": {
+&"fw_bandit": 3.0,
+&"fw_guard_dog": 0.5,
+&"fw_raider": 2.0,
+&"fw_sharpshooter": 1.0
+},
+&"rest": {
+&"fw_bandit": 1.0,
+&"fw_raider": 0.5
+},
+&"spawn": {
+&"fw_bandit": 1.0
+},
+&"super_loot": {
+&"fw_bruiser": 3.0,
+&"fw_marauder": 1.5,
+&"fw_raider": 1.0,
+&"fw_sharpshooter": 1.0
+},
+&"trap": {
+&"fw_bandit": 2.0,
+&"fw_marauder": 1.0,
+&"fw_raider": 3.0
+}
+}
+building_archetypes = Array[StringName]([&"chamber", &"treasury", &"hypostyle", &"sanctuary"])
+building_names = {}
+container_kinds = Array[StringName]([&"eg_jar", &"eg_sarcophagus", &"eg_chest", &"eg_gold_chest", &"eg_altar", &"eg_basket", &"eg_mummy", &"eg_corpse"])
+prop_kinds = Array[StringName]([&"eg_brazier", &"eg_statue", &"eg_canopic_jars", &"eg_sarcophagus_big", &"eg_offering_table", &"eg_embalming_table", &"eg_weapon_rack", &"eg_bench", &"eg_scroll_shelf", &"eg_spikes", &"eg_rubble", &"eg_cactus", &"eg_bones", &"eg_tent"])
+floors_min = 0
+floors_max = 0
+boss_kind = &"fw_sheriff"
+elite_kinds = Array[StringName]([&"fw_deserter", &"fw_buffalo"])
+generator_path = "res://scripts/biomes/egypt_pyramids/eg_generator.gd"
+builder_path = "res://scripts/biomes/egypt_pyramids/eg_builder.gd"
+containers_dir = "res://assets/sprites/egypt_pyramids/containers/"
+floor_names = {
+0: "Surface — Complexe des temples"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"

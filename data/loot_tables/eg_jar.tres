@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"eg_jar"
+display_name = "Jarre scellée"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 1.0
+entries = {
+&"bandage": 2,
+&"eg_canopic_jar": 0.8,
+&"eg_dates": 4,
+&"eg_honey_pot": 1.5,
+&"eg_incense": 5,
+&"eg_papyrus": 2,
+&"eg_silver_coins": 3,
+&"eg_water_skin": 3
+}

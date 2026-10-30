@@ -1,0 +1,103 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_05_frozen_lands"
+display_name = "Les Terres gelées"
+biome = &"frozen_lands"
+palette = {
+"alarm": Color(1, 0.2, 0.18, 1),
+"concrete": Color(0.5, 0.54, 0.6, 1),
+"crystal": Color(0.4, 0.85, 1, 1),
+"cyan": Color(0.45, 0.9, 1, 1),
+"extraction": Color(0.3, 1, 0.75, 0.45),
+"floor": Color(0.42, 0.46, 0.52, 1),
+"ice": Color(0.55, 0.78, 0.95, 1),
+"metal": Color(0.36, 0.4, 0.47, 1),
+"shadow": Color(0.06, 0.1, 0.22, 1),
+"snow": Color(0.86, 0.91, 0.97, 1),
+"stairs": Color(0.45, 0.9, 1, 1),
+"street": Color(0.82, 0.88, 0.95, 1),
+"void": Color(0.03, 0.06, 0.12, 1),
+"wall": Color(0.3, 0.34, 0.4, 1),
+"water": Color(0.03, 0.06, 0.12, 1)
+}
+enemy_roster = {
+&"boss": {
+&"ss_security_droid": 1.0,
+&"ss_spectre": 2.0,
+&"ss_station_guardian": 0.5,
+&"ss_teleporter": 0.5
+},
+&"combat": {
+&"ss_alien": 1.0,
+&"ss_detector": 1.5,
+&"ss_security_droid": 3.0,
+&"ss_spectre": 3.0,
+&"ss_station_guardian": 1.0,
+&"ss_teleporter": 2.0
+},
+&"corridor": {
+&"ss_detector": 0.5,
+&"ss_security_droid": 3.0,
+&"ss_spectre": 3.0,
+&"ss_teleporter": 1.5
+},
+&"extraction": {
+&"ss_alien": 1.2,
+&"ss_detector": 1.0,
+&"ss_security_droid": 2.0,
+&"ss_spectre": 2.0,
+&"ss_station_guardian": 1.5,
+&"ss_teleporter": 2.0
+},
+&"loot": {
+&"ss_detector": 0.5,
+&"ss_security_droid": 2.0,
+&"ss_spectre": 2.0,
+&"ss_teleporter": 1.5
+},
+&"rest": {
+&"ss_security_droid": 1.0,
+&"ss_spectre": 1.0,
+&"ss_teleporter": 0.5
+},
+&"spawn": {
+&"ss_security_droid": 1.0,
+&"ss_spectre": 1.0,
+&"ss_teleporter": 0.5
+},
+&"super_loot": {
+&"ss_alien": 1.0,
+&"ss_detector": 0.5,
+&"ss_security_droid": 2.0,
+&"ss_spectre": 1.0,
+&"ss_station_guardian": 2.0,
+&"ss_teleporter": 1.0
+},
+&"trap": {
+&"ss_alien": 0.5,
+&"ss_detector": 1.0,
+&"ss_security_droid": 1.0,
+&"ss_spectre": 2.0,
+&"ss_teleporter": 2.0
+}
+}
+building_archetypes = Array[StringName]([])
+building_names = {}
+container_kinds = Array[StringName]([&"fl_supply_crate", &"fl_ammo_box", &"fl_fuel_drum", &"fl_footlocker", &"fl_cryo_pod", &"fl_sample_case", &"fl_sled", &"fl_frozen_corpse"])
+prop_kinds = Array[StringName]([&"fl_lab_bench", &"fl_cryo_tank", &"fl_console", &"fl_bunk", &"fl_stove", &"fl_table", &"fl_med_bed", &"fl_map_table", &"fl_radio_rack", &"fl_crate_stack", &"fl_barrels", &"fl_sandbags", &"fl_weapon_rack", &"fl_generator", &"fl_pipes", &"fl_workbench", &"fl_tool_cart", &"fl_telescope", &"fl_antenna", &"fl_helicopter", &"fl_snowcat", &"fl_crystal_core"])
+floors_min = 0
+floors_max = 0
+boss_kind = &"ss_architect"
+elite_kinds = Array[StringName]([&"ss_drone_tieur", &"ss_atlas"])
+generator_path = "res://scripts/biomes/frozen_lands/frozen_lands_generator.gd"
+builder_path = "res://scripts/biomes/frozen_lands/frozen_lands_builder.gd"
+containers_dir = "res://assets/sprites/frozen_lands/containers/"
+floor_names = {
+0: "Surface de la base"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"
