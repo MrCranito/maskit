@@ -1,0 +1,2353 @@
+{
+ "A": {
+  "n": 100,
+  "combos": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 144.27,
+    "or": null,
+    "xp": 179.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 222.33,
+    "or": 629,
+    "xp": 490.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 186.0,
+    "or": null,
+    "xp": 192.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 125.42,
+    "or": null,
+    "xp": 179.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 61.95,
+    "or": null,
+    "xp": 110.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 98.38,
+    "or": null,
+    "xp": 124.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 39.63,
+    "or": null,
+    "xp": 88.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 96.33,
+    "or": null,
+    "xp": 122.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 45.82,
+    "or": null,
+    "xp": 87.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 20.43,
+    "or": null,
+    "xp": 86
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 38.0,
+    "or": null,
+    "xp": 100.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 24.23,
+    "or": null,
+    "xp": 96.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 27.67,
+    "or": null,
+    "xp": 116.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 122.33,
+    "or": null,
+    "xp": 111.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 44.73,
+    "or": null,
+    "xp": 116.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 220.43,
+    "or": 849,
+    "xp": 544.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 271.2,
+    "or": 925,
+    "xp": 598
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 100.0,
+    "mort": 0.0,
+    "duree": 235.87,
+    "or": 461.33,
+    "xp": 639.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 237.5,
+    "or": null,
+    "xp": 274.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 148.03,
+    "or": null,
+    "xp": 159.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 191.4,
+    "or": null,
+    "xp": 200.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 71.15,
+    "or": null,
+    "xp": 103
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 90.07,
+    "or": null,
+    "xp": 127.33
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 75.0,
+    "duree": 192.83,
+    "or": null,
+    "xp": 100.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 59.6,
+    "or": null,
+    "xp": 99
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 44.27,
+    "or": null,
+    "xp": 94.33
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 51.2,
+    "or": null,
+    "xp": 106.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 73.4,
+    "or": null,
+    "xp": 121
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 50.47,
+    "or": null,
+    "xp": 124.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 103.5,
+    "or": null,
+    "xp": 141.67
+   }
+  ],
+  "map_diff": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "n": 9,
+    "extraction": 22.2,
+    "duree": 184.2,
+    "survie_mediane": 178.7,
+    "kills": 21.22,
+    "pv_min": 8.4
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 95.25,
+    "survie_mediane": 55.5,
+    "kills": 12.83,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "n": 11,
+    "extraction": 0.0,
+    "duree": 62.5,
+    "survie_mediane": 42.4,
+    "kills": 6.64,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 27.56,
+    "survie_mediane": 25.4,
+    "kills": 5.67,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 64.91,
+    "survie_mediane": 33.8,
+    "kills": 9,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "n": 9,
+    "extraction": 77.8,
+    "duree": 242.5,
+    "survie_mediane": 194.1,
+    "kills": 26.44,
+    "pv_min": 27.68
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 192.31,
+    "survie_mediane": 221.3,
+    "kills": 24.83,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "n": 11,
+    "extraction": 0.0,
+    "duree": 120.55,
+    "survie_mediane": 73.8,
+    "kills": 10.09,
+    "pv_min": 0.58
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 51.69,
+    "survie_mediane": 43.0,
+    "kills": 6.56,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 75.79,
+    "survie_mediane": 57.2,
+    "kills": 11.33,
+    "pv_min": 0.0
+   }
+  ],
+  "enemies": [
+   {
+    "kind": "ss_alien",
+    "vus": 44,
+    "tues": 17,
+    "degats_recus": 1401.1,
+    "degats_par_rencontre": 31.8,
+    "coups": 104,
+    "morts_causees": 6,
+    "ttk_median": 20.62,
+    "degats_infliges": 5460.0
+   },
+   {
+    "kind": "ss_teleporter",
+    "vus": 300,
+    "tues": 210,
+    "degats_recus": 5224.9,
+    "degats_par_rencontre": 17.4,
+    "coups": 471,
+    "morts_causees": 24,
+    "ttk_median": 2.6,
+    "degats_infliges": 14863.5
+   },
+   {
+    "kind": "fw_raider",
+    "vus": 184,
+    "tues": 102,
+    "degats_recus": 2041.7,
+    "degats_par_rencontre": 11.1,
+    "coups": 136,
+    "morts_causees": 10,
+    "ttk_median": 2.73,
+    "degats_infliges": 8603.1
+   },
+   {
+    "kind": "fw_marauder",
+    "vus": 334,
+    "tues": 120,
+    "degats_recus": 3227.2,
+    "degats_par_rencontre": 9.7,
+    "coups": 312,
+    "morts_causees": 21,
+    "ttk_median": 5.29,
+    "degats_infliges": 11463.3
+   },
+   {
+    "kind": "ss_security_droid",
+    "vus": 319,
+    "tues": 213,
+    "degats_recus": 2236.6,
+    "degats_par_rencontre": 7.0,
+    "coups": 477,
+    "morts_causees": 7,
+    "ttk_median": 3.35,
+    "degats_infliges": 13913.5
+   },
+   {
+    "kind": "fw_sharpshooter",
+    "vus": 149,
+    "tues": 74,
+    "degats_recus": 923.8,
+    "degats_par_rencontre": 6.2,
+    "coups": 41,
+    "morts_causees": 4,
+    "ttk_median": 0.78,
+    "degats_infliges": 3588.4
+   },
+   {
+    "kind": "fw_bandit",
+    "vus": 468,
+    "tues": 234,
+    "degats_recus": 2476.7,
+    "degats_par_rencontre": 5.3,
+    "coups": 301,
+    "morts_causees": 11,
+    "ttk_median": 2.65,
+    "degats_infliges": 14773.3
+   },
+   {
+    "kind": "ss_station_guardian",
+    "vus": 2,
+    "tues": 1,
+    "degats_recus": 8.2,
+    "degats_par_rencontre": 4.1,
+    "coups": 1,
+    "morts_causees": 0,
+    "ttk_median": 0.95,
+    "degats_infliges": 240.0
+   },
+   {
+    "kind": "ss_spectre",
+    "vus": 252,
+    "tues": 173,
+    "degats_recus": 686.3,
+    "degats_par_rencontre": 2.7,
+    "coups": 153,
+    "morts_causees": 3,
+    "ttk_median": 0.37,
+    "degats_infliges": 6802.3
+   },
+   {
+    "kind": "ss_alien_brood",
+    "vus": 126,
+    "tues": 116,
+    "degats_recus": 156.5,
+    "degats_par_rencontre": 1.2,
+    "coups": 37,
+    "morts_causees": 1,
+    "ttk_median": 1.02,
+    "degats_infliges": 2744.0
+   },
+   {
+    "kind": "ss_detector",
+    "vus": 104,
+    "tues": 78,
+    "degats_recus": 123.7,
+    "degats_par_rencontre": 1.2,
+    "coups": 30,
+    "morts_causees": 1,
+    "ttk_median": 0.65,
+    "degats_infliges": 3564.9
+   },
+   {
+    "kind": "fw_guard_dog",
+    "vus": 27,
+    "tues": 20,
+    "degats_recus": 21.0,
+    "degats_par_rencontre": 0.8,
+    "coups": 4,
+    "morts_causees": 1,
+    "ttk_median": 0.7,
+    "degats_infliges": 792.9
+   },
+   {
+    "kind": "enemy_hazard",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 400.4,
+    "degats_par_rencontre": null,
+    "coups": 111,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "fw_bruiser",
+    "vus": 2,
+    "tues": 0,
+    "degats_recus": 0,
+    "degats_par_rencontre": 0.0,
+    "coups": 0,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "inconnu",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 69.2,
+    "degats_par_rencontre": null,
+    "coups": 18,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "player",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 6.0,
+    "degats_par_rencontre": null,
+    "coups": 1,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "tourelle",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 340.7,
+    "degats_par_rencontre": null,
+    "coups": 53,
+    "morts_causees": 1,
+    "ttk_median": null,
+    "degats_infliges": 0
+   }
+  ],
+  "killers": [
+   [
+    "ss_teleporter",
+    24
+   ],
+   [
+    "fw_marauder",
+    21
+   ],
+   [
+    "fw_bandit",
+    11
+   ],
+   [
+    "fw_raider",
+    10
+   ],
+   [
+    "ss_security_droid",
+    7
+   ],
+   [
+    "ss_alien",
+    6
+   ],
+   [
+    "fw_sharpshooter",
+    4
+   ],
+   [
+    "ss_spectre",
+    3
+   ],
+   [
+    "tourelle",
+    1
+   ],
+   [
+    "ss_alien_brood",
+    1
+   ],
+   [
+    "ss_detector",
+    1
+   ],
+   [
+    "fw_guard_dog",
+    1
+   ]
+  ],
+  "items_by_source": {
+   "cadavre": [
+    2295,
+    426,
+    14,
+    0,
+    0
+   ],
+   "conteneur": [
+    1990,
+    217,
+    49,
+    3,
+    0
+   ],
+   "sol": [
+    1650,
+    551,
+    5,
+    8,
+    0
+   ]
+  },
+  "items_per_raid": {
+   "cadavre": [
+    22.95,
+    4.26,
+    0.14,
+    0.0,
+    0.0
+   ],
+   "conteneur": [
+    19.9,
+    2.17,
+    0.49,
+    0.03,
+    0.0
+   ],
+   "sol": [
+    16.5,
+    5.51,
+    0.05,
+    0.08,
+    0.0
+   ]
+  },
+  "or_par_extraction": 687.78,
+  "or_par_raid": 61.9,
+  "xp_par_raid": 183.74,
+  "xp_par_extraction": 703.56,
+  "xp_par_mort": 133.8,
+  "tirs_par_raid": 129.18,
+  "conteneurs_par_raid": 4.37,
+  "cadavres_par_raid": 5.73,
+  "soins_par_raid": 5.16,
+  "equipements_par_raid": 2.41,
+  "esquives_par_raid": 54.73,
+  "ennemis_bloques": [
+   [
+    "fw_marauder",
+    2
+   ],
+   [
+    "fw_sharpshooter",
+    1
+   ],
+   [
+    "fw_guard_dog",
+    1
+   ],
+   [
+    "ss_spectre",
+    1
+   ],
+   [
+    "fw_raider",
+    1
+   ],
+   [
+    "fw_bandit",
+    1
+   ]
+  ],
+  "conteneurs_inaccessibles": [],
+  "conteneurs_inaccessibles_par_raid": 0,
+  "erreurs": [],
+  "avertissements": [],
+  "image_la_plus_lente_ms": 106.88,
+  "image_moyenne_ms": 1.8,
+  "bot_bloque_par_raid": 0.75,
+  "elites": {},
+  "boss_rencontres": 0,
+  "boss_tues": 0
+ },
+ "B": {
+  "n": 50,
+  "combos": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 112.45,
+    "or": 326,
+    "xp": 250.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 74.33,
+    "or": null,
+    "xp": 116.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 98.65,
+    "or": 535,
+    "xp": 248.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 82.2,
+    "or": null,
+    "xp": 112
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 74.4,
+    "or": null,
+    "xp": 107.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 52.1,
+    "or": null,
+    "xp": 101.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 1,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 21.8,
+    "or": null,
+    "xp": 85
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 1,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 77.4,
+    "or": null,
+    "xp": 121
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 201.43,
+    "or": 1180,
+    "xp": 354.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 197.25,
+    "or": null,
+    "xp": 212.5
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 187.8,
+    "or": null,
+    "xp": 181
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 66.22,
+    "or": null,
+    "xp": 91
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 99.92,
+    "or": null,
+    "xp": 119.75
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 104.97,
+    "or": null,
+    "xp": 115.5
+   }
+  ],
+  "map_diff": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 16.7,
+    "duree": 95.14,
+    "survie_mediane": 72.3,
+    "kills": 12.33,
+    "pv_min": 2.17
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 69.57,
+    "survie_mediane": 42.0,
+    "kills": 7.67,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "n": 2,
+    "extraction": 0.0,
+    "duree": 49.6,
+    "survie_mediane": 49.6,
+    "kills": 7,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 8.3,
+    "duree": 195.49,
+    "survie_mediane": 177.0,
+    "kills": 23.42,
+    "pv_min": 2.5
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 90.38,
+    "survie_mediane": 69.5,
+    "kills": 7.92,
+    "pv_min": 0.0
+   }
+  ],
+  "enemies": [
+   {
+    "kind": "ss_alien",
+    "vus": 34,
+    "tues": 5,
+    "degats_recus": 1032.5,
+    "degats_par_rencontre": 30.4,
+    "coups": 71,
+    "morts_causees": 6,
+    "ttk_median": 33.47,
+    "degats_infliges": 2721.0
+   },
+   {
+    "kind": "ss_teleporter",
+    "vus": 130,
+    "tues": 84,
+    "degats_recus": 2594.7,
+    "degats_par_rencontre": 20.0,
+    "coups": 242,
+    "morts_causees": 14,
+    "ttk_median": 4.75,
+    "degats_infliges": 5641.8
+   },
+   {
+    "kind": "fw_marauder",
+    "vus": 119,
+    "tues": 49,
+    "degats_recus": 1622.5,
+    "degats_par_rencontre": 13.6,
+    "coups": 150,
+    "morts_causees": 10,
+    "ttk_median": 6.47,
+    "degats_infliges": 4658.5
+   },
+   {
+    "kind": "fw_raider",
+    "vus": 105,
+    "tues": 63,
+    "degats_recus": 1433.1,
+    "degats_par_rencontre": 13.6,
+    "coups": 92,
+    "morts_causees": 7,
+    "ttk_median": 2.32,
+    "degats_infliges": 5054.1
+   },
+   {
+    "kind": "fw_sharpshooter",
+    "vus": 60,
+    "tues": 28,
+    "degats_recus": 442.0,
+    "degats_par_rencontre": 7.4,
+    "coups": 20,
+    "morts_causees": 2,
+    "ttk_median": 1.08,
+    "degats_infliges": 1357.5
+   },
+   {
+    "kind": "ss_security_droid",
+    "vus": 152,
+    "tues": 88,
+    "degats_recus": 868.7,
+    "degats_par_rencontre": 5.7,
+    "coups": 185,
+    "morts_causees": 2,
+    "ttk_median": 2.82,
+    "degats_infliges": 5822.2
+   },
+   {
+    "kind": "fw_guard_dog",
+    "vus": 10,
+    "tues": 8,
+    "degats_recus": 50.2,
+    "degats_par_rencontre": 5.0,
+    "coups": 8,
+    "morts_causees": 0,
+    "ttk_median": 1.35,
+    "degats_infliges": 303.0
+   },
+   {
+    "kind": "fw_bandit",
+    "vus": 208,
+    "tues": 106,
+    "degats_recus": 1026.5,
+    "degats_par_rencontre": 4.9,
+    "coups": 123,
+    "morts_causees": 5,
+    "ttk_median": 1.78,
+    "degats_infliges": 6174.3
+   },
+   {
+    "kind": "ss_spectre",
+    "vus": 143,
+    "tues": 93,
+    "degats_recus": 333.0,
+    "degats_par_rencontre": 2.3,
+    "coups": 80,
+    "morts_causees": 0,
+    "ttk_median": 0.5,
+    "degats_infliges": 2776.4
+   },
+   {
+    "kind": "ss_alien_brood",
+    "vus": 97,
+    "tues": 72,
+    "degats_recus": 169.4,
+    "degats_par_rencontre": 1.7,
+    "coups": 38,
+    "morts_causees": 0,
+    "ttk_median": 1.99,
+    "degats_infliges": 1798.0
+   },
+   {
+    "kind": "ss_detector",
+    "vus": 48,
+    "tues": 34,
+    "degats_recus": 51.5,
+    "degats_par_rencontre": 1.1,
+    "coups": 12,
+    "morts_causees": 0,
+    "ttk_median": 0.89,
+    "degats_infliges": 1328.0
+   },
+   {
+    "kind": "enemy_hazard",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 85.0,
+    "degats_par_rencontre": null,
+    "coups": 21,
+    "morts_causees": 1,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "inconnu",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 12.5,
+    "degats_par_rencontre": null,
+    "coups": 3,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "player",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 49.7,
+    "degats_par_rencontre": null,
+    "coups": 3,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "tourelle",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 276.2,
+    "degats_par_rencontre": null,
+    "coups": 24,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   }
+  ],
+  "killers": [
+   [
+    "ss_teleporter",
+    14
+   ],
+   [
+    "fw_marauder",
+    10
+   ],
+   [
+    "fw_raider",
+    7
+   ],
+   [
+    "ss_alien",
+    6
+   ],
+   [
+    "fw_bandit",
+    5
+   ],
+   [
+    "fw_sharpshooter",
+    2
+   ],
+   [
+    "ss_security_droid",
+    2
+   ],
+   [
+    "enemy_hazard",
+    1
+   ]
+  ],
+  "items_by_source": {
+   "cadavre": [
+    1243,
+    156,
+    4,
+    2,
+    0
+   ],
+   "conteneur": [
+    1372,
+    124,
+    38,
+    1,
+    0
+   ],
+   "sol": [
+    865,
+    176,
+    2,
+    8,
+    0
+   ]
+  },
+  "items_per_raid": {
+   "cadavre": [
+    24.86,
+    3.12,
+    0.08,
+    0.04,
+    0.0
+   ],
+   "conteneur": [
+    27.44,
+    2.48,
+    0.76,
+    0.02,
+    0.0
+   ],
+   "sol": [
+    17.3,
+    3.52,
+    0.04,
+    0.16,
+    0.0
+   ]
+  },
+  "or_par_extraction": 680.33,
+  "or_par_raid": 40.82,
+  "xp_par_raid": 164.9,
+  "xp_par_extraction": 694.67,
+  "xp_par_mort": 131.09,
+  "tirs_par_raid": 130.54,
+  "conteneurs_par_raid": 5.72,
+  "cadavres_par_raid": 5.96,
+  "soins_par_raid": 5.66,
+  "equipements_par_raid": 2.9,
+  "esquives_par_raid": 51.06,
+  "ennemis_bloques": [
+   [
+    "ss_security_droid",
+    3
+   ],
+   [
+    "fw_bandit",
+    2
+   ],
+   [
+    "ss_detector",
+    2
+   ],
+   [
+    "fw_marauder",
+    1
+   ],
+   [
+    "fw_sharpshooter",
+    1
+   ]
+  ],
+  "conteneurs_inaccessibles": [],
+  "conteneurs_inaccessibles_par_raid": 0,
+  "erreurs": [],
+  "avertissements": [],
+  "image_la_plus_lente_ms": 437.63,
+  "image_moyenne_ms": 1.79,
+  "bot_bloque_par_raid": 0.28,
+  "elites": {},
+  "boss_rencontres": 0,
+  "boss_tues": 0
+ },
+ "boss": {
+  "fw_sheriff": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 25.27,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_marauder",
+      2
+     ],
+     [
+      "fw_raider",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 21.1,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_sheriff",
+      2
+     ],
+     [
+      "fw_raider",
+      2
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 30.25,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_raider",
+      2
+     ],
+     [
+      "fw_buffalo",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "fw_debris_throw",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 15.13,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_marauder",
+      2
+     ],
+     [
+      "fw_raider",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 17.17,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_raider",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ],
+     [
+      "fw_bandit",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 18.1,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_bandit",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ],
+     [
+      "fw_deserter",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "cover_roll",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ],
+  "ss_architect": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 23.63,
+    "pv_boss_restants": 0.9,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_drone_tieur",
+      2
+     ],
+     [
+      "ss_station_guardian",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 28.27,
+    "pv_boss_restants": 0.84,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ],
+     [
+      "ss_atlas",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "ss_orbital_laser",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 26.12,
+    "pv_boss_restants": 0.66,
+    "phase_mort": [
+     [
+      2,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ],
+     [
+      "ss_spectre",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "ss_orbital_laser",
+      2
+     ],
+     [
+      "attaque",
+      2
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 20.1,
+    "pv_boss_restants": 0.9,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 21.77,
+    "pv_boss_restants": 0.86,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      2
+     ],
+     [
+      "ss_atlas",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "ss_orbital_laser",
+      2
+     ],
+     [
+      "fan_volley",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 22.77,
+    "pv_boss_restants": 0.72,
+    "phase_mort": [
+     [
+      1,
+      2
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_spectre",
+      1
+     ],
+     [
+      "ss_atlas",
+      1
+     ],
+     [
+      "ss_architect",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "ss_orbital_laser",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ],
+  "mall_omnistore": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 1,
+    "taux": 0.0,
+    "duree": 14.4,
+    "pv_boss_restants": 0.93,
+    "phase_mort": [
+     [
+      1,
+      2
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_security_bot",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 1,
+    "taux": 0.0,
+    "duree": 11.72,
+    "pv_boss_restants": 0.92,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_violent",
+      3
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 11.48,
+    "pv_boss_restants": 0.89,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      2
+     ],
+     [
+      "mall_omnistore",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 13.33,
+    "pv_boss_restants": 0.97,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_violent",
+      2
+     ],
+     [
+      "mall_zombie",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 12.3,
+    "pv_boss_restants": 0.95,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ],
+     [
+      "mall_flayer",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 12.13,
+    "pv_boss_restants": 0.88,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ],
+     [
+      "mall_store_warden",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ]
+ },
+ "duel": [
+  {
+   "kind": "fw_buffalo",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 1,
+   "taux": 20.0,
+   "duree": 41.44,
+   "ttk": 21.77,
+   "pv_restants": 28.0,
+   "degats_recus": 94.4
+  },
+  {
+   "kind": "fw_buffalo",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 4,
+   "taux": 80.0,
+   "duree": 16.12,
+   "ttk": 15.19,
+   "pv_restants": 82.5,
+   "degats_recus": 34.0
+  },
+  {
+   "kind": "fw_deserter",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 0,
+   "taux": 0.0,
+   "duree": 26.5,
+   "ttk": null,
+   "pv_restants": null,
+   "degats_recus": 100.0
+  },
+  {
+   "kind": "fw_deserter",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 9.1,
+   "ttk": 8.04,
+   "pv_restants": 81.2,
+   "degats_recus": 18.8
+  },
+  {
+   "kind": "mall_store_warden",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 0,
+   "taux": 0.0,
+   "duree": 59.24,
+   "ttk": null,
+   "pv_restants": null,
+   "degats_recus": 100.0
+  },
+  {
+   "kind": "mall_store_warden",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 1,
+   "taux": 20.0,
+   "duree": 44.26,
+   "ttk": 8.97,
+   "pv_restants": 100.0,
+   "degats_recus": 80.0
+  },
+  {
+   "kind": "mall_violent",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 15.32,
+   "ttk": 13.03,
+   "pv_restants": 45.67,
+   "degats_recus": 72.6
+  },
+  {
+   "kind": "mall_violent",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 30.18,
+   "ttk": 8.11,
+   "pv_restants": 94.0,
+   "degats_recus": 43.6
+  },
+  {
+   "kind": "ss_atlas",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 39.74,
+   "ttk": 32.26,
+   "pv_restants": 34.0,
+   "degats_recus": 79.6
+  },
+  {
+   "kind": "ss_atlas",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 15.08,
+   "ttk": 14.74,
+   "pv_restants": 82.0,
+   "degats_recus": 18.0
+  },
+  {
+   "kind": "ss_drone_tieur",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 3.4,
+   "ttk": 3.1,
+   "pv_restants": 100.0,
+   "degats_recus": 0
+  },
+  {
+   "kind": "ss_drone_tieur",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 5.64,
+   "ttk": 5.18,
+   "pv_restants": 100.0,
+   "degats_recus": 0
+  }
+ ],
+ "economie": {
+  "xp_par_raid": 177.5,
+  "or_par_raid": 54.9,
+  "niveaux": [
+   {
+    "niveau": 2,
+    "xp": 400,
+    "raids": 2.3
+   },
+   {
+    "niveau": 3,
+    "xp": 950,
+    "raids": 5.4
+   },
+   {
+    "niveau": 4,
+    "xp": 1650,
+    "raids": 9.3
+   },
+   {
+    "niveau": 5,
+    "xp": 2500,
+    "raids": 14.1
+   },
+   {
+    "niveau": 6,
+    "xp": 3500,
+    "raids": 19.7
+   },
+   {
+    "niveau": 7,
+    "xp": 4650,
+    "raids": 26.2
+   },
+   {
+    "niveau": 8,
+    "xp": 5950,
+    "raids": 33.5
+   },
+   {
+    "niveau": 9,
+    "xp": 7400,
+    "raids": 41.7
+   },
+   {
+    "niveau": 10,
+    "xp": 9000,
+    "raids": 50.7
+   },
+   {
+    "niveau": 11,
+    "xp": 10750,
+    "raids": 60.6
+   },
+   {
+    "niveau": 12,
+    "xp": 12650,
+    "raids": 71.3
+   },
+   {
+    "niveau": 13,
+    "xp": 14700,
+    "raids": 82.8
+   },
+   {
+    "niveau": 14,
+    "xp": 16900,
+    "raids": 95.2
+   },
+   {
+    "niveau": 15,
+    "xp": 19250,
+    "raids": 108.5
+   },
+   {
+    "niveau": 16,
+    "xp": 21750,
+    "raids": 122.6
+   },
+   {
+    "niveau": 17,
+    "xp": 24400,
+    "raids": 137.5
+   },
+   {
+    "niveau": 18,
+    "xp": 27200,
+    "raids": 153.3
+   },
+   {
+    "niveau": 19,
+    "xp": 30150,
+    "raids": 169.9
+   },
+   {
+    "niveau": 20,
+    "xp": 33250,
+    "raids": 187.4
+   },
+   {
+    "niveau": 21,
+    "xp": 36500,
+    "raids": 205.7
+   },
+   {
+    "niveau": 22,
+    "xp": 39900,
+    "raids": 224.8
+   },
+   {
+    "niveau": 23,
+    "xp": 43450,
+    "raids": 244.8
+   },
+   {
+    "niveau": 24,
+    "xp": 47150,
+    "raids": 265.7
+   },
+   {
+    "niveau": 25,
+    "xp": 51000,
+    "raids": 287.4
+   },
+   {
+    "niveau": 26,
+    "xp": 55000,
+    "raids": 309.9
+   },
+   {
+    "niveau": 27,
+    "xp": 59150,
+    "raids": 333.3
+   },
+   {
+    "niveau": 28,
+    "xp": 63450,
+    "raids": 357.5
+   },
+   {
+    "niveau": 29,
+    "xp": 67900,
+    "raids": 382.6
+   },
+   {
+    "niveau": 30,
+    "xp": 72500,
+    "raids": 408.5
+   }
+  ],
+  "armes": [
+   {
+    "arme": "pistol_deagle",
+    "mode": "kill",
+    "prix": 1600,
+    "ennemi": "fw_bandit",
+    "kills": 5,
+    "kills_par_raid": 4.47,
+    "raids_deblocage": 1.1,
+    "raids_achat": 29.2
+   },
+   {
+    "arme": "pistol_glock18",
+    "mode": "shop",
+    "prix": 700,
+    "raids_achat": 12.8
+   },
+   {
+    "arme": "pistol_p320",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "pistol_p9",
+    "mode": "shop",
+    "prix": 100,
+    "raids_achat": 1.8
+   },
+   {
+    "arme": "rifle_ak47",
+    "mode": "shop",
+    "prix": 260,
+    "raids_achat": 4.7
+   },
+   {
+    "arme": "rifle_aug",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "rifle_m4a1",
+    "mode": "shop",
+    "prix": 900,
+    "raids_achat": 16.4
+   },
+   {
+    "arme": "rifle_scarh",
+    "mode": "kill",
+    "prix": 2000,
+    "ennemi": "fw_bruiser",
+    "kills": 3,
+    "kills_par_raid": 0,
+    "raids_deblocage": null,
+    "raids_achat": 36.4
+   },
+   {
+    "arme": "rocket_javelin",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "rocket_m202",
+    "mode": "kill",
+    "prix": 2800,
+    "ennemi": "fw_deserter",
+    "kills": 1,
+    "kills_par_raid": 0,
+    "raids_deblocage": null,
+    "raids_achat": 51.0
+   },
+   {
+    "arme": "rocket_rpg7",
+    "mode": "kill",
+    "prix": 1200,
+    "ennemi": "fw_raider",
+    "kills": 3,
+    "kills_par_raid": 2.17,
+    "raids_deblocage": 1.4,
+    "raids_achat": 21.9
+   },
+   {
+    "arme": "smg_mp5",
+    "mode": "shop",
+    "prix": 220,
+    "raids_achat": 4.0
+   },
+   {
+    "arme": "smg_p90",
+    "mode": "shop",
+    "prix": 1800,
+    "raids_achat": 32.8
+   },
+   {
+    "arme": "smg_uzi",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "smg_vector",
+    "mode": "shop",
+    "prix": 800,
+    "raids_achat": 14.6
+   },
+   {
+    "arme": "sniper_ax50",
+    "mode": "shop",
+    "prix": 1000,
+    "raids_achat": 18.2
+   },
+   {
+    "arme": "sniper_m24",
+    "mode": "shop",
+    "prix": 280,
+    "raids_achat": 5.1
+   },
+   {
+    "arme": "sniper_m82",
+    "mode": "kill",
+    "prix": 2400,
+    "ennemi": "fw_sharpshooter",
+    "kills": 1,
+    "kills_par_raid": 1.34,
+    "raids_deblocage": 0.7,
+    "raids_achat": 43.7
+   }
+  ]
+ }
+}

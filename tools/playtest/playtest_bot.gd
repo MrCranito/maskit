@@ -1137,6 +1137,7 @@ var _dodge_dir: Vector2 = Vector2.ZERO
 var dodges: int = 0
 var _lost_player: float = 0.0
 var _dead_wait: float = 0.0
+var _lost_boss: float = 0.0
 var _death_t: float = -1.0
 var _tele_shot: Dictionary = {}
 var _trace: bool = OS.get_environment("PLAYTEST_TRACE") == "1"
@@ -1190,9 +1191,17 @@ func _hunt(_delta: float) -> void:
 			best_d = d
 			target = e
 	if target == null:
-		if mode == "duel" or _boss_node() == null:
+		# Victoire seulement sur une mort constatée (duel : l'élite ; boss : le boss). Un boss
+		# introuvable sans mort (illusion, disparition) n'est pas une victoire.
+		if mode == "duel" or bool(boss_info.get("killed", false)):
 			outcome = "victoire"
 			_finish()
+		elif _boss_node() == null:
+			_lost_boss += get_physics_process_delta_time()
+			if _lost_boss > 8.0:
+				errors.append("BOT: boss introuvable sans mort constatée (t=%.1f s)" % t)
+				outcome = "invalide"
+				_finish()
 		return
 	_sticks(_steer_to(target.global_position), Vector2.ZERO)
 

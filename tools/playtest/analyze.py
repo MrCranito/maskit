@@ -198,12 +198,14 @@ def boss_summary(games: list[dict]) -> dict:
                 sub = [g for g in gs if g["difficulty"] == d and g["tier"] == tier]
                 if not sub:
                     continue
-                wins = [g for g in sub if g["outcome"] == "victoire" or g.get("boss", {}).get("killed")]
+                # Victoire = mort du boss constatée (les « victoires » sans mort sont invalides).
+                wins = [g for g in sub if g.get("boss", {}).get("killed")]
+                invalid = [g for g in sub if g["outcome"] in ("victoire", "invalide") and not g.get("boss", {}).get("killed")]
                 deaths = [g for g in sub if g["outcome"] == "mort"]
-                rows.append({"difficulty": d, "tier": tier, "n": len(sub), "victoires": len(wins),
+                rows.append({"difficulty": d, "tier": tier, "n": len(sub), "victoires": len(wins), "invalides": len(invalid),
                              "taux": pct(len(wins), len(sub)),
                              "duree": mean([g["duration"] for g in sub]),
-                             "pv_boss_restants": mean([g.get("boss", {}).get("hp_ratio_end", g.get("boss", {}).get("hp_ratio_at_death")) for g in sub]),
+                             "pv_boss_restants": mean([g.get("boss", {}).get("hp_ratio_at_last_hit", 1.0) for g in deaths]),
                              "phase_mort": Counter(g.get("boss_phase_at_death", -1) for g in deaths).most_common(),
                              "tueurs": Counter(g.get("killer") or "?" for g in deaths).most_common(3),
                              "competence": Counter(g.get("boss", {}).get("death_skill") or "?" for g in deaths).most_common(3),
