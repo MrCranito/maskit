@@ -169,7 +169,7 @@ func test_cartes_station_et_galeries() -> void:
 
 # --- Vrai sol sous le bâtiment estompé (patchs « sol seul », passe gnd) --------------------
 
-const PACKS := [&"far_west", &"space_station", &"mall"]
+const PACKS := [&"far_west", &"space_station", &"mall", &"haunted_carnival", &"frozen_lands", &"egypt_pyramids"]
 
 
 ## Chaque bâtiment qui occulte (tranches id ≥ 0) a son patch « sol seul » dans le paquet.
@@ -212,7 +212,7 @@ func test_sol_visible_quand_le_batiment_s_estompe() -> void:
 
 
 ## « Au-dessus » (bord nord, sous le toit projeté) et « sous le toit » (dans l'emprise) : pour
-## chaque bâtiment avec intérieur des 3 cartes, le fondu se déclenche.
+## chaque bâtiment avec intérieur des 6 cartes pré-rendues, le fondu se déclenche.
 func test_fondu_au_dessus_et_sous_le_toit_partout() -> void:
 	for biome: StringName in PACKS:
 		var seeds := PrerenderBackdrop.available_seeds(biome)

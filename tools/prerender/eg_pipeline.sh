@@ -28,7 +28,7 @@ flock "$GL" godot --headless --path . --script res://tools/prerender/export_layo
 # Rendu reprenable par tranches (SLICE_S secondes, défaut 720) : le verrou Blender est rendu entre
 # deux tranches aux autres agents ; les morceaux déjà rendus (_chunks_full) sont conservés.
 SLICE=${SLICE_S:-720}
-flock "$BL" timeout 3000 python3 tools/prerender/eg_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,occ "$MARGIN"
+flock "$BL" timeout 3000 python3 tools/prerender/eg_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,occ,gnd "$MARGIN"
 until grep -q "^FULL" "$WORK/full.log" 2>/dev/null; do
 	flock "$BL" timeout "$SLICE" python3 tools/prerender/eg_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" full "$MARGIN" \
 		2>&1 | grep -v "Saved\|Fra:\|Deprecation\|use_nodes" | tee "$WORK/full.log" || true
