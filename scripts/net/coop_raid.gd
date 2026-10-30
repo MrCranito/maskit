@@ -302,6 +302,9 @@ func _send_loadout() -> void:
 	_ev.text(String(g.id) if g != null else "")
 	_ev.u8(local.get_gadget_charges())
 	_ev.f32(local.max_hp)
+	# Skins d'armes (même ordre que les armes), en fin de message : une ancienne version les ignore.
+	for sid: String in WeaponSkin.skin_ids_for(ws):
+		_ev.text(sid)
 	_ev.end()
 
 
@@ -467,12 +470,17 @@ func _on_loadout() -> void:
 	var gid := _r.text()
 	var charges := _r.u8()
 	var mhp := _r.f32()
+	var skins: Array[String] = []
+	for i: int in n:
+		if _r.remaining() <= 0:
+			break
+		skins.append(_r.text())
 	if pname != "":
 		partner_name = pname
 		avatar.peer_name = pname
 		avatar.refresh_tag()
 	avatar.set_skin(StringName(skin))
-	avatar.apply_loadout(ids, slot, gid, charges, mhp)
+	avatar.apply_loadout(ids, slot, gid, charges, mhp, skins)
 	hud.refresh_partner()
 
 
@@ -482,7 +490,12 @@ func _apply_peer_loadout_info(info: Dictionary) -> void:
 		var ids: Array[String] = []
 		for id: Variant in lo:
 			ids.append(str(id))
-		avatar.apply_loadout(ids, 0, "", 0, -1.0)
+		var skins: Array[String] = []
+		var ws: Variant = info.get("wskins", [])
+		if ws is Array:
+			for s: Variant in ws:
+				skins.append(str(s))
+		avatar.apply_loadout(ids, 0, "", 0, -1.0, skins)
 
 
 func _weapon_for(id: String) -> WeaponData:

@@ -10,5 +10,11 @@
     840
   ],
   "unit_px": 419.4,
-  "notes": "<skin>.png : pose fixe (idle procédurale dans lobby_hero.gd). feet = pieds (px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender du modèle. hero_px = hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte."
+  "notes": "<skin>.png : pose fixe (idle procédurale dans lobby_hero.gd). feet = pieds (px depuis le coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender du modèle. hero_px = hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte. hand = main qui tient l'arme (px du cadre), weapon_angle_deg = angle du canon à l'écran (y vers le bas) ; <skin>_hands.png = mains seules, posées devant l'arme.",
+  "hand": [
+    382.3,
+    513.7
+  ],
+  "weapon_angle_deg": 43.2,
+  "hands": true
 }

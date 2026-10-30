@@ -352,6 +352,9 @@ func _player_card(info: Dictionary, role_text: String, present: bool, connected:
 	prev.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prev.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	prev.set_skin(skin)
+	# Arme réellement tenue par ce joueur, avec SES skins d'armes (infos de salon).
+	var held := LobbyHero.held_from_info(info)
+	prev.set_weapon(held["weapon"], held["skins"])
 	if not connected or where != "lobby":
 		prev.modulate = Color(1, 1, 1, 0.55)
 	v.add_child(prev)
@@ -571,13 +574,24 @@ func _start_raid(path: String, seed_value: int) -> void:
 # --- Messages de salon ----------------------------------------------------------------
 
 func _local_info() -> Dictionary:
+	return local_info_dict(player_name(), local_ready)
+
+
+## Infos de salon du joueur local : pseudo, skin, arsenal, skins d'armes (« wskins », même ordre que
+## « loadout »), arme tenue au menu (« main », « main_skin ») : le coéquipier voit nos vraies armes.
+static func local_info_dict(p_name: String, ready: bool) -> Dictionary:
 	var ids: Array = []
-	for w: WeaponData in Profile.get_loadout_weapons():
+	var lo := Profile.get_loadout_weapons()
+	for w: WeaponData in lo:
 		ids.append(String(w.id))
 	var g := Profile.get_loadout_gadget()
+	var main := Profile.get_main_weapon()
+	var main_skin: SkinData = WeaponSkin.equipped_for(main) if main != null and WeaponSkin.is_enabled() else null
 	return {
-		"k": "info", "gv": NetProtocol.GAME_VERSION, "name": player_name(),
-		"skin": String(Profile.skin_character), "ready": local_ready, "loadout": ids,
+		"k": "info", "gv": NetProtocol.GAME_VERSION, "name": p_name,
+		"skin": String(Profile.skin_character), "ready": ready, "loadout": ids,
+		"wskins": WeaponSkin.skin_ids_for(lo),
+		"main": String(main.id) if main != null else "", "main_skin": String(main_skin.id) if main_skin != null else "",
 		"gadget": String(g.id) if g != null else "", "where": "lobby",
 	}
 

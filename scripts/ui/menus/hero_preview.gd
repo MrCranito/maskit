@@ -2,7 +2,8 @@ class_name HeroPreview
 extends Control
 ## Aperçu du héros pour les menus (boutique, pass) : MÊME rendu que le lobby — pose fixe haute
 ## résolution par skin (assets/ui/menu/hero/<skin>.png) animée par l'idle procédurale de
-## LobbyHero (respiration + balancement), ombre au sol, réaction au changement de skin.
+## LobbyHero (respiration + balancement), ombre au sol, réaction au changement de skin. Le héros
+## tient l'arme principale du profil (avec son skin), ou celle imposée par set_weapon (coéquipier).
 ## Aucune rotation image par image : net et fluide. Le héros est posé pieds en bas au centre,
 ## à la hauteur `height_ratio` × hauteur de la boîte.
 
@@ -18,6 +19,9 @@ var height_ratio: float = -1.0
 ## Position des pieds (fraction de la hauteur de la boîte).
 var feet_ratio: float = 0.94
 var _use_current: bool = true
+var _weapon_set: bool = false
+var _weapon: WeaponData = null
+var _weapon_skins: Dictionary = {}
 
 
 func _init(_p_turning: bool = false) -> void:
@@ -36,6 +40,8 @@ func _ready() -> void:
 	add_child(glow)
 	hero = LobbyHero.new(false)
 	hero.skin = HeroSkin.current() if _use_current else skin
+	if _weapon_set:
+		hero.set_weapon(_weapon, _weapon_skins)
 	add_child(hero)
 	resized.connect(_layout)
 	_layout()
@@ -48,6 +54,20 @@ func set_skin(s: SkinData, animate: bool = true) -> void:
 	_use_current = false
 	if hero != null and hero.sprite != null and changed:
 		hero.set_skin(s, animate and is_visible_in_tree())
+
+
+## Impose l'arme tenue et ses skins (coéquipier) ; sans appel : arme principale du profil local.
+func set_weapon(w: WeaponData, skin_ids: Dictionary = {}) -> void:
+	_weapon_set = true
+	_weapon = w
+	_weapon_skins = skin_ids
+	if hero != null:
+		hero.set_weapon(w, skin_ids)
+
+
+## Arme tenue (null : aucune).
+func get_weapon() -> WeaponData:
+	return hero.weapon if hero != null else _weapon
 
 
 ## Id de la pose affichée (« default », « cyber »…).

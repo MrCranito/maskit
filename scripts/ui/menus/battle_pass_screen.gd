@@ -1109,14 +1109,8 @@ class RewardIcon extends Control:
 			"skin":
 				var s := SkinData.get_skin(StringName(str(r.get("id", ""))))
 				if s != null and s.kind == SkinData.KIND_CHARACTER:
-					var tr := TextureRect.new()
-					var tex := ShopScreen.cropped_preview(ShopScreen.pose_texture(s))
-					if compact and tex is AtlasTexture:
-						# buste : moitié haute du personnage
-						var a := (tex as AtlasTexture).duplicate() as AtlasTexture
-						a.region = Rect2(a.region.position, Vector2(a.region.size.x, a.region.size.y * 0.58))
-						tex = a
-					tr.texture = tex
+					# pose + arme principale tenue ; compact : buste (moitié haute du personnage)
+					var tr := HeroPoseRect.make(s, null, compact)
 					tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 					tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 					tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
