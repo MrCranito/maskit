@@ -2,7 +2,7 @@
 """Campagne de playtest automatique (bot headless), reprenable.
 
 Usage :
-  python3 tools/playtest/run_campaign.py --root DOSSIER --pass A|B|boss|duel|smoke [--jobs 2]
+  python3 tools/playtest/run_campaign.py --root DOSSIER --pass A|B|normal|easy|hard|boss|duel|smoke [--jobs 2]
        [--godot CHEMIN] [--only ID] [--list]
 
 - Le plan de chaque passe est fixe (seeds déterministes) : relancer la commande reprend où elle
@@ -30,7 +30,7 @@ ELITES = {"fw": ["fw_deserter", "fw_buffalo"], "ss": ["ss_drone_tieur", "ss_atla
 TIERS = ["debutant", "moyen", "equipe"]
 
 
-def plan(pass_name: str) -> list[dict]:
+def plan(pass_name: str, rounds: int = 4) -> list[dict]:
     jobs: list[dict] = []
     if pass_name in ("A", "B"):
         base = 1000 if pass_name == "A" else 5000
@@ -65,6 +65,18 @@ def plan(pass_name: str) -> list[dict]:
                 n += 1
         for j in jobs:
             j["max_time"] = 420
+    elif pass_name in ("normal", "easy", "hard"):
+        # Passe de réglage d'une difficulté (Normal par défaut) sur les 3 cartes : 3 profils ×
+        # --reps tours par carte (4 par défaut : 36 raids), mêmes seeds avant / après un changement
+        # d'équilibrage (augmenter --reps garde les premières parties et en ajoute d'autres).
+        diff = {"easy": 0, "normal": 1, "hard": 2}[pass_name]
+        n = 0
+        for rep in range(rounds):
+            for w in ("fw", "ss", "mall"):
+                for p in PROFILES:
+                    jobs.append({"mode": "raid", "map": MAPS[w], "difficulty": diff, "profile": p,
+                                 "seed": 6000 + n, "max_time": 420})
+                    n += 1
     elif pass_name == "boss":
         n = 0
         for w in ("fw", "ss", "mall"):
@@ -146,8 +158,9 @@ def main() -> None:
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--only", default="")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--reps", type=int, default=4, help="tours par carte des passes normal / easy / hard")
     a = ap.parse_args()
-    jobs = plan(a.pass_name)
+    jobs = plan(a.pass_name, a.reps)
     if a.only:
         jobs = [j for j in jobs if a.only in j["id"]]
     if a.list:
