@@ -772,29 +772,29 @@ func _sig(f: FloorLayout) -> String:
 
 
 func test_performances() -> void:
-	# Chaque étage est chronométré PERF_PASSES fois et on garde son meilleur temps : la charge de
-	# la machine (CI, autres processus) ne fait qu'ajouter du temps, alors qu'une vraie régression
+	# Mesure comme en jeu : generate_run (la ville est construite une fois par raid), ramené à un
+	# étage, comme test_mall. Chaque run est chronométré PERF_PASSES fois et on garde son meilleur
+	# temps : la charge de la machine ne fait qu'ajouter du temps, alors qu'une vraie régression
 	# ralentit toutes les mesures. Budgets inchangés.
-	var best: Array[float] = []
-	for pass_i in PERF_PASSES:
-		var k := 0
-		for s in 10:
-			for idx: int in [-1, 0, 1]:
-				var t0 := Time.get_ticks_usec()
-				DungeonGenerator.generate_floor(_seed(s), world, 4, idx)
-				var ms := (Time.get_ticks_usec() - t0) / 1000.0
-				if pass_i == 0:
-					best.append(ms)
-				else:
-					best[k] = minf(best[k], ms)
-				k += 1
+	var per_floor: Array[float] = []
+	var total_us := 0
+	var n := 0
+	for s in 10:
+		var best_us := -1
+		var floors := 0
+		for pass_i in PERF_PASSES:
+			var t0 := Time.get_ticks_usec()
+			floors = DungeonGenerator.generate_run(_seed(s), world, 4).size()
+			var us := Time.get_ticks_usec() - t0
+			best_us = us if best_us < 0 else mini(best_us, us)
+		total_us += best_us
+		n += floors
+		per_floor.append(float(best_us) / 1000.0 / float(maxi(floors, 1)))
 	var worst := 0.0
-	var total := 0.0
-	for ms in best:
+	for ms in per_floor:
 		worst = maxf(worst, ms)
-		total += ms
-	var mean := total / maxf(1.0, float(best.size()))
-	gut.p("Génération d'étage (meilleur de %d passes) : moyenne %.1f ms, pire %.1f ms" % [PERF_PASSES, mean, worst])
+	var mean := float(total_us) / 1000.0 / float(maxi(n, 1))
+	gut.p("Génération d'un raid (meilleur de %d passes) : %.1f ms par étage, pire run %.1f ms par étage" % [PERF_PASSES, mean, worst])
 	# Moyenne sous le budget ; pic toléré à 2x (mesures bruitées).
 	assert_lt(mean, MAX_MS_PER_FLOOR, "génération moyenne d'un étage < 50 ms")
 	assert_lt(worst, MAX_MS_PER_FLOOR * 2.0, "pire génération d'un étage < 100 ms")
