@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_ss_architect"
+display_name = "Carcasse de L'Architecte"
+rolls_min = 4
+rolls_max = 6
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"space_antimatter": 0.006,
+&"space_data_chip": 2,
+&"space_encrypted_core": 0.03,
+&"space_fusion_cell": 5,
+&"space_medigel": 2,
+&"space_officer_badge": 4,
+&"space_plasma_cells": 4,
+&"wpn_gadget_drone": 0.001113,
+&"wpn_gadget_mine": 0.03,
+&"wpn_rocket_javelin": 0.001113,
+&"wpn_smg_p90": 0.00832,
+&"wpn_sniper_m82": 0.02
+}
