@@ -50,7 +50,7 @@ jobs:
             file: index.html
     steps:
       - name: Récupérer le dépôt
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer les templates d'export
         # L'image place les templates dans /root ; GitHub Actions utilise HOME=/github/home.
@@ -94,7 +94,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
     steps:
       - name: Récupérer le dépôt
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer templates et réglages éditeur
         run: |
