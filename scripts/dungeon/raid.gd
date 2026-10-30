@@ -127,6 +127,9 @@ func _ready() -> void:
 	NoiseSources.clear()
 	run_seed = GameState.run_seed
 	difficulty = GameState.difficulty
+	# État de butin du raid précédent (cadavres, butin au sol, conteneurs) : effacé avant la
+	# construction de l'étage 0, qui restaure sinon ceux de la partie précédente.
+	LootManager.begin_raid(run_seed)
 	_load_world()
 	_generate_floors()
 	_apply_map_modifiers()
