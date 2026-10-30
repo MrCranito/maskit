@@ -1115,12 +1115,12 @@ def mat_dirt(name, base=(0.13, 0.09, 0.13), light=(0.24, 0.18, 0.22)):
     return s.m
 
 
-def mat_pavers(name, c1=(0.22, 0.21, 0.26), c2=(0.11, 0.105, 0.14)):
+def mat_pavers(name, c1=(0.22, 0.21, 0.26), c2=(0.11, 0.105, 0.14), scale=2.2):
     """Pavés de la place et du parvis : petits carreaux irréguliers, joints sombres, mousse."""
     s = NT(name)
     o = s.obj()
-    cell = s.voronoi(s.vmul(o, 2.2), 1.0, "Distance")
-    col_ = s.voronoi(s.vmul(o, 2.2), 1.0, "Color")
+    cell = s.voronoi(s.vmul(o, scale), 1.0, "Distance")
+    col_ = s.voronoi(s.vmul(o, scale), 1.0, "Color")
     r = s.sep(col_)[0]
     joint = s.smooth(cell, 0.05, 0.12)
     n = s.noise(o, 1.0, 4, 0.6)
@@ -1158,10 +1158,10 @@ def mat_clown_face(name):
     """Tête de clown : peau blanche émissive, joues roses, variations."""
     s = NT(name)
     n = s.noise(s.obj(), 4.0, 4, 0.5)
-    col = s.mix(s.mul(n, 0.4), (0.95, 0.9, 0.9), (0.85, 0.7, 0.8))
+    col = s.mix(s.mul(n, 0.4), (0.72, 0.55, 0.92), (0.5, 0.3, 0.75))
     s.done(col, 0.5)
-    s.b.inputs["Emission Color"].default_value = (1.0, 0.85, 0.95, 1)
-    s.b.inputs["Emission Strength"].default_value = 1.2
+    s.b.inputs["Emission Color"].default_value = (0.7, 0.45, 1.0, 1)
+    s.b.inputs["Emission Strength"].default_value = 0.6
     return s.m
 
 
@@ -1170,6 +1170,8 @@ def build_materials():
     mat_dirt("dirt_dark", (0.12, 0.1, 0.13), (0.22, 0.18, 0.22))
     mat_pavers("pavers", (0.25, 0.23, 0.28), (0.11, 0.105, 0.14))
     mat_pavers("pavers_lot", (0.27, 0.25, 0.3), (0.12, 0.11, 0.15))
+    mat_pavers("flags", (0.33, 0.29, 0.33), (0.15, 0.13, 0.17), 0.85)
+    mat_simple("stone_ochre", (0.42, 0.33, 0.3), 0.85, 0.0, 0.35)
     mat_grass("grass")
     mat_grass("forest_floor", (0.1, 0.13, 0.14))
     mat_wood("plank", (0.42, 0.26, 0.24))
@@ -1220,6 +1222,7 @@ def build_materials():
     mat_simple("balloon_y", (0.9, 0.7, 0.1), 0.25, 0.0, 0.1)
     mat_simple("skin", (0.9, 0.7, 0.6), 0.6, 0.0, 0.2)
     mat_simple("hair_red", (0.75, 0.1, 0.1), 0.9, 0.0, 0.3)
+    mat_simple("hair_violet", (0.42, 0.1, 0.7), 0.9, 0.0, 0.3)
     mat_clown_face("clown_face")
     mat_glass("glass", (0.5, 0.4, 0.7), 0.3)
     mat_glass("glass_dark", (0.2, 0.15, 0.3), 0.6)
@@ -1230,6 +1233,7 @@ def build_materials():
     mat_emit("bulb_dim", (0.6, 0.4, 0.3), 1.0)
     mat_emit("spot_violet", (0.5, 0.2, 1.0), 2.0)
     mat_emit("eyes", (1.0, 0.15, 0.1), 12.0)
+    mat_emit("eyes_glow", (0.75, 1.0, 0.25), 14.0)
     mat_emit("sky_dark", (0.004, 0.003, 0.01), 1.0)
     mat_lines("paint_white", (0.7, 0.68, 0.7))
     mat_hazard("hazard")
@@ -1323,6 +1327,15 @@ for i in range(len(COASTER_IN) - 1):
         COASTER_CELLS.add((int(a[0] + (b[0] - a[0]) * t), int(a[1] + (b[1] - a[1]) * t)))
 GATE_CELLS = set((x, y) for y in range(GATE[1], GATE[1] + GATE[3]) for x in range(GATE[0], GATE[0] + GATE[2]))
 GAME_CELLS = set()
+ENC_CELLS = set(tuple(c) for c in C.get("enclosure", []))
+ENC_R = tuple(C.get("enc_r", [21.5, 16.5]))
+SPOTS = []           # projecteurs (x, y_blender, z, cible (x, y, z), couleur, énergie)
+
+
+def enc_d(x, y):
+    dx = (x + 0.5 - TENT["c"][0]) / ENC_R[0]
+    dy = (y + 0.5 - TENT["c"][1]) / ENC_R[1]
+    return dx * dx + dy * dy
 BIG = {"hc_bumper_car": (2, 1), "hc_food_cart": (2, 1), "hc_cage": (2, 1), "hc_bleachers": (3, 1), "hc_ring_barrier": (2, 1), "hc_shooting_counter": (2, 1)}
 for key in ("container_spawns", "hiding_spot_spawns", "prop_spawns"):
     for sp in LAYOUT.get(key, []):
@@ -1356,6 +1369,8 @@ def floor_mat(rid, cell):
     role = role_of(rid)
     x, y = cell
     if tile(x, y) == 1:
+        if role == "plaza" and enc_d(x, y) < 1.0:
+            return "flags"
         if role in ("plaza", "entrance", "avenue"):
             return "pavers_lot" if role == "entrance" else "pavers"
         # herbe rase le long des palissades des cours et des allées (herbes folles)
@@ -1456,6 +1471,8 @@ def wall_kind(x, y):
         return "coaster"
     if (x, y) in GATE_CELLS:
         return "gate"
+    if (x, y) in ENC_CELLS:
+        return "enclosure"
     m = CELL_MOD.get((x, y))
     if m is not None:
         if m.get("ellipse"):
@@ -1471,7 +1488,7 @@ def wall_h(x, y):
     m = CELL_MOD.get((x, y))
     if m is not None and m["slot"] == "hall":
         return H_WALL + 0.4
-    return {"ride": 0.0, "coaster": 0.0, "gate": 0.0, "tent": 0.0, "bld": H_WALL, "stand": H_STAND, "exit": H_FENCE, "fence": H_FENCE}[k]
+    return {"ride": 0.0, "coaster": 0.0, "gate": 0.0, "tent": 0.0, "enclosure": 0.0, "bld": H_WALL, "stand": H_STAND, "exit": H_FENCE, "fence": H_FENCE}[k]
 
 
 def build_walls():
@@ -1489,7 +1506,7 @@ def build_walls():
             if tile(x, y) != 3:
                 continue
             k = wall_kind(x, y)
-            if k in ("ride", "coaster", "gate", "tent"):
+            if k in ("ride", "coaster", "gate", "tent", "enclosure"):
                 continue
             h = wall_h(x, y)
             b = CELL_BLD.get((x, y))
@@ -1552,7 +1569,7 @@ def build_walls():
             for side, dx, dy in SIDES:
                 nx, ny = x + dx, y + dy
                 nt_ = tile(nx, ny)
-                if nt_ == 3 and wall_kind(nx, ny) not in ("ride", "coaster", "gate", "tent"):
+                if nt_ == 3 and wall_kind(nx, ny) not in ("ride", "coaster", "gate", "tent", "enclosure"):
                     nh = wall_h(nx, ny)
                     if nh >= h - 1e-3:
                         continue
@@ -1651,9 +1668,9 @@ def roof_caravan(mb, b, m, rng):
     for k in range(n):
         f0, f1 = k / n, (k + 1) / n
         y0, y1 = Y(y) + 0.08 - (h + 0.16) * f0, Y(y) + 0.08 - (h + 0.16) * f1
-        z0 = z + math.sin(f0 * math.pi) * 0.5
-        z1 = z + math.sin(f1 * math.pi) * 0.5
-        mb.poly([(X0, y0, z0), (X1, y0, z0), (X1, y1, z1), (X0, y1, z1)], "plank_painted" if k % 3 else "stripes_fine_%d" % ci,
+        z0 = z + math.sin(f0 * math.pi) * 0.85
+        z1 = z + math.sin(f1 * math.pi) * 0.85
+        mb.poly([(X0, y0, z0), (X1, y0, z0), (X1, y1, z1), (X0, y1, z1)], "stripes_%d" % ci if k % 2 else "plank_painted",
                 [(X0, k), (X1, k), (X1, k + 1), (X0, k + 1)])
     mb.cyl(x + w - 0.8, Y(y + 1.0), z + 0.4, z + 1.1, 0.12, "metal_dark", 8)
     mb.box(x + 0.8, Y(y + h / 2 + 0.5), z + 0.45, x + w - 0.8, Y(y + h / 2 - 0.5), z + 0.6, "glass_dark")
@@ -1668,8 +1685,24 @@ def roof_caravan(mb, b, m, rng):
                 a_ = k / 6 * math.pi
                 mb.seg((sx, Y(wy) + math.cos(a_) * 0.5, 0.55 + math.sin(a_) * 0.5), (sx, Y(wy) - math.cos(a_) * 0.5, 0.55 - math.sin(a_) * 0.5), 0.025, "plank", 4)
     for (dx_, dy_), d in DOOR_CELLS.items():
-        if CELL_BLD.get((dx_, dy_)) == b["id"] and not d["vertical"]:
-            mb.box(dx_ + 0.15, Y(dy_ + 1.6), 0.0, dx_ + 0.85, Y(dy_ + 1.0), 0.1, "plank")
+        if CELL_BLD.get((dx_, dy_)) != b["id"]:
+            continue
+        # marchepied de trois marches, lanterne suspendue à la porte
+        sx_, sy_ = (0, 1) if not d["vertical"] else ((1 if dx_ >= x + w - 1 else -1), 0)
+        if not d["vertical"]:
+            sy_ = 1 if dy_ >= y + h - 1 else -1
+        for j in range(3):
+            o_ = 1.0 + j * 0.25
+            px, py = dx_ + 0.5 + sx_ * (o_ - 0.5), dy_ + 0.5 + sy_ * (o_ - 0.5)
+            mb.box(px - 0.4, Y(py + 0.14), 0.0, px + 0.4, Y(py - 0.14), 0.36 - j * 0.11, "plank")
+        lx, ly = dx_ + 0.5 + sx_ * 0.62 + (0.45 if sy_ else 0), dy_ + 0.5 + sy_ * 0.62 + (0.45 if sx_ else 0)
+        mb.seg((lx, Y(ly), H_DOOR + 0.9), (lx, Y(ly), H_DOOR + 0.55), 0.015, "metal_dark", 3)
+        mb.sphere(lx, Y(ly), H_DOOR + 0.42, 0.13, "lamp_warm", 1, 1.0, 1.0, 1.3)
+        LAMPS.append((lx, Y(ly) - 0.2, H_DOOR + 0.4, NEON["warm"], 0.45))
+    # timon (côté nord) et coffre à outils sous la caisse
+    mb.seg((x + w / 2 - 0.3, Y(y) + 0.05, 0.4), (x + w / 2, Y(y) + 1.4, 0.15), 0.05, "plank_dark", 5)
+    mb.seg((x + w / 2 + 0.3, Y(y) + 0.05, 0.4), (x + w / 2, Y(y) + 1.4, 0.15), 0.05, "plank_dark", 5)
+    mb.cyl(x + w / 2, Y(y) + 1.45, 0.15, 0.06, 0.4, "metal_dark", 6, axis="X")
 
 
 def roof_tent(mb, b, m, rng, cone="stripes_tent"):
@@ -1697,21 +1730,73 @@ def roof_tent(mb, b, m, rng, cone="stripes_tent"):
 
 
 def roof_hall(mb, b, m, rng):
-    """Toit à deux pentes en tôle rouillée des hangars, faîtage, lanterneaux, cheminée, enseigne."""
+    """Toit à deux pentes en tôle ondulée (nervures) ou rouillée, larges avant-toits, bandeau,
+    lucarnes éclairées, trou de tôle arrachée, cheminée de brique, fronton d'enseigne lumineux
+    côté façade et fenêtres chaudes sur le mur sud."""
     x, y, w, h = b["rect"]
     z = H_WALL + 0.4
-    zt = z + 1.3
-    X0, X1, YN, YS = x - 0.15, x + w + 0.15, Y(y) + 0.15, Y(y + h) - 0.15
+    zt = z + 1.5
+    ov = 0.45
+    X0, X1, YN, YS = x - ov, x + w + ov, Y(y) + 0.2, Y(y + h) - 0.2
+    ze = z - ov * (zt - z) / (w / 2)
     cx = x + w / 2
     rm = "roof_rust" if m.get("color", 0) % 2 else "roof_tin"
-    mb.poly([(X0, YS, z), (cx, YS, zt), (cx, YN, zt), (X0, YN, z)], rm, [(0, 0), (w / 2, 0), (w / 2, h), (0, h)])
-    mb.poly([(cx, YS, zt), (X1, YS, z), (X1, YN, z), (cx, YN, zt)], rm, [(0, 0), (w / 2, 0), (w / 2, h), (0, h)])
-    mb.box(cx - 0.08, YS - 0.05, zt - 0.05, cx + 0.08, YN + 0.05, zt + 0.08, "metal_dark")
-    for k in range(int(h / 3)):
-        yy = YN - 1.2 - k * 3.0
-        mb.box(cx - 1.2, yy - 0.5, zt - 0.5, cx - 0.3, yy + 0.5, zt - 0.3, "glass_dark")
-    mb.cyl(x + w - 1.0, Y(y + 1.2), zt - 0.6, zt + 0.8, 0.16, "brick_dark", 8)
-    mb.box(x + 0.5, YS - 0.05, z - 0.5, x + w - 0.5, YS, z - 0.2, "plank_painted")
+    mb.poly([(X0, YS, ze), (cx, YS, zt), (cx, YN, zt), (X0, YN, ze)], rm, [(0, 0), (w / 2, 0), (w / 2, h), (0, h)])
+    mb.poly([(cx, YS, zt), (X1, YS, ze), (X1, YN, ze), (cx, YN, zt)], rm, [(0, 0), (w / 2, 0), (w / 2, h), (0, h)])
+    # nervures de tôle ondulée
+    yy = YS + 0.25
+    while yy < YN - 0.1:
+        for (ex, ez) in ((X0, ze), (X1, ze)):
+            mb.seg((ex, yy, ez + 0.03), (cx, yy, zt + 0.03), 0.022, "metal_mid" if rm == "roof_tin" else "rust", 4)
+        yy += 0.42
+    # faîtage, bandeaux de rive peints
+    mb.box(cx - 0.1, YS - 0.06, zt - 0.05, cx + 0.1, YN + 0.06, zt + 0.1, "metal_dark")
+    for (ex, ez) in ((X0, ze), (X1, ze)):
+        mb.box(ex - 0.05, YS - 0.05, ez - 0.22, ex + 0.05, YN + 0.05, ez + 0.02, "plank_painted")
+    mb.poly([(X0, YS - 0.02, ze), (cx, YS - 0.02, zt), (X1, YS - 0.02, ze)], "plank_dark")
+    # lucarnes éclairées (chaudes) le long des pentes
+    for k in range(max(1, int(h / 3))):
+        ly = YN - 1.3 - k * 3.0
+        for side in (-1, 1):
+            if rng.random() < 0.35:
+                continue
+            lx = cx + side * w * 0.22
+            lz = zt - (zt - z) * 0.44
+            mb.box(lx - 0.42, ly - 0.38, lz - 0.05, lx + 0.42, ly + 0.38, lz + 0.32, "plank_dark")
+            mb.box(lx - 0.3, ly - 0.39, lz + 0.02, lx + 0.3, ly - 0.3, lz + 0.26, "lamp_warm" if rng.random() < 0.8 else "lamp_magenta")
+            mb.box(lx - 0.3, ly + 0.3, lz + 0.02, lx + 0.3, ly + 0.39, lz + 0.26, "lamp_warm")
+    # tôle arrachée : trou sombre et deux planches en travers
+    if rng.random() < 0.6:
+        side = rng.choice((-1, 1))
+        hx = cx + side * w * 0.3
+        hy = YS + rng.uniform(1.0, max(1.2, h - 1.5))
+        hz = (ze + zt) / 2 - 0.15
+        mb.box(hx - 0.55, hy - 0.45, hz, hx + 0.55, hy + 0.45, hz + 0.06, "metal_dark", rot=rng.uniform(-0.3, 0.3))
+        for j in range(2):
+            mb.box(hx - 0.7, hy - 0.08 + j * 0.3, hz + 0.08, hx + 0.7, hy + 0.08 + j * 0.3, hz + 0.14, "plank", rot=rng.uniform(-0.5, 0.5))
+    # cheminée de brique à chapeau
+    chx, chy = x + w - 1.2, Y(y + 1.3)
+    mb.box(chx - 0.32, chy - 0.32, zt - 0.8, chx + 0.32, chy + 0.32, zt + 0.9, "brick_dark")
+    mb.box(chx - 0.4, chy - 0.4, zt + 0.9, chx + 0.4, chy + 0.4, zt + 1.0, "stone_dark")
+    # fronton d'enseigne (face caméra) avec cadre d'ampoules ; texte posé par build_roofs
+    fx, fy = m.get("facade", [0, 1])
+    if fy == 1:
+        bx0, bx1 = x + 0.6, x + w - 0.6
+        by = Y(y + h) - 0.0
+        mb.box(bx0, by + 0.15, z - 0.4, bx1, by + 0.25, z + 0.95, "plank_painted")
+        mb.box(bx0 - 0.08, by + 0.13, z + 0.95, bx1 + 0.08, by + 0.27, z + 1.05, "gold")
+        n = int((bx1 - bx0) / 0.4)
+        for k in range(n + 1):
+            bxk = bx0 + (bx1 - bx0) * k / max(n, 1)
+            mb.sphere(bxk, by + 0.1, z + 1.0, 0.06, "lamp_gold" if k % 2 else "lamp_magenta", 1)
+            mb.sphere(bxk, by + 0.1, z - 0.38, 0.06, "lamp_gold" if k % 2 else "lamp_magenta", 1)
+        GLOWS.append((x + w / 2, by - 0.8, z + 0.5, NEON["gold"], 0.6))
+    # fenêtres chaudes sur le mur sud (hors portes)
+    for xx in range(int(x) + 1, int(x + w) - 1, 2):
+        if (xx, y + h - 1) in DOOR_CELLS:
+            continue
+        mb.box(xx + 0.2, Y(y + h) - 0.04, 1.0, xx + 0.8, Y(y + h) + 0.0, 1.55, "plank_dark")
+        mb.box(xx + 0.27, Y(y + h) - 0.06, 1.06, xx + 0.73, Y(y + h) - 0.02, 1.49, "lamp_warm" if rng.random() < 0.75 else "glass_dark")
 
 
 def roof_kiosk(mb, b, m, rng):
@@ -1832,9 +1917,20 @@ def build_big_top():
         if abs(da + math.pi / 2) > 0.3:
             continue
         sx = cx + math.cos(da) * rx
-        for k in range(4):
-            yy = cy + math.sin(da) * (ry + 0.2) - k * 0.45
-            walls.box(sx - 2.2 - k * 0.25, yy - 0.45, 0.0, sx + 2.2 + k * 0.25, yy, 0.13 - k * 0.03, "stone" if k % 2 else "stone_dark")
+        for k in range(8):
+            yy = cy + math.sin(da) * (ry + 0.2) - k * 0.5
+            walls.box(sx - 2.4 - k * 0.2, yy - 0.5, 0.0, sx + 2.4 + k * 0.2, yy, 0.14 - k * 0.015, "stone_ochre" if k % 2 else "stone")
+            walls.box(sx - 2.4 - k * 0.2, yy - 0.06, 0.14 - k * 0.015, sx + 2.4 + k * 0.2, yy, 0.15 - k * 0.015, "stone_dark")
+        # rampes basses de part et d'autre de l'escalier, lampions
+        bal = MB()
+        for sgn in (-1, 1):
+            for k in range(8):
+                yy = cy + math.sin(da) * (ry + 0.2) - k * 0.5
+                bx = sx + sgn * (2.55 + k * 0.2)
+                bal.box(bx - 0.14, yy - 0.5, 0.0, bx + 0.14, yy, 0.55, "stone_ochre")
+                if k % 2 == 0:
+                    bal.sphere(bx, yy - 0.25, 0.68, 0.1, "lamp_warm" if k % 4 else "lamp_magenta", 1)
+        bal.to_object("_bt_stairs", "world")
         for sx2 in (sx - 3.0, sx + 3.0):
             walls.cyl(sx2, cy + math.sin(da) * (ry + 0.6), 0.0, 1.6, 0.12, "stone_dark", 8)
             walls.sphere(sx2, cy + math.sin(da) * (ry + 0.6), 1.75, 0.18, "neon_violet", 1)
@@ -1889,6 +1985,87 @@ def build_big_top():
     GLOWS.append((cx, cy, 2.2, NEON["violet"], 6.0))
     GLOWS.append((cx, cy, 0.8, NEON["magenta"], 2.5))
     LAMPS.append((cx, cy, 6.0, NEON["violet"], 6.0))
+    build_enclosure()
+
+
+def build_enclosure():
+    """Enceinte de pierre ocre basse autour du chapiteau : mur à chaperon, créneaux, piliers à
+    torchères, niches en arcade éclairées côté extérieur, gradins (deux marches) côté intérieur,
+    projecteurs sur les piliers des diagonales braqués sur le chapiteau."""
+    if not ENC_CELLS:
+        return
+    w = MB()
+    dec = MB()
+    hw = 1.05
+    cxp, cyp = TENT["c"]
+    pil = []
+    for (x, y) in sorted(ENC_CELLS):
+        w.box(x, Y(y + 1), 0.0, x + 1, Y(y), hw, "stone_ochre" if (x * 3 + y) % 4 else "stone")
+        w.box(x - 0.04, Y(y + 1) - 0.04, hw, x + 1.04, Y(y) + 0.04, hw + 0.1, "stone_dark")
+        if (x + y) % 2 == 0:
+            w.box(x + 0.25, Y(y + 0.75), hw + 0.1, x + 0.75, Y(y + 0.25), hw + 0.34, "stone_ochre")
+        for sd, dx, dy in SIDES:
+            nx, ny = x + dx, y + dy
+            if not walk(nx, ny):
+                continue
+            outer = enc_d(nx, ny) > enc_d(x, y)
+            # face extérieure : niche en arcade (fond sombre, petite flamme chaude)
+            if outer and (x * 7 + y * 5) % 3 == 0:
+                ox_, oy_ = x + 0.5 + dx * 0.52, Y(y + 0.5) - dy * 0.52
+                ax = abs(dy) > 0
+                if ax:
+                    dec.box(ox_ - 0.28, oy_ - 0.02, 0.12, ox_ + 0.28, oy_ + 0.02, 0.72, "metal_dark")
+                    dec.cyl(ox_, oy_, 0.72, 0.04, 0.28, "metal_dark", 10, axis="Y")
+                else:
+                    dec.box(ox_ - 0.02, oy_ - 0.28, 0.12, ox_ + 0.02, oy_ + 0.28, 0.72, "metal_dark")
+                    dec.cyl(ox_, oy_, 0.72, 0.04, 0.28, "metal_dark", 10, axis="X")
+                dec.sphere(ox_, oy_, 0.4, 0.07, "lamp_warm", 1)
+            # face intérieure : gradins de pierre (deux marches basses, non bloquantes)
+            if not outer:
+                for st, (d0, d1, z) in enumerate(((0.0, 0.45, 0.13), (0.45, 0.9, 0.07))):
+                    if dy != 0:
+                        y0_ = Y(y + 0.5) - dy * (0.5 + d0)
+                        y1_ = Y(y + 0.5) - dy * (0.5 + d1)
+                        dec.box(x, min(y0_, y1_), 0.0, x + 1, max(y0_, y1_), z, "seat_red" if (x + st) % 3 == 0 else "stone")
+                    else:
+                        x0_ = x + 0.5 + dx * (0.5 + d0)
+                        x1_ = x + 0.5 + dx * (0.5 + d1)
+                        dec.box(min(x0_, x1_), Y(y + 1), 0.0, max(x0_, x1_), Y(y), z, "seat_red" if (y + st) % 3 == 0 else "stone")
+        # piliers à torchère
+        if (x * 5 + y * 3) % 6 == 0:
+            pil.append((x, y))
+    for (x, y) in pil:
+        w.box(x + 0.05, Y(y + 0.95), 0.0, x + 0.95, Y(y + 0.05), hw + 0.75, "stone")
+        w.box(x - 0.02, Y(y + 1.02), hw + 0.75, x + 1.02, Y(y - 0.02), hw + 0.88, "stone_dark")
+        dec.cyl(x + 0.5, Y(y + 0.5), hw + 0.88, hw + 1.05, 0.22, "brass", 8, r2=0.3)
+        col = "violet" if (x + y) % 3 else "magenta"
+        dec.sphere(x + 0.5, Y(y + 0.5), hw + 1.18, 0.16, "neon_" + col, 1, 1.0, 1.0, 1.5)
+        GLOWS.append((x + 0.5, Y(y + 0.5), hw + 1.5, NEON[col], 0.7))
+    # projecteurs : 4 mâts sur les diagonales, têtes braquées sur le chapiteau
+    for k in range(4):
+        a = math.pi / 4 + k * math.pi / 2 + 0.22
+        best = None
+        for (x, y) in ENC_CELLS:
+            vx, vy = x + 0.5 - cxp, y + 0.5 - cyp
+            da = abs((math.atan2(vy, vx) - a + math.pi) % math.tau - math.pi)
+            if best is None or da < best[0]:
+                best = (da, x, y)
+        if best is None:
+            continue
+        _, x, y = best
+        px, py = x + 0.5, Y(y + 0.5)
+        w.cyl(px, py, 0.0, 4.6, 0.12, "metal_dark", 8)
+        for j in range(5):
+            z = 0.8 + j * 0.8
+            w.seg((px - 0.25, py, z), (px + 0.25, py, z + 0.4), 0.03, "metal_dark", 4)
+        tgt = Vector((TC.x + (px - TC.x) * 0.35, TC.y + (py - TC.y) * 0.35, H_WALL + 1.5))
+        d = (tgt - Vector((px, py, 4.7))).normalized()
+        hx, hy, hz = px + d.x * 0.35, py + d.y * 0.35, 4.7 + d.z * 0.35
+        dec.seg((px, py, 4.7), (hx, hy, hz), 0.28, "metal_dark", 10, r2=0.36)
+        dec.sphere(hx + d.x * 0.18, hy + d.y * 0.18, hz + d.z * 0.18, 0.3, "neon_violet" if k % 2 else "neon_cyan", 1, 1.0, 1.0, 1.0)
+        SPOTS.append((px, py, 4.9, (tgt.x, tgt.y, tgt.z), NEON["violet"] if k % 2 else NEON["cyan"], 900.0))
+    w.to_object("walls_enclosure", "world")
+    dec.to_object("_enclosure_dec", "world")
 
 
 # ======================================================================= grande roue et manèges
@@ -2191,62 +2368,90 @@ def build_gate():
     # (vecteurs avant f / haut u inclinés de TILT) : crâne, pommettes, arcades menaçantes, orbites
     # violettes et yeux rouges lumineux, nez, bouche béante (lèvres rouges, dents pointues), touffes
     # de cheveux rouges, collerette, chapeau pointu à pompon.
-    cx, cz = ox + ow / 2, 7.8
+    S = float(os.environ.get("HC_CLOWN_S", "2.0"))
+    cx, cz = ox + ow / 2, 4.4 + 2.0 * S
     cy = (y0 + y1) / 2 - 0.4
     ct, st_ = math.cos(TILT), math.sin(TILT)
     f = Vector((0.0, -ct, st_))
     u = Vector((0.0, st_, ct))
 
     def hp(dx, d, h):
-        return (cx + dx, cy + f.y * d + u.y * h, cz + f.z * d + u.z * h)
+        return (cx + dx * S, cy + (f.y * d + u.y * h) * S, cz + (f.z * d + u.z * h) * S)
 
     def sph(dx, d, h, r, mat, sx=1.0, sy=1.0, sz=1.0, sub=2):
         q = hp(dx, d, h)
-        mb.sphere(q[0], q[1], q[2], r, mat, sub, sx, sy, sz)
+        mb.sphere(q[0], q[1], q[2], r * S, mat, sub, sx, sy, sz)
+
+    # arche de pierre à ampoules derrière la tête (plan vertical tourné vers la caméra)
+    RA = 3.55
+    na = 26
+    for k in range(na):
+        a0 = math.pi * k / na
+        a1 = math.pi * (k + 1) / na
+        p0 = hp(math.cos(a0) * RA, -0.9, -1.6 + math.sin(a0) * RA)
+        p1 = hp(math.cos(a1) * RA, -0.9, -1.6 + math.sin(a1) * RA)
+        mb.seg(p0, p1, 0.24 * S, "stone_ochre" if k % 2 else "stone", 8)
+        q0 = hp(math.cos(a0) * (RA + 0.32), -0.7, -1.6 + math.sin(a0) * (RA + 0.32))
+        mb.sphere(q0[0], q0[1], q0[2], 0.07 * S, "lamp_gold" if k % 2 else "lamp_magenta", 1)
+        q1 = hp(math.cos(a0) * (RA - 0.3), -0.7, -1.6 + math.sin(a0) * (RA - 0.3))
+        mb.sphere(q1[0], q1[1], q1[2], 0.055 * S, "lamp_violet", 1)
     sph(0, 0, 0.2, 2.9, "clown_face", 1.0, 0.85, 1.08, 3)             # crâne
     sph(0, 0.9, -1.2, 2.2, "clown_face", 1.08, 0.8, 0.75, 3)          # mâchoire
     for s_ in (-1, 1):
         sph(s_ * 1.45, 2.05, -0.55, 0.95, "plush_pink", 1.0, 0.6, 0.8)   # pommettes
         sph(s_ * 1.05, 2.35, 0.8, 0.62, "cloth_purple", 1.25, 0.55, 0.95)  # orbites
-        sph(s_ * 1.0, 2.62, 0.72, 0.24, "eyes", 1.0, 1.0, 1.25, 1)       # yeux
+        sph(s_ * 1.0, 2.62, 0.72, 0.26, "eyes_glow", 1.0, 1.0, 1.25, 1)  # yeux lumineux
+        sph(s_ * 1.0, 2.82, 0.72, 0.1, "metal_dark", 1.0, 1.0, 1.4, 1)   # pupilles fendues
         sph(s_ * 1.05, 2.5, 1.45, 0.5, "metal_dark", 1.5, 0.45, 0.35)    # arcades froncées
         q0, q1 = hp(s_ * 0.35, 2.75, 1.25), hp(s_ * 1.75, 2.35, 1.85)
-        mb.seg(q0, q1, 0.13, "metal_dark", 6)                             # sourcils en V
-        for j in range(6):                                                # touffes rouges
-            a_ = j / 5 * 1.6 - 0.3
-            sph(s_ * (2.5 + 0.35 * math.cos(a_)), 0.2 - 0.3 * j / 5, 0.4 + 1.6 * math.sin(a_), 0.85 - 0.06 * j,
-                "hair_red" if j % 2 == 0 else "balloon_r", 1.0, 0.9, 0.9)
+        mb.seg(q0, q1, 0.13 * S, "metal_dark", 6)                         # sourcils en V
+        for j in range(7):                                                # touffes violettes
+            a_ = j / 6 * 1.9 - 0.45
+            sph(s_ * (2.5 + 0.45 * math.cos(a_)), 0.2 - 0.3 * j / 6, 0.3 + 1.9 * math.sin(a_), 0.9 - 0.06 * j,
+                "hair_violet" if j % 2 == 0 else "balloon_p", 1.0, 0.9, 0.9)
+        GLOWS.append(hp(s_ * 1.0, 3.6, 0.72) + (NEON["green"], 1.6))
     sph(0, 2.85, -0.05, 0.62, "balloon_r", 1.0, 1.0, 1.0)              # nez
     sph(0, 2.4, -1.5, 1.0, "metal_dark", 2.05, 0.5, 0.55)              # bouche béante
-    for k in range(13):                                                # lèvres
+    sph(0, 2.55, -1.5, 0.55, "neon_magenta", 2.6, 0.3, 0.45, 1)        # lueur au fond de la gorge
+    for k in range(13):                                                # lèvres (grand sourire)
         t = k / 12
         a_ = math.pi * (0.1 + 0.8 * t)
-        q0 = hp(-2.05 + 4.1 * t, 2.55, -0.95 - 0.35 * math.sin(a_))
-        q1 = hp(-2.05 + 4.1 * (k + 1) / 12, 2.55, -0.95 - 0.35 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)))
+        q0 = hp(-2.05 + 4.1 * t, 2.55, -0.95 - 0.35 * math.sin(a_) + 0.35 * (2 * t - 1) ** 2)
+        q1 = hp(-2.05 + 4.1 * (k + 1) / 12, 2.55, -0.95 - 0.35 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)) + 0.35 * (2 * (k + 1) / 12 - 1) ** 2)
         if k < 12:
-            mb.seg(q0, q1, 0.16, "balloon_r", 6)
+            mb.seg(q0, q1, 0.17 * S, "balloon_r", 6)
         q2 = hp(-1.85 + 3.7 * t, 2.5, -2.05 + 0.25 * math.sin(a_))
         if k < 12:
             q3 = hp(-1.85 + 3.7 * (k + 1) / 12, 2.5, -2.05 + 0.25 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)))
-            mb.seg(q2, q3, 0.14, "balloon_r", 6)
+            mb.seg(q2, q3, 0.14 * S, "balloon_r", 6)
         if 1 <= k <= 11:                                                  # dents pointues
-            top = hp(-2.0 + 4.0 * t, 2.62, -1.05 - 0.33 * math.sin(a_))
+            top = hp(-2.0 + 4.0 * t, 2.62, -1.05 - 0.33 * math.sin(a_) + 0.3 * (2 * t - 1) ** 2)
             tip = hp(-2.0 + 4.0 * t, 2.66, -1.5 - 0.3 * math.sin(a_))
-            mb.seg(top, tip, 0.13, "canvas_white", 5, r2=0.0)
+            mb.seg(top, tip, 0.13 * S, "canvas_white", 5, r2=0.0)
             bot = hp(-1.8 + 3.6 * t, 2.58, -1.95 + 0.22 * math.sin(a_))
             tip2 = hp(-1.8 + 3.6 * t, 2.6, -1.6 + 0.22 * math.sin(a_))
-            mb.seg(bot, tip2, 0.11, "canvas_white", 5, r2=0.0)
-    for k in range(18):                                                   # collerette
-        a_ = k / 18 * math.tau
-        q = hp(math.cos(a_) * 2.6, 0.6 + math.sin(a_) * 1.0, -2.6)
-        mb.sphere(q[0], q[1], q[2], 0.55, "canvas_white" if k % 2 else "cloth_purple", 1, 1.0, 1.0, 0.6)
+            mb.seg(bot, tip2, 0.11 * S, "canvas_white", 5, r2=0.0)
+    for k in range(22):                                                   # collerette violette / rose
+        a_ = k / 22 * math.tau
+        q = hp(math.cos(a_) * 2.7, 0.6 + math.sin(a_) * 1.0, -2.6)
+        mb.sphere(q[0], q[1], q[2], 0.58 * S, "cloth_purple" if k % 2 else "plush_pink", 1, 1.0, 1.0, 0.6)
     q = hp(0, -0.4, 3.0)
-    mb.cyl(q[0], q[1], q[2] - 0.3, q[2] + 1.9, 1.05, "stripes_purple", 14, r2=0.1)   # chapeau
-    mb.sphere(q[0], q[1], q[2] + 2.0, 0.32, "balloon_r", 2)
+    mb.cyl(q[0], q[1], q[2] - 0.3 * S, q[2] + 1.9 * S, 1.05 * S, "stripes_purple", 14, r2=0.1 * S)   # chapeau
+    mb.sphere(q[0], q[1], q[2] + 2.0 * S, 0.32 * S, "balloon_r", 2)
     for s_ in (-1, 1):
-        mb.seg((cx + s_ * 0.8, cy, cz - 3.2), (cx + s_ * 1.1, cy, cz - 1.6), 0.3, "stone", 8)   # cou / support
+        mb.seg((cx + s_ * 0.8 * S, cy, 4.2), hp(s_ * 1.1, 0, -2.0), 0.3 * S, "stone", 8)   # cou / support
+    # lampions de papier entre l'arche et les tours
+    for s_ in (-1, 1):
+        a_ = hp(s_ * RA, -0.7, -1.4)
+        b_ = (ox + ow / 2 + s_ * (ow / 2 + 0.3), (y0 + y1) / 2 - 1.2, 4.6)
+        for j in range(1, 6):
+            t = j / 6
+            px = a_[0] + (b_[0] - a_[0]) * t
+            py = a_[1] + (b_[1] - a_[1]) * t
+            pz = a_[2] + (b_[2] - a_[2]) * t - 0.8 * math.sin(t * math.pi)
+            mb.sphere(px, py, pz, 0.26, "lamp_red" if j % 2 else "lamp_warm", 1, 1.0, 1.0, 1.3)
     # Escalier du portail (marches basses, non bloquantes) et lampions le long des murs.
-    for k in range(4):
+    for k in range(6):
         yy = gy + gh + k * 0.55
         mb.box(ox - 0.6 - k * 0.35, Y(yy + 0.55), 0.0, ox + ow + 0.6 + k * 0.35, Y(yy), 0.12 - k * 0.025, "stone" if k % 2 else "stone_dark")
     for seg_ in ((gx, ox - 1.5), (ox + ow + 1.5, gx + gw)):
@@ -2259,8 +2464,8 @@ def build_gate():
             mb.cyl(lx, y0 - 0.25, z + 0.28, z + 0.38, 0.1, "metal_dark", 6)
         GLOWS.append(((a + b) / 2, y0 - 0.8, 2.2, NEON["warm"], 1.2))
     mb.to_object("props_gate", "world")
-    LAMPS.append((cx, cy - 4.0, cz - 1.0, NEON["violet"], 10.0))
-    LAMPS.append((cx, cy - 3.0, cz - 4.0, NEON["magenta"], 8.0))
+    LAMPS.append((cx, cy - 4.0 * S, cz, NEON["violet"], 14.0))
+    LAMPS.append((cx, cy - 3.0 * S, cz - 2.0 * S, NEON["magenta"], 10.0))
     GLOWS.append((cx, cy - 2.0, cz - 2.5, NEON["magenta"], 4.0))
     GLOWS.append((ox + ow / 2, y0 - 0.5, 2.2, NEON["gold"], 1.5))
 
@@ -2437,6 +2642,9 @@ def build_props():
 
 
 # ======================================================================= guirlandes, hors jeu, forêt
+CONFETTI = ["balloon_r", "balloon_p", "balloon_y", "lamp_cyan", "plush_pink", "canvas_white"]
+
+
 def build_outskirts():
     mb = MB()
     veg = MB()
@@ -2552,6 +2760,62 @@ def build_outskirts():
                 cl.box(x + 0.3, Y(y + 0.7), 0.0, x + 0.7, Y(y + 0.3), 0.03, "debris", rot=rng2.uniform(0, 3))
             elif u < 0.105:
                 cl.sphere(x + 0.5, Y(y + 0.5), 0.02, 0.18, rng2.choice(["balloon_r", "balloon_p"]), 1, 1.0, 1.0, 0.3)
+            role = role_of(CELL_ROOM.get((x, y), -1))
+            # confettis (place, allée centrale, parvis)
+            nconf = 3 if role in ("plaza", "avenue", "entrance") else 1
+            for _ in range(nconf):
+                if rng2.random() < 0.6:
+                    qx, qy = x + rng2.random(), y + rng2.random()
+                    cl.box(qx, Y(qy + 0.07), 0.0, qx + 0.07, Y(qy), 0.006, rng2.choice(CONFETTI), rot=rng2.uniform(0, 3))
+            # encombrement contre les murs / palissades : caisses, barils, poubelles renversées,
+            # bancs, peluches abandonnées, barrières, herbes folles (non bloquant, bord de case)
+            nb = [(dx, dy) for (_, dx, dy) in SIDES if not walk(x + dx, y + dy)]
+            if not nb:
+                continue
+            dx, dy = nb[0]
+            ex, ey = x + 0.5 + dx * 0.28, y + 0.5 + dy * 0.28
+            v = rng2.random()
+            if v < 0.07:
+                r_ = rng2.uniform(-0.4, 0.4)
+                cl.box(ex - 0.27, Y(ey + 0.27), 0.0, ex + 0.27, Y(ey - 0.27), 0.5, "plank", rot=r_)
+                cl.box(ex - 0.29, Y(ey + 0.05), 0.2, ex + 0.29, Y(ey - 0.05), 0.3, "plank_dark", rot=r_)
+                if rng2.random() < 0.5:
+                    cl.box(ex - 0.18, Y(ey + 0.18), 0.5, ex + 0.18, Y(ey - 0.18), 0.82, "plank", rot=r_ + 0.4)
+            elif v < 0.12:
+                cl.cyl(ex, Y(ey), 0.0, 0.62, 0.24, rng2.choice(["iron_red", "metal_mid", "rust"]), 10)
+                cl.cyl(ex, Y(ey), 0.62, 0.64, 0.25, "metal_dark", 10)
+            elif v < 0.16:
+                cl.cyl(ex, Y(ey), 0.2, 0.55, 0.2, "metal_mid", 10, axis="X", rot=rng2.uniform(0, 3))
+                for _ in range(4):
+                    cl.box(ex + rng2.uniform(-0.5, 0.5), Y(ey + rng2.uniform(-0.5, 0.5)), 0.0, ex + rng2.uniform(-0.5, 0.5) + 0.12, Y(ey + rng2.uniform(-0.5, 0.5)) + 0.1, 0.02, "paper", rot=rng2.uniform(0, 3))
+            elif v < 0.19 and role in ("plaza", "avenue", "alley"):
+                hor = dy != 0
+                if hor:
+                    cl.box(x + 0.1, Y(ey + 0.16), 0.32, x + 0.9, Y(ey - 0.16), 0.38, "plank")
+                    for lx in (x + 0.18, x + 0.82):
+                        cl.box(lx - 0.04, Y(ey + 0.14), 0.0, lx + 0.04, Y(ey - 0.14), 0.32, "metal_dark")
+                else:
+                    cl.box(ex - 0.16, Y(y + 0.9), 0.32, ex + 0.16, Y(y + 0.1), 0.38, "plank")
+                    for ly in (y + 0.18, y + 0.82):
+                        cl.box(ex - 0.14, Y(ly + 0.04), 0.0, ex + 0.14, Y(ly - 0.04), 0.32, "metal_dark")
+            elif v < 0.22:
+                pm = rng2.choice(["plush", "plush_pink", "balloon_p"])
+                cl.sphere(ex, Y(ey), 0.18, 0.2, pm, 1, 1.0, 0.9, 0.9)
+                cl.sphere(ex + 0.05, Y(ey) + 0.12, 0.38, 0.13, pm, 1)
+                cl.sphere(ex - 0.06, Y(ey) + 0.16, 0.5, 0.05, pm, 1)
+                cl.sphere(ex + 0.16, Y(ey) + 0.16, 0.5, 0.05, pm, 1)
+            elif v < 0.25:
+                hor = dy != 0
+                x0_, x1_ = (x + 0.05, x + 0.95) if hor else (ex - 0.06, ex + 0.06)
+                y0_, y1_ = (ey - 0.06, ey + 0.06) if hor else (y + 0.05, y + 0.95)
+                cl.box(x0_, Y(y1_), 0.42, x1_, Y(y0_), 0.6, "stripes_tent")
+                for (px, py) in (((x + 0.15, ey), (x + 0.85, ey)) if hor else ((ex, y + 0.15), (ex, y + 0.85))):
+                    cl.seg((px - 0.12, Y(py), 0.0), (px, Y(py), 0.55), 0.03, "plank_dark", 4)
+                    cl.seg((px + 0.12, Y(py), 0.0), (px, Y(py), 0.55), 0.03, "plank_dark", 4)
+            elif v < 0.42:
+                for _ in range(rng2.randint(3, 6)):
+                    gx_, gy_ = ex + rng2.uniform(-0.25, 0.25), ey + rng2.uniform(-0.25, 0.25)
+                    cl.seg((gx_, Y(gy_), 0.0), (gx_ + rng2.uniform(-0.12, 0.12), Y(gy_) + rng2.uniform(-0.12, 0.12), rng2.uniform(0.15, 0.4)), 0.025, "pine", 3, r2=0.0)
     cl.to_object("_litter", "world")
 
 
@@ -2746,6 +3010,19 @@ def build_lights():
     o3 = bpy.data.objects.new("lot", L3)
     o3.location = (LOT[0] + LOT[2] / 2, Y(LOT[1] + LOT[3] / 2), 6.0)
     scene.collection.objects.link(o3)
+    for (sx_, sy_, sz_, tg_, col_, e_) in SPOTS:
+        Ls = bpy.data.lights.new("spot%d" % n, "SPOT")
+        Ls.color = col_
+        Ls.energy = e_ * LIGHT_E / 100.0
+        Ls.spot_size = math.radians(38)
+        Ls.spot_blend = 0.6
+        Ls.shadow_soft_size = 0.3
+        os_ = bpy.data.objects.new("spot%d" % n, Ls)
+        os_.location = (sx_, sy_, sz_)
+        dv = Vector(tg_) - Vector((sx_, sy_, sz_))
+        os_.rotation_euler = dv.to_track_quat("-Z", "Y").to_euler()
+        scene.collection.objects.link(os_)
+        n += 1
     print("  lights", n + 1, flush=True)
 
 

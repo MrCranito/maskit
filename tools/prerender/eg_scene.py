@@ -941,6 +941,7 @@ def build_materials():
     mat_sand("sand_dark", (0.5, 0.35, 0.18))
     mat_slabs("slabs", (0.4, 0.34, 0.28), (0.34, 0.29, 0.24), 1.0, grout=(0.14, 0.11, 0.09), sand=0.3)
     mat_slabs("slabs_big", (0.52, 0.44, 0.35), (0.45, 0.38, 0.3), 2.0, grout=(0.2, 0.15, 0.11), sand=0.5)
+    mat_slabs("slabs_sandy", (0.62, 0.5, 0.36), (0.55, 0.44, 0.32), 1.0, grout=(0.3, 0.22, 0.14), sand=0.7)
     mat_slabs("slabs_dark", (0.3, 0.25, 0.21), (0.25, 0.21, 0.18), 1.0, grout=(0.1, 0.08, 0.07), sand=0.15)
     mat_slabs("slabs_gold", (0.7, 0.54, 0.3), (0.58, 0.44, 0.24), 0.5, grout=(0.3, 0.2, 0.08), sand=0.1)
     mat_ashlar("wall", (0.37, 0.31, 0.25), STONE_DARK, pw=1.0, ph=0.45, var=0.18, grime=0.75)
@@ -1596,12 +1597,12 @@ def lm_sphinx(mb, rect, rng):
     # tête, némès (or rayé de lapis), retombées, barbe, uræus
     hz = z0 + 3.25
     mb.sphere(cx, yS + 3.55, hz, 0.78, GL, 3, 0.95, 0.95, 1.05)
-    mb.sphere(cx, yS + 3.95, hz + 0.12, 1.0, "gold_dark", 3, 1.2, 0.95, 1.0)
+    mb.sphere(cx, yS + 3.95, hz + 0.12, 1.0, GL, 3, 1.2, 0.95, 1.0)
     for sx in (-1.0, 1.0):
-        mb.box(cx + sx * 0.82 - 0.2, yS + 3.2, hz - 1.25, cx + sx * 0.82 + 0.2, yS + 4.05, hz - 0.05, "gold_dark")
-        mb.box(cx + sx * 0.82 - 0.21, yS + 3.45, hz - 1.2, cx + sx * 0.82 + 0.21, yS + 3.62, hz - 0.08, "lapis")
+        mb.box(cx + sx * 0.82 - 0.2, yS + 3.2, hz - 1.25, cx + sx * 0.82 + 0.2, yS + 4.05, hz - 0.05, GL)
+        mb.box(cx + sx * 0.82 - 0.21, yS + 3.45, hz - 1.2, cx + sx * 0.82 + 0.21, yS + 3.55, hz - 0.08, "gold_dark")
     for k in range(-3, 4):
-        mb.box(cx + k * 0.24 - 0.06, yS + 3.35, hz + 0.84, cx + k * 0.24 + 0.06, yS + 4.6, hz + 1.1, "lapis")
+        mb.box(cx + k * 0.24 - 0.04, yS + 3.35, hz + 0.84, cx + k * 0.24 + 0.04, yS + 4.6, hz + 1.06, G)
     mb.box(cx - 0.16, yS + 2.62, hz - 1.0, cx + 0.16, yS + 2.95, hz - 0.35, GL)
     mb.box(cx - 0.1, yS + 2.85, hz + 0.6, cx + 0.1, yS + 3.1, hz + 1.05, "gold")
     mb.box(cx - 0.32, yS + 2.74, hz - 0.12, cx + 0.32, yS + 2.86, hz + 0.08, G)
@@ -2172,12 +2173,12 @@ def build_details():
                 for ox in range(-3, 4):
                     if tile(x + ox, y + oy) == 3:
                         d = min(d, max(abs(ox), abs(oy)))
-            if d > 3 or prng.random() > (0.62 - d * 0.12):
+            if d > 3 or prng.random() > (0.42 - d * 0.1):
                 continue
             for qx, qy in ((x + 0.25, y + 0.25), (x + 0.75, y + 0.75)) if prng.random() < 0.35 else ((x + 0.5, y + 0.5),):
                 sz = 0.46 if qx != x + 0.5 else prng.uniform(0.82, 0.95)
                 det.box(qx - sz / 2, Y(qy + sz / 2), -0.01, qx + sz / 2, Y(qy - sz / 2), prng.uniform(0.008, 0.026),
-                        prng.choice(("slabs_big", "slabs_big", "wall_top", "slabs")), rot=prng.uniform(-0.08, 0.08))
+                        prng.choice(("slabs_sandy", "slabs_sandy", "slabs_big")), rot=prng.uniform(-0.08, 0.08))
             if prng.random() < 0.3:
                 decal(det, x + prng.uniform(0.2, 0.8), y + prng.uniform(0.2, 0.8), prng.uniform(0.4, 0.8), "sand_drift")
     # micro-détail du sable : ossements, jarres brisées, traces de pas
@@ -2235,7 +2236,7 @@ def build_lights():
         for fx in (0.3, 0.7):
             L_ = bpy.data.lights.new("g%d" % n, "POINT")
             L_.color = (1.0, 0.5, 0.18)
-            L_.energy = LIGHT_E * 0.6 * max(1.0, cw_ * ch_ / 60.0)
+            L_.energy = LIGHT_E * 0.25 * max(1.0, cw_ * ch_ / 60.0)
             L_.shadow_soft_size = 0.6
             o = bpy.data.objects.new("g%d" % n, L_)
             o.location = (cx_ + cw_ * fx, Y(cy_ + ch_ * 0.5), 2.4)

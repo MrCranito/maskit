@@ -45,6 +45,11 @@ const TENT_C := Vector2(36.5, 46.5)
 const TENT_R := Vector2(17.0, 12.5)
 ## Anneau de gradins (cases murées) : tent_d dans ]RING, 1].
 const RING := 0.74
+## Enceinte de pierre basse autour du chapiteau (anneau d'une case sur la place), ouvertures
+## [angle, demi-largeur en cases] : grand escalier au sud, portes nord/est/ouest, diagonales.
+const ENC_R := Vector2(21.5, 16.5)
+const ENC_GAPS := [[PI / 2.0, 3.6], [-PI / 2.0, 2.6], [0.0, 2.6], [PI, 2.6],
+	[PI / 4.0, 1.6], [3.0 * PI / 4.0, 1.6], [-PI / 4.0, 1.6], [-3.0 * PI / 4.0, 1.6]]
 ## Quartiers (cours ovales) : [centre, rayons, rôle, nom, type de salle].
 const YARDS := [
 	[Vector2(15.5, 16.0), Vector2(12.5, 10.5), &"wheel_yard", "Esplanade de la Grande Roue", &"combat"],
@@ -143,6 +148,41 @@ static func disc_cells(c: Vector2, r: float) -> Array[Vector2i]:
 
 
 ## Paramètre ovale d'une case (0 au centre, 1 sur le bord du chapiteau).
+static func enc_d(x: int, y: int) -> float:
+	var dx := (x + 0.5 - TENT_C.x) / ENC_R.x
+	var dy := (y + 0.5 - TENT_C.y) / ENC_R.y
+	return dx * dx + dy * dy
+
+
+## Enceinte : cases de la place juste hors de l'ellipse ENC_R (bord 4-voisin), sauf ouvertures.
+static func _enclosure(L: FloorLayout, zone: PackedInt32Array) -> void:
+	var cells: Array = []
+	var x0 := int(TENT_C.x - ENC_R.x) - 2
+	var y0 := int(TENT_C.y - ENC_R.y) - 2
+	for y in range(maxi(y0, 1), mini(int(TENT_C.y + ENC_R.y) + 3, H - 1)):
+		for x in range(maxi(x0, 1), mini(int(TENT_C.x + ENC_R.x) + 3, W - 1)):
+			if zone[y * W + x] != 0 or L.tiles[y * W + x] != T.STREET:
+				continue
+			if enc_d(x, y) < 1.0:
+				continue
+			if enc_d(x - 1, y) >= 1.0 and enc_d(x + 1, y) >= 1.0 and enc_d(x, y - 1) >= 1.0 and enc_d(x, y + 1) >= 1.0:
+				continue
+			var vx := x + 0.5 - TENT_C.x
+			var vy := y + 0.5 - TENT_C.y
+			var a := atan2(vy, vx)
+			var rr := sqrt(vx * vx + vy * vy)
+			var gap := false
+			for g: Array in ENC_GAPS:
+				if absf(wrapf(a - float(g[0]), -PI, PI)) * rr < float(g[1]):
+					gap = true
+					break
+			if gap:
+				continue
+			L.set_tile(Vector2i(x, y), T.WALL)
+			cells.append([x, y])
+	L.set_meta(&"hc_enclosure", cells)
+
+
 static func tent_d(x: int, y: int) -> float:
 	var dx := (x + 0.5 - TENT_C.x) / TENT_R.x
 	var dy := (y + 0.5 - TENT_C.y) / TENT_R.y
@@ -331,6 +371,7 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 	for c3 in _coaster_cells():
 		if L.get_tile(c3) == T.STREET:
 			L.set_tile(c3, T.WALL)
+	_enclosure(L, zone)
 	L.player_spawn = Vector2i(36 + rng.randi_range(-2, 1), LOT.end.y - 3)
 	_fence(L)
 
@@ -978,4 +1019,5 @@ static func _contract(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerat
 	L.set_meta(&"render_contract", {"kind": "hc_ground", "modules": ml, "rides": rides, "coaster": loop,
 		"coaster_in": inner, "tent": {"rect": TENT_RECT, "c": TENT_C, "r": TENT_R}, "plaza": PLAZA,
 		"plaza_e": {"c": PLAZA_C, "r": PLAZA_R}, "paths": paths, "yards": yards, "lot": LOT,
-		"gate": GATE, "gate_open": GATE_OPEN, "trees": trees})
+		"gate": GATE, "gate_open": GATE_OPEN, "trees": trees,
+		"enclosure": L.get_meta(&"hc_enclosure", []), "enc_r": ENC_R})

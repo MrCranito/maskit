@@ -2730,7 +2730,7 @@ def render_chunked(path, chunk=1024, ov=24, grade_=True):
             x1, y1 = min(x0 + chunk, pw), min(y0 + chunk, ph)
             cp = os.path.join(cdir, "c_%d_%d.png" % (x0, y0))
             if not os.path.exists(cp):
-                if limit and done_now >= limit:
+                if limit and grade_ and done_now >= limit:   # passe occ (1 échantillon) : pas de limite
                     print("CHUNK_LIMIT reached", flush=True)
                     sys.exit(3)
                 done_now += 1
