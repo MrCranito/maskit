@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ice_titan"
+display_name = "Le Titan de glace"
+max_hp = 4200.0
+move_speed = 82.0
+body_radius = 56.0
+detection_radius = 800.0
+detection_angle_deg = 360.0
+lose_sight_time = 30.0
+alert_duration = 0.6
+alert_neighbors_radius = 900.0
+patrol_radius = 40.0
+sight_gain = 3.0
+hearing_radius = 900.0
+hearing_gain = 3.0
+awareness_decay = 0.02
+attack_type = 0
+attack_range = 130.0
+attack_damage = 30.0
+attack_cooldown = 1.8
+attack_windup = 0.85
+aoe_radius = 160.0
+tactic = &"heavy"
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"slam"
+stagger_ratio = 0.0
+stagger_time = 0.2
+knockback = 0.0
+ground_drop_chance = 1.0
+boss = true
+boss_title = "Colosse né du noyau arctique"
+loot_table = &"enemy_ice_titan"
+corpse_name = "Carcasse du Titan de glace"
+sfx_hurt = &"hit_heavy"
+sfx_attack = &"golem_stomp"
+sfx_death = &"golem_crumble"
+skills = [{"id": &"ice_spikes", "cooldown": 7.0, "initial_cooldown": 2.0, "windup": 0.8, "max_range": 700.0, "count": 3, "spread_deg": 40.0, "length": 600.0, "spacing": 60.0, "radius": 44.0, "delay": 0.35, "stagger": 0.03, "damage": 18.0, "root_time": 0.8, "priority": 1.6}, {"id": &"ice_frost_nova", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 1.0, "max_range": 300.0, "radius": 320.0, "duration": 0.6, "damage": 16.0, "knock_time": 0.0, "slow": 0.45, "slow_time": 2.2, "priority": 1.4}, {"id": &"shockwave", "radius": 300.0, "cooldown": 8.0, "windup": 0.9, "max_range": 260.0, "damage": 20.0, "knock_time": 0.5, "priority": 1.1}]
+phases = [{"from": 1.0, "name": "Phase 1 — Le colosse s'éveille", "skills": [{"id": &"ice_spikes", "cooldown": 7.0, "initial_cooldown": 2.0, "windup": 0.8, "max_range": 700.0, "count": 3, "spread_deg": 40.0, "length": 600.0, "spacing": 60.0, "radius": 44.0, "delay": 0.35, "stagger": 0.03, "damage": 18.0, "root_time": 0.8, "priority": 1.6}, {"id": &"ice_frost_nova", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 1.0, "max_range": 300.0, "radius": 320.0, "duration": 0.6, "damage": 16.0, "knock_time": 0.0, "slow": 0.45, "slow_time": 2.2, "priority": 1.4}, {"id": &"shockwave", "radius": 300.0, "cooldown": 8.0, "windup": 0.9, "max_range": 260.0, "damage": 20.0, "knock_time": 0.5, "priority": 1.1}], "attack_pattern": &"slam"}, {"from": 0.7, "name": "Phase 2 — Tempête de glace", "skills": [{"id": &"ice_storm", "cooldown": 12.0, "initial_cooldown": 0.0, "windup": 0.9, "max_range": 900.0, "count": 2, "max_alive": 3, "offset": 180.0, "radius": 130.0, "duration": 8.0, "drift_speed": 70.0, "slow": 0.45, "dps": 5.0, "priority": 1.9, "shout": "TEMPÊTE DE GLACE"}, {"id": &"ice_lab_call", "cooldown": 20.0, "initial_cooldown": 0.0, "windup": 1.0, "hp_below": 1.01, "count": 3, "max_total": 5, "kinds": ["ice_elemental", "ice_wolf", "ice_wolf"], "shout": "LES GLACES S'ÉVEILLENT", "priority": 2.0}, {"id": &"ice_spikes", "cooldown": 7.0, "initial_cooldown": 1.5, "windup": 0.8, "max_range": 700.0, "count": 5, "spread_deg": 70.0, "length": 620.0, "spacing": 60.0, "radius": 44.0, "delay": 0.35, "stagger": 0.03, "damage": 18.0, "root_time": 0.8, "priority": 1.6}, {"id": &"ice_frost_nova", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 1.0, "max_range": 300.0, "radius": 320.0, "duration": 0.6, "damage": 16.0, "knock_time": 0.0, "slow": 0.45, "slow_time": 2.2, "priority": 1.4}, {"id": &"shockwave", "radius": 300.0, "cooldown": 8.0, "windup": 0.9, "max_range": 260.0, "damage": 20.0, "knock_time": 0.5, "priority": 1.1}], "on_enter": [&"ice_storm", &"ice_lab_call"], "invuln": 1.5, "speed_mult": 1.1, "cooldown_mult": 0.85, "damage_mult": 1.1}, {"from": 0.3, "name": "Phase 3 — Fureur du noyau", "skills": [{"id": &"ice_icefall", "cooldown": 8.0, "initial_cooldown": 0.0, "windup": 0.6, "max_range": 1000.0, "count": 8, "scatter": 240.0, "radius": 72.0, "delay": 1.0, "stagger": 0.1, "damage": 22.0, "slow": 0.5, "slow_time": 2.0, "priority": 2.1, "shout": "FUREUR DU NOYAU"}, {"id": &"ice_storm", "cooldown": 11.0, "initial_cooldown": 0.0, "windup": 0.9, "max_range": 900.0, "count": 2, "max_alive": 4, "offset": 180.0, "radius": 130.0, "duration": 8.0, "drift_speed": 70.0, "slow": 0.45, "dps": 5.0, "priority": 1.9, "shout": "TEMPÊTE DE GLACE"}, {"id": &"ice_lab_call", "cooldown": 18.0, "initial_cooldown": 0.0, "windup": 1.0, "hp_below": 1.01, "count": 3, "max_total": 6, "kinds": ["ice_elemental", "ice_hunter", "ice_wolf"], "shout": "LES GLACES S'ÉVEILLENT", "priority": 2.0}, {"id": &"ice_spikes", "cooldown": 6.0, "initial_cooldown": 1.0, "windup": 0.7, "max_range": 760.0, "count": 7, "spread_deg": 120.0, "length": 680.0, "spacing": 60.0, "radius": 46.0, "delay": 0.3, "stagger": 0.025, "damage": 22.0, "root_time": 1.0, "priority": 1.7}, {"id": &"ice_frost_nova", "cooldown": 8.0, "initial_cooldown": 3.0, "windup": 1.0, "max_range": 300.0, "radius": 360.0, "duration": 0.6, "damage": 20.0, "knock_time": 0.6, "slow": 0.45, "slow_time": 2.2, "priority": 1.4, "waves": 2, "gap": 0.5}, {"id": &"shockwave", "radius": 300.0, "cooldown": 8.0, "windup": 0.9, "max_range": 260.0, "damage": 20.0, "knock_time": 0.5, "priority": 1.1}], "on_enter": [&"ice_icefall", &"ice_frost_nova"], "invuln": 2.0, "speed_mult": 1.3, "cooldown_mult": 0.65, "damage_mult": 1.4}]

@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_fire_clown"
+display_name = "Le Clown de feu"
+max_hp = 500.0
+move_speed = 120.0
+body_radius = 22.0
+detection_radius = 520.0
+detection_angle_deg = 200.0
+lose_sight_time = 6.0
+alert_duration = 0.4
+alert_neighbors_radius = 480.0
+patrol_radius = 90.0
+sight_gain = 2.2
+hearing_radius = 520.0
+hearing_gain = 2.4
+awareness_decay = 0.06
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 400.0
+attack_damage = 12.0
+attack_cooldown = 1.6
+attack_windup = 0.55
+projectile_speed = 340.0
+retreat_distance = 170.0
+projectile_count = 3
+projectile_spread_deg = 24.0
+projectile_lifetime = 1.6
+tactic = &"gunner"
+preferred_range_min = 220.0
+preferred_range_max = 380.0
+use_cover = false
+can_flank = true
+strafe_ratio = 0.6
+attack_pattern = &"fan"
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.2
+phase2_cooldown_mult = 0.65
+stagger_ratio = 0.0
+stagger_time = 0.3
+knockback = 20.0
+ground_drop_chance = 1.0
+corpse_name = "Cendres du Clown de feu"
+sfx_hurt = &"hit_flesh"
+sfx_attack = &"enemy_attack"
+skills = [{"id": &"molotov", "cooldown": 8.0, "windup": 0.6, "min_range": 140.0, "max_range": 400.0, "kind": "fire", "radius": 80.0, "flight": 0.6, "duration": 4.5, "dps": 10.0, "priority": 1.2}, {"id": &"fan_volley", "cooldown": 7.0, "windup": 0.6, "min_range": 0.0, "max_range": 230.0, "count": 7, "arc_deg": 55.0, "interval": 0.04, "speed": 420.0, "damage": 8.0, "style": "", "lifetime": 0.6, "priority": 1.5}, {"id": &"cv_fire_ring"}]

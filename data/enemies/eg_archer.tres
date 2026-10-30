@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_archer"
+display_name = "Archer sable"
+max_hp = 75.0
+move_speed = 105.0
+body_radius = 17.0
+detection_radius = 560.0
+detection_angle_deg = 120.0
+lose_sight_time = 4.0
+alert_duration = 0.5
+alert_neighbors_radius = 520.0
+patrol_radius = 80.0
+sight_gain = 1.6
+hearing_radius = 380.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 1
+attack_range = 540.0
+attack_damage = 14.0
+attack_cooldown = 2.0
+attack_windup = 0.75
+projectile_speed = 760.0
+retreat_distance = 220.0
+tactic = &"sniper"
+preferred_range_min = 300.0
+preferred_range_max = 500.0
+use_cover = true
+can_flank = false
+strafe_ratio = 0.45
+attack_pattern = &"aimed"
+aim_spread_deg = 2.0
+telegraph_line = true
+stagger_ratio = 0.3
+stagger_time = 0.45
+knockback = 80.0
+ground_drop_chance = 0.3
+corpse_name = "Archer sable brisé"
+sfx_attack = &"blade_swing"
+sfx_hurt = &"hit_heavy"
+skills = [{"id": &"eg_arrow_rain", "cooldown": 11.0, "initial_cooldown": 4.0, "windup": 0.6, "min_range": 160.0, "max_range": 720.0, "count": 3, "spread": 90.0, "radius": 62.0, "delay": 0.8, "damage": 11.0, "priority": 1.2}, {"id": &"eg_temple_call", "cooldown": 28.0, "initial_cooldown": 6.0, "windup": 1.0, "hp_below": 0.95, "count": 2, "max_total": 3, "kinds": ["eg_skeleton", "eg_scarab"], "shout": "LES TEMPLES S'ÉVEILLENT !", "priority": 1.6}]

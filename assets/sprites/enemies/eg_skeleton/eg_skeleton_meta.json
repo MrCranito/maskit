@@ -1,0 +1,135 @@
+{
+  "kind": "eg_skeleton",
+  "name": "Squelette rôdeur",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 89,
+  "head_px": 58,
+  "fps": {
+    "idle": 7,
+    "run": 13,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      135.3,
+      112.2
+    ],
+    "se": [
+      136.0,
+      136.6
+    ],
+    "s": [
+      113.2,
+      154.2
+    ],
+    "sw": [
+      80.4,
+      154.7
+    ],
+    "w": [
+      56.7,
+      137.8
+    ],
+    "nw": [
+      56.0,
+      113.4
+    ],
+    "n": [
+      78.8,
+      95.8
+    ],
+    "ne": [
+      111.6,
+      95.3
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      33,
+      95,
+      148,
+      170
+    ],
+    "se": [
+      33,
+      95,
+      148,
+      170
+    ],
+    "s": [
+      46,
+      80,
+      159,
+      162
+    ],
+    "sw": [
+      46,
+      80,
+      159,
+      162
+    ],
+    "w": [
+      46,
+      80,
+      159,
+      162
+    ],
+    "nw": [
+      44,
+      87,
+      159,
+      168
+    ],
+    "n": [
+      44,
+      87,
+      159,
+      168
+    ],
+    "ne": [
+      33,
+      106,
+      146,
+      174
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_skeleton/eg_skeleton_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

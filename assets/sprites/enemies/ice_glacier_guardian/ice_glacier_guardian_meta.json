@@ -1,0 +1,135 @@
+{
+  "kind": "ice_glacier_guardian",
+  "name": "Gardien des glaces",
+  "frame_size": [
+    288,
+    288
+  ],
+  "feet_offset": [
+    144,
+    204
+  ],
+  "display_height": 166.1,
+  "world_per_px": 0.576875,
+  "height_px": 141,
+  "head_px": 78,
+  "fps": {
+    "idle": 7,
+    "run": 10,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      179.2,
+      192.3
+    ],
+    "se": [
+      152.6,
+      205.8
+    ],
+    "s": [
+      120.9,
+      201.3
+    ],
+    "sw": [
+      102.8,
+      181.5
+    ],
+    "w": [
+      108.8,
+      158.0
+    ],
+    "nw": [
+      135.4,
+      144.5
+    ],
+    "n": [
+      167.1,
+      149.0
+    ],
+    "ne": [
+      185.2,
+      168.8
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      48,
+      121,
+      232,
+      246
+    ],
+    "se": [
+      48,
+      121,
+      232,
+      246
+    ],
+    "s": [
+      59,
+      115,
+      238,
+      252
+    ],
+    "sw": [
+      59,
+      115,
+      238,
+      252
+    ],
+    "w": [
+      59,
+      115,
+      238,
+      252
+    ],
+    "nw": [
+      56,
+      133,
+      240,
+      269
+    ],
+    "n": [
+      56,
+      133,
+      240,
+      269
+    ],
+    "ne": [
+      50,
+      149,
+      229,
+      265
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_glacier_guardian/ice_glacier_guardian_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

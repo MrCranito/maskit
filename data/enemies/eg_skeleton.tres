@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_skeleton"
+display_name = "Squelette rôdeur"
+max_hp = 55.0
+move_speed = 128.0
+body_radius = 17.0
+detection_radius = 360.0
+detection_angle_deg = 150.0
+lose_sight_time = 5.5
+alert_duration = 0.5
+alert_neighbors_radius = 460.0
+patrol_radius = 170.0
+sight_gain = 1.4
+hearing_radius = 420.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 58.0
+attack_damage = 9.0
+attack_cooldown = 1.25
+attack_windup = 0.5
+projectile_speed = 0.0
+tactic = &"rusher"
+can_flank = true
+zigzag_amplitude = 12.0
+zigzag_period = 0.9
+strafe_ratio = 0.4
+attack_pattern = &"melee"
+stagger_ratio = 0.3
+stagger_time = 0.45
+knockback = 80.0
+ground_drop_chance = 0.25
+corpse_name = "Squelette brisé"
+sfx_hurt = &"hit_heavy"
+skills = [{"id": &"eg_spike_trap", "cooldown": 10.0, "initial_cooldown": 3.0, "windup": 0.5, "max_range": 420.0, "count": 1, "radius": 58.0, "delay": 0.7, "damage": 10.0, "status": "root", "status_time": 0.7, "priority": 1.0}]

@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ice_bear"
+display_name = "Ours des neiges muté"
+max_hp = 320.0
+move_speed = 96.0
+body_radius = 30.0
+detection_radius = 380.0
+detection_angle_deg = 180.0
+lose_sight_time = 3.5
+alert_duration = 0.45
+alert_neighbors_radius = 380.0
+patrol_radius = 120.0
+sight_gain = 1.4
+hearing_radius = 420.0
+hearing_gain = 2.0
+awareness_decay = 0.1
+attack_type = 0
+attack_range = 80.0
+attack_damage = 20.0
+attack_cooldown = 1.7
+attack_windup = 0.65
+aoe_radius = 95.0
+tactic = &"heavy"
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"slam"
+stagger_ratio = 0.2
+stagger_time = 0.35
+knockback = 30.0
+loot_table = &"enemy_ice_beast"
+ground_drop_chance = 0.5
+sfx_attack = &"golem_growl"
+sfx_hurt = &"hit_heavy"
+corpse_name = "Ours des neiges abattu"
+skills = [{"id": &"charge", "cooldown": 9.0, "initial_cooldown": 2.0, "windup": 0.7, "min_range": 150.0, "max_range": 440.0, "speed": 620.0, "damage": 20.0, "status": "knockdown", "status_time": 0.7, "self_stun": 0.6, "priority": 1.4}, {"id": &"rage", "passive": true, "threshold": 0.5, "speed_mult": 1.35, "cooldown_mult": 0.7}, {"id": &"ice_chill", "passive": true, "slow": 0.35, "slow_time": 1.6, "reach_bonus": 12.0}]

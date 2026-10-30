@@ -1,0 +1,135 @@
+{
+  "kind": "eg_lizard",
+  "name": "Lézard des sables",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 113,
+  "head_px": 62,
+  "fps": {
+    "idle": 7,
+    "run": 18,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      184.8,
+      129.0
+    ],
+    "se": [
+      159.1,
+      172.9
+    ],
+    "s": [
+      96.5,
+      192.5
+    ],
+    "sw": [
+      33.6,
+      173.5
+    ],
+    "w": [
+      7.2,
+      126.9
+    ],
+    "nw": [
+      32.9,
+      80.2
+    ],
+    "n": [
+      95.5,
+      60.6
+    ],
+    "ne": [
+      158.4,
+      79.6
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      3,
+      96,
+      171,
+      157
+    ],
+    "se": [
+      29,
+      95,
+      171,
+      171
+    ],
+    "s": [
+      92,
+      85,
+      135,
+      192
+    ],
+    "sw": [
+      49,
+      104,
+      161,
+      192
+    ],
+    "w": [
+      21,
+      129,
+      190,
+      174
+    ],
+    "nw": [
+      21,
+      98,
+      155,
+      192
+    ],
+    "n": [
+      57,
+      78,
+      96,
+      192
+    ],
+    "ne": [
+      37,
+      78,
+      143,
+      192
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_lizard/eg_lizard_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

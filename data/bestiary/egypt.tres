@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="BestiaryData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/bestiary_data.gd" id="1_bdata"]
+
+[resource]
+script = ExtResource("1_bdata")
+world_id = &"egypt"
+display_name = "Les Pyramides d'Égypte — Le royaume des morts"
+enemy_roster = {
+&"boss": {
+&"eg_archer": 1.5,
+&"eg_mummy": 1.0,
+&"eg_skeleton": 2.0
+},
+&"combat": {
+&"eg_archer": 1.5,
+&"eg_lizard": 2.0,
+&"eg_mummy": 1.0,
+&"eg_scarab": 2.5,
+&"eg_skeleton": 3.0,
+&"eg_viper": 1.2
+},
+&"corridor": {
+&"eg_lizard": 2.0,
+&"eg_scarab": 2.0,
+&"eg_skeleton": 3.0,
+&"eg_viper": 0.8
+},
+&"extraction": {
+&"eg_archer": 1.5,
+&"eg_lizard": 1.5,
+&"eg_mummy": 1.2,
+&"eg_scarab": 2.0,
+&"eg_skeleton": 2.0,
+&"eg_viper": 1.2
+},
+&"loot": {
+&"eg_lizard": 1.5,
+&"eg_scarab": 1.5,
+&"eg_skeleton": 3.0,
+&"eg_viper": 0.6
+},
+&"rest": {
+&"eg_scarab": 0.5,
+&"eg_skeleton": 1.0
+},
+&"spawn": {
+&"eg_skeleton": 1.0
+},
+&"super_loot": {
+&"eg_archer": 2.0,
+&"eg_mummy": 2.0,
+&"eg_skeleton": 1.0,
+&"eg_viper": 1.0
+},
+&"trap": {
+&"eg_archer": 1.0,
+&"eg_lizard": 2.0,
+&"eg_skeleton": 2.0,
+&"eg_viper": 2.5
+}
+}
+elite_kinds = Array[StringName]([&"eg_shadow_warrior", &"eg_sun_priest"])
+boss_kind = &"eg_pharaoh"

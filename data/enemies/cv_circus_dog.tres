@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_circus_dog"
+display_name = "Chien de cirque"
+max_hp = 85.0
+move_speed = 250.0
+body_radius = 20.0
+detection_radius = 380.0
+detection_angle_deg = 200.0
+lose_sight_time = 4.0
+alert_duration = 0.25
+alert_neighbors_radius = 420.0
+patrol_radius = 160.0
+sight_gain = 2.2
+hearing_radius = 540.0
+hearing_gain = 2.6
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 56.0
+attack_damage = 12.0
+attack_cooldown = 1.1
+attack_windup = 0.35
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 30.0
+zigzag_period = 0.45
+strafe_ratio = 0.9
+attack_pattern = &"lunge"
+lunge_distance = 100.0
+lunge_speed = 620.0
+combo_hits = 1
+combo_interval = 0.2
+stagger_ratio = 0.3
+stagger_time = 0.4
+knockback = 100.0
+ground_drop_chance = 0.2
+corpse_name = "Chien de cirque abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"cv_racket", "shout": "WOUF ! WOUF !", "cooldown": 14.0, "radius": 560.0}, {"id": &"rush", "status": "", "cooldown": 6.5, "windup": 0.45, "min_range": 150.0, "max_range": 420.0, "speed": 680.0, "damage": 14.0, "overshoot": 40.0, "self_stun": 0.3, "priority": 1.2}]

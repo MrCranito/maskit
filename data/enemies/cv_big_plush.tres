@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_big_plush"
+display_name = "Grosse peluche"
+max_hp = 380.0
+move_speed = 95.0
+body_radius = 32.0
+detection_radius = 360.0
+detection_angle_deg = 160.0
+lose_sight_time = 5.0
+alert_duration = 0.6
+alert_neighbors_radius = 380.0
+patrol_radius = 70.0
+sight_gain = 1.4
+hearing_radius = 400.0
+hearing_gain = 1.8
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 82.0
+attack_damage = 21.0
+attack_cooldown = 2.2
+attack_windup = 0.85
+aoe_radius = 110.0
+tactic = &"heavy"
+use_cover = false
+can_flank = false
+strafe_ratio = 0.2
+attack_pattern = &"slam"
+stagger_ratio = 0.0
+stagger_time = 0.3
+knockback = 15.0
+ground_drop_chance = 0.6
+corpse_name = "Grosse peluche éventrée"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"golem_crumble"
+skills = [{"id": &"hard_skin", "passive": true, "near": 9999.0, "reduction": 0.25, "front_dot": -1.0, "style": 0.0}, {"id": &"cv_vault", "mode": "on", "over_obstacles": false, "cooldown": 9.0, "windup": 0.8, "min_range": 160.0, "max_range": 360.0, "flight": 0.55, "radius": 100.0, "damage": 18.0, "status": "knockdown", "status_time": 0.6, "iframes": 0.0, "behind": 0.0, "lead": 0.4, "recover": 0.5, "priority": 1.3}]
