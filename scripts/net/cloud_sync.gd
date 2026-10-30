@@ -78,6 +78,7 @@ func _ready() -> void:
 		_set_status(STATUS_DISABLED)
 		return
 	_set_status(STATUS_OFFLINE)
+	OnlineMode.notifier.changed.connect(_on_online_mode)
 	# Après le chargement local différé de Profile / BattlePass.
 	_boot.call_deferred()
 
@@ -86,6 +87,24 @@ func enabled() -> bool:
 	# Jamais en headless (tests GUT, CI) : pas de réseau.
 	return bool(_cfg.get_value("supabase", "enabled", true)) and not _url.is_empty() and not _key.is_empty() \
 		and DisplayServer.get_name() != "headless"
+
+
+## Le joueur a choisi « Hors ligne » au lobby (OnlineMode) : aucune tentative réseau, les
+## modifications restent « à pousser » et partent au retour en ligne.
+func paused_by_player() -> bool:
+	return not OnlineMode.is_online()
+
+
+func _on_online_mode(online: bool) -> void:
+	if not enabled():
+		return
+	if online:
+		sync()
+	else:
+		_push_timer.stop()
+		_retry_timer.stop()
+		if status != STATUS_CONFLICT:
+			_set_status(STATUS_OFFLINE)
 
 
 func _notification(what: int) -> void:
@@ -111,7 +130,7 @@ static func status_label(s: StringName) -> String:
 		STATUS_CONFLICT:
 			return "Conflit de sauvegarde"
 		STATUS_OFFLINE:
-			return "Hors ligne : sauvegarde locale"
+			return "Mode hors ligne : sauvegarde locale" if not OnlineMode.is_online() else "Hors ligne : sauvegarde locale"
 	return "Sauvegarde locale uniquement"
 
 
@@ -201,7 +220,7 @@ func _on_local_saved() -> void:
 		# « À pousser » est persisté tout de suite : si le jeu est tué avant l'envoi, le prochain
 		# lancement saura qu'il y a des modifications locales (détection des conflits).
 		_write_meta(int(m.get("version", 0)), true)
-	if _booted and status != STATUS_CONFLICT:
+	if _booted and status != STATUS_CONFLICT and not paused_by_player():
 		_push_timer.start(float(_cfg.get_value("sync", "push_delay", 2.0)))
 
 
@@ -221,6 +240,10 @@ func _boot() -> void:
 func sync() -> void:
 	if not enabled() or _busy:
 		return
+	if paused_by_player():
+		if status != STATUS_CONFLICT:
+			_set_status(STATUS_OFFLINE)
+		return
 	_busy = true
 	_set_status(STATUS_SYNCING)
 	var ok := await _ensure_session()
@@ -237,7 +260,7 @@ func sync() -> void:
 
 ## Envoie la sauvegarde locale (si des modifications sont en attente).
 func push() -> void:
-	if not enabled() or _busy or status == STATUS_CONFLICT:
+	if not enabled() or _busy or status == STATUS_CONFLICT or paused_by_player():
 		return
 	_busy = true
 	var ok := await _ensure_session()

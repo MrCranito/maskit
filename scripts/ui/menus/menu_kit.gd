@@ -261,6 +261,7 @@ static func set_setting(key: StringName, value: Variant, persist: bool = true) -
 
 ## Applique les volumes sauvegardés à l'AudioManager (au lancement).
 static func apply_saved_settings() -> void:
+	install_touch_tooltip_guard()
 	var sm: Node = _autoload(&"SaveManager")
 	if sm != null and (sm.get("data") as Dictionary).is_empty() and sm.has_method("load_save"):
 		sm.call("load_save")
@@ -269,6 +270,64 @@ static func apply_saved_settings() -> void:
 		return
 	am.set("music_volume", float(get_setting(&"music_volume", am.get("music_volume"))))
 	am.set("sfx_volume", float(get_setting(&"sfx_volume", am.get("sfx_volume"))))
+
+
+## Écran tactile (téléphone, tablette) : pas de survol, donc pas d'infobulles.
+static func is_touch_ui() -> bool:
+	if touch_ui_override >= 0:
+		return touch_ui_override == 1
+	return OS.has_feature("mobile") or OS.has_feature("web_android") or OS.has_feature("web_ios")
+
+
+## Tests : -1 = détection réelle, 0 = souris, 1 = tactile.
+static var touch_ui_override: int = -1
+
+
+## Infobulles coupées sur écran tactile (retour de Victor : « Réglages » s'affichait par-dessus le
+## logo). Godot émule la souris à partir du doigt (pointing/emulate_mouse_from_touch) : après un
+## tap, le pointeur fictif reste posé et l'infobulle du bouton touché s'ouvre au bout du délai, mal
+## placée par la mise à l'échelle de l'écran. On vide `tooltip_text` de chaque contrôle à son entrée
+## dans l'arbre. Idempotent ; sans effet sur PC (la souris garde ses infobulles).
+static func install_touch_tooltip_guard() -> void:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or not is_touch_ui():
+		return
+	if not tree.node_added.is_connected(_strip_tooltip):
+		tree.node_added.connect(_strip_tooltip)
+	strip_tooltips(tree.root)
+
+
+static func _strip_tooltip(n: Node) -> void:
+	if n is Control and not (n as Control).tooltip_text.is_empty():
+		(n as Control).tooltip_text = ""
+
+
+## Vide les infobulles de `n` et de ses descendants (contrôles déjà construits).
+static func strip_tooltips(n: Node) -> void:
+	if n == null:
+		return
+	_strip_tooltip(n)
+	for c: Node in n.get_children():
+		strip_tooltips(c)
+
+
+## Montant d'un compteur de monnaie (or, gemmes ; lobby, boutique, pass, arsenal) : « 1 250 » en
+## blanc, ou « ∞ » plus grand et en violet clair quand le mode développeur « ressources illimitées »
+## est actif (lisible d'un coup d'œil, sans confusion avec un vrai solde).
+static func set_amount(l: Label, n: int) -> void:
+	if l == null:
+		return
+	if not l.has_meta(&"base_size"):
+		l.set_meta(&"base_size", l.get_theme_font_size("font_size"))
+	var base: int = int(l.get_meta(&"base_size"))
+	if DevMode.is_unlimited():
+		l.text = DevMode.SYMBOL
+		l.add_theme_font_size_override("font_size", roundi(base * Balance.get_float("menu", "unlimited_symbol_scale", 1.45)))
+		l.add_theme_color_override("font_color", GOLD)
+	else:
+		l.text = Economy.fmt(n)
+		l.add_theme_font_size_override("font_size", base)
+		l.add_theme_color_override("font_color", TEXT)
 
 
 static func _autoload(n: StringName) -> Node:
@@ -288,6 +347,10 @@ static func safe_margins(node: Node) -> Vector4:
 	var out := Vector4(m, mv, m, mv)
 	if node == null or not node.is_inside_tree():
 		return out
+	if HudSafeArea.debug_insets.x >= 0.0:
+		# encoche simulée (captures, tests) : mêmes encarts que le HUD
+		var h := HudSafeArea.margins(node)
+		return Vector4(maxf(out.x, h.x), maxf(out.y, h.y), maxf(out.z, h.z), maxf(out.w, h.w))
 	var win_size := Vector2(DisplayServer.window_get_size())
 	var safe := DisplayServer.get_display_safe_area()
 	var screen := Vector2(DisplayServer.screen_get_size())
