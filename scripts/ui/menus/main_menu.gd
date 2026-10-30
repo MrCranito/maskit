@@ -692,7 +692,10 @@ func _intro() -> void:
 func _on_play() -> void:
 	MenuKit.sfx(&"confirm")
 	# Dans un salon coop : DÉPLOYER ramène au salon (raid à deux), jamais en solo par erreur.
-	MenuKit.go_to(self, MenuKit.COOP_SCENE if in_coop_room() else MenuKit.MAP_SELECT_SCENE)
+	if in_coop_room():
+		MenuKit.go_to(self, MenuKit.COOP_SCENE)
+		return
+	MenuKit.go_to(self, MenuKit.MAP_SELECT_SCENE)
 
 
 ## Un salon coop est ouvert (retour au menu sans le quitter) ?

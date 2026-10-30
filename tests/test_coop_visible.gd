@@ -6,6 +6,7 @@ extends GutTest
 const RAID_SCENE := "res://scenes/dungeon/raid.tscn"
 
 var _session: NetSession = null
+var _saved_gs: Dictionary = {}
 var _saved_profile: Dictionary = {}
 var _saved_sm_data: Dictionary = {}
 var _save_existed: bool = false
@@ -13,6 +14,9 @@ var _save_text: String = ""
 
 
 func before_each() -> void:
+	# Le salon fixe la carte (difficulté, seed) dans GameState : restauré après chaque test.
+	_saved_gs = {"current_map": GameState.current_map, "difficulty": GameState.difficulty,
+		"run_seed": GameState.run_seed, "world_path": GameState.world_path}
 	_saved_profile = Profile.to_dict()
 	_saved_sm_data = (SaveManager.data as Dictionary).duplicate(true)
 	_save_existed = FileAccess.file_exists(SaveManager.SAVE_PATH)
@@ -21,6 +25,8 @@ func before_each() -> void:
 
 func after_each() -> void:
 	get_tree().paused = false
+	for k: String in _saved_gs:
+		GameState.set(k, _saved_gs[k])
 	NetHooks.reset()
 	if is_instance_valid(_session):
 		_session.status = NetSession.Status.OFFLINE

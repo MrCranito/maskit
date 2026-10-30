@@ -113,6 +113,8 @@ func _ready() -> void:
 	_load_balance()
 	local = raid.player as Player
 	var pinfo: Dictionary = session.peer_info
+	if not pinfo.has("where"):
+		pinfo["where"] = "raid"  # le coéquipier est en raid (pas encore revenu au salon)
 	partner_name = String(pinfo.get("name", session.peer_name if session.peer_name != "" else "Coéquipier"))
 	avatar = CoopAvatar.create(partner_name, StringName(String(pinfo.get("skin", ""))))
 	avatar.coop = self
