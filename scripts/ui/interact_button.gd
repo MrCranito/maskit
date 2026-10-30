@@ -58,7 +58,9 @@ func _ready() -> void:
 
 ## Ancre en bas à droite, au-dessus du stick droit (position relative au viewport).
 func place_above_right_stick(viewport_size: Vector2, rest_x: float, rest_y: float, stick_radius: float) -> void:
-	var c := Vector2(viewport_size.x * rest_x, viewport_size.y * rest_y - stick_radius - radius - 26.0)
+	# Relevé ([hud] action_button_lift) pour laisser la place au bouton Recharger du HUD compact.
+	var c := Vector2(viewport_size.x * rest_x, viewport_size.y * rest_y - stick_radius - radius - 26.0
+		- Balance.get_float("hud", "action_button_lift", 40.0))
 	position = c - size * 0.5
 
 

@@ -18,6 +18,8 @@ extends CanvasLayer
 ## vertical (1280×720 et téléphones larges) ; les armes défilent horizontalement.
 
 signal menu_requested
+## Coop : « Rejouer ensemble » (le bouton secondaire devient ce bouton, voir set_replay).
+signal replay_pressed
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
 const NIGHT := Color(0.024, 0.027, 0.05, 0.94)
@@ -38,6 +40,8 @@ var _panel: Control = null
 var _slab: Control = null
 var _menu_btn: Button = null
 var _second_btn: Button = null
+## Coop : ligne d'information au-dessus des boutons (coéquipier encore en raid…), masquée si vide.
+var _note_label: Label = null
 var _paused_by_me: bool = false
 var _left_w: float = 800.0
 
@@ -199,6 +203,13 @@ func _build_slab(sl: Control, m: Vector4) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(spacer)
+	_note_label = MenuKit.label("", 16, Color(1, 1, 1, 0.85), MenuKit.nunito(600), 0)
+	_note_label.name = "CoopNote"
+	_note_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_note_label.custom_minimum_size.x = avail
+	_note_label.visible = false
+	col.add_child(_note_label)
 	_second_btn = _ink_button("Voir l'inventaire" if success else "Refaire mon arsenal")
 	_second_btn.name = "SecondButton"
 	_second_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -256,6 +267,47 @@ func _ink_button(txt: String) -> Button:
 	f.grow = 3.0
 	b.add_theme_stylebox_override("focus", f)
 	return b
+
+
+## Coop : le bouton secondaire devient « REJOUER ENSEMBLE » (retour au salon avec la même
+## équipe) ; `enabled` = les deux joueurs ont fini et le coéquipier est encore dans le salon.
+func set_replay(enabled: bool) -> void:
+	if _second_btn == null:
+		return
+	if not _second_btn.has_meta(&"replay"):
+		_second_btn.set_meta(&"replay", true)
+		_second_btn.name = "ReplayButton"
+		_second_btn.text = "REJOUER ENSEMBLE"
+		for c: Dictionary in _second_btn.pressed.get_connections():
+			_second_btn.pressed.disconnect(c["callable"])
+		_second_btn.pressed.connect(func() -> void:
+			MenuKit.sfx(&"confirm")
+			replay_pressed.emit())
+		var mk := func(bg: Color) -> CutBox:
+			var c := CutBox.make(bg, 16.0, Color(0, 0, 0, 0), 0.0, 16.0, 0.0)
+			c.corners = CutBox.CUT_TOP_LEFT
+			return c
+		_second_btn.add_theme_stylebox_override("normal", mk.call(MenuKit.NIGHT_DEEP))
+		_second_btn.add_theme_stylebox_override("hover", mk.call(MenuKit.VIOLET.darkened(0.25)))
+		_second_btn.add_theme_stylebox_override("disabled", mk.call(Color(MenuKit.NIGHT_DEEP, 0.45)))
+		_second_btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.4))
+	_second_btn.disabled = not enabled
+
+
+func is_replay_enabled() -> bool:
+	return _second_btn != null and _second_btn.has_meta(&"replay") and not _second_btn.disabled
+
+
+## Coop : texte d'information au-dessus des boutons du bandeau ("" = masqué).
+func set_note(text: String) -> void:
+	if _note_label == null:
+		return
+	_note_label.text = text
+	_note_label.visible = not text.is_empty()
+
+
+func get_note() -> String:
+	return _note_label.text if _note_label != null and _note_label.visible else ""
 
 
 ## Largeur de la colonne de gauche (compatibilité).

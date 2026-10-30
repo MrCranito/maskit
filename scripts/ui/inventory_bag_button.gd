@@ -6,7 +6,7 @@ extends Control
 
 signal pressed
 
-const SIZE := Vector2(78, 78)
+const SIZE := Vector2(68, 68)
 
 var inventory: Inventory = null
 var _icon: Texture2D = null
@@ -80,12 +80,13 @@ func _draw() -> void:
 	st.corners = CutBox.CUT_TOP_LEFT
 	draw_style_box(st, r)
 	if _icon != null:
-		draw_texture_rect(_icon, Rect2(Vector2(15, 10), Vector2(48, 48)), false, Color(1.0, 0.93, 0.8))
+		var isz := size.x * 0.56
+		draw_texture_rect(_icon, Rect2(Vector2((size.x - isz) * 0.5, size.y * 0.1), Vector2(isz, isz)), false, Color(1.0, 0.93, 0.8))
 	if inventory != null:
 		var font := LootVisuals.text_font(800)
 		var txt := "%d/%d" % [inventory.used_slots(), inventory.capacity()]
-		var fs := 15
+		var fs := 14
 		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		var at := Vector2((size.x - w) * 0.5, size.y - 9.0)
+		var at := Vector2((size.x - w) * 0.5, size.y - 7.0)
 		draw_string_outline(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 5, InventoryStyle.NIGHT_BLUE_DEEP)
 		draw_string(font, at, txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, MenuKit.GOLD if inventory.used_slots() > 0 else Color(1, 1, 1, 0.7))
