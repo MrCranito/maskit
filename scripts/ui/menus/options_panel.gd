@@ -9,6 +9,9 @@ var sfx_slider: HSlider = null
 var vibration_toggle: Button = null
 ## Images par seconde (FrameRate) : Max → 60 → éco.
 var fps_button: Button = null
+## Section « Sauvegarde cloud » (CloudSync) : état + compte, bouton Synchroniser.
+var cloud_status_label: Label = null
+var sync_button: Button = null
 
 
 func _init() -> void:
@@ -66,6 +69,44 @@ func _build_body() -> void:
 		fps_button.text = FrameRate.label_for(mode)
 		MenuKit.sfx(&"toggle"))
 	row2.add_child(fps_button)
+	_build_account()
+
+
+## Compte et sauvegarde cloud (CloudSync) : état, identifiant du compte invité, bouton Synchroniser.
+## La liaison Apple / Google viendra ici.
+func _build_account() -> void:
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	if cs == null or cs.get("status") == &"disabled":
+		return
+	var sep := ColorRect.new()
+	sep.color = Color(1, 1, 1, 0.12)
+	sep.custom_minimum_size = Vector2(0, 1)
+	body.add_child(sep)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	body.add_child(row)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 2)
+	row.add_child(col)
+	col.add_child(MenuKit.label("Sauvegarde cloud", 26, MenuKit.TEXT, MenuKit.nunito(800)))
+	cloud_status_label = MenuKit.label("", 16, MenuKit.TEXT_DIM, MenuKit.nunito(600))
+	col.add_child(cloud_status_label)
+	sync_button = MenuKit.button("Synchroniser", MenuKit.Style.SECONDARY, 22, Vector2(240, 60))
+	sync_button.pressed.connect(func() -> void:
+		MenuKit.sfx(&"click")
+		cs.call("sync"))
+	row.add_child(sync_button)
+	cs.connect(&"status_changed", func(_s: StringName) -> void: _refresh_account(cs))
+	_refresh_account(cs)
+
+
+func _refresh_account(cs: Node) -> void:
+	if not is_instance_valid(cloud_status_label):
+		return
+	var who := ("Compte invité %s" if bool(cs.get("is_anonymous")) else "Compte lié %s") % str(cs.call("short_id"))
+	cloud_status_label.text = "%s · %s" % [str(cs.call("status_label", cs.get("status"))), who]
+	sync_button.disabled = cs.get("status") == &"syncing"
 
 
 func _slider_row(text: String, value: float, on_change: Callable) -> HSlider:

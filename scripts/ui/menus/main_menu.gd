@@ -59,6 +59,9 @@ var _modal: ModalPanel = null
 var _top: Control = null
 var _nav: Control = null
 var _version: Label = null
+## Pied de page : état de la sauvegarde cloud (CloudSync), point coloré + libellé.
+var cloud_label: Label = null
+var _cloud_dot: ColorRect = null
 
 
 func _ready() -> void:
@@ -78,6 +81,7 @@ func _ready() -> void:
 	_build()
 	Profile.changed.connect(_refresh_profile)
 	_refresh_profile()
+	_connect_cloud()
 	MenuKit.fade_in(self, 0.45)
 	lobby.play_intro()
 	_intro.call_deferred()
@@ -310,6 +314,20 @@ func _build() -> void:
 	credits_button.pressed.connect(open_credits)
 	foot.add_child(credits_button)
 	credits_top_button = credits_button
+	var cloud := HBoxContainer.new()
+	cloud.name = "CloudStatus"
+	cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cloud.add_theme_constant_override("separation", 6)
+	foot.add_child(cloud)
+	_cloud_dot = ColorRect.new()
+	_cloud_dot.custom_minimum_size = Vector2(8, 8)
+	_cloud_dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_cloud_dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cloud.add_child(_cloud_dot)
+	cloud_label = MenuKit.label("", 13, Color(1, 1, 1, 0.4), MenuKit.nunito(500))
+	cloud_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cloud_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cloud.add_child(cloud_label)
 
 
 ## Décor fixe de la maquette : repères d'angle violets à gauche + trame de lignes horizontales.
@@ -560,6 +578,53 @@ func _refresh_profile() -> void:
 	map_sub_label.text = ("%s · Changer ›" % card.difficulty_name()) if card != null else "Changer ›"
 	map_link.custom_minimum_size = Vector2(maxf(map_name_label.get_minimum_size().x, map_sub_label.get_minimum_size().x),
 		map_name_label.get_minimum_size().y + map_sub_label.get_minimum_size().y + 2.0)
+
+
+func _connect_cloud() -> void:
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	if cs == null:
+		_refresh_cloud(&"disabled")
+		return
+	cs.connect(&"status_changed", _refresh_cloud)
+	cs.connect(&"conflict_detected", _on_cloud_conflict)
+	_refresh_cloud(cs.get("status"))
+	# Conflit détecté avant l'arrivée sur le menu (ex. pendant le splash) : on le présente maintenant.
+	if bool(cs.call("has_conflict")):
+		var r: Dictionary = cs.get("pending_remote")
+		_on_cloud_conflict(_describe_local_save(cs), _describe_remote_save(cs, r))
+
+
+static func _describe_local_save(cs: Node) -> Dictionary:
+	var sm: Node = cs.get_node_or_null(^"/root/SaveManager")
+	var data: Dictionary = (sm.get("data") as Dictionary) if sm != null else {}
+	return cs.call("describe_save", cs.call("payload_of", data))
+
+
+static func _describe_remote_save(cs: Node, r: Dictionary) -> Dictionary:
+	return cs.call("describe_save", r.get("save", {}), str(r.get("updated_at", "")), str(r.get("device", "")))
+
+
+func _refresh_cloud(status: StringName) -> void:
+	if cloud_label == null:
+		return
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	cloud_label.get_parent().visible = status != &"disabled"
+	cloud_label.text = str(cs.call("status_label", status)) if cs != null else ""
+	var c := Color(1, 1, 1, 0.35)
+	match status:
+		&"synced":
+			c = Color(0.45, 0.9, 0.55)
+		&"syncing":
+			c = MenuKit.GOLD
+		&"conflict":
+			c = Color(1.0, 0.55, 0.25)
+	_cloud_dot.color = c
+
+
+func _on_cloud_conflict(local_info: Dictionary, remote_info: Dictionary) -> void:
+	if is_instance_valid(_modal) and _modal is CloudConflictPanel:
+		return
+	_open_modal(CloudConflictPanel.new(local_info, remote_info), play_button)
 
 
 ## Or du joueur : Profile.gold (économie), sinon l'ancien compteur Profile.dollars.
