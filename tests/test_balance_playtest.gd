@@ -166,6 +166,9 @@ func test_marauder_can_be_outrun() -> void:
 	assert_lt(m.move_speed, float(c.get_value("player", "move_speed", 250.0)), "la hyène ne va plus aussi vite que le joueur")
 	assert_almost_eq(float(_skill(m, "fw_pack_hunter").get("damage_per_ally", -1.0)), 0.12, 0.0001, "bonus de meute")
 	assert_gte(float(_skill(m, "fw_pack_howl").get("initial_cooldown", 0.0)), 6.0, "pas de hurlement dès le contact")
+	var row2: Dictionary = c.get_value("bestiary_far_west", "row2_floor_mult", {})
+	assert_almost_eq(float(row2.get("0", -1.0)), 0.5, 0.0001, "rangée 2 (hyène) plus rare au rez-de-chaussée")
+	assert_lt(float(row2["0"]), float(row2["-1"]), "toujours plus fréquente au sous-sol")
 
 
 func test_station_killers_softened() -> void:
@@ -186,6 +189,9 @@ func test_mall_killers_softened() -> void:
 	var brute := _enemy("mall_brute")
 	assert_almost_eq(brute.max_hp, 240.0, 0.0001, "PV du gros brute")
 	assert_almost_eq(float(_skill(brute, "shockwave").get("damage", -1.0)), 12.0, 0.0001, "onde de choc")
+	var c := _cfg()
+	assert_eq(int(c.get_value("bestiary_mall", "group_size", -1)), 3, "groupes de 3")
+	assert_almost_eq(float(c.get_value("bestiary_mall", "row2_shallow_mult", -1.0)), 0.2, 0.0001, "rangée 2 rare au rez-de-chaussée")
 
 
 ## Les monstres adoucis ne sont jamais invoqués par un boss (les boss sont réglés à part).
