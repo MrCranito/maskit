@@ -339,7 +339,7 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 		if far.distance_to(_raid.player.global_position) > 20.0 * FloorLayout.TILE_SIZE:
 			assert_true(mm.is_arrow_visible(), "flèche vers l'extraction hors cadre")
 			# Distance, puis temps restant de la zone (zones à durée de vie).
-			assert_true(RegEx.create_from_string("^\d+ m( · \d+:\d\d)?$").search(mm.get_arrow_text()) != null,
+			assert_true(RegEx.create_from_string("^\\d+ m( · \\d+:\\d\\d)?$").search(mm.get_arrow_text()) != null,
 				"flèche : distance · temps restant (%s)" % mm.get_arrow_text())
 	mm.open_full_map()
 	await wait_process_frames(2)
