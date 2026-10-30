@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AffixData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/affix_data.gd" id="1_affix"]
+
+[resource]
+script = ExtResource("1_affix")
+id = &"lifesteal"
+display_name = "Vol de vie"
+description = "Rend {ratio} % des dégâts infligés en PV"
+kind = &"lifesteal"
+weight = 0.9
+categories = Array[StringName]([])
+color = Color(1, 0.36, 0.52, 1)
+ratio = 0.06

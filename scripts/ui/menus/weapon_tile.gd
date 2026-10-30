@@ -141,6 +141,11 @@ func _ready() -> void:
 	_slot_badge = MenuKit.pill("", MenuKit.RED, 15, MenuKit.TEXT, Color(1, 0.7, 0.6, 0.9))
 	_slot_badge.position = Vector2(-6, -8)
 	add_child(_slot_badge)
+	# Exemplaire à affixes : pastilles en haut à gauche.
+	if weapon != null and weapon.has_rolled_affixes():
+		var ax := AffixBadges.strip(weapon.rolled_affixes, 11)
+		ax.position = Vector2(8, 8)
+		add_child(ax)
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	MenuKit.add_feedback(self, 1.04)
 	_refresh()
@@ -221,6 +226,15 @@ func _build_d(r: int, rc: Color) -> void:
 	t.name = "Text"
 	_slot_badge.add_child(t)
 	add_child(_slot_badge)
+	# Exemplaire à affixes : pastilles centrées au-dessus du nom.
+	if weapon != null and weapon.has_rolled_affixes():
+		var ax := AffixBadges.strip(weapon.rolled_affixes, 12, true)
+		ax.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+		ax.offset_left = 6
+		ax.offset_right = -6
+		ax.offset_top = -86
+		ax.offset_bottom = -64
+		_content.add_child(ax)
 
 
 ## Exemplaires possédés (consultation : mise à jour sans reconstruire).

@@ -156,6 +156,8 @@ var skills: Array[EnemySkill] = []
 var active_skill: EnemySkill = null
 ## Invulnérabilité brève (roulade, téléportation).
 var invulnerable_left: float = 0.0
+## Gel (affixe d'arme du joueur, AffixStatus) : vitesse de déplacement × affix_slow_mult.
+var affix_slow_mult: float = 1.0
 ## Rage (compétence « rage ») : multiplicateurs de vitesse et de recharge.
 var rage_speed_mult: float = 1.0
 var rage_cooldown_mult: float = 1.0
@@ -637,9 +639,9 @@ func _tick_skills(delta: float) -> void:
 func _integrate(delta: float) -> void:
 	_update_stuck(delta)
 	if direct_velocity:
-		velocity = desired_velocity
+		velocity = desired_velocity * affix_slow_mult
 	else:
-		var target := desired_velocity
+		var target := desired_velocity * affix_slow_mult
 		if _unstick_left > 0.0:
 			target = _unstick_dir * maxf(desired_velocity.length(), data.move_speed * 0.6)
 		if not _neighbors.is_empty():

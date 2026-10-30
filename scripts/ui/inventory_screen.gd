@@ -380,7 +380,7 @@ func _refresh_detail() -> void:
 	_detail_name.text = it.display_name
 	_detail_name.label_settings.font_color = LootDB.rarity_color(it.rarity).lightened(0.15)
 	var rc := LootDB.rarity_color(it.rarity)
-	var wd: WeaponData = WeaponCatalog.get_weapon(it.weapon_id) if it.is_weapon() else null
+	var wd: WeaponData = it.get_weapon() if it.is_weapon() else null
 	_detail_meta.text = (("Équipement" if wd.is_gadget() else "Arme · %s" % wd.get_category_name())) if wd != null else LootDB.type_name(it.type)
 	_detail_rarity_label.text = LootDB.rarity_name(it.rarity).to_upper()
 	var rst := StyleBoxFlat.new()
@@ -395,7 +395,7 @@ func _refresh_detail() -> void:
 	# Valeur = or estimé au marchand (Economy) ; matériaux : recettes de l'atelier qui les utilisent.
 	var price := Economy.item_sell_price(it)
 	if wd != null:
-		_set_facts(weapon_facts(wd) + [["Valeur", "≈ %d or" % price], ["Poids", "%s kg" % String.num(it.weight, 2)]])
+		_set_facts(affix_facts(wd) + weapon_facts(wd) + [["Valeur", "≈ %d or" % price], ["Poids", "%s kg" % String.num(it.weight, 2)]])
 	else:
 		var uses := RecipeBook.usage_text(it.id)
 		_set_facts([
@@ -415,7 +415,9 @@ func _set_facts(rows: Array) -> void:
 		_facts_grid.remove_child(ch)
 		ch.queue_free()
 	for r: Array in rows:
-		_facts_grid.add_child(InventoryStyle.label(String(r[0]), 16, InventoryStyle.TEXT_SECONDARY, 700))
+		# 3e élément facultatif : couleur du libellé (affixes).
+		var kc: Color = r[2] if r.size() >= 3 and r[2] is Color else InventoryStyle.TEXT_SECONDARY
+		_facts_grid.add_child(InventoryStyle.label(String(r[0]), 16, kc, 800 if r.size() >= 3 else 700))
 		var v := InventoryStyle.label(String(r[1]), 16, InventoryStyle.GOLD if r[0] == "Valeur" else InventoryStyle.TEXT, 800)
 		if String(r[1]).length() > 24:
 			v.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -428,6 +430,16 @@ func _draw_detail_tile() -> void:
 	if s.is_empty():
 		return
 	InventoryStyle.draw_item_tile(_detail_tile, Rect2(Vector2.ZERO, _detail_tile.size), s["item"], int(s["count"]), false, LootVisuals.text_font(800))
+
+
+## Lignes de fiche des affixes tirés d'un exemplaire : [nom, effet court, couleur de l'affixe].
+static func affix_facts(w: WeaponData) -> Array:
+	var rows: Array = []
+	if w == null:
+		return rows
+	for a: AffixData in w.get_affix_list():
+		rows.append([a.display_name, a.effect_text(), a.color])
+	return rows
 
 
 ## Lignes de fiche d'une arme : dégâts, cadence, chargeur, DPS (+ explosion, perforation).
@@ -474,7 +486,8 @@ func _equip_selected() -> bool:
 	var p: Node = GameState.player
 	if it == null or not it.is_weapon() or p == null or not is_instance_valid(p):
 		return false
-	var w := WeaponCatalog.get_weapon(it.weapon_id)
+	# Exemplaire avec ses affixes ; l'arme remplacée revient dans le sac avec les siens (weapon_item).
+	var w := it.get_weapon()
 	if w == null:
 		return false
 	# Équipement → emplacement d'équipement ; arme → emplacement d'arme courant.

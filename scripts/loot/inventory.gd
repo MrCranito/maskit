@@ -183,8 +183,10 @@ func sort() -> void:
 		if s == null:
 			continue
 		var it: ItemData = s["item"]
-		totals[it.id] = int(totals.get(it.id, 0)) + int(s["count"])
-		items[it.id] = it
+		# Clé d'exemplaire : deux armes du même modèle aux affixes différents restent distinctes.
+		var k := it.instance_key()
+		totals[k] = int(totals.get(k, 0)) + int(s["count"])
+		items[k] = it
 	var ids: Array = items.keys()
 	ids.sort_custom(func(a: Variant, b: Variant) -> bool:
 		var ia: ItemData = items[a]
@@ -193,7 +195,9 @@ func sort() -> void:
 			return ia.rarity > ib.rarity
 		if ia.type != ib.type:
 			return String(ia.type) < String(ib.type)
-		return ia.display_name < ib.display_name)
+		if ia.display_name != ib.display_name:
+			return ia.display_name < ib.display_name
+		return String(a) < String(b))
 	slots.fill(null)
 	var idx := 0
 	for id: Variant in ids:
@@ -213,11 +217,22 @@ func clear() -> void:
 	changed.emit()
 
 
-## Sérialisation (sauvegarde / transfert vers la réserve) : [[id, count], …] par case.
+## Sérialisation (sauvegarde / transfert vers la réserve) : [[id, count], …] par case ;
+## arme à affixes : [id, count, [affixes…]].
 func to_array() -> Array:
 	var out: Array = []
 	for s: Variant in slots:
-		out.append(null if s == null else [String((s["item"] as ItemData).id), int(s["count"])])
+		if s == null:
+			out.append(null)
+			continue
+		var it: ItemData = s["item"]
+		var e: Array = [String(it.id), int(s["count"])]
+		if not it.weapon_affixes.is_empty():
+			var ax: Array = []
+			for a: StringName in it.weapon_affixes:
+				ax.append(String(a))
+			e.append(ax)
+		out.append(e)
 	return out
 
 
@@ -227,6 +242,8 @@ func from_array(data: Array) -> void:
 		var e: Variant = data[i]
 		if e is Array and (e as Array).size() >= 2:
 			var it := LootDB.get_item(StringName(e[0]))
+			if it != null and (e as Array).size() >= 3 and e[2] is Array:
+				it = Affixes.make_item(it, e[2])
 			if it != null:
 				slots[i] = {"item": it, "count": int(e[1])}
 	changed.emit()

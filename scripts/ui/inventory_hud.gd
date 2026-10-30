@@ -128,7 +128,9 @@ func _on_item_picked_up(item: Resource, count: int) -> void:
 	var it := item as ItemData
 	if it == null:
 		return
-	_push_feed("+ %s%s" % [it.display_name, ("  ×%d" % count) if count > 1 else ""], LootDB.rarity_color(it.rarity).lightened(0.2), it)
+	# Arme à affixes : leurs noms suivent le nom de l'arme (« + M4A1 · Brûlure, Gel »).
+	var ax := ("  · " + Affixes.names_text(it.weapon_affixes)) if not it.weapon_affixes.is_empty() else ""
+	_push_feed("+ %s%s%s" % [it.display_name, ax, ("  ×%d" % count) if count > 1 else ""], LootDB.rarity_color(it.rarity).lightened(0.2), it)
 
 
 func _on_key_used(key: ItemData, _door: Node) -> void:

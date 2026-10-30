@@ -240,22 +240,35 @@ func panel_width() -> float:
 
 
 ## Ids triés : rareté décroissante, puis ordre des catégories (équipements en dernier), puis nom.
+## Les éléments peuvent être des ids ou des entrées {id, affixes} (weapon_entries / lost_entries).
 static func sort_by_rarity(ids: Array) -> Array:
 	var out: Array = []
 	for id: Variant in ids:
-		if WeaponCatalog.get_weapon(StringName(str(id))) != null:
+		if WeaponCatalog.get_weapon(entry_id(id)) != null:
 			out.append(id)
 	out.sort_custom(func(a: Variant, b: Variant) -> bool:
-		var wa := WeaponCatalog.get_weapon(StringName(str(a)))
-		var wb := WeaponCatalog.get_weapon(StringName(str(b)))
+		var wa := WeaponCatalog.get_weapon(entry_id(a))
+		var wb := WeaponCatalog.get_weapon(entry_id(b))
 		if wa.rarity != wb.rarity:
 			return wa.rarity > wb.rarity
 		var ca := WeaponData.CATEGORIES.find(wa.category)
 		var cb := WeaponData.CATEGORIES.find(wb.category)
 		if ca != cb:
 			return ca < cb
-		return wa.display_name < wb.display_name)
+		if wa.display_name != wb.display_name:
+			return wa.display_name < wb.display_name
+		return entry_affixes(a).size() > entry_affixes(b).size())
 	return out
+
+
+## Id d'arme d'un élément de liste (id, ou entrée {id, affixes}).
+static func entry_id(v: Variant) -> StringName:
+	return StringName(str((v as Dictionary).get("id", ""))) if v is Dictionary else StringName(str(v))
+
+
+static func entry_affixes(v: Variant) -> Array:
+	var ax: Variant = (v as Dictionary).get("affixes", []) if v is Dictionary else []
+	return ax if ax is Array else []
 
 
 func _build_success(root: VBoxContainer) -> void:
@@ -263,7 +276,7 @@ func _build_success(root: VBoxContainer) -> void:
 	var n_items := 0
 	for k: Variant in items:
 		n_items += int(items[k])
-	var weapons: Array = sort_by_rarity(summary.get("weapons", []))
+	var weapons: Array = sort_by_rarity(summary.get("weapon_entries", summary.get("weapons", [])))
 	var chips := HBoxContainer.new()
 	chips.add_theme_constant_override("separation", 6)
 	root.add_child(chips)
@@ -281,7 +294,7 @@ func _build_success(root: VBoxContainer) -> void:
 
 
 func _build_death(root: VBoxContainer) -> void:
-	var lost: Array = sort_by_rarity(summary.get("lost_weapons", []))
+	var lost: Array = sort_by_rarity(summary.get("lost_entries", summary.get("lost_weapons", [])))
 	var n := int(summary.get("lost_items", 0))
 	# Or estimé au marchand (Profile.finish_death : lost_estimate), sinon la valeur brute convertie.
 	var v := int(summary.get("lost_estimate", round(float(summary.get("lost_value", 0)) * Economy.cfg_f("sell_ratio", 0.5))))
@@ -405,7 +418,8 @@ func _weapon_row(ids: Array, lost: bool) -> Control:
 	row.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.add_child(row)
 	for id: Variant in ids:
-		var w := WeaponCatalog.get_weapon(StringName(str(id)))
+		# Exemplaire avec ses affixes (entrée {id, affixes}) ou modèle seul (id).
+		var w := Affixes.make_weapon(WeaponCatalog.get_weapon(entry_id(id)), entry_affixes(id))
 		if w != null:
 			row.add_child(_weapon_card(w, lost))
 	return scroll
@@ -457,6 +471,17 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 		LootVisuals.draw_weapon(pic, Rect2(Vector2(18, 2), pic.size - Vector2(36, 4)), w, Color(0.6, 0.6, 0.66, 0.6) if lost else Color.WHITE))
 	card.add_child(pic)
 	WeaponSkin.apply_equipped(pic, w)   # skin d'arme équipé (recoloration)
+	if w.has_rolled_affixes():
+		# Affixes tirés : pastilles en haut, au-dessus de l'icône.
+		var ax := AffixBadges.strip(w.rolled_affixes, 11, true)
+		ax.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+		ax.offset_left = 6
+		ax.offset_right = -22
+		ax.offset_top = 6
+		ax.offset_bottom = 24
+		if lost:
+			ax.modulate = Color(1, 1, 1, 0.55)
+		card.add_child(ax)
 	var nm := MenuKit.label(w.display_name, 19, Color(1, 1, 1, 0.55) if lost else MenuKit.TEXT, MenuKit.display(), 0)
 	nm.uppercase = true
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

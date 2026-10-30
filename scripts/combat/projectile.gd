@@ -54,6 +54,14 @@ var _shape: CollisionShape2D = null
 ## Guidage (Javelin) : cible et vitesse de rotation max (rad/s).
 var _homing_target: Node2D = null
 var _homing_rate: float = 0.0
+## Affixes tirés de l'arme (liste partagée par l'exemplaire, WeaponData.get_affix_list : aucune
+## copie par tir). Effets à l'impact : brûlure, gel, vol de vie, onde de choc ; ricochet en vol.
+var affixes: Array[AffixData] = []
+var _bounces_left: int = 0
+var _bounce_range: float = 0.0
+var _bounce_mult: float = 1.0
+## Ricochets effectués pendant ce vol (tests, debug).
+var ricochets: int = 0
 
 # Réglages ([projectile_fx]) partagés par toutes les instances (lus une fois).
 static var _cfg_loaded: bool = false
@@ -123,6 +131,16 @@ func launch(pos: Vector2, dir: Vector2, weapon: WeaponData, from: Node, height: 
 	_homing_target = null
 	_homing_rate = 0.0
 	_hit_ids.clear()
+	affixes = weapon.get_affix_list()
+	_bounces_left = 0
+	_bounce_range = 0.0
+	_bounce_mult = 1.0
+	ricochets = 0
+	for a: AffixData in affixes:
+		if a.kind == AffixData.KIND_RICOCHET:
+			_bounces_left += maxi(a.count, 0)
+			_bounce_range = maxf(_bounce_range, a.radius)
+			_bounce_mult = a.damage_mult
 	z = 0.0
 	vz = 0.0
 	if style == STYLE_ROCKET:
@@ -268,6 +286,9 @@ func _on_hit(other: Node) -> void:
 		else:
 			if style == STYLE_TRACER:
 				_leave_tracer(global_position)
+			# Affixe ricochet : repart vers l'ennemi le plus proche (pas déjà touché).
+			if _try_ricochet_enemy():
+				return
 			deactivate()
 		return
 	if other.is_in_group("enemies") or other.is_in_group("player"):
@@ -285,6 +306,9 @@ func _on_hit(other: Node) -> void:
 			fx.impact_wall(hit_pos + Vector2(0.0, -visual_height * 0.7), direction, color)
 		if style == STYLE_TRACER:
 			_leave_tracer(hit_pos)
+		# Affixe ricochet : rebond sur le mur.
+		if _try_ricochet_wall():
+			return
 	deactivate()
 
 
@@ -295,6 +319,97 @@ func _deal(other: Node, amount: float) -> void:
 		NetHooks.guest_hit_feedback(other)
 		return
 	other.take_damage(amount, source)
+	if not affixes.is_empty():
+		apply_hit_affixes(other, amount)
+
+
+## Effets d'impact des affixes tirés (brûlure, gel, vol de vie, onde de choc) sur `other`, pour
+## un coup de `amount` dégâts. Chaque affixe se déclenche avec sa probabilité `chance`.
+func apply_hit_affixes(other: Node, amount: float) -> void:
+	var at: Vector2 = (other as Node2D).global_position if other is Node2D else global_position
+	for a: AffixData in affixes:
+		if a.chance < 1.0 and randf() >= a.chance:
+			continue
+		match a.kind:
+			AffixData.KIND_BURN:
+				AffixStatus.apply_burn(other, amount * a.ratio, a.duration, source, a.color)
+			AffixData.KIND_FREEZE:
+				AffixStatus.apply_slow(other, a.slow, a.duration, a.color)
+			AffixData.KIND_LIFESTEAL:
+				if is_instance_valid(source) and source.is_in_group(&"player") and source.has_method("heal"):
+					source.call("heal", amount * a.ratio)
+			AffixData.KIND_SHOCKWAVE:
+				_shockwave(at, a, amount)
+
+
+## Onde de choc : petite explosion (sans dégâts pour le joueur) et anneau à la couleur de l'affixe.
+func _shockwave(pos: Vector2, a: AffixData, amount: float) -> void:
+	if not is_inside_tree() or a.radius <= 0.0:
+		return
+	var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+	Explosion.apply_damage(get_tree(), space, pos, a.radius, amount * a.ratio, source, 0.5, 0.0)
+	var fx := CombatFx.get_or_create(get_tree())
+	if fx != null:
+		fx.affix_pulse(pos + Vector2(0.0, -maxf(visual_height, 24.0) * 0.5), a.radius, a.color)
+
+
+## Ricochet vers l'ennemi vivant le plus proche dans le rayon (hors cibles déjà touchées).
+## Un parcours du groupe par impact (jamais par frame).
+func _try_ricochet_enemy() -> bool:
+	if _bounces_left <= 0 or not is_inside_tree():
+		return false
+	var best: Node2D = null
+	var best_d2: float = _bounce_range * _bounce_range
+	for e: Node in get_tree().get_nodes_in_group(&"enemies"):
+		var n := e as Node2D
+		if n == null or _hit_ids.has(n.get_instance_id()):
+			continue
+		if n.has_method("is_alive") and not bool(n.call("is_alive")):
+			continue
+		var d2: float = global_position.distance_squared_to(n.global_position)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = n
+	if best == null:
+		return false
+	_redirect((best.global_position - global_position).normalized())
+	return true
+
+
+## Ricochet sur un mur : un raycast pour la normale, direction réfléchie.
+func _try_ricochet_wall() -> bool:
+	if _bounces_left <= 0:
+		return false
+	var normal: Vector2 = -direction
+	if is_inside_tree():
+		var space: PhysicsDirectSpaceState2D = get_world_2d().direct_space_state
+		var q := PhysicsRayQueryParameters2D.create(global_position - direction * 24.0,
+			global_position + direction * 24.0, MASK_WORLD)
+		var res: Dictionary = space.intersect_ray(q)
+		if not res.is_empty():
+			normal = res["normal"]
+	global_position += normal * 6.0
+	_redirect(direction.bounce(normal).normalized())
+	return true
+
+
+func _redirect(dir: Vector2) -> void:
+	if dir == Vector2.ZERO:
+		dir = -direction
+	_bounces_left -= 1
+	ricochets += 1
+	direction = dir
+	rotation = dir.angle()
+	damage *= _bounce_mult
+	origin = global_position
+	lifetime_left = maxf(lifetime_left, _bounce_range / maxf(speed, 1.0) + 0.05)
+	for a: AffixData in affixes:
+		if a.kind == AffixData.KIND_RICOCHET:
+			var fx := CombatFx.get_or_create(get_tree()) if is_inside_tree() else null
+			if fx != null:
+				fx.affix_pulse(global_position + Vector2(0.0, -visual_height), 14.0, a.color)
+			break
+	queue_redraw()
 
 
 ## Grenade contre un mur : un raycast pour la normale, rebond amorti.
