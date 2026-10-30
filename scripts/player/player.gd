@@ -44,6 +44,8 @@ const RUN_ANIMS: Array[StringName] = [&"run_e", &"run_se", &"run_s", &"run_sw", 
 const IDLE_ANIMS: Array[StringName] = [&"idle_e", &"idle_se", &"idle_s", &"idle_sw", &"idle_w", &"idle_nw", &"idle_n", &"idle_ne"]
 
 var hp: float = 100.0
+## Nom de l'auteur du dernier coup reçu (damage_source_name ; « Tué par … » de l'écran de fin).
+var last_hit_by: String = ""
 var max_hp: float = 100.0
 ## Conservé pour compatibilité (debug) : plus de ciblage automatique, toujours null.
 var current_target: Node2D = null
@@ -1057,6 +1059,7 @@ func take_damage(amount: float, _source: Node) -> void:
 	# Coop, invité : seuls les dégâts envoyés par l'hôte comptent.
 	if NetHooks.active and NetHooks.blocks_local_damage():
 		return
+	last_hit_by = damage_source_name(_source)
 	if PlaytestProbe.enabled:
 		PlaytestProbe.player_hit(minf(amount, hp), _source)
 	hp = maxf(hp - amount, 0.0)
@@ -1072,6 +1075,30 @@ func take_damage(amount: float, _source: Node) -> void:
 
 func is_alive() -> bool:
 	return _alive
+
+
+## Nom affiché de l'auteur d'un coup (« Tué par … » de l'écran de fin) : l'ennemi lui-même, ou
+## celui qui a tiré le projectile / posé la zone (propriétés shooter, owner_enemy, source…, ou un
+## parent) ; « Tourelle » ; "" si inconnu (piège, explosion de décor).
+static func damage_source_name(source: Node) -> String:
+	if source == null or not is_instance_valid(source):
+		return ""
+	var n: Node = source
+	for i in 4:
+		if n is Enemy:
+			var e := n as Enemy
+			return e.data.display_name if e.data != null else ""
+		for prop: StringName in [&"shooter", &"owner_enemy", &"source", &"enemy", &"caster", &"owner_node"]:
+			var v: Variant = n.get(prop)
+			if v is Enemy and is_instance_valid(v):
+				var ev := v as Enemy
+				return ev.data.display_name if ev.data != null else ""
+		if n.get_script() != null and String(n.get_script().resource_path).contains("turret"):
+			return "Tourelle"
+		if n.get_parent() == null:
+			break
+		n = n.get_parent()
+	return ""
 
 
 ## Statut infligé par un ennemi (PlayerStatus.KINDS) ; `from` = origine du coup (poussée du

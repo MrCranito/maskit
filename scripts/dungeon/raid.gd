@@ -763,6 +763,10 @@ func _show_end_screen(success: bool, summary: Dictionary) -> void:
 	# Niveau de raider (permanent) : même barème que le pass, × [raider] xp_ratio.
 	var pxp: Variant = summary["pass_xp"]
 	summary["raider"] = Profile.add_raider_xp(RaiderProgress.raid_xp(int((pxp as Dictionary).get("xp", 0)) if pxp is Dictionary else 0))
+	# Bilan du raid (écran de fin) : éliminations et durée comptées par le pass, étage, tueur.
+	var pd: Dictionary = pxp if pxp is Dictionary else {}
+	summary["stats"] = {"kills": int(pd.get("kills", 0)), "time": float(pd.get("time", 0.0)), "floor": current_floor,
+		"killer": String(player.get(&"last_hit_by")) if not success and is_instance_valid(player) and player.get(&"last_hit_by") != null else ""}
 	if NetHooks.active and NetHooks.defer_end_screen(success, summary):
 		return  # Coop : spectateur du coéquipier, écran de fin plus tard.
 	end_screen = RaidEndScreen.create(success, summary)
