@@ -119,7 +119,8 @@ def run_job(godot: str, root: str, pass_name: str, job: dict, timeout: int) -> d
         args.append("--tier=" + job["tier"])
     if job.get("enemy"):
         args.append("--enemy=" + job["enemy"])
-    env = dict(os.environ, XDG_DATA_HOME=home)
+    # Dossier de données Godot propre à la partie (Linux : XDG_DATA_HOME ; Windows : APPDATA).
+    env = dict(os.environ, XDG_DATA_HOME=home, APPDATA=home)
     last = ""
     for attempt in range(2):
         t0 = time.time()
@@ -140,6 +141,7 @@ def main() -> None:
     ap.add_argument("--root", required=True)
     ap.add_argument("--pass", dest="pass_name", required=True)
     ap.add_argument("--jobs", type=int, default=2)
+    ap.add_argument("--max-jobs", type=int, default=2, help="plafond de parallélisme (2 par défaut, cf. brief)")
     ap.add_argument("--godot", default="")
     ap.add_argument("--timeout", type=int, default=600)
     ap.add_argument("--only", default="")
@@ -161,7 +163,7 @@ def main() -> None:
     print("%s : %d parties, %d à jouer, %d en parallèle" % (a.pass_name, len(jobs), len(todo), a.jobs), flush=True)
     fails = []
     done = 0
-    with ThreadPoolExecutor(max_workers=max(1, min(a.jobs, 2))) as ex:
+    with ThreadPoolExecutor(max_workers=max(1, min(a.jobs, a.max_jobs))) as ex:
         for r in ex.map(lambda j: run_job(godot, a.root, a.pass_name, j, a.timeout), todo):
             done += 1
             print("[%d/%d] %s %s %s" % (done, len(todo), r["id"], r["status"], r.get("real_s", "")), flush=True)
