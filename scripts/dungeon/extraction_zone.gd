@@ -7,7 +7,8 @@ extends Node2D
 ##   - balise radio au bord avec un feu vert qui pulse et un fumigène vert qui monte ;
 ##   - icône flottante au-dessus de la zone (au-dessus du brouillard : repérable de loin) ;
 ##   - pendant la canalisation : anneau de progression centré sur la zone et pastille
-##     « Extraction… 3 s ».
+##     « Extraction… 3 s », colonne de lumière qui s'intensifie, anneau en tirets qui accélère ;
+##   - réussite (play_success) : colonne éblouissante et gerbe d'éclats qui montent.
 ## Performance : chaque morceau est dessiné UNE fois ; l'animation passe par des Tween sur
 ## rotation / position / échelle / opacité de nœuds (aucun redessin par frame). Seul l'anneau
 ## de progression est redessiné pendant la canalisation, quand la valeur affichée change.
@@ -28,6 +29,8 @@ var _spinner: ZoneSpinner = null
 var _beacon_light: Node2D = null
 var _icon: Node2D = null
 var _progress: ZoneProgress = null
+var _beam: ZoneBeam = null
+var _spin_tween: Tween = null
 var _tweens: Array[Tween] = []
 
 
@@ -97,6 +100,10 @@ func _ready() -> void:
 	add_child(_spinner)
 	_build_beacon()
 	_build_icon()
+	_beam = ZoneBeam.new()
+	_beam.radius = radius
+	_beam.modulate.a = 0.0
+	add_child(_beam)
 	_progress = ZoneProgress.new()
 	_progress.radius = radius
 	_progress.visible = false
@@ -163,6 +170,7 @@ func _start_animations() -> void:
 	var spin := create_tween().set_loops()
 	spin.tween_property(_spinner, "rotation", TAU, Balance.get_float("extraction", "spin_period", 14.0)).from(0.0)
 	_tweens.append(spin)
+	_spin_tween = spin
 	var pulse := create_tween().set_loops()
 	pulse.tween_property(_ground, "modulate:a", 0.72, 1.3).set_trans(Tween.TRANS_SINE)
 	pulse.tween_property(_ground, "modulate:a", 1.0, 1.3).set_trans(Tween.TRANS_SINE)
@@ -187,12 +195,59 @@ func show_progress(on: bool) -> void:
 		_icon.get_parent().visible = not on
 	if on:
 		_progress.set_state(0.0, Raid.extraction_channel_time())
+	else:
+		_set_intensity(0.0)
 
 
 ## p = 0..1, remaining = secondes restantes.
 func set_progress(p: float, remaining: float) -> void:
 	if _progress != null:
 		_progress.set_state(p, remaining)
+	_set_intensity(p)
+
+
+## Colonne de lumière et vitesse de l'anneau selon la progression (0 = au repos).
+func _set_intensity(p: float) -> void:
+	var q := clampf(p, 0.0, 1.0)
+	if _beam != null:
+		_beam.modulate.a = 0.0 if q <= 0.0 else lerpf(Balance.get_float("extraction", "beam_alpha_min", 0.25),
+			Balance.get_float("extraction", "beam_alpha_max", 0.8), q)
+	if _spin_tween != null and _spin_tween.is_valid():
+		_spin_tween.set_speed_scale(1.0 + Balance.get_float("extraction", "spin_boost", 9.0) * q)
+
+
+## Réussite : colonne éblouissante qui s'élargit, gerbe d'éclats vers le haut.
+func play_success(duration: float) -> void:
+	if _progress != null:
+		_progress.visible = false
+	if _beam != null:
+		_beam.modulate.a = 1.0
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(_beam, "scale", Vector2(1.6, 1.15), duration * 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_beam, "modulate", Color(1.6, 1.6, 1.6, 1.0), duration * 0.5)
+	var p := CPUParticles2D.new()
+	p.z_as_relative = false
+	p.z_index = 87
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.amount = int(Balance.get_value("extraction", "success_particles", 60))
+	p.lifetime = duration
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = radius * 0.6
+	p.direction = Vector2.UP
+	p.spread = 25.0
+	p.initial_velocity_min = 220.0
+	p.initial_velocity_max = 520.0
+	p.gravity = Vector2.ZERO
+	p.scale_amount_min = 3.0
+	p.scale_amount_max = 7.0
+	p.color = COL.lightened(0.4)
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	p.color_ramp = ramp
+	p.emitting = true
+	add_child(p)
 
 
 func is_progress_visible() -> bool:
@@ -205,6 +260,47 @@ func get_progress_text() -> String:
 
 # =====================================================================================
 # Morceaux dessinés une fois.
+
+## Colonne de lumière de l'extraction : dégradé vertical additif, large au sol, qui s'efface
+## vers le haut ; au-dessus du brouillard (visible de loin pendant la canalisation).
+class ZoneBeam extends Node2D:
+	var radius: float = 96.0
+
+	func _init() -> void:
+		z_as_relative = false
+		z_index = 84
+		var m := CanvasItemMaterial.new()
+		m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = m
+
+	func _draw() -> void:
+		var h := Balance.get_float("extraction", "beam_height", 520.0)
+		var w0 := radius * 0.95
+		var w1 := radius * 0.55
+		var steps := 12
+		for i in steps:
+			var t0 := float(i) / steps
+			var t1 := float(i + 1) / steps
+			# Fondu en bas (pas de bord net au sol) et vers le haut.
+			var a0 := 0.55 * (1.0 - t0) * smoothstep(0.0, 0.18, t0)
+			var a1 := 0.55 * (1.0 - t1) * smoothstep(0.0, 0.18, t1)
+			var y0 := -h * t0
+			var y1 := -h * t1
+			var hw0 := lerpf(w0, w1, t0)
+			var hw1 := lerpf(w0, w1, t1)
+			var pts := PackedVector2Array([Vector2(-hw0, y0), Vector2(hw0, y0), Vector2(hw1, y1), Vector2(-hw1, y1)])
+			var cols := PackedColorArray([Color(COL, a0), Color(COL, a0), Color(COL, a1), Color(COL, a1)])
+			draw_polygon(pts, cols)
+		# Cœur plus clair.
+		var core := PackedVector2Array([Vector2(-w0 * 0.25, 0), Vector2(w0 * 0.25, 0), Vector2(w1 * 0.12, -h), Vector2(-w1 * 0.12, -h)])
+		draw_polygon(core, PackedColorArray([Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0)]))
+		# Disque au sol.
+		draw_circle(Vector2.ZERO, radius * 0.9, Color(COL, 0.18))
+
+
+## Intensité affichée de la colonne de lumière (tests).
+func get_beam_alpha() -> float:
+	return _beam.modulate.a if _beam != null else 0.0
 
 ## Plaque au sol : disque sombre translucide, double anneau lumineux, chevrons, pictogramme.
 class ZoneGround extends Node2D:
@@ -296,6 +392,9 @@ class ZoneProgress extends Node2D:
 	var radius: float = 96.0
 	var progress: float = 0.0
 	var text: String = ""
+	## Pastille « Extraction… N s » au-dessus de l'anneau (masquée : le compte à rebours plein
+	## écran d'ExtractionOverlay la remplace ; [extraction] ring_label).
+	var show_label: bool = Balance.get_value("extraction", "ring_label", false) == true
 
 	func _init() -> void:
 		z_as_relative = false
@@ -317,6 +416,8 @@ class ZoneProgress extends Node2D:
 			draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 96, Color(COL, 0.35), 16.0, true)
 			draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 96, Color(0.85, 1.0, 0.9), 6.0, true)
 		# Pastille de texte au sommet de l'anneau.
+		if not show_label:
+			return
 		var font := LootVisuals.text_font(900)
 		var fs := 18
 		var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
