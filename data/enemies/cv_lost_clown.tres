@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_lost_clown"
+display_name = "Clown égaré"
+max_hp = 70.0
+move_speed = 120.0
+body_radius = 18.0
+detection_radius = 360.0
+detection_angle_deg = 150.0
+lose_sight_time = 3.5
+alert_duration = 0.5
+alert_neighbors_radius = 360.0
+patrol_radius = 130.0
+sight_gain = 1.6
+hearing_radius = 440.0
+hearing_gain = 2.2
+awareness_decay = 0.14
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 58.0
+attack_damage = 11.0
+attack_cooldown = 1.3
+attack_windup = 0.45
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 18.0
+zigzag_period = 0.8
+strafe_ratio = 0.5
+attack_pattern = &"melee"
+stagger_ratio = 0.3
+stagger_time = 0.45
+knockback = 90.0
+ground_drop_chance = 0.3
+corpse_name = "Clown égaré abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"cv_racket", "shout": "HONK ! HONK !"}, {"id": &"cv_balloon"}]

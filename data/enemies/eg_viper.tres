@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_viper"
+display_name = "Vipère des sables"
+max_hp = 120.0
+move_speed = 195.0
+body_radius = 18.0
+detection_radius = 260.0
+detection_angle_deg = 120.0
+lose_sight_time = 3.0
+alert_duration = 0.5
+alert_neighbors_radius = 320.0
+patrol_radius = 60.0
+sight_gain = 1.0
+hearing_radius = 540.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 62.0
+attack_damage = 12.0
+attack_cooldown = 1.2
+attack_windup = 0.4
+projectile_speed = 0.0
+tactic = &"rusher"
+can_flank = true
+zigzag_amplitude = 40.0
+zigzag_period = 0.5
+strafe_ratio = 0.6
+attack_pattern = &"lunge"
+lunge_distance = 80.0
+lunge_speed = 600.0
+combo_hits = 1
+stagger_ratio = 0.3
+stagger_time = 0.35
+knockback = 60.0
+ground_drop_chance = 0.25
+corpse_name = "Vipère des sables morte"
+skills = [{"id": &"eg_venom", "passive": true, "venom_dps": 3.0, "venom_time": 3.5, "venom_slow": 0.2, "venom_max_stacks": 3}, {"id": &"eg_burrow", "cooldown": 10.0, "initial_cooldown": 1.5, "windup": 0.45, "min_range": 140.0, "max_range": 480.0, "speed": 300.0, "travel_time": 1.5, "emerge_windup": 0.4, "radius": 60.0, "damage": 12.0, "venom": true, "priority": 1.4}, {"id": &"eg_venom_spit", "cooldown": 9.0, "initial_cooldown": 3.0, "windup": 0.45, "min_range": 120.0, "max_range": 420.0, "radius": 64.0, "damage": 6.0, "linger": 3.5, "linger_dps": 6.0, "linger_slow": 0.35, "priority": 1.1}]

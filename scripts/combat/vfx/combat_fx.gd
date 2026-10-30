@@ -151,6 +151,17 @@ func impact_enemy(pos: Vector2, dir: Vector2, amount: float, show_number: bool =
 		damage_number(pos + Vector2(0.0, -30.0), amount, false, target_id)
 
 
+## Affixe d'arme déclenché (onde de choc, ricochet, brûlure, gel) : anneau + éclat à la couleur
+## de l'affixe, sans son ni secousse (peut se répéter à chaque balle).
+func affix_pulse(pos: Vector2, radius: float, color: Color) -> void:
+	var r: float = maxf(radius, 8.0)
+	air.emit(FxLayer.Kind.RING, pos, Vector2.ZERO, 0.22, r * 0.2, r, Color(color, 0.85), 0.0, 0.0, 3.0)
+	air.emit(FxLayer.Kind.FLASH, pos, Vector2.ZERO, 0.08, r * 0.15, r * 0.35, Color(color, 0.6))
+	for i: int in count(3, 1):
+		var v: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(60.0, 160.0)
+		air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.1, 0.2), 1.6, 1.0, color)
+
+
 func damage_number(pos: Vector2, amount: float, crit: bool = false, target_id: int = 0) -> void:
 	if not damage_numbers or amount <= 0.0:
 		return

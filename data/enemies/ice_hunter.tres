@@ -1,0 +1,46 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ice_hunter"
+display_name = "Chasseur arctique"
+max_hp = 120.0
+move_speed = 192.0
+body_radius = 18.0
+detection_radius = 520.0
+detection_angle_deg = 150.0
+lose_sight_time = 3.0
+alert_duration = 0.35
+alert_neighbors_radius = 520.0
+patrol_radius = 160.0
+sight_gain = 2.0
+hearing_radius = 400.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+attack_type = 1
+attack_range = 460.0
+attack_damage = 7.0
+attack_cooldown = 1.5
+attack_windup = 0.45
+projectile_speed = 620.0
+retreat_distance = 220.0
+projectile_style = &"laser"
+tactic = &"gunner"
+use_cover = true
+can_flank = true
+strafe_ratio = 0.8
+attack_pattern = &"burst"
+burst_count = 3
+burst_interval = 0.1
+aim_spread_deg = 3.0
+stagger_ratio = 0.3
+knockback = 60.0
+loot_table = &"enemy_ice_hunter"
+ground_drop_chance = 0.4
+sfx_attack = &"rifle_shot"
+sfx_hurt = &"hit_flesh"
+sfx_death = &"outlaw_death"
+corpse_name = "Chasseur arctique abattu"
+skills = [{"id": &"ice_cryo_shot", "cooldown": 6.0, "initial_cooldown": 2.0, "windup": 0.6, "min_range": 80.0, "max_range": 620.0, "speed": 760.0, "damage": 12.0, "slow": 0.5, "slow_time": 2.0, "priority": 1.4}, {"id": &"dodge_roll", "cooldown": 3.5, "chance": 0.5, "distance": 140.0, "duration": 0.26}, {"id": &"ice_lab_call", "cooldown": 28.0, "initial_cooldown": 4.0, "windup": 0.8, "hp_below": 0.6, "count": 1, "max_total": 1, "kinds": ["ice_hunter"], "shout": "ÉQUIPE, EN APPUI !", "priority": 1.6}]

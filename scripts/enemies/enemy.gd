@@ -156,6 +156,8 @@ var skills: Array[EnemySkill] = []
 var active_skill: EnemySkill = null
 ## Invulnérabilité brève (roulade, téléportation).
 var invulnerable_left: float = 0.0
+## Gel (affixe d'arme du joueur, AffixStatus) : vitesse de déplacement × affix_slow_mult.
+var affix_slow_mult: float = 1.0
 ## Rage (compétence « rage ») : multiplicateurs de vitesse et de recharge.
 var rage_speed_mult: float = 1.0
 var rage_cooldown_mult: float = 1.0
@@ -301,7 +303,7 @@ func _ready() -> void:
 		data = EnemyData.new()
 	_load_balance()
 	_load_difficulty()
-	max_hp = data.max_hp
+	max_hp = data.max_hp * boss_hp_scale()
 	hp = max_hp
 	spawn_position = global_position
 	last_seen_position = global_position
@@ -384,6 +386,10 @@ func _load_balance() -> void:
 	attack_recovery = _bf("attack_recovery", attack_recovery)
 	return_speed_ratio = _bf("return_speed_ratio", return_speed_ratio)
 	return_regen_ratio_per_sec = _bf("return_regen_ratio_per_sec", return_regen_ratio_per_sec)
+	if data != null:
+		return_regen_ratio_per_sec *= data.return_regen_mult
+	if data != null and data.boss:
+		return_regen_ratio_per_sec = Balance.get_float("boss", "return_regen_ratio_per_sec", 0.0)
 	return_timeout = _bf("return_timeout", return_timeout)
 	sleep_distance = _bf("sleep_distance", sleep_distance)
 	wake_distance = minf(_bf("wake_distance", wake_distance), sleep_distance)
@@ -426,6 +432,20 @@ func _load_difficulty() -> void:
 	skill_check_interval = EnemySkills.cfg("check_interval", 0.3)
 	reactive_check_interval = EnemySkills.cfg("reactive_check_interval", 0.12)
 	skill_gap = EnemySkills.cfg("skill_gap", 1.2)
+
+
+## Multiplicateur des PV d'un boss selon la difficulté du raid ([boss] hp_mult) ; 1 sinon.
+func boss_hp_scale() -> float:
+	if data == null or not data.boss:
+		return 1.0
+	return boss_hp_mult(clampi(int(GameState.get("difficulty")) if GameState.get("difficulty") != null else 1, 0, 4))
+
+
+static func boss_hp_mult(difficulty: int) -> float:
+	var def: Array = [1.0]
+	var v: Variant = Balance.get_value("boss", "hp_mult", def)
+	var a: Array = v if v is Array and not (v as Array).is_empty() else def
+	return maxf(float(a[clampi(difficulty, 0, a.size() - 1)]), 0.05)
 
 
 static func _diff_at(key: String, index: int, def: Array) -> float:
@@ -621,9 +641,9 @@ func _tick_skills(delta: float) -> void:
 func _integrate(delta: float) -> void:
 	_update_stuck(delta)
 	if direct_velocity:
-		velocity = desired_velocity
+		velocity = desired_velocity * affix_slow_mult
 	else:
-		var target := desired_velocity
+		var target := desired_velocity * affix_slow_mult
 		if _unstick_left > 0.0:
 			target = _unstick_dir * maxf(desired_velocity.length(), data.move_speed * 0.6)
 		if not _neighbors.is_empty():
@@ -1638,7 +1658,7 @@ func apply_modifiers(hp_mult: float, damage_mult: float, speed_mult: float, awar
 	if data.has_meta(&"variant_rolled"):
 		d.set_meta(&"variant_rolled", true)
 	data = d
-	max_hp = d.max_hp
+	max_hp = d.max_hp * boss_hp_scale()
 	hp = max_hp * ratio
 	if _health_bar != null:
 		_health_bar.queue_redraw()
@@ -1651,7 +1671,7 @@ func set_variant(new_data: EnemyData) -> void:
 	var d := new_data.duplicate() as EnemyData
 	d.set_meta(&"variant_rolled", true)
 	data = d
-	max_hp = d.max_hp
+	max_hp = d.max_hp * boss_hp_scale()
 	hp = max_hp
 	if not is_inside_tree():
 		return

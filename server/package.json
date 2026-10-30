@@ -10,9 +10,9 @@
   },
   "scripts": {
     "start": "node index.js",
-    "test": "node --test"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "ws": "8.18.3"
+    "ws": "8.22.0"
   }
 }

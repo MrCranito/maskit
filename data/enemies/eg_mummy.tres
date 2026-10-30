@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_mummy"
+display_name = "Momie étouffée"
+max_hp = 230.0
+move_speed = 78.0
+body_radius = 24.0
+detection_radius = 330.0
+detection_angle_deg = 140.0
+lose_sight_time = 6.0
+alert_duration = 0.5
+alert_neighbors_radius = 420.0
+patrol_radius = 70.0
+sight_gain = 1.0
+hearing_radius = 440.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 66.0
+attack_damage = 18.0
+attack_cooldown = 1.7
+attack_windup = 0.7
+projectile_speed = 0.0
+tactic = &"heavy"
+can_flank = false
+strafe_ratio = 0.2
+attack_pattern = &"melee"
+stagger_ratio = 0.4
+stagger_time = 0.4
+knockback = 20.0
+ground_drop_chance = 0.35
+corpse_name = "Momie réduite en poussière"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"eg_undying", "down_time": 2.2, "revive_ratio": 0.5, "speed_mult": 1.25, "cooldown_mult": 0.8, "shout": "..."}, {"id": &"eg_bandage_lash", "cooldown": 8.0, "initial_cooldown": 3.0, "windup": 0.7, "min_range": 90.0, "max_range": 340.0, "width": 44.0, "damage": 9.0, "pull_time": 0.35, "pull_strength": 0.9, "root_time": 0.9, "priority": 1.3}]

@@ -53,6 +53,9 @@ var shop_mode: bool = false
 var buy_button: Button = null
 var consumables_label: Label = null
 var consumables_toggle: Button = null
+## Arsenal de départ : clefs de la réserve emportées (ligne visible seulement s'il y en a).
+var keys_label: Label = null
+var keys_toggle: Button = null
 var _tab_collection: Button = null
 var _tab_shop: Button = null
 var _sub_label: Label = null
@@ -75,6 +78,8 @@ var _d_owned: Label = null
 var _d_desc: Label = null
 var _d_bars: StatBars = null
 var _d_skin: Label = null
+## Affixes tirés de l'exemplaire affiché (AffixBadges.details), vide pour un modèle sans affixe.
+var _d_affixes: VBoxContainer = null
 var _empty_label: Label = null
 var _hint: Label = null
 
@@ -125,14 +130,16 @@ func _ready() -> void:
 		back_button.grab_focus.call_deferred()
 
 
+## `owned` est indexé par clé d'exemplaire (Affixes.key_of) : l'id du modèle pour les exemplaires
+## sans affixe, « id+affixes » sinon. Deux exemplaires aux affixes différents = deux cartes.
 func _read_stash() -> void:
 	stash = Profile.get_stash_weapons()
 	owned.clear()
 	for e: Dictionary in stash:
-		var id := String((e["data"] as WeaponData).id)
-		if not owned.has(id):
-			owned[id] = [] as Array[int]
-		(owned[id] as Array[int]).append(int(e["uid"]))
+		var key := Affixes.key_of(e["data"] as WeaponData)
+		if not owned.has(key):
+			owned[key] = [] as Array[int]
+		(owned[key] as Array[int]).append(int(e["uid"]))
 
 
 func _weapon_of_uid(u: int) -> WeaponData:
@@ -142,8 +149,36 @@ func _weapon_of_uid(u: int) -> WeaponData:
 	return null
 
 
+## Exemplaires possédés d'un MODÈLE (affixes ou non).
 func owned_count(id: StringName) -> int:
-	return (owned.get(String(id), []) as Array).size()
+	return model_uids(id).size()
+
+
+## Uids de tous les exemplaires d'un modèle.
+func model_uids(id: StringName) -> Array[int]:
+	var out: Array[int] = []
+	for e: Dictionary in stash:
+		if (e["data"] as WeaponData).id == id:
+			out.append(int(e["uid"]))
+	return out
+
+
+## Exemplaires à affixes possédés d'un modèle (une instance par jeu d'affixes), triés par clé.
+func _variants_of(w: WeaponData) -> Array[WeaponData]:
+	var out: Array[WeaponData] = []
+	var seen := {}
+	for e: Dictionary in stash:
+		var d: WeaponData = e["data"]
+		if d.id == w.id and d.has_rolled_affixes() and not seen.has(Affixes.key_of(d)):
+			seen[Affixes.key_of(d)] = true
+			out.append(d)
+	out.sort_custom(func(a: WeaponData, b: WeaponData) -> bool: return Affixes.key_of(a) < Affixes.key_of(b))
+	return out
+
+
+## Uids de l'exemplaire (clé d'exemplaire) représenté par la carte `w`.
+func _uids_of(w: WeaponData) -> Array:
+	return owned.get(Affixes.key_of(w), []) if w != null else []
 
 
 # --- Construction -------------------------------------------------------------------
@@ -332,6 +367,16 @@ func _build_loadout() -> void:
 	consumables_toggle.pressed.connect(toggle_consumables)
 	risk.add_child(consumables_toggle)
 	_refresh_consumables()
+	keys_label = MenuKit.label("", 17, MenuKit.GOLD, MenuKit.nunito(600), 0)
+	keys_label.name = "Keys"
+	keys_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	risk.add_child(keys_label)
+	keys_toggle = MenuKit.button("Clefs : non", MenuKit.Style.GHOST, 15, Vector2(118, 44))
+	MenuKit.tighten(keys_toggle, 8)
+	keys_toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	keys_toggle.pressed.connect(toggle_keys)
+	risk.add_child(keys_toggle)
+	_refresh_keys()
 
 	# Grille des armes
 	_scroll = ScrollContainer.new()
@@ -377,6 +422,12 @@ func _build_loadout() -> void:
 	_d_bars.custom_minimum_size.x = Balance.get_float("menu", "loadout_detail_width", 300.0)
 	_d_bars.size_flags_horizontal = Control.SIZE_SHRINK_END
 	col.add_child(_d_bars)
+	_d_affixes = VBoxContainer.new()
+	_d_affixes.name = "AffixBox"
+	_d_affixes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_d_affixes.custom_minimum_size.x = _d_bars.custom_minimum_size.x
+	_d_affixes.size_flags_horizontal = Control.SIZE_SHRINK_END
+	col.add_child(_d_affixes)
 	equip_button = Button.new()
 	equip_button.name = "EquipButton"
 	equip_button.focus_mode = Control.FOCUS_ALL
@@ -479,7 +530,7 @@ func _refresh_equip_button() -> void:
 	var w := detail_weapon
 	var placed := false
 	if w != null:
-		for u: int in (owned.get(String(w.id), []) as Array):
+		for u: int in _uids_of(w):
 			if selected_uids.has(u):
 				placed = true
 	equip_button.disabled = w == null
@@ -541,6 +592,10 @@ func _build_detail() -> Control:
 	col.add_child(gap)
 	_d_bars = StatBars.new()
 	col.add_child(_d_bars)
+	_d_affixes = VBoxContainer.new()
+	_d_affixes.name = "AffixBox"
+	_d_affixes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(_d_affixes)
 	_d_desc = MenuKit.label("", 14, MenuKit.TEXT_DIM, MenuKit.nunito(650))
 	_d_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_d_desc.max_lines_visible = 4
@@ -598,8 +653,11 @@ func _refresh_subtitle() -> void:
 	elif shop_mode:
 		_sub_label.text = "Achète des armes avec ton or. Légendaires : butin uniquement."
 	else:
+		var models := {}
+		for e: Dictionary in stash:
+			models[(e["data"] as WeaponData).id] = true
 		_sub_label.text = "Un large choix d'armes pour ton style de jeu.  %d / %d modèles débloqués" % [
-			owned.size(), WeaponCatalog.all().size()]
+			models.size(), WeaponCatalog.all().size()]
 
 
 ## Bascule Collection / Armurerie (consultation).
@@ -623,18 +681,24 @@ func set_shop_mode(on: bool) -> void:
 func _models_of(cat: StringName) -> Array[WeaponData]:
 	var out: Array[WeaponData] = []
 	if loadout_mode:
+		# Une carte par exemplaire distinct (modèle + affixes).
 		var seen := {}
 		for e: Dictionary in stash:
 			var w: WeaponData = e["data"]
-			if w.category == cat and not seen.has(w.id):
-				seen[w.id] = true
+			if w.category == cat and not seen.has(Affixes.key_of(w)):
+				seen[Affixes.key_of(w)] = true
 				out.append(w)
 	else:
 		for w: WeaponData in WeaponCatalog.all():
 			if w.category == cat:
 				out.append(w)
+				# Collection : les exemplaires à affixes possédés suivent leur modèle.
+				if not shop_mode:
+					out.append_array(_variants_of(w))
 	out.sort_custom(func(a: WeaponData, b: WeaponData) -> bool:
-		return a.rarity < b.rarity if a.rarity != b.rarity else String(a.id) < String(b.id))
+		if a.rarity != b.rarity:
+			return a.rarity < b.rarity
+		return Affixes.key_of(a) < Affixes.key_of(b))
 	return out
 
 
@@ -678,7 +742,11 @@ func _fill() -> void:
 		sections[cat] = grid
 		for w: WeaponData in models:
 			var ids: Array[int] = []
-			ids.assign(owned.get(String(w.id), []))
+			# Armurerie : tous les exemplaires du modèle ; collection : ceux de cette carte.
+			ids.assign(model_uids(w.id) if shop_mode else _uids_of(w))
+			# Modèle possédé seulement avec affixes : pas de carte « non possédée » en double.
+			if not shop_mode and ids.is_empty() and not w.has_rolled_affixes() and owned_count(w.id) > 0:
+				continue
 			var t := WeaponTile.new(w, ids, ids.is_empty() and not shop_mode)
 			if shop_mode:
 				t.set_shop_status(Profile.weapon_shop_status(w.id))
@@ -710,7 +778,7 @@ func _fill_loadout() -> void:
 			return not a.is_gadget()
 		if a.rarity != b.rarity:
 			return a.rarity > b.rarity
-		return String(a.id) < String(b.id))
+		return Affixes.key_of(a) < Affixes.key_of(b))
 	var grid := GridContainer.new()
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
@@ -721,7 +789,7 @@ func _fill_loadout() -> void:
 	sections[&"all"] = grid
 	for w: WeaponData in models:
 		var ids: Array[int] = []
-		ids.assign(owned.get(String(w.id), []))
+		ids.assign(_uids_of(w))
 		var t := WeaponTile.new(w, ids, false)
 		t.style_d = true
 		t.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -742,10 +810,17 @@ func _section_header(cat: StringName, sample: WeaponData) -> Control:
 	row.add_theme_constant_override("separation", 12)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tex: Texture2D = WeaponIcon.texture_for(sample)
-	if cat == WeaponData.CAT_GADGET or tex == null:
+	if cat == WeaponData.CAT_GADGET:
 		var ic := SectionGlyph.new()
 		ic.custom_minimum_size = Vector2(54, 30)
 		row.add_child(ic)
+	elif tex == null:
+		# Catégorie sans sprite (revolver, fusil à pompe…) : silhouette dessinée de la catégorie.
+		var wi := WeaponIcon.new(sample)
+		wi.silhouette = true
+		wi.use_equipped_skin = false
+		wi.custom_minimum_size = Vector2(54, 30)
+		row.add_child(wi)
 	else:
 		var tr := TextureRect.new()
 		tr.texture = tex
@@ -851,7 +926,7 @@ func selected_gadget_uid() -> int:
 ## Ajoute ou retire un modèle de l'arsenal de départ (un exemplaire). Un équipement remplace
 ## l'équipement déjà choisi. Renvoie false si les emplacements d'armes sont pleins.
 func toggle_model(w: WeaponData) -> bool:
-	var ids: Array = owned.get(String(w.id), [])
+	var ids: Array = _uids_of(w)
 	if ids.is_empty():
 		return false
 	for u: int in ids:
@@ -934,6 +1009,7 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 		_d_rarity.visible = false
 		_d_icon.set_weapon(null)
 		_d_bars.show_weapon(null)
+		_refresh_affix_detail(null)
 		_refresh_equip_button()
 		if skin_button != null:
 			skin_button.disabled = true
@@ -959,6 +1035,7 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 	_d_owned.text = ("Possédée ×%d" % n) if n > 0 else "Non possédée"
 	_d_owned.add_theme_color_override("font_color", MenuKit.TEXT if n > 0 else MenuKit.TEXT_DIM)
 	_d_bars.show_weapon(w, MenuKit.TEXT if loadout_mode else rc.lightened(0.15))
+	_refresh_affix_detail(w)
 	if shop_mode:
 		_d_desc.text = w.description
 	else:
@@ -970,6 +1047,23 @@ func show_weapon_detail(w: WeaponData, with_anim: bool = true) -> void:
 		_d_icon.pivot_offset = _d_icon.size * 0.5
 		create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT) \
 			.tween_property(_d_icon, "scale", Vector2.ONE, 0.25).from(Vector2(0.85, 0.85))
+
+
+## Fiche : affixes tirés de l'exemplaire affiché (nom coloré + effet court).
+func _refresh_affix_detail(w: WeaponData) -> void:
+	if _d_affixes == null:
+		return
+	for c: Node in _d_affixes.get_children():
+		_d_affixes.remove_child(c)
+		c.queue_free()
+	_d_affixes.visible = w != null and w.has_rolled_affixes()
+	# Bandeau de l'arsenal de départ : l'aide laisse sa place aux affixes (hauteur d'écran).
+	if loadout_mode and _hint != null:
+		_hint.visible = not _d_affixes.visible
+	if _d_affixes.visible:
+		# Arsenal de départ : version compacte (le bandeau doit garder DÉPLOYER à l'écran).
+		_d_affixes.add_child(AffixBadges.compact(w.rolled_affixes, 15) if loadout_mode \
+			else AffixBadges.details(w.rolled_affixes, 15))
 
 
 func _refresh_slots(animate: bool) -> void:
@@ -1098,10 +1192,10 @@ func _refresh_shop_box(w: WeaponData) -> void:
 				("   ·   " + str(st["text"])) if st["mode"] == WeaponData.UNLOCK_KILL else "")
 			_d_shop_text.add_theme_color_override("font_color", GoldCounter.GOLD_COIN)
 			buy_button.visible = true
-			buy_button.disabled = Profile.gold < price
+			buy_button.disabled = not Profile.can_afford(&"gold", price)
 			buy_button.text = "Acheter · %s or" % Economy.fmt(price)
 			_d_shop_hint.text = ("Il te manque %s or : vends ton butin au marchand." % Economy.fmt(price - Profile.gold)) \
-				if Profile.gold < price else ("Tu en as ×%d." % owned_count(w.id) if owned_count(w.id) > 0 else "")
+				if not Profile.can_afford(&"gold", price) else ("Tu en as ×%d." % owned_count(w.id) if owned_count(w.id) > 0 else "")
 		Economy.STATE_LOCKED:
 			_d_shop_text.text = str(st["text"])
 			_d_shop_text.add_theme_color_override("font_color", Color(1.0, 0.62, 0.56))
@@ -1162,6 +1256,30 @@ func _refresh_consumables() -> void:
 	else:
 		consumables_label.text = "Consommables emportés : " + ", ".join(parts)
 	consumables_toggle.text = "Soins : oui" if Profile.pack_consumables else "Soins : non"
+
+
+## Ligne « Clefs » : nombre de clefs en réserve et choix de les emporter (masquée sans clef).
+func _refresh_keys() -> void:
+	if keys_label == null:
+		return
+	var keys: Array[Dictionary] = Profile.keys_in_reserve()
+	var n := 0
+	for e: Dictionary in keys:
+		n += int(e["count"])
+	keys_label.visible = n > 0
+	keys_toggle.visible = n > 0
+	keys_label.text = "· %d clef%s en réserve" % [n, "s" if n > 1 else ""]
+	keys_toggle.text = "Clefs : oui" if Profile.pack_keys else "Clefs : non"
+	var names: PackedStringArray = []
+	for e: Dictionary in keys:
+		names.append((e["item"] as ItemData).display_name)
+	keys_label.tooltip_text = ", ".join(names)
+
+
+func toggle_keys() -> void:
+	Profile.set_pack_keys(not Profile.pack_keys)
+	MenuKit.sfx(&"click_soft", -4.0)
+	_refresh_keys()
 
 
 func toggle_consumables() -> void:

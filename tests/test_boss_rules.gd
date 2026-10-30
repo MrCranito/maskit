@@ -86,7 +86,7 @@ func test_elites_guard_treasure_and_escort_boss() -> void:
 	}
 	BestiaryRules.apply(floors, w, 7)
 	var guards := int(Balance.get_value("boss", "elite_super_loot_guards", 1))
-	var escorts := int(Balance.get_value("boss", "elite_boss_escorts", 2))
+	var escorts := BestiaryRules.boss_escorts(GameState.difficulty)
 	var n0 := 0
 	for sp: FloorLayout.Spawn in floors[0].enemy_spawns:
 		n0 += 1 if elites.has(sp.kind) else 0
@@ -143,13 +143,14 @@ func test_boss_phases_follow_hp_and_emit_signals() -> void:
 	var cb := func(_b: Node2D, i: int, n: String) -> void: seen.append([i, n])
 	EventBus.boss_phase_changed.connect(cb)
 	var base_speed := e.run_speed()
-	e.take_damage(350.0, null)
+	# Dégâts en part des PV max : ceux-ci dépendent de la difficulté ([boss] hp_mult).
+	e.take_damage(e.max_hp * 0.35, null)
 	assert_eq(e.boss_phase, 1, "phase 2 sous 70 %")
 	assert_almost_eq(e.run_speed(), base_speed * 1.3, 0.01)
 	assert_gt(e.invulnerable_left, 0.0, "invulnérable pendant la transition")
 	# Gros coup : passe directement de la phase 2 à la phase 3.
 	e.invulnerable_left = 0.0
-	e.take_damage(500.0, null)
+	e.take_damage(e.max_hp * 0.5, null)
 	assert_eq(e.boss_phase, 2, "phase 3 sous 30 %")
 	assert_eq(e.next_pattern(), &"burst")
 	assert_almost_eq(e.get_attack_damage(), e.data.attack_damage * e.diff_damage_mult * 1.5, 0.01)
@@ -169,7 +170,7 @@ func test_boss_bar_tracks_boss() -> void:
 	EventBus.boss_engaged.emit(e)
 	assert_true(bar.visible)
 	assert_almost_eq(bar.ratio(), 1.0, 0.001)
-	e.take_damage(400.0, null)
+	e.take_damage(e.max_hp * 0.4, null)
 	assert_almost_eq(bar.ratio(), 0.6, 0.001)
 	EventBus.boss_defeated.emit(e)
 	assert_null(bar.boss)

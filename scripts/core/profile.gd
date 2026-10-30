@@ -26,7 +26,8 @@ signal raider_level_up(level: int, unlocks: Array)
 
 const SAVE_KEY := "profile"
 
-## Armes en réserve : [{ "uid": int, "id": String }]
+## Armes en réserve : [{ "uid": int, "id": String, "affixes": Array[String] }] — `affixes` = affixes
+## tirés au drop de CET exemplaire (phase 8) ; absent dans les anciennes sauvegardes = aucun.
 var weapons: Array[Dictionary] = []
 ## Arsenal de départ choisi : uids (références dans `weapons`) : jusqu'à `loadout_slots()`
 ## armes (slot weapon) + 1 équipement (slot gadget : grenade, mine, C4, drone).
@@ -54,9 +55,19 @@ var unlocked_weapons: Array[StringName] = []
 var bought_weapons: Array[StringName] = []
 ## Emporter les soins de la réserve dans le sac de raid au lancement.
 var pack_consumables: bool = true
+## Emporter les clefs de la réserve au prochain raid (choix de l'arsenal de départ). Elles
+## suivent la règle du sac : perdues à la mort, rendues à l'extraction si elles n'ont pas servi.
+var pack_keys: bool = false
 ## Consommables mis dans le sac au lancement du raid en cours (id → n).
 var raid_packed: Dictionary = {}
 var skins_owned: Array[StringName] = []
+## Boutique : bonus de premier achat consommé, packs à contenu achetés (Store).
+var shop_first_bonus_used: bool = false
+var bundles_bought: Array[StringName] = []
+## Coffres de skins gratuits : en stock, extractions vers le prochain, coffres sans Épique.
+var free_chests: int = 0
+var chest_progress: int = 0
+var chest_pity_count: int = 0
 ## Skin de personnage porté (vide = apparence par défaut).
 var skin_character: StringName = &""
 ## Skin d'arme par catégorie : String(category) → skin id ; clé "any" = toutes les armes.
@@ -67,6 +78,8 @@ var raider_xp: int = 0
 var raid_in_progress: bool = false
 ## Armes emportées dans le raid en cours (ids), pour le résumé de mort.
 var raid_weapon_ids: Array[StringName] = []
+## Affixes des armes emportées (même ordre que raid_weapon_ids) : cartes de l'écran de mort.
+var raid_weapon_affixes: Array = []
 var _next_uid: int = 1
 
 
@@ -75,18 +88,41 @@ func _ready() -> void:
 	var eb: Node = get_node_or_null(^"/root/EventBus")
 	if eb != null and eb.has_signal(&"enemy_died"):
 		eb.connect(&"enemy_died", _on_enemy_died)
+	DevMode.notifier.changed.connect(_on_dev_mode_changed)
 
 
 # --- Réserve d'armes ------------------------------------------------------------
 
-func add_weapon(id: StringName) -> int:
+## Ajoute un exemplaire à la réserve. `affixes` : affixes tirés au drop (vide = aucun : achat,
+## artisanat, récompenses, arme de départ).
+func add_weapon(id: StringName, affixes: Array = []) -> int:
 	if not WeaponCatalog.has_weapon(id):
 		push_warning("Profile: arme inconnue %s" % id)
 		return -1
 	var uid := _next_uid
 	_next_uid += 1
-	weapons.append({"uid": uid, "id": String(id)})
+	weapons.append({"uid": uid, "id": String(id), "affixes": _affix_strings(affixes)})
 	return uid
+
+
+## Ajoute un exemplaire tel quel (affixes compris).
+func add_weapon_instance(w: WeaponData) -> int:
+	return add_weapon(w.id, w.rolled_affixes) if w != null else -1
+
+
+static func _affix_strings(affixes: Array) -> Array:
+	var out: Array = []
+	for a: StringName in Affixes.normalized(affixes):
+		out.append(String(a))
+	return out
+
+
+## Affixes d'un exemplaire de la réserve (vide si aucun ou uid inconnu).
+func weapon_affixes_of(uid: int) -> Array[StringName]:
+	for e: Dictionary in weapons:
+		if int(e["uid"]) == uid:
+			return Affixes.normalized(e.get("affixes", []) as Array)
+	return [] as Array[StringName]
 
 
 func remove_weapon(uid: int) -> bool:
@@ -105,17 +141,20 @@ func weapon_id_of(uid: int) -> StringName:
 	return &""
 
 
+## Exemplaire (WeaponData du catalogue, ou copie portant ses affixes : Affixes.make_weapon).
 func get_weapon_data(uid: int) -> WeaponData:
-	return WeaponCatalog.get_weapon(weapon_id_of(uid))
+	return Affixes.make_weapon(WeaponCatalog.get_weapon(weapon_id_of(uid)), weapon_affixes_of(uid))
 
 
-## Réserve triée (rareté décroissante, puis catégorie) : [{uid, id, data: WeaponData}].
+## Réserve triée (rareté décroissante, puis catégorie) : [{uid, id, data: WeaponData (exemplaire),
+## affixes: Array[StringName]}].
 func get_stash_weapons() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for e: Dictionary in weapons:
-		var w := WeaponCatalog.get_weapon(StringName(str(e["id"])))
-		if w != null:
-			out.append({"uid": int(e["uid"]), "id": w.id, "data": w})
+		var base := WeaponCatalog.get_weapon(StringName(str(e["id"])))
+		if base != null:
+			var ax := Affixes.normalized(e.get("affixes", []) as Array)
+			out.append({"uid": int(e["uid"]), "id": base.id, "data": Affixes.make_weapon(base, ax), "affixes": ax})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var wa: WeaponData = a["data"]
 		var wb: WeaponData = b["data"]
@@ -235,7 +274,9 @@ func start_raid() -> Array[WeaponData]:
 	var out: Array[WeaponData] = []
 	raid_gadget = null
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	for u: int in loadout.duplicate():
+		# Exemplaire avec ses affixes : il les garde en main pendant tout le raid.
 		var w := get_weapon_data(u)
 		if w != null:
 			if w.is_gadget():
@@ -243,6 +284,7 @@ func start_raid() -> Array[WeaponData]:
 			else:
 				out.append(w)
 			raid_weapon_ids.append(w.id)
+			raid_weapon_affixes.append(_affix_strings(w.rolled_affixes))
 		remove_weapon(u)
 	loadout.clear()
 	raid_in_progress = true
@@ -250,22 +292,29 @@ func start_raid() -> Array[WeaponData]:
 	stats["raids"] = int(stats.get("raids", 0)) + 1
 	var gs: Node = get_node_or_null(^"/root/GameState")
 	pack_consumables_into(gs.get("raid_inventory") as Inventory if gs != null else null)
+	pack_keys_into(gs.get("raid_inventory") as Inventory if gs != null else null)
 	save()
 	return out
 
 
 ## Extraction réussie : armes portées + contenu du sac reviennent dans la réserve.
-## Renvoie un résumé {weapons: Array[StringName], items: Dictionary, value: int (or estimé au
-## marchand), loot_value: int (valeur brute), gems: int, unlock_kills: Array (Economy.kill_report)}.
+## `carried` : exemplaires tenus (WeaponData : leurs affixes sont conservés) ou ids (aucun affixe,
+## ancienne API). Renvoie un résumé {weapons: Array[StringName], weapon_entries: Array de
+## {id, affixes} (même ordre), items: Dictionary, value: int (or estimé au marchand),
+## loot_value: int (valeur brute), gems: int, unlock_kills: Array (Economy.kill_report)}.
 ## Aucune pièce d'or n'est donnée : le butin se vend au marchand.
-func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) -> Dictionary:
+func finish_extraction(carried: Array, bag: Inventory) -> Dictionary:
 	var got_weapons: Array[StringName] = []
+	var entries: Array = []
 	var got_items: Dictionary = {}
 	var value := 0
 	var estimate := 0
-	for id: StringName in carried_weapon_ids:
-		if add_weapon(id) > 0:
-			got_weapons.append(id)
+	for v: Variant in carried:
+		var cid: StringName = (v as WeaponData).id if v is WeaponData else StringName(str(v))
+		var cax: Array = (v as WeaponData).rolled_affixes if v is WeaponData else []
+		if add_weapon(cid, cax) > 0:
+			got_weapons.append(cid)
+			entries.append({"id": cid, "affixes": Affixes.normalized(cax)})
 	if bag != null:
 		for i in bag.capacity():
 			var slot: Dictionary = bag.get_slot(i)
@@ -277,8 +326,9 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 				continue
 			if item.is_weapon():
 				for _n in count:
-					if add_weapon(item.weapon_id) > 0:
+					if add_weapon(item.weapon_id, item.weapon_affixes) > 0:
 						got_weapons.append(item.weapon_id)
+						entries.append({"id": item.weapon_id, "affixes": Affixes.normalized(item.weapon_affixes)})
 			else:
 				items[String(item.id)] = int(items.get(String(item.id), 0)) + count
 				got_items[item.id] = int(got_items.get(item.id, 0)) + count
@@ -290,13 +340,26 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 	var report := Economy.kill_report(raid_kills, kills_by_kind)
 	raid_in_progress = false
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	raid_packed.clear()
 	stats["extractions"] = int(stats.get("extractions", 0)) + 1
+	var chest := add_chest_progress()
 	ensure_starter()
 	save()
 	gems_changed.emit(gems)
-	return {"weapons": got_weapons, "items": got_items, "value": estimate, "loot_value": value,
-		"gems": earned, "unlock_kills": report}
+	return {"weapons": got_weapons, "weapon_entries": entries, "items": got_items, "value": estimate,
+		"loot_value": value, "gems": earned, "unlock_kills": report, "chest": chest}
+
+
+## Une extraction réussie de plus vers le prochain coffre gratuit ([chests] every_extractions).
+## Renvoie true si un coffre vient d'être gagné.
+func add_chest_progress() -> bool:
+	chest_progress += 1
+	if chest_progress < Store.chest_every():
+		return false
+	chest_progress = 0
+	free_chests += 1
+	return true
 
 
 ## Mort (ou abandon) : l'arsenal emporté et le butin sont perdus.
@@ -304,16 +367,22 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 ## lost_estimate: int (or estimé du sac perdu)}. (« unlock_kills » : « kills » est l'entier du pass de combat.)
 func finish_death() -> Dictionary:
 	var lost := raid_weapon_ids.duplicate()
+	var lost_entries: Array = []
+	for i in lost.size():
+		var ax: Array = raid_weapon_affixes[i] if i < raid_weapon_affixes.size() and raid_weapon_affixes[i] is Array else []
+		lost_entries.append({"id": lost[i], "affixes": Affixes.normalized(ax)})
 	var report := Economy.kill_report(raid_kills, kills_by_kind)
 	var gs: Node = get_node_or_null(^"/root/GameState")
 	var lost_estimate := Economy.estimate_inventory(gs.get("raid_inventory") as Inventory if gs != null else null)
 	raid_in_progress = false
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	raid_packed.clear()
 	stats["deaths"] = int(stats.get("deaths", 0)) + 1
 	var given := ensure_starter()
 	save()
-	return {"lost_weapons": lost, "starter_given": given, "unlock_kills": report, "lost_estimate": lost_estimate}
+	return {"lost_weapons": lost, "lost_entries": lost_entries, "starter_given": given, "unlock_kills": report,
+		"lost_estimate": lost_estimate}
 
 
 ## Gemmes gagnées à l'extraction (balance.cfg [shop]).
@@ -423,7 +492,8 @@ func sell_weapon(uid: int) -> int:
 	return g
 
 
-## Uid d'un exemplaire vendable de ce modèle (hors arsenal de départ si possible), -1 sinon.
+## Uid d'un exemplaire vendable de ce modèle (hors arsenal de départ si possible, et celui qui a
+## le MOINS d'affixes : on ne vend pas un exemplaire à affixes par surprise), -1 sinon.
 func spare_weapon_uid(id: StringName) -> int:
 	var cands: Array[int] = []
 	for e: Dictionary in weapons:
@@ -431,9 +501,18 @@ func spare_weapon_uid(id: StringName) -> int:
 			cands.append(int(e["uid"]))
 	if cands.size() <= 1:
 		return -1
-	for u: int in cands:
-		if not loadout.has(u):
-			return u
+	var best := -1
+	var best_n := 1 << 30
+	for pass_loadout: bool in [false, true]:
+		for u: int in cands:
+			if loadout.has(u) != pass_loadout:
+				continue
+			var n := weapon_affixes_of(u).size()
+			if n < best_n:
+				best_n = n
+				best = u
+		if best >= 0:
+			return best
 	return cands[cands.size() - 1]
 
 
@@ -450,15 +529,14 @@ func is_weapon_buyable(id: StringName) -> bool:
 ## insuffisant. L'arme rejoint la réserve.
 func buy_weapon(id: StringName) -> bool:
 	var w := WeaponCatalog.get_weapon(id)
-	if w == null or not is_weapon_buyable(id) or gold < w.price_gold:
+	if w == null or not is_weapon_buyable(id) or not can_afford(&"gold", w.price_gold):
 		return false
 	if add_weapon(id) <= 0:
 		return false
-	gold -= w.price_gold
+	debit(&"gold", w.price_gold)
 	if not bought_weapons.has(id):
 		bought_weapons.append(id)
 	save()
-	gold_changed.emit(gold)
 	return true
 
 
@@ -491,21 +569,21 @@ func _on_enemy_died(enemy: Node, _pos: Vector2 = Vector2.ZERO) -> void:
 # --- Artisanat ------------------------------------------------------------------
 
 func can_craft(recipe_id: StringName) -> bool:
-	return RecipeBook.can_craft(RecipeBook.get_recipe(recipe_id), items, gold)
+	return RecipeBook.can_craft(RecipeBook.get_recipe(recipe_id), items, balance_of(&"gold"))
 
 
 ## Fabrique une recette : consomme ingrédients + or ; le résultat va dans la réserve
 ## (objet → items, équipement → réserve d'armes). Renvoie false si impossible.
 func craft(recipe_id: StringName) -> bool:
 	var r := RecipeBook.get_recipe(recipe_id)
-	if not RecipeBook.can_craft(r, items, gold):
+	if not RecipeBook.can_craft(r, items, balance_of(&"gold")):
 		return false
 	var use := RecipeBook.plan(r, items)
 	if use.is_empty() and not r.ingredients.is_empty():
 		return false
 	for id: Variant in use:
 		remove_item(StringName(str(id)), int(use[id]))
-	gold -= r.gold_cost
+	debit(&"gold", r.gold_cost)
 	for _k in maxi(r.result_count, 1):
 		if r.is_weapon_result():
 			add_weapon(r.result_weapon_id)
@@ -513,8 +591,6 @@ func craft(recipe_id: StringName) -> bool:
 		items[String(r.result_item_id)] = item_count(r.result_item_id) + maxi(r.result_count, 1)
 	stats["crafted"] = int(stats.get("crafted", 0)) + 1
 	save()
-	if r.gold_cost > 0:
-		gold_changed.emit(gold)
 	crafted.emit(recipe_id)
 	return true
 
@@ -568,7 +644,94 @@ func set_pack_consumables(on: bool) -> void:
 	save()
 
 
+# --- Clefs emportées ------------------------------------------------------------
+
+## Clefs de la réserve (toutes, triées par nom) : [{item: ItemData, count}].
+func keys_in_reserve() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for k: Variant in items:
+		var it := LootDB.get_item(StringName(str(k)))
+		if it != null and it.is_key() and int(items[k]) > 0:
+			out.append({"item": it, "count": int(items[k])})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return (a["item"] as ItemData).display_name < (b["item"] as ItemData).display_name)
+	return out
+
+
+## Clefs qui partiront dans le sac au prochain lancement (vide si pack_keys est désactivé).
+func keys_preview() -> Array[Dictionary]:
+	return keys_in_reserve() if pack_keys else ([] as Array[Dictionary])
+
+
+## Met les clefs prévues dans le sac de raid (elles quittent la réserve). Ajoute à raid_packed.
+func pack_keys_into(bag: Inventory) -> Dictionary:
+	var packed := {}
+	if bag == null:
+		return packed
+	for e: Dictionary in keys_preview():
+		var it: ItemData = e["item"]
+		var added := bag.add_item(it, int(e["count"]))
+		if added > 0:
+			remove_item(it.id, added)
+			packed[String(it.id)] = added
+			raid_packed[String(it.id)] = int(raid_packed.get(String(it.id), 0)) + added
+	return packed
+
+
+func set_pack_keys(on: bool) -> void:
+	pack_keys = on
+	save()
+
+
 # --- Monnaie et skins -----------------------------------------------------------
+
+## Solde dépensable (&"gems" ou &"gold") : le vrai solde, ou DevMode.UNLIMITED en mode développeur.
+## Les écrans testent « assez de … ? » avec can_afford() / balance_of(), jamais gems / gold.
+func balance_of(currency: StringName) -> int:
+	if DevMode.is_unlimited():
+		return DevMode.UNLIMITED
+	match currency:
+		&"gems":
+			return gems
+		&"gold":
+			return gold
+	return 0
+
+
+func can_afford(currency: StringName, amount: int) -> bool:
+	return amount <= 0 or balance_of(currency) >= amount
+
+
+## SEUL point de débit des monnaies (gemmes, or). Mode développeur actif : rien n'est débité
+## (le solde réel, seul sauvegardé, reste intact). false si solde insuffisant ou monnaie inconnue.
+## Pas de sauvegarde ici : l'appelant sauvegarde l'achat complet.
+func debit(currency: StringName, amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if DevMode.is_unlimited():
+		return true
+	match currency:
+		&"gems":
+			if gems < amount:
+				return false
+			gems -= amount
+			gems_changed.emit(gems)
+		&"gold":
+			if gold < amount:
+				return false
+			gold -= amount
+			gold_changed.emit(gold)
+		_:
+			return false
+	return true
+
+
+## Bascule du mode développeur : les compteurs se redessinent (∞ ou vrai solde).
+func _on_dev_mode_changed(_on: bool) -> void:
+	gems_changed.emit(gems)
+	gold_changed.emit(gold)
+	changed.emit()
+
 
 func add_gems(n: int) -> void:
 	gems = maxi(gems + n, 0)
@@ -582,15 +745,21 @@ func owns_skin(id: StringName) -> bool:
 
 
 ## Achat d'un skin en gemmes. Renvoie false si inconnu, déjà possédé ou pas assez de gemmes.
+## Ajoute un skin possédé (pack, coffre, pass) sans débiter de gemmes.
+func grant_skin(id: StringName) -> void:
+	if not skins_owned.has(id):
+		skins_owned.append(id)
+	save()
+
+
 func buy_skin(id: StringName) -> bool:
 	var s := SkinData.get_skin(id)
 	# Skins du pass de combat : jamais achetables en gemmes (récompenses de palier).
-	if s == null or s.is_pass() or owns_skin(id) or gems < s.price_gems:
+	if s == null or s.is_pass() or owns_skin(id) or not can_afford(&"gems", s.price_gems):
 		return false
-	gems -= s.price_gems
+	debit(&"gems", s.price_gems)
 	skins_owned.append(id)
 	save()
-	gems_changed.emit(gems)
 	return true
 
 
@@ -639,11 +808,14 @@ func to_dict() -> Dictionary:
 		"weapons": weapons.duplicate(true), "loadout": loadout.duplicate(), "items": items.duplicate(),
 		"gems": gems, "gold": gold, "kills_by_kind": kills_by_kind.duplicate(),
 		"unlocked_weapons": _names_to_array(unlocked_weapons), "bought_weapons": _names_to_array(bought_weapons),
-		"pack_consumables": pack_consumables,
+		"pack_consumables": pack_consumables, "pack_keys": pack_keys,
 		"skins_owned": sk, "skin_character": String(skin_character),
 		"skin_weapons": skin_weapons.duplicate(), "stats": stats.duplicate(),
 		"raid_in_progress": raid_in_progress, "raid_weapon_ids": rw, "next_uid": _next_uid,
+		"raid_weapon_affixes": raid_weapon_affixes.duplicate(true),
 		"raider_xp": raider_xp,
+		"shop_first_bonus_used": shop_first_bonus_used, "bundles_bought": _names_to_array(bundles_bought),
+		"free_chests": free_chests, "chest_progress": chest_progress, "chest_pity": chest_pity_count,
 	}
 
 
@@ -651,7 +823,10 @@ func from_dict(d: Dictionary) -> void:
 	weapons.clear()
 	for e: Variant in d.get("weapons", []):
 		if e is Dictionary and WeaponCatalog.has_weapon(StringName(str(e.get("id", "")))):
-			weapons.append({"uid": int(e.get("uid", 0)), "id": str(e.get("id"))})
+			# Ancienne sauvegarde (pas de clé « affixes ») ou affixe retiré du jeu : ignoré.
+			var ax: Variant = e.get("affixes", [])
+			weapons.append({"uid": int(e.get("uid", 0)), "id": str(e.get("id")),
+				"affixes": _affix_strings(ax if ax is Array else [])})
 	loadout.clear()
 	for u: Variant in d.get("loadout", []):
 		if not weapon_id_of(int(u)).is_empty():
@@ -673,12 +848,20 @@ func from_dict(d: Dictionary) -> void:
 	for s3: Variant in d.get("bought_weapons", []):
 		bought_weapons.append(StringName(str(s3)))
 	pack_consumables = bool(d.get("pack_consumables", Balance.get_value("crafting", "pack_consumables_default", true)))
+	pack_keys = bool(d.get("pack_keys", LootDB.cfg().get_value(LootDB.SECTION, "pack_keys_default", false)))
 	raid_kills.clear()
 	raid_packed.clear()
 	skins_owned.clear()
 	for s: Variant in d.get("skins_owned", []):
 		skins_owned.append(StringName(str(s)))
 	skin_character = StringName(str(d.get("skin_character", "")))
+	shop_first_bonus_used = bool(d.get("shop_first_bonus_used", false))
+	bundles_bought.clear()
+	for b: Variant in d.get("bundles_bought", []):
+		bundles_bought.append(StringName(str(b)))
+	free_chests = maxi(int(d.get("free_chests", 0)), 0)
+	chest_progress = maxi(int(d.get("chest_progress", 0)), 0)
+	chest_pity_count = maxi(int(d.get("chest_pity", 0)), 0)
 	var sw: Variant = d.get("skin_weapons", {})
 	skin_weapons = (sw as Dictionary).duplicate() if sw is Dictionary else {}
 	var st: Variant = d.get("stats", {})
@@ -690,6 +873,9 @@ func from_dict(d: Dictionary) -> void:
 	raid_weapon_ids.clear()
 	for s: Variant in d.get("raid_weapon_ids", []):
 		raid_weapon_ids.append(StringName(str(s)))
+	raid_weapon_affixes.clear()
+	for a: Variant in d.get("raid_weapon_affixes", []):
+		raid_weapon_affixes.append(_affix_strings(a if a is Array else []))
 	_next_uid = int(d.get("next_uid", 1))
 	for e: Dictionary in weapons:
 		_next_uid = maxi(_next_uid, int(e["uid"]) + 1)

@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"ice_spider"
+display_name = "Araignée polaire"
+max_hp = 64.0
+move_speed = 200.0
+body_radius = 20.0
+detection_radius = 260.0
+detection_angle_deg = 140.0
+lose_sight_time = 3.0
+alert_duration = 0.25
+alert_neighbors_radius = 300.0
+patrol_radius = 60.0
+sight_gain = 0.9
+hearing_radius = 560.0
+hearing_gain = 3.0
+awareness_decay = 0.1
+attack_type = 0
+attack_range = 60.0
+attack_damage = 10.0
+attack_cooldown = 1.2
+attack_windup = 0.36
+tactic = &"rusher"
+can_flank = true
+zigzag_amplitude = 50.0
+zigzag_period = 0.5
+strafe_ratio = 1.0
+attack_pattern = &"lunge"
+lunge_distance = 100.0
+lunge_speed = 600.0
+combo_hits = 1
+stagger_ratio = 0.25
+stagger_time = 0.35
+knockback = 100.0
+loot_table = &"enemy_ice_beast"
+ground_drop_chance = 0.3
+sfx_hurt = &"hit_flesh"
+corpse_name = "Araignée polaire écrasée"
+skills = [{"id": &"ice_burrow", "passive": true, "alpha": 0.14, "reveal_time": 2.0, "check": 0.15}, {"id": &"ice_ambush", "cooldown": 7.0, "initial_cooldown": 0.3, "windup": 0.5, "min_range": 90.0, "max_range": 340.0, "flight": 0.32, "radius": 60.0, "damage": 13.0, "status": "root", "status_time": 0.7, "surprise_mult": 1.6, "surprise_windup": 0.5, "surprise_window": 1.5, "priority": 1.6}, {"id": &"ice_chill", "passive": true, "slow": 0.25, "slow_time": 1.2, "reach_bonus": 12.0}]

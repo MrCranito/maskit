@@ -47,7 +47,9 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gtest=res://tests/test_bal
 
 La configuration par défaut se trouve dans `.gutconfig.json`. Dans l'éditeur, les tests se lancent depuis le panneau **GUT** en bas de l'écran.
 
-Une CI GitHub Actions (`.github/workflows/tests.yml`) exécute les tests à chaque pull request et à chaque push sur `develop` ou `main`.
+Une CI GitHub Actions (`.github/workflows/ci.yml`) tourne à chaque pull request et à chaque push sur `develop` ou `main` : compilation du projet, lint GDScript (`gdlint`, avertissement), tests GUT (rapport annoté dans la PR), tests du serveur relais si `server/` change, et export debug Linux + Web. L'APK Android de test est publié par `android.yml` à chaque push sur `main` ; les exports de release par `export.yml` à chaque tag `v*`.
+
+Lint en local : `pip install "gdtoolkit==4.*"` puis `gdlint scripts tests` et `gdformat --check scripts tests` (réglages dans `.gdlintrc`).
 
 ## Structure du projet
 

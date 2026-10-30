@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AffixData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/affix_data.gd" id="1_affix"]
+
+[resource]
+script = ExtResource("1_affix")
+id = &"burn"
+display_name = "Brûlure"
+description = "Enflamme : +{ratio} % des dégâts en {duration} s"
+kind = &"burn"
+weight = 1.0
+categories = Array[StringName]([])
+color = Color(1, 0.45, 0.15, 1)
+ratio = 0.45
+duration = 3.0

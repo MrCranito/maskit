@@ -400,6 +400,41 @@ func test_gardien_bouclier_et_renforts() -> void:
 	assert_gt(get_tree().get_nodes_in_group(&"enemy_units").size(), before, "appel de renforts")
 
 
+## Équilibrage du Gardien (fix/gardien-magasin, duels du bot : 0 % → 65 % de victoires avec
+## l'arsenal moyen). Il tuait par ses renforts en chaîne et se soignait en décrochant.
+func test_gardien_equilibrage() -> void:
+	var d := _data(&"mall_store_warden")
+	assert_almost_eq(d.max_hp, 400.0, 0.01, "PV 520 → 400")
+	assert_almost_eq(d.attack_damage, 15.0, 0.01, "dégâts 20 → 15")
+	assert_almost_eq(d.return_regen_mult, 0.0, 0.001, "pas de soin au retour")
+	var alarm: Dictionary = {}
+	for entry: Variant in d.skills:
+		if StringName(str((entry as Dictionary)["id"])) == &"mall_alarm":
+			alarm = entry
+	assert_false(alarm.is_empty(), "alarme gardée (identité)")
+	assert_almost_eq(float(alarm.get("hp_below", 1.0)), 0.5, 0.001, "alarme sous 50 % des PV")
+	assert_eq(int(alarm.get("max_total", 0)), 2, "2 renforts vivants au plus")
+	assert_eq(alarm.get("kinds", []), ["mall_zombie"])
+	# Aucun renfort qui appelle lui-même des renforts (sinon le flot ne s'arrête jamais).
+	for k: Variant in alarm.get("kinds", []):
+		var rd := _data(StringName(str(k)))
+		for entry2: Variant in rd.skills:
+			var sid := StringName(str((entry2 as Dictionary)["id"]))
+			assert_false(sid == &"mall_alarm" or sid == &"whistle", "%s n'appelle pas de renforts" % k)
+
+
+func test_gardien_ne_se_soigne_pas_au_retour() -> void:
+	var e := await _engaged(&"mall_store_warden", Vector2.ZERO, Vector2(320, 0))
+	assert_almost_eq(e.return_regen_ratio_per_sec, 0.0, 0.0001)
+	e.take_damage(100.0, _player)
+	var hp0 := e.hp
+	e.state_machine.transition_to(Enemy.STATE_RETURN)
+	await wait_seconds(0.5)
+	assert_almost_eq(e.hp, hp0, 0.01, "entamé, il le reste")
+	var z := await _engaged(&"mall_zombie", Vector2(-400, 0), Vector2(320, 0))
+	assert_gt(z.return_regen_ratio_per_sec, 0.0, "les autres ennemis gardent leur régénération")
+
+
 func test_boss_ondes_de_panique_desorientent() -> void:
 	var e := await _engaged(BOSS, Vector2.ZERO, Vector2(200, 0))
 	e.force_skill(&"mall_panic_wave")

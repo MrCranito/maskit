@@ -39,10 +39,25 @@ const TYPES: Array[StringName] = [TYPE_WEAPON, TYPE_AMMO, TYPE_CONSUMABLE, TYPE_
 ## Type weapon : id de l'arme (data/weapons/<weapon_id>.tres) que cet objet représente.
 ## Un objet arme dans le sac peut être équipé ; extrait, il rejoint l'arsenal (Profile).
 @export var weapon_id: StringName = &""
+## Type weapon : affixes tirés au drop de CET exemplaire (objet dupliqué par Affixes.make_item ;
+## vide sur les objets data/items/wpn_*.tres partagés).
+@export var weapon_affixes: Array[StringName] = []
 
 
 func is_weapon() -> bool:
 	return type == TYPE_WEAPON and not String(weapon_id).is_empty()
+
+
+## Exemplaire d'arme représenté (affixes compris), null si ce n'est pas une arme.
+func get_weapon() -> WeaponData:
+	if not is_weapon():
+		return null
+	return Affixes.make_weapon(WeaponCatalog.get_weapon(weapon_id), weapon_affixes)
+
+
+## Clé d'exemplaire (regroupement du sac) : l'id, + les affixes d'une arme.
+func instance_key() -> String:
+	return Affixes.key_for(id, weapon_affixes) if not weapon_affixes.is_empty() else String(id)
 
 
 func is_stackable() -> bool:

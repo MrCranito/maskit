@@ -649,6 +649,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], tubes: Array, rng: Random
 				if dn > 0 and (by_unit[dn] as Mod).roof:
 					continue
 				_cand(groups, up, dn, Vector2i(x2, y2), false)
+	var keys := _sorted_keys(groups)
 	var door_cells := {}
 	var connected := {0: true}
 	var pending: Array[Mod] = []
@@ -659,7 +660,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], tubes: Array, rng: Random
 	while progress and not pending.is_empty():
 		progress = false
 		for m4 in pending.duplicate():
-			var g := _pick(groups, m4.unit, connected, by_unit, door_cells, stairs, false)
+			var g := _pick(groups, keys, m4.unit, connected, by_unit, door_cells, stairs, false)
 			if g.is_empty():
 				continue
 			_door(L, m4, g, door_cells, rng, FloorLayout.DoorState.CLOSED, &"")
@@ -671,7 +672,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], tubes: Array, rng: Random
 	for m5 in closed:
 		if m5.type != FloorLayout.ROOM_SUPER_LOOT:
 			continue
-		var g2 := _pick(groups, m5.unit, connected, by_unit, door_cells, stairs, false)
+		var g2 := _pick(groups, keys, m5.unit, connected, by_unit, door_cells, stairs, false)
 		if g2.is_empty():
 			return false
 		_door(L, m5, g2, door_cells, rng, FloorLayout.DoorState.LOCKED, m5.key)
@@ -680,7 +681,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], tubes: Array, rng: Random
 	for m6 in closed:
 		if m6.type == FloorLayout.ROOM_SUPER_LOOT or m6.role == &"elevator" or rng.randf() >= extra:
 			continue
-		var g3 := _pick(groups, m6.unit, connected, by_unit, door_cells, stairs, true)
+		var g3 := _pick(groups, keys, m6.unit, connected, by_unit, door_cells, stairs, true)
 		if not g3.is_empty():
 			_door(L, m6, g3, door_cells, rng, FloorLayout.DoorState.CLOSED, &"")
 	# Tubes → salles rouges (porte fixe dans le mur ouest/est de la salle rouge).
@@ -704,11 +705,17 @@ static func _cand(groups: Dictionary, a: int, b: int, c: Vector2i, vertical: boo
 	(groups[key] as Array).append([c, vertical])
 
 
-static func _pick(groups: Dictionary, u: int, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
-	var best := {}
-	var best_score := -1.0
+## Clés de `groups` dans l'ordre de parcours de _pick (triées une seule fois par l'appelant :
+## `groups` ne change plus une fois les candidats recensés).
+static func _sorted_keys(groups: Dictionary) -> Array:
 	var keys: Array = groups.keys()
 	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * 1000 + a.y < b.x * 1000 + b.y)
+	return keys
+
+
+static func _pick(groups: Dictionary, keys: Array, u: int, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
+	var best := {}
+	var best_score := -1.0
 	var mu: Mod = by_unit[u]
 	for key: Vector2i in keys:
 		if key.x != u and key.y != u:

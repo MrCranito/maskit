@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="AffixData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/affix_data.gd" id="1_affix"]
+
+[resource]
+script = ExtResource("1_affix")
+id = &"shockwave"
+display_name = "Onde de choc"
+description = "Petite explosion à l'impact ({ratio} % des dégâts)"
+kind = &"shockwave"
+weight = 0.8
+categories = Array[StringName]([&"pistol", &"revolver", &"smg", &"shotgun", &"rifle", &"lmg", &"sniper"])
+color = Color(0.98, 0.92, 0.72, 1)
+ratio = 0.35
+radius = 70.0

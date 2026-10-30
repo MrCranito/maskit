@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="BestiaryData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/bestiary_data.gd" id="1_bdata"]
+
+[resource]
+script = ExtResource("1_bdata")
+world_id = &"carnival"
+display_name = "Carnaval hanté — Le parc maudit"
+enemy_roster = {
+&"boss": {
+&"cv_acrobat": 2.0,
+&"cv_circus_dog": 2.0,
+&"cv_lost_clown": 2.0
+},
+&"combat": {
+&"cv_acrobat": 2.5,
+&"cv_big_plush": 1.0,
+&"cv_circus_dog": 2.5,
+&"cv_ghost_carousel": 1.2,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 1.5
+},
+&"corridor": {
+&"cv_acrobat": 2.0,
+&"cv_circus_dog": 2.5,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 0.45
+},
+&"extraction": {
+&"cv_acrobat": 2.0,
+&"cv_big_plush": 1.2,
+&"cv_circus_dog": 2.0,
+&"cv_ghost_carousel": 1.2,
+&"cv_lost_clown": 2.0,
+&"cv_penumbra": 1.5
+},
+&"loot": {
+&"cv_acrobat": 1.5,
+&"cv_circus_dog": 1.5,
+&"cv_ghost_carousel": 0.36,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 0.45
+},
+&"rest": {
+&"cv_big_plush": 0.3,
+&"cv_lost_clown": 1.0
+},
+&"spawn": {
+&"cv_lost_clown": 1.0
+},
+&"super_loot": {
+&"cv_big_plush": 1.5,
+&"cv_ghost_carousel": 1.5,
+&"cv_penumbra": 1.5
+},
+&"trap": {
+&"cv_acrobat": 2.0,
+&"cv_ghost_carousel": 1.5,
+&"cv_lost_clown": 1.0,
+&"cv_penumbra": 3.0
+}
+}
+elite_kinds = Array[StringName]([&"cv_fairground_being", &"cv_fire_clown"])
+boss_kind = &"cv_circus_king"

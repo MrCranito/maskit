@@ -1,0 +1,135 @@
+{
+  "kind": "ice_elemental",
+  "name": "Élémentaire de glace",
+  "frame_size": [
+    256,
+    256
+  ],
+  "feet_offset": [
+    128,
+    181
+  ],
+  "display_height": 147.7,
+  "world_per_px": 0.576875,
+  "height_px": 103,
+  "head_px": 91,
+  "fps": {
+    "idle": 7,
+    "run": 10,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      155.1,
+      172.9
+    ],
+    "se": [
+      134.9,
+      183.4
+    ],
+    "s": [
+      110.7,
+      180.2
+    ],
+    "sw": [
+      96.6,
+      165.2
+    ],
+    "w": [
+      100.9,
+      147.2
+    ],
+    "nw": [
+      121.1,
+      136.7
+    ],
+    "n": [
+      145.3,
+      140.0
+    ],
+    "ne": [
+      159.4,
+      155.0
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      50,
+      118,
+      197,
+      214
+    ],
+    "se": [
+      50,
+      118,
+      197,
+      214
+    ],
+    "s": [
+      61,
+      108,
+      204,
+      218
+    ],
+    "sw": [
+      61,
+      108,
+      204,
+      218
+    ],
+    "w": [
+      61,
+      108,
+      204,
+      218
+    ],
+    "nw": [
+      59,
+      127,
+      206,
+      235
+    ],
+    "n": [
+      59,
+      127,
+      206,
+      235
+    ],
+    "ne": [
+      52,
+      137,
+      195,
+      231
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_elemental/ice_elemental_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

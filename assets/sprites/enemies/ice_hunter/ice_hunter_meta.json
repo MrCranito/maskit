@@ -1,0 +1,135 @@
+{
+  "kind": "ice_hunter",
+  "name": "Chasseur arctique",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 96,
+  "head_px": 50,
+  "fps": {
+    "idle": 7,
+    "run": 15,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      152.2,
+      65.9
+    ],
+    "se": [
+      146.8,
+      98.8
+    ],
+    "s": [
+      111.6,
+      119.2
+    ],
+    "sw": [
+      67.4,
+      115.2
+    ],
+    "w": [
+      39.8,
+      89.1
+    ],
+    "nw": [
+      45.2,
+      56.2
+    ],
+    "n": [
+      80.4,
+      35.7
+    ],
+    "ne": [
+      124.6,
+      39.8
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      4,
+      90,
+      152,
+      161
+    ],
+    "se": [
+      4,
+      90,
+      152,
+      161
+    ],
+    "s": [
+      40,
+      68,
+      163,
+      167
+    ],
+    "sw": [
+      40,
+      68,
+      163,
+      167
+    ],
+    "w": [
+      40,
+      68,
+      163,
+      167
+    ],
+    "nw": [
+      40,
+      91,
+      188,
+      174
+    ],
+    "n": [
+      40,
+      91,
+      188,
+      174
+    ],
+    "ne": [
+      29,
+      104,
+      152,
+      174
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_hunter/ice_hunter_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

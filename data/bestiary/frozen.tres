@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="BestiaryData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/bestiary_data.gd" id="1_bdata"]
+
+[resource]
+script = ExtResource("1_bdata")
+world_id = &"frozen"
+display_name = "Les Terres gelées — Le désert de glace"
+enemy_roster = {
+&"boss": {
+&"ice_drone": 2.0,
+&"ice_hunter": 1.5,
+&"ice_wolf": 2.0
+},
+&"combat": {
+&"ice_bear": 1.0,
+&"ice_drone": 2.0,
+&"ice_elemental": 1.2,
+&"ice_hunter": 1.5,
+&"ice_spider": 2.0,
+&"ice_wolf": 3.0
+},
+&"corridor": {
+&"ice_drone": 1.0,
+&"ice_spider": 2.0,
+&"ice_wolf": 3.0
+},
+&"extraction": {
+&"ice_bear": 1.0,
+&"ice_drone": 1.5,
+&"ice_elemental": 1.0,
+&"ice_hunter": 2.0,
+&"ice_spider": 1.0,
+&"ice_wolf": 2.0
+},
+&"loot": {
+&"ice_drone": 1.5,
+&"ice_hunter": 0.5,
+&"ice_spider": 2.5,
+&"ice_wolf": 2.0
+},
+&"rest": {
+&"ice_drone": 1.0,
+&"ice_wolf": 1.5
+},
+&"spawn": {
+&"ice_drone": 1.0,
+&"ice_wolf": 2.0
+},
+&"super_loot": {
+&"ice_bear": 1.0,
+&"ice_drone": 1.5,
+&"ice_elemental": 1.5,
+&"ice_hunter": 2.0,
+&"ice_wolf": 1.0
+},
+&"trap": {
+&"ice_drone": 2.0,
+&"ice_elemental": 1.0,
+&"ice_hunter": 0.8,
+&"ice_spider": 3.0,
+&"ice_wolf": 1.0
+}
+}
+elite_kinds = Array[StringName]([&"ice_glacier_guardian", &"ice_eternal_mechanic"])
+boss_kind = &"ice_titan"

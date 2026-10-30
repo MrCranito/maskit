@@ -1,13 +1,17 @@
 class_name OptionsPanel
 extends ModalPanel
 ## Options : volume de la musique, volume des effets (AudioManager), vibrations on/off,
-## économie d'énergie (30 images/s, moins de chauffe et de batterie).
+## images par seconde (Max = fréquence de l'écran jusqu'à 120, 60, ou éco 30 : moins de chauffe).
 ## Les valeurs sont sauvegardées dans SaveManager.data["settings"] (MenuKit.set_setting).
 
 var music_slider: HSlider = null
 var sfx_slider: HSlider = null
 var vibration_toggle: Button = null
-var power_toggle: Button = null
+## Images par seconde (FrameRate) : Max → 60 → éco.
+var fps_button: Button = null
+## Section « Sauvegarde cloud » (CloudSync) : état + compte, bouton Synchroniser.
+var cloud_status_label: Label = null
+var sync_button: Button = null
 
 
 func _init() -> void:
@@ -51,28 +55,58 @@ func _build_body() -> void:
 		MenuKit.vibrate())
 	row.add_child(vibration_toggle)
 
-	# Économie d'énergie : limite à 30 images/s (moins de chauffe sur téléphone).
+	# Images par seconde : Max (fréquence de l'écran, 120 sur écran 120 Hz) → 60 → éco (30).
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 16)
 	body.add_child(row2)
-	var l2 := MenuKit.label("Économie d'énergie", 26, MenuKit.TEXT, MenuKit.nunito(800))
+	var l2 := MenuKit.label("Images par seconde", 26, MenuKit.TEXT, MenuKit.nunito(800))
 	l2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row2.add_child(l2)
-	power_toggle = MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
-	power_toggle.toggle_mode = true
-	power_toggle.button_pressed = bool(MenuKit.get_setting(&"power_saving", false))
-	power_toggle.text = "30 i/s" if power_toggle.button_pressed else "60 i/s"
-	var on2 := MenuKit.panel_style(Color(0.18, 0.5, 0.3), Color(0.6, 1.0, 0.7, 0.8), 16, 2, 10)
-	on2.border_width_bottom = 5
-	power_toggle.add_theme_stylebox_override("pressed", on2)
-	power_toggle.add_theme_stylebox_override("hover_pressed", on2)
-	power_toggle.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
-	power_toggle.toggled.connect(func(on: bool) -> void:
-		power_toggle.text = "30 i/s" if on else "60 i/s"
-		MenuKit.set_setting(&"power_saving", on)
-		GameState.apply_power_saving(on)
+	fps_button = MenuKit.button(FrameRate.label_for(FrameRate.saved_mode()), MenuKit.Style.SECONDARY, 22, Vector2(240, 60))
+	fps_button.pressed.connect(func() -> void:
+		var mode := FrameRate.next_mode(FrameRate.saved_mode())
+		FrameRate.apply(mode, true)
+		fps_button.text = FrameRate.label_for(mode)
 		MenuKit.sfx(&"toggle"))
-	row2.add_child(power_toggle)
+	row2.add_child(fps_button)
+	_build_account()
+
+
+## Compte et sauvegarde cloud (CloudSync) : état, identifiant du compte invité, bouton Synchroniser.
+## La liaison Apple / Google viendra ici.
+func _build_account() -> void:
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	if cs == null or cs.get("status") == &"disabled":
+		return
+	var sep := ColorRect.new()
+	sep.color = Color(1, 1, 1, 0.12)
+	sep.custom_minimum_size = Vector2(0, 1)
+	body.add_child(sep)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	body.add_child(row)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 2)
+	row.add_child(col)
+	col.add_child(MenuKit.label("Sauvegarde cloud", 26, MenuKit.TEXT, MenuKit.nunito(800)))
+	cloud_status_label = MenuKit.label("", 16, MenuKit.TEXT_DIM, MenuKit.nunito(600))
+	col.add_child(cloud_status_label)
+	sync_button = MenuKit.button("Synchroniser", MenuKit.Style.SECONDARY, 22, Vector2(240, 60))
+	sync_button.pressed.connect(func() -> void:
+		MenuKit.sfx(&"click")
+		cs.call("sync"))
+	row.add_child(sync_button)
+	cs.connect(&"status_changed", func(_s: StringName) -> void: _refresh_account(cs))
+	_refresh_account(cs)
+
+
+func _refresh_account(cs: Node) -> void:
+	if not is_instance_valid(cloud_status_label):
+		return
+	var who := ("Compte invité %s" if bool(cs.get("is_anonymous")) else "Compte lié %s") % str(cs.call("short_id"))
+	cloud_status_label.text = "%s · %s" % [str(cs.call("status_label", cs.get("status"))), who]
+	sync_button.disabled = cs.get("status") == &"syncing"
 
 
 func _slider_row(text: String, value: float, on_change: Callable) -> HSlider:

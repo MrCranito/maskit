@@ -1,0 +1,135 @@
+{
+  "kind": "cv_lost_clown",
+  "name": "Clown égaré",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 97,
+  "head_px": 54,
+  "fps": {
+    "idle": 7,
+    "run": 11,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      130.3,
+      99.7
+    ],
+    "se": [
+      124.9,
+      119.2
+    ],
+    "s": [
+      102.6,
+      130.2
+    ],
+    "sw": [
+      76.4,
+      126.2
+    ],
+    "w": [
+      61.7,
+      109.6
+    ],
+    "nw": [
+      67.1,
+      90.1
+    ],
+    "n": [
+      89.4,
+      79.2
+    ],
+    "ne": [
+      115.6,
+      83.1
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      31,
+      93,
+      155,
+      160
+    ],
+    "se": [
+      31,
+      93,
+      155,
+      160
+    ],
+    "s": [
+      42,
+      85,
+      161,
+      165
+    ],
+    "sw": [
+      42,
+      85,
+      161,
+      165
+    ],
+    "w": [
+      42,
+      85,
+      161,
+      165
+    ],
+    "nw": [
+      37,
+      88,
+      161,
+      171
+    ],
+    "n": [
+      37,
+      88,
+      161,
+      171
+    ],
+    "ne": [
+      31,
+      99,
+      150,
+      168
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/cv_lost_clown/cv_lost_clown_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

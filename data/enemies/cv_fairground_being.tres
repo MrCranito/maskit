@@ -1,0 +1,47 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_fairground_being"
+display_name = "L'Être forain"
+max_hp = 560.0
+move_speed = 150.0
+body_radius = 24.0
+detection_radius = 480.0
+detection_angle_deg = 200.0
+lose_sight_time = 6.0
+alert_duration = 0.4
+alert_neighbors_radius = 520.0
+patrol_radius = 90.0
+sight_gain = 2.2
+hearing_radius = 520.0
+hearing_gain = 2.4
+awareness_decay = 0.06
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 70.0
+attack_damage = 14.0
+attack_cooldown = 1.5
+attack_windup = 0.5
+tactic = &"elite"
+use_cover = false
+can_flank = true
+strafe_ratio = 0.6
+attack_pattern = &"lunge"
+lunge_distance = 120.0
+lunge_speed = 520.0
+combo_hits = 3
+combo_interval = 0.24
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.25
+phase2_cooldown_mult = 0.7
+stagger_ratio = 0.0
+stagger_time = 0.3
+knockback = 20.0
+ground_drop_chance = 1.0
+corpse_name = "Dépouille de l'Être forain"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"cv_rally"}, {"id": &"cv_call", "count": 2.0, "max_total": 4.0, "kinds": ["cv_lost_clown", "cv_circus_dog", "cv_acrobat", "cv_penumbra"], "shout": "EN PISTE, MES CRÉATURES !"}, {"id": &"charge", "cooldown": 10.0, "windup": 0.8, "min_range": 180.0, "max_range": 420.0, "speed": 480.0, "damage": 18.0, "status": "knockdown", "status_time": 0.6, "priority": 1.0}]

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AffixData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/affix_data.gd" id="1_affix"]
+
+[resource]
+script = ExtResource("1_affix")
+id = &"multishot"
+display_name = "Multi-tir"
+description = "+{count} projectile par tir ({ratio} des dégâts)"
+kind = &"multishot"
+weight = 0.7
+categories = Array[StringName]([&"pistol", &"revolver", &"smg", &"shotgun", &"rifle", &"lmg", &"sniper"])
+color = Color(0.55, 1, 0.75, 1)
+count = 1
+ratio = 0.5
+spread_deg = 8.0

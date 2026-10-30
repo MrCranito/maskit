@@ -179,7 +179,7 @@ static func roll_enemy_loot(data: EnemyData, rng: RandomNumberGenerator, difficu
 				var id := LootRoller.pick_weighted(weights, rng)
 				weights.erase(id)
 				var it := LootDB.get_item(id)
-				ground.append({"item": it, "count": rng.randi_range(maxi(it.drop_min, 1), maxi(it.drop_max, it.drop_min))})
+				ground.append({"item": Affixes.roll_item(it, rng), "count": rng.randi_range(maxi(it.drop_min, 1), maxi(it.drop_max, it.drop_min))})
 	LootRoller.sort_entries(ground)
 	return {"corpse": corpse, "ground": ground}
 

@@ -95,39 +95,51 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	res.layout = L
 	var mods: Array[Mod] = []
 	var used := {}
-	var belt := rng.randi_range(13, 15)   # bord intérieur des ailes (x du mur côté galerie)
-	# 1. Sols ouverts : galerie, hall, parking.
-	var gal := Rect2i(belt + 1, GAL.position.y, W - 2 * (belt + 1), GAL.size.y)
-	L.fill_rect(gal, T.STREET)
-	L.fill_rect(Rect2i(HALL.position.x + 1, HALL.position.y, HALL.size.x - 2, HALL.size.y - 1), T.STREET)
-	L.fill_rect(PARKING, T.STREET)
-	# Portes vitrées du hall vers le parking.
-	L.fill_rect(Rect2i(28, HALL.end.y - 1, 10, 1), T.STREET)
+	# (Refonte maquette, retour utilisateur) Boutiques de tailles très variées, blocs irréguliers
+	# qui avancent dans la galerie, passages de service et renfoncements entre les blocs, contour
+	# extérieur en escalier (non rectangulaire). Ordre : éléments centraux fixes (atrium,
+	# escalators et leurs blocs), puis rangée nord, ailes, coins et rangée sud, chaque boutique
+	# raccourcie jusqu'à laisser au moins GAP cases de galerie devant elle.
+	var core: Array[Rect2i] = [ATRIUM]
+	for e0: Rect2i in ESC_N + ESC_S:
+		core.append(e0)
+	var passages: Array[Rect2i] = []
 
-	# 2. Ceinture de boutiques.
-	# Ailes ouest / est : découpe verticale (hauteur 7 à 11), porte sur le mur côté galerie.
+	# 1. Blocs centraux : boutiques adossées aux escalators.
+	var en0: Rect2i = ESC_N[0]
+	var en1: Rect2i = ESC_N[1]
 	for side in 2:
-		var x0 := 1
-		var bw := belt
-		var ys := _split(2, GAL.end.y, 7, 11, rng)
-		for i in ys.size():
-			var r := Rect2i(x0, ys[i].x, bw, ys[i].y)
-			if side == 1:
-				r = mirror_rect(r)
-			var m := _shop(r, rng, used)
-			m.slot = ("belt_w" if side == 0 else "belt_e")
-			m.facade = Vector2i.RIGHT if side == 0 else Vector2i.LEFT
-			if i == 0:
-				m.role = &"service"
-				m.arch = &"dock"
-				m.type = FloorLayout.ROOM_EXTRACTION
-				m.name = "%s %s" % [EXTRA_NAMES[&"dock"], "ouest" if side == 0 else "est"]
-				m.slot = "dock_" + ("w" if side == 0 else "e")
-			else:
-				m.roof = rng.randf() < 0.12
-			mods.append(m)
-	# Rangée nord (entre les ailes) avec le cinéma en saillie au milieu.
-	var cine := Rect2i(26, 1, 14, 13)
+		var w := rng.randi_range(7, 11)
+		var h := rng.randi_range(8, 13)
+		var y := rng.randi_range(19, 23)
+		var r := Rect2i(en0.position.x - w + 1, y, w, h) if side == 0 else Rect2i(en1.end.x - 1, y, w, h)
+		var m := _shop(r, rng, used)
+		m.slot = "island"
+		m.facade = Vector2i.LEFT if side == 0 else Vector2i.RIGHT
+		mods.append(m)
+		core.append(r)
+	for side2 in 2:
+		var es: Rect2i = ESC_S[side2]
+		var y2 := rng.randi_range(70, 76)
+		var yb := es.end.y - 1
+		# un ou deux commerces empilés le long de l'escalator
+		var w2 := rng.randi_range(7, 10)
+		var cut := y2 + rng.randi_range(6, 9) if yb - y2 >= 14 and rng.randf() < 0.6 else yb
+		for part in ([Vector2i(y2, cut), Vector2i(cut, yb)] if cut < yb else [Vector2i(y2, yb)]):
+			var r2 := Rect2i(es.position.x - w2 + 1, part.x, w2, part.y - part.x + 1) if side2 == 0 \
+				else Rect2i(es.end.x - 1, part.x, w2, part.y - part.x + 1)
+			if r2.size.y < 7:
+				continue
+			var m2 := _shop(r2, rng, used)
+			m2.slot = "island"
+			m2.facade = Vector2i.LEFT if side2 == 0 else Vector2i.RIGHT
+			mods.append(m2)
+			core.append(r2)
+
+	# 2. Rangée nord : cinéma en saillie (plus haut), boutiques de largeurs variées, haut et bas
+	# en escalier ; passages de service occasionnels vers le mur nord.
+	var cw := rng.randi_range(14, 18)
+	var cine := Rect2i(33 - cw / 2, 1, cw, rng.randi_range(12, 15))
 	var cm := Mod.new()
 	cm.rect = cine
 	cm.inner = cine.grow(-1)
@@ -139,66 +151,33 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	cm.slot = "cinema"
 	cm.facade = Vector2i.DOWN
 	mods.append(cm)
-	for seg: Vector2i in [Vector2i(belt, cine.position.x), Vector2i(cine.end.x - 1, W - 1 - belt)]:
-		var xs := _split(seg.x, seg.y, 6, 9, rng)
-		for xx: Vector2i in xs:
-			var m2 := _shop(Rect2i(xx.x, 2, xx.y, 12), rng, used)
-			m2.slot = "row_n"
-			m2.facade = Vector2i.DOWN
-			m2.roof = rng.randf() < 0.25
-			mods.append(m2)
-	# Rangée sud : boutiques de part et d'autre du hall (ouvertes, porte au nord).
-	for seg2: Vector2i in [Vector2i(belt, HALL.position.x), Vector2i(HALL.end.x - 1, W - 1 - belt)]:
-		var xs2 := _split(seg2.x, seg2.y, 6, 9, rng)
-		for xx2: Vector2i in xs2:
-			var m3 := _shop(Rect2i(xx2.x, GAL.end.y, xx2.y, HALL.end.y - GAL.end.y), rng, used)
-			m3.slot = "row_s"
-			m3.facade = Vector2i.UP
-			mods.append(m3)
-	# Coins sud-ouest / sud-est (sous les ailes) : réserves ouvertes.
-	for side2 in 2:
-		var cr := Rect2i(1, GAL.end.y, belt, HALL.end.y - GAL.end.y)
-		if side2 == 1:
-			cr = mirror_rect(cr)
-		var m4 := _shop(cr, rng, used)
-		m4.role = &"stockroom"
-		m4.arch = &"service"
-		m4.type = FloorLayout.ROOM_LOOT
-		m4.name = "Réserve " + ("ouest" if side2 == 0 else "est")
-		m4.slot = "corner_s"
-		mods.append(m4)
-	# Îlots de boutiques dans la galerie (ouverts, vus en coupe comme sur la maquette).
-	for i2 in ISLANDS.size():
-		var ir: Rect2i = ISLANDS[i2]
-		var m5 := _shop(ir, rng, used)
-		m5.slot = "island"
-		m5.roof = false
-		mods.append(m5)
-	# Supérette : la plus grande boutique de la rangée nord.
-	var big: Mod = null
-	for mm in mods:
-		if mm.slot == "row_n" and (big == null or mm.inner.get_area() > big.inner.get_area()):
-			big = mm
+	# 3. Ailes ouest / est (générées séparément : plan asymétrique comme la maquette).
+	for side3 in 2:
+		_belt(L, mods, used, rng, side3, core, passages)
+	for seg: Array in [[0, cine.position.x], [1, cine.end.x - 1]]:
+		_north_row(mods, used, rng, int(seg[0]), int(seg[1]), core, passages)
+	# 4. Coins sud (réserves) et rangée sud de part et d'autre du hall.
+	for side4 in 2:
+		_south_row(mods, used, rng, side4, core)
+	# Grandes enseignes : supérette = la plus grande du nord ; arcade = la plus grande des ailes ;
+	# café (food court) = la plus grande du sud.
+	var big: Mod = _largest(mods, "row_n")
 	if big != null:
 		big.role = &"supermarket"
 		big.arch = &"supermarket"
 		big.type = FloorLayout.ROOM_LOOT
 		big.name = "Supérette Primeur"
-	# Café à enseigne néon : une boutique de la rangée sud ; arcade : une boutique d'aile.
-	var row_s: Array[Mod] = []
-	var belts: Array[Mod] = []
-	for m6 in mods:
-		if m6.slot == "row_s":
-			row_s.append(m6)
-		elif m6.slot.begins_with("belt_"):
-			belts.append(m6)
-	if not row_s.is_empty():
-		var cafe: Mod = row_s[rng.randi_range(0, row_s.size() - 1)]
+	var cafe: Mod = _largest(mods, "row_s")
+	if cafe != null:
 		cafe.role = &"shop_cafe"
 		cafe.arch = &"cafe"
 		cafe.type = FloorLayout.ROOM_REST
-		cafe.name = "Café des Arcades"
-	var arc: Mod = belts[rng.randi_range(0, belts.size() - 1)]
+		cafe.name = "Food court des Arcades"
+	var belts: Array[Mod] = []
+	for m6 in mods:
+		if m6.slot.begins_with("belt_"):
+			belts.append(m6)
+	var arc: Mod = _largest(mods, "belt_")
 	arc.role = &"arcade"
 	arc.arch = &"arcade"
 	arc.type = FloorLayout.ROOM_COMBAT
@@ -207,8 +186,10 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	# Bijouterie scellée : une boutique d'aile (porte unique verrouillée sur la galerie).
 	var jcands: Array[Mod] = []
 	for b2 in belts:
-		if b2 != arc and b2.rect.position.y > GAL.position.y + 1:
+		if b2 != arc and b2.rect.position.y > GAL.position.y + 1 and b2.inner.size.x >= 5 and b2.inner.size.y >= 5:
 			jcands.append(b2)
+	if jcands.is_empty():
+		return null
 	var jw: Mod = jcands[rng.randi_range(0, jcands.size() - 1)]
 	jw.role = &"shop_jewelry"
 	jw.arch = &"jewelry"
@@ -217,7 +198,13 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	jw.name = "Bijouterie Éclat d'Or"
 	jw.roof = true
 
-	# 3. Creusement des boutiques.
+	# 5. Sols : galerie (cases de l'enveloppe hors boutiques), passages, hall, parking.
+	var gal := Rect2i(1, 1, W - 2, GAL.end.y - 1)
+	_fill_gallery(L, mods, passages)
+	L.fill_rect(Rect2i(HALL.position.x + 1, HALL.position.y, HALL.size.x - 2, HALL.size.y - 1), T.STREET)
+	L.fill_rect(PARKING, T.STREET)
+	L.fill_rect(Rect2i(28, HALL.end.y - 1, 10, 1), T.STREET)
+	# 6. Creusement des boutiques.
 	for m7 in mods:
 		L.fill_rect(m7.rect, T.WALL)
 	for m8 in mods:
@@ -225,13 +212,13 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	# Obstacles de la galerie : jardinières de l'atrium (4 ouvertures), escalators.
 	var a := ATRIUM
 	for x in range(a.position.x, a.end.x):
-		for y in [a.position.y, a.end.y - 1]:
+		for y3 in [a.position.y, a.end.y - 1]:
 			if absi(x * 2 + 1 - (a.position.x + a.end.x)) > 4:
-				L.set_tile(Vector2i(x, y), T.WALL)
-	for y2 in range(a.position.y, a.end.y):
+				L.set_tile(Vector2i(x, y3), T.WALL)
+	for y4 in range(a.position.y, a.end.y):
 		for x2 in [a.position.x, a.end.x - 1]:
-			if absi(y2 * 2 + 1 - (a.position.y + a.end.y)) > 4:
-				L.set_tile(Vector2i(x2, y2), T.WALL)
+			if absi(y4 * 2 + 1 - (a.position.y + a.end.y)) > 4:
+				L.set_tile(Vector2i(x2, y4), T.WALL)
 	for e: Rect2i in ESC_N + ESC_S:
 		L.fill_rect(e, T.WALL)
 	for t: Rect2i in TREES:
@@ -288,6 +275,239 @@ static func _try(rng: RandomNumberGenerator, targets: Dictionary) -> Result:
 	res.mods = mods
 	_contract(L, mods, rng)
 	return res
+
+
+## Largeur minimale de galerie laissée devant une boutique (cases).
+const GAP := 3
+## Bas de la ceinture (rangée sud) : dernière rangée de mur des boutiques sud.
+const SOUTH_Y := 105
+
+
+## Rectangle libre : pas de chevauchement (hors murs partagés) avec les boutiques, le hall et
+## les passages ; au moins GAP cases avec les éléments centraux.
+static func _fits(r: Rect2i, mods: Array[Mod], core: Array[Rect2i], passages: Array[Rect2i]) -> bool:
+	if r.position.x < 1 or r.position.y < 1 or r.end.x > W - 1 or r.end.y > SOUTH_Y + 1:
+		return false
+	if r.size.x < 7 or r.size.y < 7:
+		return false
+	for m in mods:
+		if r.grow(-1).intersects(m.rect) or m.inner.intersects(r):
+			return false
+	if r.grow(-1).intersects(HALL) or HALL.grow(-1).intersects(r):
+		return false
+	for c in core:
+		if r.grow(GAP).intersects(c):
+			return false
+	for p in passages:
+		if r.intersects(p):
+			return false
+	return true
+
+
+static func _mir(r: Rect2i, side: int) -> Rect2i:
+	return mirror_rect(r) if side == 1 else r
+
+
+## Taille tirée par classe : petite boutique / kiosque, moyenne, grande enseigne.
+static func _size_class(rng: RandomNumberGenerator, small: Vector2i, medium: Vector2i, large: Vector2i) -> int:
+	var roll := rng.randf()
+	if roll < 0.3:
+		return rng.randi_range(small.x, small.y)
+	if roll < 0.78:
+		return rng.randi_range(medium.x, medium.y)
+	return rng.randi_range(large.x, large.y)
+
+
+## Aile ouest (side 0) ou est (side 1, en miroir) : boutiques empilées de hauteurs et de
+## profondeurs variées (le mur extérieur et la façade sur la galerie avancent ou reculent),
+## passages de service vers le mur extérieur. Renvoie la rangée du dernier mur.
+static func _belt(L: FloorLayout, mods: Array[Mod], used: Dictionary, rng: RandomNumberGenerator, side: int,
+		core: Array[Rect2i], passages: Array[Rect2i]) -> int:
+	var y := 2
+	var y_end := rng.randi_range(84, 89)
+	var first := true
+	var last_pass := true
+	while y < y_end:
+		if not first and not last_pass and rng.randf() < 0.14 and y < y_end - 8:
+			passages.append(_mir(Rect2i(2, y + 1, 26, 3), side))
+			y += 4
+			last_pass = true
+			continue
+		var h: int
+		var depth: int
+		var x0: int
+		if first:
+			h = rng.randi_range(8, 10)
+			depth = rng.randi_range(12, 14)
+			x0 = 1
+		else:
+			h = _size_class(rng, Vector2i(7, 7), Vector2i(8, 11), Vector2i(13, 17))
+			depth = clampi(h + rng.randi_range(-1, 4), 8, 19)
+			x0 = rng.randi_range(1, 3) if h >= 13 else rng.randi_range(1, 6)
+		if y + h - 1 > y_end + 3:
+			h = maxi(7, y_end + 3 - y + 1)
+		var r := Rect2i(x0, y, depth, h)
+		while depth > 7 and not _fits(_mir(r, side), mods, core, passages):
+			depth -= 1
+			r = Rect2i(x0, y, depth, h)
+		if not _fits(_mir(r, side), mods, core, passages):
+			passages.append(_mir(Rect2i(2, y + 1, 26, 3), side))
+			y += 4
+			last_pass = true
+			continue
+		var m := _shop(_mir(r, side), rng, used)
+		m.slot = ("belt_w" if side == 0 else "belt_e")
+		m.facade = Vector2i.RIGHT if side == 0 else Vector2i.LEFT
+		if first:
+			m.role = &"service"
+			m.arch = &"dock"
+			m.type = FloorLayout.ROOM_EXTRACTION
+			m.name = "%s %s" % [EXTRA_NAMES[&"dock"], "ouest" if side == 0 else "est"]
+			m.slot = "dock_" + ("w" if side == 0 else "e")
+		else:
+			m.roof = rng.randf() < 0.06
+		mods.append(m)
+		y += h - 1
+		first = false
+		last_pass = false
+	L.set_meta(&"_belt_end_%d" % side, y)
+	return y
+
+
+## Rangée nord (d'un côté du cinéma) : largeurs, hauts et bas variés ; passages vers le nord.
+static func _north_row(mods: Array[Mod], used: Dictionary, rng: RandomNumberGenerator, side: int, xlim_real: int,
+		core: Array[Rect2i], passages: Array[Rect2i]) -> void:
+	# en coordonnées « ouest » : le mur du cinéma est en xlim
+	var xlim := xlim_real if side == 0 else W - 1 - xlim_real
+	var x := 1
+	var guard := 0
+	while x < xlim - 6 and guard < 80:
+		guard += 1
+		var y0 := rng.randi_range(1, 5)
+		var y1 := rng.randi_range(11, 16)
+		var w := _size_class(rng, Vector2i(7, 7), Vector2i(8, 11), Vector2i(13, 17))
+		if xlim - (x + w - 1) < 7:
+			w = xlim - x + 1
+		var r := Rect2i(x, y0, w, y1 - y0 + 1)
+		if not _fits(_mir(r, side), mods, core, passages):
+			# collé au quai / à l'aile : on décale (le creux devient un renfoncement muré)
+			var r2 := Rect2i(x, y0, mini(w, 9), y1 - y0 + 1)
+			if not _fits(_mir(r2, side), mods, core, passages):
+				x += 1
+				continue
+			r = r2
+		var m := _shop(_mir(r, side), rng, used)
+		m.slot = "row_n"
+		m.facade = Vector2i.DOWN
+		m.roof = rng.randf() < 0.1
+		mods.append(m)
+		x = r.end.x - 1
+		if xlim - x > 12 and rng.randf() < 0.18:
+			passages.append(_mir(Rect2i(x + 1, 2, 3, 18), side))
+			x += 4
+
+
+## Coin sud (réserve) puis boutiques de la rangée sud jusqu'au hall, hauts en escalier.
+static func _south_row(mods: Array[Mod], used: Dictionary, rng: RandomNumberGenerator, side: int,
+		core: Array[Rect2i]) -> void:
+	var none: Array[Rect2i] = []
+	var yb := 0
+	for m0 in mods:
+		if m0.slot == ("belt_w" if side == 0 else "belt_e") or m0.slot == "dock_" + ("w" if side == 0 else "e"):
+			yb = maxi(yb, m0.rect.end.y - 1)
+	var x0 := rng.randi_range(1, 3)
+	var d := rng.randi_range(10, 14)
+	var cr := Rect2i(x0, yb, d, SOUTH_Y - yb + 1)
+	while d > 7 and not _fits(_mir(cr, side), mods, core, none):
+		d -= 1
+		cr = Rect2i(x0, yb, d, SOUTH_Y - yb + 1)
+	var x := 1
+	if _fits(_mir(cr, side), mods, core, none):
+		var m4 := _shop(_mir(cr, side), rng, used)
+		m4.role = &"stockroom"
+		m4.arch = &"service"
+		m4.type = FloorLayout.ROOM_LOOT
+		m4.name = "Réserve " + ("ouest" if side == 0 else "est")
+		m4.slot = "corner_s"
+		mods.append(m4)
+		x = cr.end.x - 1
+	var xlim := HALL.position.x
+	var guard := 0
+	while x < xlim - 6 and guard < 80:
+		guard += 1
+		var w := _size_class(rng, Vector2i(7, 7), Vector2i(8, 10), Vector2i(12, 16))
+		if xlim - (x + w - 1) < 7:
+			w = xlim - x + 1
+		var placed := false
+		for y0 in [rng.randi_range(89, 95), 93, 96, 98]:
+			var r := Rect2i(x, y0, w, SOUTH_Y - y0 + 1)
+			if _fits(_mir(r, side), mods, core, none):
+				var m3 := _shop(_mir(r, side), rng, used)
+				m3.slot = "row_s"
+				m3.facade = Vector2i.UP
+				mods.append(m3)
+				x = r.end.x - 1
+				placed = true
+				break
+		if not placed:
+			x += 1
+
+
+static func _largest(mods: Array[Mod], prefix: String) -> Mod:
+	var best: Mod = null
+	for m in mods:
+		if not m.slot.begins_with(prefix) or m.role == &"service" or m.role == &"stockroom":
+			continue
+		if best == null or m.inner.get_area() > best.inner.get_area():
+			best = m
+	return best
+
+
+## Galerie : cases de l'enveloppe du bâtiment hors boutiques. Une case est dans l'enveloppe si
+## une boutique la borde à l'ouest, à l'est ET au nord (sinon c'est un creux extérieur du contour
+## en escalier, laissé vide), ou si elle appartient à un passage de service.
+static func _fill_gallery(L: FloorLayout, mods: Array[Mod], passages: Array[Rect2i]) -> void:
+	var inmod := PackedByteArray()
+	inmod.resize(W * H)
+	var wmin := PackedInt32Array()
+	var emax := PackedInt32Array()
+	var nmin := PackedInt32Array()
+	wmin.resize(H)
+	emax.resize(H)
+	nmin.resize(W)
+	wmin.fill(1 << 20)
+	emax.fill(-1)
+	nmin.fill(1 << 20)
+	for m in mods:
+		var r := m.rect
+		for y in range(r.position.y, r.end.y):
+			wmin[y] = mini(wmin[y], r.position.x)
+			emax[y] = maxi(emax[y], r.end.x - 1)
+			for x in range(r.position.x, r.end.x):
+				inmod[y * W + x] = 1
+		for x2 in range(r.position.x, r.end.x):
+			nmin[x2] = mini(nmin[x2], r.position.y)
+	# les passages de service bordent aussi la galerie (sinon la rangée face à un passage
+	# serait prise pour un creux extérieur)
+	for p0 in passages:
+		for y5 in range(p0.position.y, p0.end.y):
+			wmin[y5] = mini(wmin[y5], p0.position.x - 1)
+			emax[y5] = maxi(emax[y5], p0.end.x)
+		for x5 in range(p0.position.x, p0.end.x):
+			nmin[x5] = mini(nmin[x5], p0.position.y - 1)
+	for y2 in range(2, GAL.end.y):
+		for x3 in range(2, W - 2):
+			if inmod[y2 * W + x3] == 1:
+				continue
+			var c := Vector2i(x3, y2)
+			var ok := x3 > wmin[y2] and x3 < emax[y2] and y2 > nmin[x3]
+			if not ok:
+				for p in passages:
+					if p.has_point(c):
+						ok = true
+						break
+			if ok:
+				L.set_tile(c, T.STREET)
 
 
 static func _shop(r: Rect2i, rng: RandomNumberGenerator, used: Dictionary) -> Mod:
@@ -403,6 +623,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 				if dn == 0 and y2 + 1 >= PARKING.position.y:
 					continue
 				_cand(groups, up, dn, Vector2i(x2, y2), false)
+	var keys := _sorted_keys(groups)
 	var door_cells := {}
 	var connected := {0: true}
 	var pending: Array[Mod] = []
@@ -413,7 +634,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 	while progress and not pending.is_empty():
 		progress = false
 		for m3 in pending.duplicate():
-			var g := _pick(groups, m3, connected, by_unit, door_cells, stairs, false)
+			var g := _pick(groups, keys, m3, connected, by_unit, door_cells, stairs, false)
 			if g.is_empty():
 				continue
 			_door(L, m3, g, door_cells, rng, _shutter(rng), &"")
@@ -425,7 +646,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 	for m4 in mods:
 		if m4.type != FloorLayout.ROOM_SUPER_LOOT:
 			continue
-		var g2 := _pick(groups, m4, connected, by_unit, door_cells, stairs, false)
+		var g2 := _pick(groups, keys, m4, connected, by_unit, door_cells, stairs, false)
 		if g2.is_empty():
 			return false
 		_door(L, m4, g2, door_cells, rng, DS.LOCKED, m4.key)
@@ -443,12 +664,18 @@ static func _cand(groups: Dictionary, a: int, b: int, c: Vector2i, vertical: boo
 	(groups[key] as Array).append([c, vertical])
 
 
-static func _pick(groups: Dictionary, mu: Mod, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
+## Clés de `groups` dans l'ordre de parcours de _pick (triées une seule fois par _connect :
+## `groups` ne change plus une fois les candidats recensés).
+static func _sorted_keys(groups: Dictionary) -> Array:
+	var keys: Array = groups.keys()
+	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * 1000 + a.y < b.x * 1000 + b.y)
+	return keys
+
+
+static func _pick(groups: Dictionary, keys: Array, mu: Mod, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
 	var u := mu.unit
 	var best := {}
 	var best_score := -1.0
-	var keys: Array = groups.keys()
-	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * 1000 + a.y < b.x * 1000 + b.y)
 	for key: Vector2i in keys:
 		if key.x != u and key.y != u:
 			continue
@@ -506,20 +733,58 @@ static func _door(L: FloorLayout, m: Mod, g: Dictionary, door_cells: Dictionary,
 static func _validate(L: FloorLayout, mods: Array[Mod]) -> bool:
 	if not FloorLayout.is_walkable_tile(L.get_tile(L.player_spawn)):
 		return false
-	var reach := L.flood_reachable(L.player_spawn, true)
-	for y in H:
-		for x in W:
-			if FloorLayout.is_walkable_tile(L.get_tile(Vector2i(x, y))) and not reach.has(Vector2i(x, y)):
-				return false
-	var open_reach := L.flood_reachable(L.player_spawn, false)
+	var reach := _flood(L, true)
+	var tiles := L.tiles
+	for j in W * H:
+		if reach[j] == 0 and FloorLayout.is_walkable_tile(tiles[j]):
+			return false
+	var open_reach := _flood(L, false)
 	for m in mods:
 		if m.type != FloorLayout.ROOM_SUPER_LOOT:
 			continue
 		for y2 in range(m.inner.position.y, m.inner.end.y):
 			for x2 in range(m.inner.position.x, m.inner.end.x):
-				if open_reach.has(Vector2i(x2, y2)):
+				if open_reach[y2 * W + x2] == 1:
 					return false
 	return L.extraction_cells.size() >= 2
+
+
+## Cases atteintes depuis l'apparition (1 = atteinte), même règle que FloorLayout.flood_reachable
+## (4-voisinage, cases marchables ; sans `through_locked`, une porte verrouillée arrête la
+## propagation) mais sur une grille d'octets : _validate est appelé à chaque génération du
+## rez-de-chaussée et le parcours par dictionnaire en était l'étape la plus lente.
+static func _flood(L: FloorLayout, through_locked: bool) -> PackedByteArray:
+	var tiles := L.tiles
+	var stop := PackedByteArray()
+	stop.resize(W * H)
+	for j in W * H:
+		if not FloorLayout.is_walkable_tile(tiles[j]):
+			stop[j] = 1
+	if not through_locked:
+		# Comme get_door_at : la première porte enregistrée sur la case fait foi.
+		var first := {}
+		for d in L.doors:
+			if not first.has(d.cell):
+				first[d.cell] = d
+		for cell: Vector2i in first:
+			if L.in_bounds(cell) and tiles[cell.y * W + cell.x] == T.DOOR and (first[cell] as FloorLayout.Door).state == DS.LOCKED:
+				stop[cell.y * W + cell.x] = 1
+	var seen := PackedByteArray()
+	seen.resize(W * H)
+	var s := L.player_spawn
+	var start := s.y * W + s.x
+	seen[start] = 1
+	var stack := PackedInt32Array([start])
+	while not stack.is_empty():
+		var c := stack[stack.size() - 1]
+		stack.resize(stack.size() - 1)
+		var cx := c % W
+		for n: int in [c - 1 if cx > 0 else -1, c + 1 if cx < W - 1 else -1, c - W, c + W]:
+			if n < 0 or n >= W * H or seen[n] == 1 or stop[n] == 1:
+				continue
+			seen[n] = 1
+			stack.append(n)
+	return seen
 
 
 # --- Contrat de rendu ------------------------------------------------------------------

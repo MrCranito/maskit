@@ -17,6 +17,10 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+concurrency:
+  group: export-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   GODOT_VERSION: "4.7.2"
   EXPORT_NAME: raidersgo
@@ -46,9 +50,7 @@ jobs:
             file: index.html
     steps:
       - name: Récupérer le dépôt
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: actions/checkout@v7
 
       - name: Installer les templates d'export
         # L'image place les templates dans /root ; GitHub Actions utilise HOME=/github/home.
@@ -74,7 +76,7 @@ jobs:
           zip -r -q "../../${EXPORT_NAME}-${{ matrix.slug }}-${GITHUB_REF_NAME}.zip" .
 
       - name: Publier l'artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}
           path: ${{ env.EXPORT_NAME }}-${{ matrix.slug }}-*.zip
@@ -92,9 +94,7 @@ jobs:
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
     steps:
       - name: Récupérer le dépôt
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: actions/checkout@v7
 
       - name: Installer templates et réglages éditeur
         run: |
@@ -150,7 +150,7 @@ jobs:
           zip -r -q "../../${EXPORT_NAME}-android-${GITHUB_REF_NAME}.zip" .
 
       - name: Publier l'artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.EXPORT_NAME }}-android
           path: ${{ env.EXPORT_NAME }}-android-*.zip
@@ -166,7 +166,7 @@ jobs:
       contents: write
     steps:
       - name: Récupérer les artefacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true

@@ -67,7 +67,7 @@ func _catalog() -> Array[WeaponData]:
 func test_catalogue_exact_de_la_planche() -> void:
 	WeaponCatalog.reload()
 	var all := _catalog()
-	assert_eq(all.size(), 24, "18 armes + 5 équipements + le leurre")
+	assert_eq(all.size(), 36, "18 armes de la planche + 12 de la phase 8 + 5 équipements + le leurre")
 	for id: StringName in PLANCHE:
 		var w := WeaponCatalog.get_weapon(id)
 		assert_not_null(w, "arme %s" % id)
@@ -81,11 +81,69 @@ func test_catalogue_exact_de_la_planche() -> void:
 	var cats := {}
 	for w: WeaponData in all:
 		cats[w.category] = true
-	assert_eq(cats.size(), 6, "6 catégories")
+	assert_eq(cats.size(), 10, "10 catégories (6 de la planche + 4 de la phase 8)")
 	for c: StringName in WeaponData.CATEGORIES:
 		assert_true(cats.has(c), "catégorie %s" % c)
 	assert_eq(WeaponCatalog.STARTER_ID, &"pistol_p9")
 	assert_not_null(WeaponCatalog.get_starter())
+
+
+## Phase 8 : revolver, fusil à pompe, mitrailleuse, lance-grenades (tools/gen_weapons.py).
+const PHASE8 := {
+	&"revolver_peacemaker": [&"revolver", 0], &"revolver_model29": [&"revolver", 2],
+	&"revolver_python": [&"revolver", 3], &"shotgun_870": [&"shotgun", 0],
+	&"shotgun_benelli": [&"shotgun", 2], &"shotgun_aa12": [&"shotgun", 4],
+	&"lmg_m249": [&"lmg", 0], &"lmg_pkm": [&"lmg", 2], &"lmg_m60": [&"lmg", 3],
+	&"gl_m79": [&"grenade_launcher", 0], &"gl_china_lake": [&"grenade_launcher", 2],
+	&"gl_m32": [&"grenade_launcher", 3],
+}
+
+
+func test_armes_de_la_phase_8() -> void:
+	var firearms := 0
+	for w: WeaponData in _catalog():
+		if not w.is_gadget():
+			firearms += 1
+	assert_gte(firearms, 30, "au moins 30 armes à feu (CLAUDE.md « Armes »)")
+	for id: StringName in PHASE8:
+		var w := WeaponCatalog.get_weapon(id)
+		assert_not_null(w, "arme %s" % id)
+		if w == null:
+			continue
+		assert_eq(w.category, PHASE8[id][0], "%s : catégorie" % id)
+		assert_eq(w.rarity, int(PHASE8[id][1]), "%s : rareté" % id)
+		assert_false(w.is_gadget(), "%s : emplacement d'arme" % id)
+		assert_ne(w.rarity, 1, "%s : pas de Peu commun (non affiché, voir MenuKit)" % id)
+		assert_not_null(LootDB.get_item(StringName("wpn_" + String(id))), "%s : objet de butin" % id)
+		assert_gt(w.get_dps(), 0.0, "%s : DPS" % id)
+		match w.category:
+			WeaponData.CAT_SHOTGUN:
+				assert_gt(w.projectile_count, 1, "%s : plusieurs plombs" % id)
+				assert_gt(w.spread_degrees, 0.0, "%s : gerbe" % id)
+			WeaponData.CAT_GRENADE:
+				assert_eq(w.projectile_style, &"grenade", "%s : grenade en cloche" % id)
+				assert_true(w.is_explosive(), "%s : explose" % id)
+			WeaponData.CAT_LMG:
+				assert_gte(w.magazine_size, 100, "%s : bande de 100" % id)
+				assert_lt(w.move_speed_mult, 1.0, "%s : ralentit" % id)
+			WeaponData.CAT_REVOLVER:
+				assert_eq(w.magazine_size, 6, "%s : six coups" % id)
+
+
+## Une table gérée garde, par rareté, le poids total des armes à feu de la planche : ajouter des
+## modèles rend le butin plus varié, pas plus riche (tools/add_weapons.py).
+func test_armes_de_la_phase_8_dans_le_butin() -> void:
+	var chest := LootDB.get_table(&"chest")
+	assert_not_null(chest)
+	for id: StringName in PHASE8:
+		assert_true(chest.entries.has(StringName("wpn_" + String(id))), "coffre : %s" % id)
+	var commons := 0.0
+	for k: Variant in chest.entries:
+		var it := LootDB.get_item(StringName(str(k)))
+		var w := WeaponCatalog.get_weapon(it.weapon_id) if it != null and it.is_weapon() else null
+		if w != null and not w.is_gadget() and w.rarity == 0:
+			commons += float(chest.entries[k])
+	assert_almost_eq(commons, 3.0, 0.01, "coffre : poids total des armes Communes inchangé")
 
 
 func test_equipements_dans_l_emplacement_gadget() -> void:

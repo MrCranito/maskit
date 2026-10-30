@@ -34,12 +34,12 @@ Les phases se font une par une. Chacune se termine par un résumé, des tests et
 - [x] Inventaire de raid limité (grille ou poids) et UI associée
 - [x] Debug F3 : taux de drop observés
 
-## Phase 5 — Clefs spéciales et super-loot *(en partie : clefs sur ennemis et portes verrouillées faites — prochaine)*
-- [ ] Drop de clefs sur les ennemis uniquement (taux de 0,5 % à 2 %, réglé dans balance.cfg)
-- [ ] Portes scellées visibles, chacune liée à une clef précise
-- [ ] Salles de super-loot : taux Épique/Légendaire augmentés et gardes d'élite
-- [ ] Clefs extractibles et conservées dans la réserve
-- [ ] Tests statistiques des taux de drop (GUT)
+## Phase 5 — Clefs spéciales et super-loot *(terminée)*
+- [x] Drop de clefs sur les ennemis uniquement (taux de 0,5 % à 2 %, réglé dans balance.cfg ; ×4 sur les élites)
+- [x] Portes scellées visibles, chacune liée à une clef précise
+- [x] Salles de super-loot : taux Épique/Légendaire augmentés et gardes d'élite
+- [x] Clefs extractibles et conservées dans la réserve, réemportables au raid (choix « Clefs » de l'arsenal de départ)
+- [x] Tests statistiques des taux de drop (GUT, par difficulté)
 
 ## Phase 6 — Extraction, mort, hub
 - [ ] Points d'extraction avec une canalisation interrompue par les attaques

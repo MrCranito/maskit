@@ -41,7 +41,7 @@ func _on_gems(g: int, animate: bool = true) -> void:
 		return
 	var old: int = _shown
 	_shown = g
-	value_label.text = str(g)
+	value_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else str(g)
 	if animate and old >= 0 and old != g and is_inside_tree():
 		pivot_offset = size * 0.5
 		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

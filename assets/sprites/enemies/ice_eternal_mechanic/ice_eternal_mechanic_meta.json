@@ -1,0 +1,135 @@
+{
+  "kind": "ice_eternal_mechanic",
+  "name": "Mécanicien de l'Éternité",
+  "frame_size": [
+    256,
+    256
+  ],
+  "feet_offset": [
+    128,
+    181
+  ],
+  "display_height": 147.7,
+  "world_per_px": 0.576875,
+  "height_px": 122,
+  "head_px": 72,
+  "fps": {
+    "idle": 7,
+    "run": 11,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      178.7,
+      114.8
+    ],
+    "se": [
+      162.2,
+      141.0
+    ],
+    "s": [
+      125.8,
+      150.8
+    ],
+    "sw": [
+      90.6,
+      138.6
+    ],
+    "w": [
+      77.3,
+      111.5
+    ],
+    "nw": [
+      93.8,
+      85.4
+    ],
+    "n": [
+      130.2,
+      75.5
+    ],
+    "ne": [
+      165.4,
+      87.7
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      39,
+      112,
+      202,
+      217
+    ],
+    "se": [
+      39,
+      112,
+      202,
+      217
+    ],
+    "s": [
+      57,
+      105,
+      230,
+      223
+    ],
+    "sw": [
+      57,
+      105,
+      230,
+      223
+    ],
+    "w": [
+      57,
+      105,
+      230,
+      223
+    ],
+    "nw": [
+      54,
+      121,
+      217,
+      235
+    ],
+    "n": [
+      54,
+      121,
+      217,
+      235
+    ],
+    "ne": [
+      26,
+      136,
+      199,
+      232
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_eternal_mechanic/ice_eternal_mechanic_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

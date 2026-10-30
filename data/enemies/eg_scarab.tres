@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_scarab"
+display_name = "Scarabée géant"
+max_hp = 95.0
+move_speed = 118.0
+body_radius = 22.0
+detection_radius = 320.0
+detection_angle_deg = 140.0
+lose_sight_time = 3.5
+alert_duration = 0.5
+alert_neighbors_radius = 360.0
+patrol_radius = 110.0
+sight_gain = 1.2
+hearing_radius = 380.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 60.0
+attack_damage = 11.0
+attack_cooldown = 1.4
+attack_windup = 0.55
+projectile_speed = 0.0
+tactic = &"rusher"
+can_flank = true
+strafe_ratio = 0.3
+attack_pattern = &"melee"
+stagger_ratio = 0.35
+stagger_time = 0.4
+knockback = 30.0
+ground_drop_chance = 0.25
+corpse_name = "Carapace de scarabée"
+sfx_hurt = &"hit_heavy"
+skills = [{"id": &"charge", "cooldown": 7.5, "initial_cooldown": 2.0, "windup": 0.8, "min_range": 130.0, "max_range": 400.0, "speed": 560.0, "overshoot": 80.0, "width": 60.0, "damage": 18.0, "status": "knockdown", "status_time": 0.7, "self_stun": 0.7, "priority": 1.4}, {"id": &"hard_skin", "passive": true, "near": 160.0, "front_dot": 0.25, "reduction": 0.3}]

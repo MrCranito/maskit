@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_ice_elemental"
+display_name = "Éclats d'élémentaire"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.2
+search_time = 0.9
+entries = {
+&"mat_chemicals": 3.0,
+&"mat_scrap": 1.5,
+&"medkit": 0.6,
+&"raw_diamond": 0.6
+}

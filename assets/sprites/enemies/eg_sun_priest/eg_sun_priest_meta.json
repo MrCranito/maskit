@@ -1,0 +1,135 @@
+{
+  "kind": "eg_sun_priest",
+  "name": "Prêtre du soleil",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 124,
+  "head_px": 50,
+  "fps": {
+    "idle": 7,
+    "run": 11,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      227.9,
+      87.1
+    ],
+    "se": [
+      186.1,
+      145.6
+    ],
+    "s": [
+      100.9,
+      164.9
+    ],
+    "sw": [
+      22.2,
+      133.9
+    ],
+    "w": [
+      -3.9,
+      70.5
+    ],
+    "nw": [
+      37.9,
+      12.1
+    ],
+    "n": [
+      123.1,
+      -7.3
+    ],
+    "ne": [
+      201.8,
+      23.8
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      17,
+      69,
+      171,
+      198
+    ],
+    "se": [
+      17,
+      69,
+      171,
+      198
+    ],
+    "s": [
+      53,
+      66,
+      207,
+      192
+    ],
+    "sw": [
+      53,
+      66,
+      207,
+      192
+    ],
+    "w": [
+      53,
+      66,
+      207,
+      192
+    ],
+    "nw": [
+      53,
+      97,
+      207,
+      197
+    ],
+    "n": [
+      53,
+      97,
+      207,
+      197
+    ],
+    "ne": [
+      17,
+      101,
+      171,
+      219
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_sun_priest/eg_sun_priest_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

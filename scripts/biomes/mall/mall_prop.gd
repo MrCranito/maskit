@@ -13,7 +13,7 @@ const PX_PER_WORLD := 2.0
 ## kind → block (taille de collision, unités monde ; ZERO = traversable), flat (posé au sol, z 1),
 ## glow (rayon de lueur additive, 0 = aucune), tint (couleur de la lueur).
 const DEFS := {
-	&"fountain": {"block": Vector2(290, 150)},
+	&"fountain": {"block": Vector2(420, 270)},
 	&"planter": {"block": Vector2(88, 34)},
 	&"palm_pot": {"block": Vector2(30, 18)},
 	&"bench": {"block": Vector2(84, 16)},

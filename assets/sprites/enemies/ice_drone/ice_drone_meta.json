@@ -1,0 +1,135 @@
+{
+  "kind": "ice_drone",
+  "name": "Drone de froid",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 73,
+  "head_px": 53,
+  "fps": {
+    "idle": 7,
+    "run": 12,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      120.3,
+      86.7
+    ],
+    "se": [
+      113.2,
+      99.4
+    ],
+    "s": [
+      96.0,
+      104.7
+    ],
+    "sw": [
+      78.8,
+      99.4
+    ],
+    "w": [
+      71.7,
+      86.7
+    ],
+    "nw": [
+      78.8,
+      73.9
+    ],
+    "n": [
+      96.0,
+      68.6
+    ],
+    "ne": [
+      113.2,
+      73.9
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      47,
+      91,
+      136,
+      153
+    ],
+    "se": [
+      47,
+      91,
+      136,
+      153
+    ],
+    "s": [
+      65,
+      76,
+      152,
+      175
+    ],
+    "sw": [
+      65,
+      76,
+      152,
+      175
+    ],
+    "w": [
+      65,
+      76,
+      152,
+      175
+    ],
+    "nw": [
+      56,
+      66,
+      145,
+      165
+    ],
+    "n": [
+      56,
+      66,
+      145,
+      165
+    ],
+    "ne": [
+      40,
+      83,
+      127,
+      158
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_drone/ice_drone_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

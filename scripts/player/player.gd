@@ -307,6 +307,11 @@ func get_carried_weapon_ids() -> Array[StringName]:
 	return loadout.carried_ids()
 
 
+## Exemplaires tenus (affixes compris) + équipement s'il reste des charges (extraction).
+func get_carried_weapons() -> Array[WeaponData]:
+	return loadout.carried_weapons()
+
+
 # =============================================================================
 # Équipement (contrat « Refonte n°2 »)
 # =============================================================================
@@ -1052,6 +1057,8 @@ func take_damage(amount: float, _source: Node) -> void:
 	# Coop, invité : seuls les dégâts envoyés par l'hôte comptent.
 	if NetHooks.active and NetHooks.blocks_local_damage():
 		return
+	if PlaytestProbe.enabled:
+		PlaytestProbe.player_hit(minf(amount, hp), _source)
 	hp = maxf(hp - amount, 0.0)
 	_invulnerable_left = invulnerability_duration
 	if visual != null:

@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_circus_king"
+display_name = "Le Roi du cirque"
+max_hp = 4400.0
+move_speed = 100.0
+body_radius = 54.0
+detection_radius = 800.0
+detection_angle_deg = 360.0
+lose_sight_time = 30.0
+alert_duration = 0.6
+alert_neighbors_radius = 900.0
+patrol_radius = 40.0
+sight_gain = 3.0
+hearing_radius = 900.0
+hearing_gain = 3.0
+awareness_decay = 0.02
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 120.0
+attack_damage = 28.0
+attack_cooldown = 1.9
+attack_windup = 0.85
+aoe_radius = 150.0
+tactic = &"heavy"
+use_cover = false
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"slam"
+stagger_ratio = 0.0
+stagger_time = 0.2
+knockback = 0.0
+ground_drop_chance = 1.0
+boss = true
+boss_title = "Que la fête ne s'arrête jamais"
+corpse_name = "Dépouille du Roi du cirque"
+sfx_hurt = &"hit_heavy"
+sfx_attack = &"golem_stomp"
+sfx_death = &"golem_crumble"
+skills = [{"id": &"cv_juggle"}, {"id": &"cv_fire_ring"}, {"id": &"shockwave", "radius": 300.0, "cooldown": 7.0, "windup": 0.9, "max_range": 280.0, "damage": 18.0, "knock_time": 0.5, "priority": 1.1}]
+phases = [{"from": 1.0, "name": "Phase 1 — Le spectacle commence", "skills": [{"id": &"cv_juggle"}, {"id": &"cv_fire_ring"}, {"id": &"shockwave", "radius": 300.0, "cooldown": 7.0, "windup": 0.9, "max_range": 280.0, "damage": 18.0, "knock_time": 0.5, "priority": 1.1}], "attack_pattern": &"slam"}, {"from": 0.7, "name": "Phase 2 — La parade des monstres", "skills": [{"id": &"cv_call", "cooldown": 18.0, "initial_cooldown": 2.0, "count": 3.0, "max_total": 6.0, "need_los": false, "kinds": ["cv_lost_clown", "cv_circus_dog", "cv_acrobat", "cv_penumbra", "cv_big_plush"], "shout": "PLACE À LA PARADE !", "priority": 2.0}, {"id": &"cv_fair_traps"}, {"id": &"teleport", "cooldown": 8.0, "windup": 0.7, "min_range": 0.0, "max_range": 900.0, "near": 260.0, "far": 520.0, "need_los": false, "priority": 1.3}, {"id": &"cv_juggle"}, {"id": &"cv_fire_ring"}, {"id": &"shockwave", "radius": 300.0, "cooldown": 7.0, "windup": 0.9, "max_range": 280.0, "damage": 18.0, "knock_time": 0.5, "priority": 1.1}], "on_enter": [&"cv_call"], "invuln": 1.2, "speed_mult": 1.15, "cooldown_mult": 0.85, "damage_mult": 1.15}, {"from": 0.3, "name": "Phase 3 — La fête éternelle", "skills": [{"id": &"cv_fireworks"}, {"id": &"cv_waltz", "radius": 320.0, "duration": 6.0, "slow": 0.45, "dps": 5.0, "heal_per_sec": 4.0, "cooldown": 13.0, "max_range": 520.0, "priority": 1.8}, {"id": &"cv_call", "cooldown": 18.0, "initial_cooldown": 2.0, "count": 3.0, "max_total": 6.0, "need_los": false, "kinds": ["cv_lost_clown", "cv_circus_dog", "cv_acrobat", "cv_penumbra", "cv_big_plush"], "shout": "PLACE À LA PARADE !", "priority": 2.0}, {"id": &"cv_fair_traps", "count": 6.0}, {"id": &"teleport", "cooldown": 8.0, "windup": 0.7, "min_range": 0.0, "max_range": 900.0, "near": 260.0, "far": 520.0, "need_los": false, "priority": 1.3}, {"id": &"cv_juggle"}, {"id": &"cv_fire_ring"}, {"id": &"shockwave", "radius": 300.0, "cooldown": 7.0, "windup": 0.9, "max_range": 280.0, "damage": 18.0, "knock_time": 0.5, "priority": 1.1}], "on_enter": [&"cv_fireworks"], "invuln": 1.5, "speed_mult": 1.3, "cooldown_mult": 0.6, "damage_mult": 1.45}]

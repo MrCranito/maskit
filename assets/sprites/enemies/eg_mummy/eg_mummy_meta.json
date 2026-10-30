@@ -1,0 +1,135 @@
+{
+  "kind": "eg_mummy",
+  "name": "Momie étouffée",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 94,
+  "head_px": 76,
+  "fps": {
+    "idle": 7,
+    "run": 9,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      143.5,
+      140.9
+    ],
+    "se": [
+      127.1,
+      155.3
+    ],
+    "s": [
+      101.8,
+      156.8
+    ],
+    "sw": [
+      82.5,
+      144.6
+    ],
+    "w": [
+      80.5,
+      125.8
+    ],
+    "nw": [
+      96.9,
+      111.5
+    ],
+    "n": [
+      122.2,
+      110.0
+    ],
+    "ne": [
+      141.5,
+      122.2
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      42,
+      108,
+      174,
+      186
+    ],
+    "se": [
+      42,
+      108,
+      174,
+      186
+    ],
+    "s": [
+      51,
+      99,
+      181,
+      192
+    ],
+    "sw": [
+      51,
+      99,
+      181,
+      192
+    ],
+    "w": [
+      51,
+      99,
+      181,
+      192
+    ],
+    "nw": [
+      50,
+      109,
+      182,
+      201
+    ],
+    "n": [
+      50,
+      109,
+      182,
+      201
+    ],
+    "ne": [
+      43,
+      121,
+      173,
+      197
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_mummy/eg_mummy_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

@@ -22,6 +22,7 @@ cd server
 npm ci          # installe ws (une seule fois)
 npm start       # écoute sur ws://127.0.0.1:8787
 npm test        # tests du relais (codes, salons, reprise)
+# même suite contre la version Cloudflare : cd cloudflare && npm ci && npm test
 ```
 
 Dans le jeu, l'URL de développement est `[net] url_dev="ws://127.0.0.1:8787"` (`data/balance.cfg`).
@@ -32,6 +33,10 @@ Test d'intégration complet (serveur + deux jeux headless qui créent / rejoigne
 raid, tirent, réaniment et s'extraient) : `tools/net_smoke_test.sh` (renvoie 0 si tout passe).
 
 ## Déployer en production (WSS obligatoire)
+
+> **Choix actuel : Cloudflare Workers** (`cloudflare/`, déploiement automatique par GitHub
+> Actions). Voir `cloudflare/README.md`. Les options ci-dessous restent valables pour héberger le
+> serveur Node ailleurs ; les deux versions partagent le même cœur (`relay_core.js`).
 
 Sur iPhone, une app publiée doit utiliser **`wss://`** (TLS). Les hébergeurs ci-dessous
 fournissent le TLS automatiquement : le serveur écoute en clair derrière eux, tu n'as aucun

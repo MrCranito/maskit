@@ -40,6 +40,9 @@ const WORLD_REGISTRIES: Array[String] = [
 	"res://scripts/enemies/skills/far_west/registry.gd",
 	"res://scripts/enemies/skills/space_station/registry.gd",
 	"res://scripts/enemies/skills/mall/registry.gd",
+	"res://scripts/enemies/skills/carnival/registry.gd",
+	"res://scripts/enemies/skills/frozen/registry.gd",
+	"res://scripts/enemies/skills/egypt/registry.gd",
 ]
 
 static var _scripts: Dictionary = {}

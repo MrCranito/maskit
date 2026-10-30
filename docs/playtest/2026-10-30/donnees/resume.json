@@ -1,0 +1,4739 @@
+{
+ "A": {
+  "n": 100,
+  "combos": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 144.27,
+    "or": null,
+    "xp": 179.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 222.33,
+    "or": 629,
+    "xp": 490.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 186.0,
+    "or": null,
+    "xp": 192.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 125.42,
+    "or": null,
+    "xp": 179.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 61.95,
+    "or": null,
+    "xp": 110.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 98.38,
+    "or": null,
+    "xp": 124.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 39.63,
+    "or": null,
+    "xp": 88.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 96.33,
+    "or": null,
+    "xp": 122.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 45.82,
+    "or": null,
+    "xp": 87.75
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 20.43,
+    "or": null,
+    "xp": 86
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 38.0,
+    "or": null,
+    "xp": 100.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 24.23,
+    "or": null,
+    "xp": 96.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 27.67,
+    "or": null,
+    "xp": 116.33
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 122.33,
+    "or": null,
+    "xp": 111.67
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 44.73,
+    "or": null,
+    "xp": 116.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 220.43,
+    "or": 849,
+    "xp": 544.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 66.7,
+    "mort": 33.3,
+    "duree": 271.2,
+    "or": 925,
+    "xp": 598
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 100.0,
+    "mort": 0.0,
+    "duree": 235.87,
+    "or": 461.33,
+    "xp": 639.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 237.5,
+    "or": null,
+    "xp": 274.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 148.03,
+    "or": null,
+    "xp": 159.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 191.4,
+    "or": null,
+    "xp": 200.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 71.15,
+    "or": null,
+    "xp": 103
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 90.07,
+    "or": null,
+    "xp": 127.33
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 75.0,
+    "duree": 192.83,
+    "or": null,
+    "xp": 100.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 59.6,
+    "or": null,
+    "xp": 99
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 44.27,
+    "or": null,
+    "xp": 94.33
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 51.2,
+    "or": null,
+    "xp": 106.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "agressif",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 73.4,
+    "or": null,
+    "xp": 121
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "fouilleur",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 50.47,
+    "or": null,
+    "xp": 124.67
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "profile": "prudent",
+    "n": 3,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 103.5,
+    "or": null,
+    "xp": 141.67
+   }
+  ],
+  "map_diff": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 0,
+    "n": 9,
+    "extraction": 22.2,
+    "duree": 184.2,
+    "survie_mediane": 178.7,
+    "kills": 21.22,
+    "pv_min": 8.4
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 95.25,
+    "survie_mediane": 55.5,
+    "kills": 12.83,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "n": 11,
+    "extraction": 0.0,
+    "duree": 62.5,
+    "survie_mediane": 42.4,
+    "kills": 6.64,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 27.56,
+    "survie_mediane": 25.4,
+    "kills": 5.67,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 4,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 64.91,
+    "survie_mediane": 33.8,
+    "kills": 9,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 0,
+    "n": 9,
+    "extraction": 77.8,
+    "duree": 242.5,
+    "survie_mediane": 194.1,
+    "kills": 26.44,
+    "pv_min": 27.68
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 192.31,
+    "survie_mediane": 221.3,
+    "kills": 24.83,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "n": 11,
+    "extraction": 0.0,
+    "duree": 120.55,
+    "survie_mediane": 73.8,
+    "kills": 10.09,
+    "pv_min": 0.58
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 3,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 51.69,
+    "survie_mediane": 43.0,
+    "kills": 6.56,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 4,
+    "n": 9,
+    "extraction": 0.0,
+    "duree": 75.79,
+    "survie_mediane": 57.2,
+    "kills": 11.33,
+    "pv_min": 0.0
+   }
+  ],
+  "enemies": [
+   {
+    "kind": "ss_alien",
+    "vus": 44,
+    "tues": 17,
+    "degats_recus": 1401.1,
+    "degats_par_rencontre": 31.8,
+    "coups": 104,
+    "morts_causees": 6,
+    "ttk_median": 20.62,
+    "degats_infliges": 5460.0
+   },
+   {
+    "kind": "ss_teleporter",
+    "vus": 300,
+    "tues": 210,
+    "degats_recus": 5224.9,
+    "degats_par_rencontre": 17.4,
+    "coups": 471,
+    "morts_causees": 24,
+    "ttk_median": 2.6,
+    "degats_infliges": 14863.5
+   },
+   {
+    "kind": "fw_raider",
+    "vus": 184,
+    "tues": 102,
+    "degats_recus": 2041.7,
+    "degats_par_rencontre": 11.1,
+    "coups": 136,
+    "morts_causees": 10,
+    "ttk_median": 2.73,
+    "degats_infliges": 8603.1
+   },
+   {
+    "kind": "fw_marauder",
+    "vus": 334,
+    "tues": 120,
+    "degats_recus": 3227.2,
+    "degats_par_rencontre": 9.7,
+    "coups": 312,
+    "morts_causees": 21,
+    "ttk_median": 5.29,
+    "degats_infliges": 11463.3
+   },
+   {
+    "kind": "ss_security_droid",
+    "vus": 319,
+    "tues": 213,
+    "degats_recus": 2236.6,
+    "degats_par_rencontre": 7.0,
+    "coups": 477,
+    "morts_causees": 7,
+    "ttk_median": 3.35,
+    "degats_infliges": 13913.5
+   },
+   {
+    "kind": "fw_sharpshooter",
+    "vus": 149,
+    "tues": 74,
+    "degats_recus": 923.8,
+    "degats_par_rencontre": 6.2,
+    "coups": 41,
+    "morts_causees": 4,
+    "ttk_median": 0.78,
+    "degats_infliges": 3588.4
+   },
+   {
+    "kind": "fw_bandit",
+    "vus": 468,
+    "tues": 234,
+    "degats_recus": 2476.7,
+    "degats_par_rencontre": 5.3,
+    "coups": 301,
+    "morts_causees": 11,
+    "ttk_median": 2.65,
+    "degats_infliges": 14773.3
+   },
+   {
+    "kind": "ss_station_guardian",
+    "vus": 2,
+    "tues": 1,
+    "degats_recus": 8.2,
+    "degats_par_rencontre": 4.1,
+    "coups": 1,
+    "morts_causees": 0,
+    "ttk_median": 0.95,
+    "degats_infliges": 240.0
+   },
+   {
+    "kind": "ss_spectre",
+    "vus": 252,
+    "tues": 173,
+    "degats_recus": 686.3,
+    "degats_par_rencontre": 2.7,
+    "coups": 153,
+    "morts_causees": 3,
+    "ttk_median": 0.37,
+    "degats_infliges": 6802.3
+   },
+   {
+    "kind": "ss_alien_brood",
+    "vus": 126,
+    "tues": 116,
+    "degats_recus": 156.5,
+    "degats_par_rencontre": 1.2,
+    "coups": 37,
+    "morts_causees": 1,
+    "ttk_median": 1.02,
+    "degats_infliges": 2744.0
+   },
+   {
+    "kind": "ss_detector",
+    "vus": 104,
+    "tues": 78,
+    "degats_recus": 123.7,
+    "degats_par_rencontre": 1.2,
+    "coups": 30,
+    "morts_causees": 1,
+    "ttk_median": 0.65,
+    "degats_infliges": 3564.9
+   },
+   {
+    "kind": "fw_guard_dog",
+    "vus": 27,
+    "tues": 20,
+    "degats_recus": 21.0,
+    "degats_par_rencontre": 0.8,
+    "coups": 4,
+    "morts_causees": 1,
+    "ttk_median": 0.7,
+    "degats_infliges": 792.9
+   },
+   {
+    "kind": "enemy_hazard",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 400.4,
+    "degats_par_rencontre": null,
+    "coups": 111,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "fw_bruiser",
+    "vus": 2,
+    "tues": 0,
+    "degats_recus": 0,
+    "degats_par_rencontre": 0.0,
+    "coups": 0,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "inconnu",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 69.2,
+    "degats_par_rencontre": null,
+    "coups": 18,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "player",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 6.0,
+    "degats_par_rencontre": null,
+    "coups": 1,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "tourelle",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 340.7,
+    "degats_par_rencontre": null,
+    "coups": 53,
+    "morts_causees": 1,
+    "ttk_median": null,
+    "degats_infliges": 0
+   }
+  ],
+  "killers": [
+   [
+    "ss_teleporter",
+    24
+   ],
+   [
+    "fw_marauder",
+    21
+   ],
+   [
+    "fw_bandit",
+    11
+   ],
+   [
+    "fw_raider",
+    10
+   ],
+   [
+    "ss_security_droid",
+    7
+   ],
+   [
+    "ss_alien",
+    6
+   ],
+   [
+    "fw_sharpshooter",
+    4
+   ],
+   [
+    "ss_spectre",
+    3
+   ],
+   [
+    "tourelle",
+    1
+   ],
+   [
+    "ss_alien_brood",
+    1
+   ],
+   [
+    "ss_detector",
+    1
+   ],
+   [
+    "fw_guard_dog",
+    1
+   ]
+  ],
+  "items_by_source": {
+   "cadavre": [
+    2295,
+    426,
+    14,
+    0,
+    0
+   ],
+   "conteneur": [
+    1990,
+    217,
+    49,
+    3,
+    0
+   ],
+   "sol": [
+    1650,
+    551,
+    5,
+    8,
+    0
+   ]
+  },
+  "items_per_raid": {
+   "cadavre": [
+    22.95,
+    4.26,
+    0.14,
+    0.0,
+    0.0
+   ],
+   "conteneur": [
+    19.9,
+    2.17,
+    0.49,
+    0.03,
+    0.0
+   ],
+   "sol": [
+    16.5,
+    5.51,
+    0.05,
+    0.08,
+    0.0
+   ]
+  },
+  "or_par_extraction": 687.78,
+  "or_par_raid": 61.9,
+  "xp_par_raid": 183.74,
+  "xp_par_extraction": 703.56,
+  "xp_par_mort": 133.8,
+  "tirs_par_raid": 129.18,
+  "conteneurs_par_raid": 4.37,
+  "cadavres_par_raid": 5.73,
+  "soins_par_raid": 5.16,
+  "equipements_par_raid": 2.41,
+  "esquives_par_raid": 54.73,
+  "ennemis_bloques": [
+   [
+    "fw_marauder",
+    2
+   ],
+   [
+    "fw_sharpshooter",
+    1
+   ],
+   [
+    "fw_guard_dog",
+    1
+   ],
+   [
+    "ss_spectre",
+    1
+   ],
+   [
+    "fw_raider",
+    1
+   ],
+   [
+    "fw_bandit",
+    1
+   ]
+  ],
+  "conteneurs_inaccessibles": [],
+  "conteneurs_inaccessibles_par_raid": 0,
+  "erreurs": [],
+  "avertissements": [],
+  "image_la_plus_lente_ms": 106.88,
+  "image_moyenne_ms": 1.8,
+  "bot_bloque_par_raid": 0.75,
+  "elites": {},
+  "boss_rencontres": 0,
+  "boss_tues": 0
+ },
+ "B": {
+  "n": 50,
+  "combos": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 112.45,
+    "or": 326,
+    "xp": 250.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 74.33,
+    "or": null,
+    "xp": 116.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 98.65,
+    "or": 535,
+    "xp": 248.25
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 82.2,
+    "or": null,
+    "xp": 112
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 74.4,
+    "or": null,
+    "xp": 107.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 52.1,
+    "or": null,
+    "xp": 101.5
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "agressif",
+    "n": 1,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 21.8,
+    "or": null,
+    "xp": 85
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "profile": "prudent",
+    "n": 1,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 77.4,
+    "or": null,
+    "xp": 121
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 25.0,
+    "mort": 75.0,
+    "duree": 201.43,
+    "or": 1180,
+    "xp": 354.25
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 197.25,
+    "or": null,
+    "xp": 212.5
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 187.8,
+    "or": null,
+    "xp": 181
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "agressif",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 66.22,
+    "or": null,
+    "xp": 91
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "fouilleur",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 99.92,
+    "or": null,
+    "xp": 119.75
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "profile": "prudent",
+    "n": 4,
+    "extraction": 0.0,
+    "mort": 100.0,
+    "duree": 104.97,
+    "or": null,
+    "xp": 115.5
+   }
+  ],
+  "map_diff": [
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 16.7,
+    "duree": 95.14,
+    "survie_mediane": 72.3,
+    "kills": 12.33,
+    "pv_min": 2.17
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 2,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 69.57,
+    "survie_mediane": 42.0,
+    "kills": 7.67,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_dust_creek",
+    "difficulty": 3,
+    "n": 2,
+    "extraction": 0.0,
+    "duree": 49.6,
+    "survie_mediane": 49.6,
+    "kills": 7,
+    "pv_min": 0.0
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 1,
+    "n": 12,
+    "extraction": 8.3,
+    "duree": 195.49,
+    "survie_mediane": 177.0,
+    "kills": 23.42,
+    "pv_min": 2.5
+   },
+   {
+    "map": "perm_station_kagami",
+    "difficulty": 2,
+    "n": 12,
+    "extraction": 0.0,
+    "duree": 90.38,
+    "survie_mediane": 69.5,
+    "kills": 7.92,
+    "pv_min": 0.0
+   }
+  ],
+  "enemies": [
+   {
+    "kind": "ss_alien",
+    "vus": 34,
+    "tues": 5,
+    "degats_recus": 1032.5,
+    "degats_par_rencontre": 30.4,
+    "coups": 71,
+    "morts_causees": 6,
+    "ttk_median": 33.47,
+    "degats_infliges": 2721.0
+   },
+   {
+    "kind": "ss_teleporter",
+    "vus": 130,
+    "tues": 84,
+    "degats_recus": 2594.7,
+    "degats_par_rencontre": 20.0,
+    "coups": 242,
+    "morts_causees": 14,
+    "ttk_median": 4.75,
+    "degats_infliges": 5641.8
+   },
+   {
+    "kind": "fw_marauder",
+    "vus": 119,
+    "tues": 49,
+    "degats_recus": 1622.5,
+    "degats_par_rencontre": 13.6,
+    "coups": 150,
+    "morts_causees": 10,
+    "ttk_median": 6.47,
+    "degats_infliges": 4658.5
+   },
+   {
+    "kind": "fw_raider",
+    "vus": 105,
+    "tues": 63,
+    "degats_recus": 1433.1,
+    "degats_par_rencontre": 13.6,
+    "coups": 92,
+    "morts_causees": 7,
+    "ttk_median": 2.32,
+    "degats_infliges": 5054.1
+   },
+   {
+    "kind": "fw_sharpshooter",
+    "vus": 60,
+    "tues": 28,
+    "degats_recus": 442.0,
+    "degats_par_rencontre": 7.4,
+    "coups": 20,
+    "morts_causees": 2,
+    "ttk_median": 1.08,
+    "degats_infliges": 1357.5
+   },
+   {
+    "kind": "ss_security_droid",
+    "vus": 152,
+    "tues": 88,
+    "degats_recus": 868.7,
+    "degats_par_rencontre": 5.7,
+    "coups": 185,
+    "morts_causees": 2,
+    "ttk_median": 2.82,
+    "degats_infliges": 5822.2
+   },
+   {
+    "kind": "fw_guard_dog",
+    "vus": 10,
+    "tues": 8,
+    "degats_recus": 50.2,
+    "degats_par_rencontre": 5.0,
+    "coups": 8,
+    "morts_causees": 0,
+    "ttk_median": 1.35,
+    "degats_infliges": 303.0
+   },
+   {
+    "kind": "fw_bandit",
+    "vus": 208,
+    "tues": 106,
+    "degats_recus": 1026.5,
+    "degats_par_rencontre": 4.9,
+    "coups": 123,
+    "morts_causees": 5,
+    "ttk_median": 1.78,
+    "degats_infliges": 6174.3
+   },
+   {
+    "kind": "ss_spectre",
+    "vus": 143,
+    "tues": 93,
+    "degats_recus": 333.0,
+    "degats_par_rencontre": 2.3,
+    "coups": 80,
+    "morts_causees": 0,
+    "ttk_median": 0.5,
+    "degats_infliges": 2776.4
+   },
+   {
+    "kind": "ss_alien_brood",
+    "vus": 97,
+    "tues": 72,
+    "degats_recus": 169.4,
+    "degats_par_rencontre": 1.7,
+    "coups": 38,
+    "morts_causees": 0,
+    "ttk_median": 1.99,
+    "degats_infliges": 1798.0
+   },
+   {
+    "kind": "ss_detector",
+    "vus": 48,
+    "tues": 34,
+    "degats_recus": 51.5,
+    "degats_par_rencontre": 1.1,
+    "coups": 12,
+    "morts_causees": 0,
+    "ttk_median": 0.89,
+    "degats_infliges": 1328.0
+   },
+   {
+    "kind": "enemy_hazard",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 85.0,
+    "degats_par_rencontre": null,
+    "coups": 21,
+    "morts_causees": 1,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "inconnu",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 12.5,
+    "degats_par_rencontre": null,
+    "coups": 3,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "player",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 49.7,
+    "degats_par_rencontre": null,
+    "coups": 3,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   },
+   {
+    "kind": "tourelle",
+    "vus": 0,
+    "tues": 0,
+    "degats_recus": 276.2,
+    "degats_par_rencontre": null,
+    "coups": 24,
+    "morts_causees": 0,
+    "ttk_median": null,
+    "degats_infliges": 0
+   }
+  ],
+  "killers": [
+   [
+    "ss_teleporter",
+    14
+   ],
+   [
+    "fw_marauder",
+    10
+   ],
+   [
+    "fw_raider",
+    7
+   ],
+   [
+    "ss_alien",
+    6
+   ],
+   [
+    "fw_bandit",
+    5
+   ],
+   [
+    "fw_sharpshooter",
+    2
+   ],
+   [
+    "ss_security_droid",
+    2
+   ],
+   [
+    "enemy_hazard",
+    1
+   ]
+  ],
+  "items_by_source": {
+   "cadavre": [
+    1243,
+    156,
+    4,
+    2,
+    0
+   ],
+   "conteneur": [
+    1372,
+    124,
+    38,
+    1,
+    0
+   ],
+   "sol": [
+    865,
+    176,
+    2,
+    8,
+    0
+   ]
+  },
+  "items_per_raid": {
+   "cadavre": [
+    24.86,
+    3.12,
+    0.08,
+    0.04,
+    0.0
+   ],
+   "conteneur": [
+    27.44,
+    2.48,
+    0.76,
+    0.02,
+    0.0
+   ],
+   "sol": [
+    17.3,
+    3.52,
+    0.04,
+    0.16,
+    0.0
+   ]
+  },
+  "or_par_extraction": 680.33,
+  "or_par_raid": 40.82,
+  "xp_par_raid": 164.9,
+  "xp_par_extraction": 694.67,
+  "xp_par_mort": 131.09,
+  "tirs_par_raid": 130.54,
+  "conteneurs_par_raid": 5.72,
+  "cadavres_par_raid": 5.96,
+  "soins_par_raid": 5.66,
+  "equipements_par_raid": 2.9,
+  "esquives_par_raid": 51.06,
+  "ennemis_bloques": [
+   [
+    "ss_security_droid",
+    3
+   ],
+   [
+    "fw_bandit",
+    2
+   ],
+   [
+    "ss_detector",
+    2
+   ],
+   [
+    "fw_marauder",
+    1
+   ],
+   [
+    "fw_sharpshooter",
+    1
+   ]
+  ],
+  "conteneurs_inaccessibles": [],
+  "conteneurs_inaccessibles_par_raid": 0,
+  "erreurs": [],
+  "avertissements": [],
+  "image_la_plus_lente_ms": 437.63,
+  "image_moyenne_ms": 1.79,
+  "bot_bloque_par_raid": 0.28,
+  "elites": {},
+  "boss_rencontres": 0,
+  "boss_tues": 0
+ },
+ "boss": {
+  "fw_sheriff": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 25.27,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_marauder",
+      2
+     ],
+     [
+      "fw_raider",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 21.1,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_sheriff",
+      2
+     ],
+     [
+      "fw_raider",
+      2
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 30.25,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_raider",
+      2
+     ],
+     [
+      "fw_buffalo",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "fw_debris_throw",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 15.13,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_marauder",
+      2
+     ],
+     [
+      "fw_raider",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 17.17,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_raider",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ],
+     [
+      "fw_bandit",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 18.1,
+    "pv_boss_restants": 1.0,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "fw_bandit",
+      1
+     ],
+     [
+      "fw_marauder",
+      1
+     ],
+     [
+      "fw_deserter",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "cover_roll",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ],
+  "ss_architect": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 23.63,
+    "pv_boss_restants": 0.9,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_drone_tieur",
+      2
+     ],
+     [
+      "ss_station_guardian",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 28.27,
+    "pv_boss_restants": 0.84,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ],
+     [
+      "ss_atlas",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "ss_orbital_laser",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 26.12,
+    "pv_boss_restants": 0.66,
+    "phase_mort": [
+     [
+      2,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ],
+     [
+      "ss_spectre",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "ss_orbital_laser",
+      2
+     ],
+     [
+      "attaque",
+      2
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 20.1,
+    "pv_boss_restants": 0.9,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      3
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 21.77,
+    "pv_boss_restants": 0.86,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_architect",
+      2
+     ],
+     [
+      "ss_atlas",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "ss_orbital_laser",
+      2
+     ],
+     [
+      "fan_volley",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 22.77,
+    "pv_boss_restants": 0.72,
+    "phase_mort": [
+     [
+      1,
+      2
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "tueurs": [
+     [
+      "ss_spectre",
+      1
+     ],
+     [
+      "ss_atlas",
+      1
+     ],
+     [
+      "ss_architect",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "ss_orbital_laser",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ],
+  "mall_omnistore": [
+   {
+    "difficulty": 1,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 1,
+    "taux": 0.0,
+    "duree": 14.4,
+    "pv_boss_restants": 0.93,
+    "phase_mort": [
+     [
+      1,
+      2
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_security_bot",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "moyen",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 1,
+    "taux": 0.0,
+    "duree": 11.72,
+    "pv_boss_restants": 0.92,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_violent",
+      3
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 1,
+    "tier": "equipe",
+    "n": 4,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 11.48,
+    "pv_boss_restants": 0.89,
+    "phase_mort": [
+     [
+      1,
+      4
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      2
+     ],
+     [
+      "mall_omnistore",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "debutant",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 13.33,
+    "pv_boss_restants": 0.97,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_violent",
+      2
+     ],
+     [
+      "mall_zombie",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      2
+     ],
+     [
+      "rush",
+      1
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "moyen",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 12.3,
+    "pv_boss_restants": 0.95,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ],
+     [
+      "mall_flayer",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   },
+   {
+    "difficulty": 2,
+    "tier": "equipe",
+    "n": 3,
+    "victoires": 0,
+    "invalides": 0,
+    "taux": 0.0,
+    "duree": 12.13,
+    "pv_boss_restants": 0.88,
+    "phase_mort": [
+     [
+      1,
+      3
+     ]
+    ],
+    "tueurs": [
+     [
+      "mall_zombie",
+      1
+     ],
+     [
+      "mall_violent",
+      1
+     ],
+     [
+      "mall_store_warden",
+      1
+     ]
+    ],
+    "competence": [
+     [
+      "attaque",
+      3
+     ]
+    ],
+    "pv_joueur_victoire": null
+   }
+  ]
+ },
+ "duel": [
+  {
+   "kind": "fw_buffalo",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 1,
+   "taux": 20.0,
+   "duree": 41.44,
+   "ttk": 21.77,
+   "pv_restants": 28.0,
+   "degats_recus": 94.4
+  },
+  {
+   "kind": "fw_buffalo",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 4,
+   "taux": 80.0,
+   "duree": 16.12,
+   "ttk": 15.19,
+   "pv_restants": 82.5,
+   "degats_recus": 34.0
+  },
+  {
+   "kind": "fw_deserter",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 0,
+   "taux": 0.0,
+   "duree": 26.5,
+   "ttk": null,
+   "pv_restants": null,
+   "degats_recus": 100.0
+  },
+  {
+   "kind": "fw_deserter",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 9.1,
+   "ttk": 8.04,
+   "pv_restants": 81.2,
+   "degats_recus": 18.8
+  },
+  {
+   "kind": "mall_store_warden",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 0,
+   "taux": 0.0,
+   "duree": 59.24,
+   "ttk": null,
+   "pv_restants": null,
+   "degats_recus": 100.0
+  },
+  {
+   "kind": "mall_store_warden",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 1,
+   "taux": 20.0,
+   "duree": 44.26,
+   "ttk": 8.97,
+   "pv_restants": 100.0,
+   "degats_recus": 80.0
+  },
+  {
+   "kind": "mall_violent",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 15.32,
+   "ttk": 13.03,
+   "pv_restants": 45.67,
+   "degats_recus": 72.6
+  },
+  {
+   "kind": "mall_violent",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 30.18,
+   "ttk": 8.11,
+   "pv_restants": 94.0,
+   "degats_recus": 43.6
+  },
+  {
+   "kind": "ss_atlas",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 3,
+   "taux": 60.0,
+   "duree": 39.74,
+   "ttk": 32.26,
+   "pv_restants": 34.0,
+   "degats_recus": 79.6
+  },
+  {
+   "kind": "ss_atlas",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 15.08,
+   "ttk": 14.74,
+   "pv_restants": 82.0,
+   "degats_recus": 18.0
+  },
+  {
+   "kind": "ss_drone_tieur",
+   "tier": "moyen",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 3.4,
+   "ttk": 3.1,
+   "pv_restants": 100.0,
+   "degats_recus": 0
+  },
+  {
+   "kind": "ss_drone_tieur",
+   "tier": "equipe",
+   "n": 5,
+   "victoires": 5,
+   "taux": 100.0,
+   "duree": 5.64,
+   "ttk": 5.18,
+   "pv_restants": 100.0,
+   "degats_recus": 0
+  }
+ ],
+ "economie": {
+  "xp_par_raid": 177.5,
+  "or_par_raid": 54.9,
+  "niveaux": [
+   {
+    "niveau": 2,
+    "xp": 400,
+    "raids": 2.3
+   },
+   {
+    "niveau": 3,
+    "xp": 950,
+    "raids": 5.4
+   },
+   {
+    "niveau": 4,
+    "xp": 1650,
+    "raids": 9.3
+   },
+   {
+    "niveau": 5,
+    "xp": 2500,
+    "raids": 14.1
+   },
+   {
+    "niveau": 6,
+    "xp": 3500,
+    "raids": 19.7
+   },
+   {
+    "niveau": 7,
+    "xp": 4650,
+    "raids": 26.2
+   },
+   {
+    "niveau": 8,
+    "xp": 5950,
+    "raids": 33.5
+   },
+   {
+    "niveau": 9,
+    "xp": 7400,
+    "raids": 41.7
+   },
+   {
+    "niveau": 10,
+    "xp": 9000,
+    "raids": 50.7
+   },
+   {
+    "niveau": 11,
+    "xp": 10750,
+    "raids": 60.6
+   },
+   {
+    "niveau": 12,
+    "xp": 12650,
+    "raids": 71.3
+   },
+   {
+    "niveau": 13,
+    "xp": 14700,
+    "raids": 82.8
+   },
+   {
+    "niveau": 14,
+    "xp": 16900,
+    "raids": 95.2
+   },
+   {
+    "niveau": 15,
+    "xp": 19250,
+    "raids": 108.5
+   },
+   {
+    "niveau": 16,
+    "xp": 21750,
+    "raids": 122.6
+   },
+   {
+    "niveau": 17,
+    "xp": 24400,
+    "raids": 137.5
+   },
+   {
+    "niveau": 18,
+    "xp": 27200,
+    "raids": 153.3
+   },
+   {
+    "niveau": 19,
+    "xp": 30150,
+    "raids": 169.9
+   },
+   {
+    "niveau": 20,
+    "xp": 33250,
+    "raids": 187.4
+   },
+   {
+    "niveau": 21,
+    "xp": 36500,
+    "raids": 205.7
+   },
+   {
+    "niveau": 22,
+    "xp": 39900,
+    "raids": 224.8
+   },
+   {
+    "niveau": 23,
+    "xp": 43450,
+    "raids": 244.8
+   },
+   {
+    "niveau": 24,
+    "xp": 47150,
+    "raids": 265.7
+   },
+   {
+    "niveau": 25,
+    "xp": 51000,
+    "raids": 287.4
+   },
+   {
+    "niveau": 26,
+    "xp": 55000,
+    "raids": 309.9
+   },
+   {
+    "niveau": 27,
+    "xp": 59150,
+    "raids": 333.3
+   },
+   {
+    "niveau": 28,
+    "xp": 63450,
+    "raids": 357.5
+   },
+   {
+    "niveau": 29,
+    "xp": 67900,
+    "raids": 382.6
+   },
+   {
+    "niveau": 30,
+    "xp": 72500,
+    "raids": 408.5
+   }
+  ],
+  "armes": [
+   {
+    "arme": "pistol_deagle",
+    "mode": "kill",
+    "prix": 1600,
+    "ennemi": "fw_bandit",
+    "kills": 5,
+    "kills_par_raid": 4.47,
+    "raids_deblocage": 1.1,
+    "raids_achat": 29.2
+   },
+   {
+    "arme": "pistol_glock18",
+    "mode": "shop",
+    "prix": 700,
+    "raids_achat": 12.8
+   },
+   {
+    "arme": "pistol_p320",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "pistol_p9",
+    "mode": "shop",
+    "prix": 100,
+    "raids_achat": 1.8
+   },
+   {
+    "arme": "rifle_ak47",
+    "mode": "shop",
+    "prix": 260,
+    "raids_achat": 4.7
+   },
+   {
+    "arme": "rifle_aug",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "rifle_m4a1",
+    "mode": "shop",
+    "prix": 900,
+    "raids_achat": 16.4
+   },
+   {
+    "arme": "rifle_scarh",
+    "mode": "kill",
+    "prix": 2000,
+    "ennemi": "fw_bruiser",
+    "kills": 3,
+    "kills_par_raid": 0,
+    "raids_deblocage": null,
+    "raids_achat": 36.4
+   },
+   {
+    "arme": "rocket_javelin",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "rocket_m202",
+    "mode": "kill",
+    "prix": 2800,
+    "ennemi": "fw_deserter",
+    "kills": 1,
+    "kills_par_raid": 0,
+    "raids_deblocage": null,
+    "raids_achat": 51.0
+   },
+   {
+    "arme": "rocket_rpg7",
+    "mode": "kill",
+    "prix": 1200,
+    "ennemi": "fw_raider",
+    "kills": 3,
+    "kills_par_raid": 2.17,
+    "raids_deblocage": 1.4,
+    "raids_achat": 21.9
+   },
+   {
+    "arme": "smg_mp5",
+    "mode": "shop",
+    "prix": 220,
+    "raids_achat": 4.0
+   },
+   {
+    "arme": "smg_p90",
+    "mode": "shop",
+    "prix": 1800,
+    "raids_achat": 32.8
+   },
+   {
+    "arme": "smg_uzi",
+    "mode": "drop",
+    "prix": 0
+   },
+   {
+    "arme": "smg_vector",
+    "mode": "shop",
+    "prix": 800,
+    "raids_achat": 14.6
+   },
+   {
+    "arme": "sniper_ax50",
+    "mode": "shop",
+    "prix": 1000,
+    "raids_achat": 18.2
+   },
+   {
+    "arme": "sniper_m24",
+    "mode": "shop",
+    "prix": 280,
+    "raids_achat": 5.1
+   },
+   {
+    "arme": "sniper_m82",
+    "mode": "kill",
+    "prix": 2400,
+    "ennemi": "fw_sharpshooter",
+    "kills": 1,
+    "kills_par_raid": 1.34,
+    "raids_deblocage": 0.7,
+    "raids_achat": 43.7
+   }
+  ]
+ },
+ "drops": {
+  "plafonds_depasses": [
+   {
+    "source": "cadavre:fw_sheriff",
+    "item": "gold_bar",
+    "rarete": 3,
+    "chance": 10.932
+   },
+   {
+    "source": "cadavre:fw_sheriff",
+    "item": "raw_diamond",
+    "rarete": 4,
+    "chance": 2.501
+   },
+   {
+    "source": "cadavre:fw_sheriff",
+    "item": "wpn_pistol_deagle",
+    "rarete": 3,
+    "chance": 10.788
+   },
+   {
+    "source": "cadavre:fw_sheriff",
+    "item": "wpn_rifle_scarh",
+    "rarete": 3,
+    "chance": 7.261
+   }
+  ],
+  "sources": [
+   {
+    "source": "cadavre:fw_bandit",
+    "vide": 10.0,
+    "objets": 1.35,
+    "valeur": 35.7,
+    "rarete": [
+     57.99,
+     36.17,
+     5.75,
+     0.1,
+     0.0
+    ],
+    "epique_ou_mieux": 0.136,
+    "par_difficulte": {
+     "d0_f0": 0.16,
+     "d1_f-1": 0.11,
+     "d1_f0": 0.136,
+     "d1_f1": 0.15,
+     "d2_f0": 0.12,
+     "d3_f0": 0.21,
+     "d4_f0": 0.21
+    }
+   },
+   {
+    "source": "cadavre:fw_bruiser",
+    "vide": 5.0,
+    "objets": 2.38,
+    "valeur": 59.8,
+    "rarete": [
+     75.77,
+     17.81,
+     6.42,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "cadavre:fw_buffalo",
+    "vide": 0.0,
+    "objets": 3.5,
+    "valeur": 204.8,
+    "rarete": [
+     51.73,
+     23.32,
+     23.69,
+     1.0,
+     0.26
+    ],
+    "epique_ou_mieux": 4.417,
+    "par_difficulte": {
+     "d0_f0": 3.44,
+     "d1_f-1": 6.04,
+     "d1_f0": 4.417,
+     "d1_f1": 6.15,
+     "d2_f0": 5.47,
+     "d3_f0": 6.03,
+     "d4_f0": 7.3
+    }
+   },
+   {
+    "source": "cadavre:fw_deserter",
+    "vide": 0.0,
+    "objets": 4.5,
+    "valeur": 525.9,
+    "rarete": [
+     13.02,
+     0.0,
+     82.34,
+     4.04,
+     0.6
+    ],
+    "epique_ou_mieux": 20.875,
+    "par_difficulte": {
+     "d0_f0": 17.66,
+     "d1_f-1": 26.17,
+     "d1_f0": 20.875,
+     "d1_f1": 25.86,
+     "d2_f0": 23.56,
+     "d3_f0": 25.22,
+     "d4_f0": 28.3
+    }
+   },
+   {
+    "source": "cadavre:fw_guard_dog",
+    "vide": 49.9,
+    "objets": 0.5,
+    "valeur": 6.9,
+    "rarete": [
+     93.44,
+     6.56,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "cadavre:fw_marauder",
+    "vide": 44.8,
+    "objets": 0.55,
+    "valeur": 11.0,
+    "rarete": [
+     87.48,
+     9.2,
+     3.32,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "cadavre:fw_raider",
+    "vide": 15.1,
+    "objets": 1.27,
+    "valeur": 27.4,
+    "rarete": [
+     79.88,
+     17.55,
+     2.57,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "cadavre:fw_sharpshooter",
+    "vide": 9.9,
+    "objets": 1.35,
+    "valeur": 33.4,
+    "rarete": [
+     49.43,
+     48.04,
+     2.42,
+     0.1,
+     0.0
+    ],
+    "epique_ou_mieux": 0.139,
+    "par_difficulte": {
+     "d0_f0": 0.09,
+     "d1_f-1": 0.18,
+     "d1_f0": 0.139,
+     "d1_f1": 0.21,
+     "d2_f0": 0.15,
+     "d3_f0": 0.16,
+     "d4_f0": 0.15
+    }
+   },
+   {
+    "source": "cadavre:fw_sheriff",
+    "vide": 0.0,
+    "objets": 5.0,
+    "valeur": 629.8,
+    "rarete": [
+     18.86,
+     0.0,
+     73.46,
+     7.0,
+     0.68
+    ],
+    "epique_ou_mieux": 38.421,
+    "par_difficulte": {
+     "d0_f0": 38.14,
+     "d1_f-1": 39.87,
+     "d1_f0": 38.421,
+     "d1_f1": 39.43,
+     "d2_f0": 39.73,
+     "d3_f0": 40.92,
+     "d4_f0": 39.52
+    }
+   },
+   {
+    "source": "cadavre:mall_brute",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 78.1,
+    "rarete": [
+     50.44,
+     39.14,
+     10.24,
+     0.15,
+     0.02
+    ],
+    "epique_ou_mieux": 0.171,
+    "par_difficulte": {
+     "d0_f0": 0.1,
+     "d1_f-1": 0.3,
+     "d1_f0": 0.171,
+     "d1_f1": 0.22,
+     "d2_f0": 0.37,
+     "d3_f0": 0.25,
+     "d4_f0": 0.32
+    }
+   },
+   {
+    "source": "cadavre:mall_clone",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 77.9,
+    "rarete": [
+     50.66,
+     39.09,
+     10.06,
+     0.17,
+     0.03
+    ],
+    "epique_ou_mieux": 0.191,
+    "par_difficulte": {
+     "d0_f0": 0.14,
+     "d1_f-1": 0.31,
+     "d1_f0": 0.191,
+     "d1_f1": 0.27,
+     "d2_f0": 0.24,
+     "d3_f0": 0.25,
+     "d4_f0": 0.32
+    }
+   },
+   {
+    "source": "cadavre:mall_flayer",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 78.6,
+    "rarete": [
+     50.5,
+     39.18,
+     10.1,
+     0.19,
+     0.02
+    ],
+    "epique_ou_mieux": 0.209,
+    "par_difficulte": {
+     "d0_f0": 0.14,
+     "d1_f-1": 0.21,
+     "d1_f0": 0.209,
+     "d1_f1": 0.22,
+     "d2_f0": 0.22,
+     "d3_f0": 0.18,
+     "d4_f0": 0.46
+    }
+   },
+   {
+    "source": "cadavre:mall_night_spider",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 78.4,
+    "rarete": [
+     50.19,
+     39.34,
+     10.26,
+     0.19,
+     0.02
+    ],
+    "epique_ou_mieux": 0.212,
+    "par_difficulte": {
+     "d0_f0": 0.19,
+     "d1_f-1": 0.2,
+     "d1_f0": 0.212,
+     "d1_f1": 0.23,
+     "d2_f0": 0.2,
+     "d3_f0": 0.36,
+     "d4_f0": 0.25
+    }
+   },
+   {
+    "source": "cadavre:mall_omnistore",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 78.4,
+    "rarete": [
+     50.49,
+     39.05,
+     10.27,
+     0.16,
+     0.02
+    ],
+    "epique_ou_mieux": 0.182,
+    "par_difficulte": {
+     "d0_f0": 0.17,
+     "d1_f-1": 0.38,
+     "d1_f0": 0.182,
+     "d1_f1": 0.21,
+     "d2_f0": 0.25,
+     "d3_f0": 0.3,
+     "d4_f0": 0.29
+    }
+   },
+   {
+    "source": "cadavre:mall_security_bot",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 78.0,
+    "rarete": [
+     50.62,
+     39.0,
+     10.2,
+     0.15,
+     0.03
+    ],
+    "epique_ou_mieux": 0.18,
+    "par_difficulte": {
+     "d0_f0": 0.15,
+     "d1_f-1": 0.29,
+     "d1_f0": 0.18,
+     "d1_f1": 0.26,
+     "d2_f0": 0.24,
+     "d3_f0": 0.3,
+     "d4_f0": 0.32
+    }
+   },
+   {
+    "source": "cadavre:mall_store_warden",
+    "vide": 0.0,
+    "objets": 2.0,
+    "valeur": 235.4,
+    "rarete": [
+     25.88,
+     40.11,
+     31.83,
+     1.79,
+     0.38
+    ],
+    "epique_ou_mieux": 4.356,
+    "par_difficulte": {
+     "d0_f0": 3.42,
+     "d1_f-1": 5.22,
+     "d1_f0": 4.356,
+     "d1_f1": 5.19,
+     "d2_f0": 5.09,
+     "d3_f0": 5.28,
+     "d4_f0": 6.22
+    }
+   },
+   {
+    "source": "cadavre:mall_violent",
+    "vide": 0.0,
+    "objets": 2.0,
+    "valeur": 235.7,
+    "rarete": [
+     25.79,
+     40.19,
+     31.88,
+     1.74,
+     0.39
+    ],
+    "epique_ou_mieux": 4.276,
+    "par_difficulte": {
+     "d0_f0": 3.45,
+     "d1_f-1": 5.8,
+     "d1_f0": 4.276,
+     "d1_f1": 5.51,
+     "d2_f0": 5.06,
+     "d3_f0": 5.74,
+     "d4_f0": 6.39
+    }
+   },
+   {
+    "source": "cadavre:mall_zombie",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 77.8,
+    "rarete": [
+     50.76,
+     39.12,
+     9.94,
+     0.16,
+     0.02
+    ],
+    "epique_ou_mieux": 0.178,
+    "par_difficulte": {
+     "d0_f0": 0.14,
+     "d1_f-1": 0.25,
+     "d1_f0": 0.178,
+     "d1_f1": 0.22,
+     "d2_f0": 0.19,
+     "d3_f0": 0.29,
+     "d4_f0": 0.28
+    }
+   },
+   {
+    "source": "cadavre:ss_alien",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.6,
+    "rarete": [
+     86.33,
+     12.9,
+     0.56,
+     0.18,
+     0.03
+    ],
+    "epique_ou_mieux": 0.204,
+    "par_difficulte": {
+     "d0_f0": 0.12,
+     "d1_f-1": 0.3,
+     "d1_f0": 0.204,
+     "d1_f1": 0.38,
+     "d2_f0": 0.25,
+     "d3_f0": 0.22,
+     "d4_f0": 0.39
+    }
+   },
+   {
+    "source": "cadavre:ss_alien_brood",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.8,
+    "rarete": [
+     86.36,
+     12.89,
+     0.56,
+     0.17,
+     0.03
+    ],
+    "epique_ou_mieux": 0.192,
+    "par_difficulte": {
+     "d0_f0": 0.09,
+     "d1_f-1": 0.22,
+     "d1_f0": 0.192,
+     "d1_f1": 0.3,
+     "d2_f0": 0.18,
+     "d3_f0": 0.32,
+     "d4_f0": 0.29
+    }
+   },
+   {
+    "source": "cadavre:ss_architect",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.6,
+    "rarete": [
+     86.47,
+     12.8,
+     0.53,
+     0.18,
+     0.02
+    ],
+    "epique_ou_mieux": 0.197,
+    "par_difficulte": {
+     "d0_f0": 0.15,
+     "d1_f-1": 0.28,
+     "d1_f0": 0.197,
+     "d1_f1": 0.33,
+     "d2_f0": 0.26,
+     "d3_f0": 0.27,
+     "d4_f0": 0.35
+    }
+   },
+   {
+    "source": "cadavre:ss_atlas",
+    "vide": 0.0,
+    "objets": 2.0,
+    "valeur": 186.0,
+    "rarete": [
+     68.42,
+     24.55,
+     3.28,
+     3.05,
+     0.71
+    ],
+    "epique_ou_mieux": 7.511,
+    "par_difficulte": {
+     "d0_f0": 5.65,
+     "d1_f-1": 10.27,
+     "d1_f0": 7.511,
+     "d1_f1": 10.19,
+     "d2_f0": 9.03,
+     "d3_f0": 11.11,
+     "d4_f0": 11.61
+    }
+   },
+   {
+    "source": "cadavre:ss_detector",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.8,
+    "rarete": [
+     86.23,
+     13.01,
+     0.55,
+     0.18,
+     0.03
+    ],
+    "epique_ou_mieux": 0.211,
+    "par_difficulte": {
+     "d0_f0": 0.14,
+     "d1_f-1": 0.32,
+     "d1_f0": 0.211,
+     "d1_f1": 0.21,
+     "d2_f0": 0.22,
+     "d3_f0": 0.29,
+     "d4_f0": 0.3
+    }
+   },
+   {
+    "source": "cadavre:ss_drone_tieur",
+    "vide": 0.0,
+    "objets": 2.0,
+    "valeur": 184.8,
+    "rarete": [
+     68.47,
+     24.5,
+     3.32,
+     3.02,
+     0.69
+    ],
+    "epique_ou_mieux": 7.417,
+    "par_difficulte": {
+     "d0_f0": 5.81,
+     "d1_f-1": 9.56,
+     "d1_f0": 7.417,
+     "d1_f1": 9.37,
+     "d2_f0": 9.1,
+     "d3_f0": 9.92,
+     "d4_f0": 11.7
+    }
+   },
+   {
+    "source": "cadavre:ss_security_droid",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.5,
+    "rarete": [
+     86.48,
+     12.76,
+     0.57,
+     0.16,
+     0.03
+    ],
+    "epique_ou_mieux": 0.187,
+    "par_difficulte": {
+     "d0_f0": 0.13,
+     "d1_f-1": 0.27,
+     "d1_f0": 0.187,
+     "d1_f1": 0.3,
+     "d2_f0": 0.21,
+     "d3_f0": 0.27,
+     "d4_f0": 0.29
+    }
+   },
+   {
+    "source": "cadavre:ss_spectre",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.9,
+    "rarete": [
+     86.21,
+     13.0,
+     0.58,
+     0.19,
+     0.02
+    ],
+    "epique_ou_mieux": 0.21,
+    "par_difficulte": {
+     "d0_f0": 0.14,
+     "d1_f-1": 0.3,
+     "d1_f0": 0.21,
+     "d1_f1": 0.24,
+     "d2_f0": 0.25,
+     "d3_f0": 0.21,
+     "d4_f0": 0.3
+    }
+   },
+   {
+    "source": "cadavre:ss_station_guardian",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.6,
+    "rarete": [
+     86.13,
+     13.12,
+     0.55,
+     0.17,
+     0.03
+    ],
+    "epique_ou_mieux": 0.2,
+    "par_difficulte": {
+     "d0_f0": 0.1,
+     "d1_f-1": 0.27,
+     "d1_f0": 0.2,
+     "d1_f1": 0.28,
+     "d2_f0": 0.33,
+     "d3_f0": 0.24,
+     "d4_f0": 0.34
+    }
+   },
+   {
+    "source": "cadavre:ss_teleporter",
+    "vide": 0.0,
+    "objets": 1.0,
+    "valeur": 38.8,
+    "rarete": [
+     86.24,
+     12.99,
+     0.57,
+     0.18,
+     0.02
+    ],
+    "epique_ou_mieux": 0.197,
+    "par_difficulte": {
+     "d0_f0": 0.09,
+     "d1_f-1": 0.2,
+     "d1_f0": 0.197,
+     "d1_f1": 0.22,
+     "d2_f0": 0.22,
+     "d3_f0": 0.29,
+     "d4_f0": 0.3
+    }
+   },
+   {
+    "source": "conteneur:armory_chest",
+    "vide": 0.0,
+    "objets": 3.01,
+    "valeur": 380.8,
+    "rarete": [
+     59.73,
+     5.17,
+     33.85,
+     1.12,
+     0.13
+    ],
+    "epique_ou_mieux": 3.775,
+    "par_difficulte": {
+     "d0_f0": 3.17,
+     "d1_f-1": 4.45,
+     "d1_f0": 3.775,
+     "d1_f1": 4.42,
+     "d2_f0": 4.27,
+     "d3_f0": 5.23,
+     "d4_f0": 5.61
+    }
+   },
+   {
+    "source": "conteneur:barrel",
+    "vide": 19.9,
+    "objets": 1.2,
+    "valeur": 21.2,
+    "rarete": [
+     67.91,
+     30.87,
+     1.22,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:cargo_crate",
+    "vide": 10.2,
+    "objets": 1.79,
+    "valeur": 94.3,
+    "rarete": [
+     78.83,
+     12.41,
+     7.98,
+     0.7,
+     0.08
+    ],
+    "epique_ou_mieux": 1.39,
+    "par_difficulte": {
+     "d0_f0": 1.08,
+     "d1_f-1": 1.69,
+     "d1_f0": 1.39,
+     "d1_f1": 1.81,
+     "d2_f0": 1.79,
+     "d3_f0": 1.84,
+     "d4_f0": 2.31
+    }
+   },
+   {
+    "source": "conteneur:chest",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 323.9,
+    "rarete": [
+     45.93,
+     14.49,
+     37.92,
+     1.52,
+     0.14
+    ],
+    "epique_ou_mieux": 4.991,
+    "par_difficulte": {
+     "d0_f0": 4.24,
+     "d1_f-1": 6.29,
+     "d1_f0": 4.991,
+     "d1_f1": 6.45,
+     "d2_f0": 5.83,
+     "d3_f0": 6.69,
+     "d4_f0": 7.38
+    }
+   },
+   {
+    "source": "conteneur:corpse",
+    "vide": 15.0,
+    "objets": 1.27,
+    "valeur": 43.4,
+    "rarete": [
+     74.41,
+     21.09,
+     3.8,
+     0.62,
+     0.07
+    ],
+    "epique_ou_mieux": 0.888,
+    "par_difficulte": {
+     "d0_f0": 0.63,
+     "d1_f-1": 1.1,
+     "d1_f0": 0.888,
+     "d1_f1": 1.15,
+     "d2_f0": 1.0,
+     "d3_f0": 1.36,
+     "d4_f0": 1.24
+    }
+   },
+   {
+    "source": "conteneur:crate",
+    "vide": 12.1,
+    "objets": 1.32,
+    "valeur": 33.0,
+    "rarete": [
+     76.57,
+     21.62,
+     1.45,
+     0.3,
+     0.07
+    ],
+    "epique_ou_mieux": 0.483,
+    "par_difficulte": {
+     "d0_f0": 0.37,
+     "d1_f-1": 0.64,
+     "d1_f0": 0.483,
+     "d1_f1": 0.61,
+     "d2_f0": 0.62,
+     "d3_f0": 0.7,
+     "d4_f0": 0.94
+    }
+   },
+   {
+    "source": "conteneur:cryo_pod",
+    "vide": 20.0,
+    "objets": 1.2,
+    "valeur": 75.4,
+    "rarete": [
+     41.19,
+     51.14,
+     6.87,
+     0.68,
+     0.11
+    ],
+    "epique_ou_mieux": 0.948,
+    "par_difficulte": {
+     "d0_f0": 0.78,
+     "d1_f-1": 1.16,
+     "d1_f0": 0.948,
+     "d1_f1": 1.08,
+     "d2_f0": 1.21,
+     "d3_f0": 1.16,
+     "d4_f0": 1.51
+    }
+   },
+   {
+    "source": "conteneur:cupboard",
+    "vide": 15.1,
+    "objets": 1.7,
+    "valeur": 31.7,
+    "rarete": [
+     71.42,
+     23.0,
+     5.58,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:locker",
+    "vide": 15.1,
+    "objets": 1.7,
+    "valeur": 74.5,
+    "rarete": [
+     86.0,
+     10.1,
+     3.25,
+     0.6,
+     0.06
+    ],
+    "epique_ou_mieux": 1.114,
+    "par_difficulte": {
+     "d0_f0": 1.01,
+     "d1_f-1": 1.5,
+     "d1_f0": 1.114,
+     "d1_f1": 1.72,
+     "d2_f0": 1.32,
+     "d3_f0": 1.73,
+     "d4_f0": 1.72
+    }
+   },
+   {
+    "source": "conteneur:mall_cart",
+    "vide": 15.2,
+    "objets": 1.7,
+    "valeur": 26.2,
+    "rarete": [
+     95.7,
+     4.3,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:mall_corpse",
+    "vide": 10.1,
+    "objets": 1.35,
+    "valeur": 111.2,
+    "rarete": [
+     49.33,
+     40.44,
+     9.1,
+     1.0,
+     0.12
+    ],
+    "epique_ou_mieux": 1.52,
+    "par_difficulte": {
+     "d0_f0": 1.24,
+     "d1_f-1": 2.23,
+     "d1_f0": 1.52,
+     "d1_f1": 1.86,
+     "d2_f0": 1.94,
+     "d3_f0": 2.03,
+     "d4_f0": 2.1
+    }
+   },
+   {
+    "source": "conteneur:mall_display",
+    "vide": 15.1,
+    "objets": 1.27,
+    "valeur": 103.4,
+    "rarete": [
+     11.7,
+     64.33,
+     23.75,
+     0.22,
+     0.0
+    ],
+    "epique_ou_mieux": 0.276,
+    "par_difficulte": {
+     "d0_f0": 0.24,
+     "d1_f-1": 0.27,
+     "d1_f0": 0.276,
+     "d1_f1": 0.44,
+     "d2_f0": 0.36,
+     "d3_f0": 0.34,
+     "d4_f0": 0.49
+    }
+   },
+   {
+    "source": "conteneur:mall_jewel_safe",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 541.4,
+    "rarete": [
+     33.11,
+     22.96,
+     42.78,
+     1.03,
+     0.12
+    ],
+    "epique_ou_mieux": 3.435,
+    "par_difficulte": {
+     "d0_f0": 2.7,
+     "d1_f-1": 4.46,
+     "d1_f0": 3.435,
+     "d1_f1": 4.37,
+     "d2_f0": 3.75,
+     "d3_f0": 4.94,
+     "d4_f0": 5.01
+    }
+   },
+   {
+    "source": "conteneur:mall_register",
+    "vide": 19.9,
+    "objets": 1.2,
+    "valeur": 113.5,
+    "rarete": [
+     50.91,
+     49.09,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:mall_stock_box",
+    "vide": 20.0,
+    "objets": 1.2,
+    "valeur": 44.9,
+    "rarete": [
+     66.59,
+     29.67,
+     3.13,
+     0.54,
+     0.07
+    ],
+    "epique_ou_mieux": 0.725,
+    "par_difficulte": {
+     "d0_f0": 0.52,
+     "d1_f-1": 0.77,
+     "d1_f0": 0.725,
+     "d1_f1": 0.76,
+     "d2_f0": 0.94,
+     "d3_f0": 1.23,
+     "d4_f0": 1.19
+    }
+   },
+   {
+    "source": "conteneur:mall_vending",
+    "vide": 24.9,
+    "objets": 1.13,
+    "valeur": 28.2,
+    "rarete": [
+     92.81,
+     7.19,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:med_cabinet",
+    "vide": 10.0,
+    "objets": 1.8,
+    "valeur": 69.4,
+    "rarete": [
+     58.42,
+     29.46,
+     12.13,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "conteneur:safe",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 389.8,
+    "rarete": [
+     46.72,
+     12.38,
+     39.41,
+     1.37,
+     0.12
+    ],
+    "epique_ou_mieux": 4.449,
+    "par_difficulte": {
+     "d0_f0": 3.58,
+     "d1_f-1": 5.41,
+     "d1_f0": 4.449,
+     "d1_f1": 6.39,
+     "d2_f0": 5.47,
+     "d3_f0": 5.8,
+     "d4_f0": 6.54
+    }
+   },
+   {
+    "source": "conteneur:stagecoach",
+    "vide": 5.0,
+    "objets": 2.85,
+    "valeur": 190.1,
+    "rarete": [
+     55.79,
+     18.17,
+     24.94,
+     1.0,
+     0.09
+    ],
+    "epique_ou_mieux": 3.119,
+    "par_difficulte": {
+     "d0_f0": 2.54,
+     "d1_f-1": 4.21,
+     "d1_f0": 3.119,
+     "d1_f1": 3.66,
+     "d2_f0": 3.84,
+     "d3_f0": 4.07,
+     "d4_f0": 4.89
+    }
+   },
+   {
+    "source": "conteneur:terminal",
+    "vide": 20.1,
+    "objets": 1.2,
+    "valeur": 67.6,
+    "rarete": [
+     54.87,
+     34.1,
+     10.93,
+     0.1,
+     0.0
+    ],
+    "epique_ou_mieux": 0.123,
+    "par_difficulte": {
+     "d0_f0": 0.1,
+     "d1_f-1": 0.17,
+     "d1_f0": 0.123,
+     "d1_f1": 0.16,
+     "d2_f0": 0.18,
+     "d3_f0": 0.14,
+     "d4_f0": 0.15
+    }
+   },
+   {
+    "source": "conteneur:wagon",
+    "vide": 10.0,
+    "objets": 2.25,
+    "valeur": 63.5,
+    "rarete": [
+     71.71,
+     26.6,
+     1.16,
+     0.47,
+     0.05
+    ],
+    "epique_ou_mieux": 1.183,
+    "par_difficulte": {
+     "d0_f0": 0.83,
+     "d1_f-1": 1.72,
+     "d1_f0": 1.183,
+     "d1_f1": 1.32,
+     "d2_f0": 1.48,
+     "d3_f0": 1.83,
+     "d4_f0": 1.82
+    }
+   },
+   {
+    "source": "conteneur:wardrobe",
+    "vide": 15.1,
+    "objets": 1.7,
+    "valeur": 78.5,
+    "rarete": [
+     80.09,
+     0.0,
+     19.1,
+     0.73,
+     0.08
+    ],
+    "epique_ou_mieux": 1.389,
+    "par_difficulte": {
+     "d0_f0": 1.19,
+     "d1_f-1": 1.62,
+     "d1_f0": 1.389,
+     "d1_f1": 1.89,
+     "d2_f0": 1.6,
+     "d3_f0": 1.88,
+     "d4_f0": 2.19
+    }
+   },
+   {
+    "source": "sol:fw_bandit",
+    "vide": 69.6,
+    "objets": 0.46,
+    "valeur": 10.2,
+    "rarete": [
+     73.85,
+     21.78,
+     2.61,
+     1.76,
+     0.0
+    ],
+    "epique_ou_mieux": 0.801,
+    "par_difficulte": {
+     "d0_f0": 0.56,
+     "d1_f-1": 0.61,
+     "d1_f0": 0.801,
+     "d1_f1": 0.8,
+     "d2_f0": 1.1,
+     "d3_f0": 1.52,
+     "d4_f0": 1.92
+    }
+   },
+   {
+    "source": "sol:fw_bruiser",
+    "vide": 50.0,
+    "objets": 0.75,
+    "valeur": 15.3,
+    "rarete": [
+     74.55,
+     21.76,
+     2.61,
+     1.07,
+     0.0
+    ],
+    "epique_ou_mieux": 0.805,
+    "par_difficulte": {
+     "d0_f0": 0.57,
+     "d1_f-1": 0.62,
+     "d1_f0": 0.805,
+     "d1_f1": 0.79,
+     "d2_f0": 1.12,
+     "d3_f0": 1.6,
+     "d4_f0": 1.92
+    }
+   },
+   {
+    "source": "sol:fw_buffalo",
+    "vide": 0.0,
+    "objets": 3.53,
+    "valeur": 71.9,
+    "rarete": [
+     72.85,
+     23.23,
+     3.03,
+     0.89,
+     0.0
+    ],
+    "epique_ou_mieux": 3.145,
+    "par_difficulte": {
+     "d0_f0": 2.4,
+     "d1_f-1": 3.52,
+     "d1_f0": 3.145,
+     "d1_f1": 2.99,
+     "d2_f0": 4.42,
+     "d3_f0": 6.02,
+     "d4_f0": 7.81
+    }
+   },
+   {
+    "source": "sol:fw_deserter",
+    "vide": 0.0,
+    "objets": 3.53,
+    "valeur": 72.5,
+    "rarete": [
+     72.65,
+     23.37,
+     3.05,
+     0.93,
+     0.0
+    ],
+    "epique_ou_mieux": 3.282,
+    "par_difficulte": {
+     "d0_f0": 1.85,
+     "d1_f-1": 3.15,
+     "d1_f0": 3.282,
+     "d1_f1": 3.2,
+     "d2_f0": 4.33,
+     "d3_f0": 5.74,
+     "d4_f0": 8.38
+    }
+   },
+   {
+    "source": "sol:fw_guard_dog",
+    "vide": 89.1,
+    "objets": 0.16,
+    "valeur": 4.9,
+    "rarete": [
+     71.44,
+     21.21,
+     2.57,
+     4.78,
+     0.0
+    ],
+    "epique_ou_mieux": 0.763,
+    "par_difficulte": {
+     "d0_f0": 0.45,
+     "d1_f-1": 1.0,
+     "d1_f0": 0.763,
+     "d1_f1": 0.79,
+     "d2_f0": 0.97,
+     "d3_f0": 1.65,
+     "d4_f0": 1.83
+    }
+   },
+   {
+    "source": "sol:fw_marauder",
+    "vide": 84.3,
+    "objets": 0.23,
+    "valeur": 6.3,
+    "rarete": [
+     73.36,
+     20.88,
+     2.39,
+     3.37,
+     0.0
+    ],
+    "epique_ou_mieux": 0.787,
+    "par_difficulte": {
+     "d0_f0": 0.5,
+     "d1_f-1": 0.72,
+     "d1_f0": 0.787,
+     "d1_f1": 0.72,
+     "d2_f0": 1.05,
+     "d3_f0": 1.48,
+     "d4_f0": 1.95
+    }
+   },
+   {
+    "source": "sol:fw_raider",
+    "vide": 64.5,
+    "objets": 0.53,
+    "valeur": 11.7,
+    "rarete": [
+     74.04,
+     21.84,
+     2.54,
+     1.58,
+     0.0
+    ],
+    "epique_ou_mieux": 0.844,
+    "par_difficulte": {
+     "d0_f0": 0.5,
+     "d1_f-1": 0.88,
+     "d1_f0": 0.844,
+     "d1_f1": 0.8,
+     "d2_f0": 1.19,
+     "d3_f0": 1.52,
+     "d4_f0": 1.88
+    }
+   },
+   {
+    "source": "sol:fw_sharpshooter",
+    "vide": 64.5,
+    "objets": 0.53,
+    "valeur": 11.7,
+    "rarete": [
+     73.93,
+     21.84,
+     2.63,
+     1.6,
+     0.0
+    ],
+    "epique_ou_mieux": 0.856,
+    "par_difficulte": {
+     "d0_f0": 0.57,
+     "d1_f-1": 0.76,
+     "d1_f0": 0.856,
+     "d1_f1": 0.77,
+     "d2_f0": 1.23,
+     "d3_f0": 1.49,
+     "d4_f0": 2.26
+    }
+   },
+   {
+    "source": "sol:fw_sheriff",
+    "vide": 0.0,
+    "objets": 1.51,
+    "valeur": 28.4,
+    "rarete": [
+     75.02,
+     21.87,
+     2.57,
+     0.54,
+     0.0
+    ],
+    "epique_ou_mieux": 0.815,
+    "par_difficulte": {
+     "d0_f0": 0.5,
+     "d1_f-1": 0.9,
+     "d1_f0": 0.815,
+     "d1_f1": 0.79,
+     "d2_f0": 0.92,
+     "d3_f0": 1.8,
+     "d4_f0": 2.09
+    }
+   },
+   {
+    "source": "sol:mall_brute",
+    "vide": 39.6,
+    "objets": 0.91,
+    "valeur": 18.1,
+    "rarete": [
+     74.76,
+     21.78,
+     2.57,
+     0.89,
+     0.0
+    ],
+    "epique_ou_mieux": 0.807,
+    "par_difficulte": {
+     "d0_f0": 0.46,
+     "d1_f-1": 0.72,
+     "d1_f0": 0.807,
+     "d1_f1": 0.81,
+     "d2_f0": 1.13,
+     "d3_f0": 1.72,
+     "d4_f0": 2.09
+    }
+   },
+   {
+    "source": "sol:mall_clone",
+    "vide": 99.2,
+    "objets": 0.01,
+    "valeur": 2.5,
+    "rarete": [
+     0.0,
+     0.0,
+     0.0,
+     100.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.822,
+    "par_difficulte": {
+     "d0_f0": 0.48,
+     "d1_f-1": 1.01,
+     "d1_f0": 0.822,
+     "d1_f1": 0.84,
+     "d2_f0": 1.07,
+     "d3_f0": 1.47,
+     "d4_f0": 1.91
+    }
+   },
+   {
+    "source": "sol:mall_flayer",
+    "vide": 69.3,
+    "objets": 0.46,
+    "valeur": 10.2,
+    "rarete": [
+     74.24,
+     21.4,
+     2.64,
+     1.72,
+     0.0
+    ],
+    "epique_ou_mieux": 0.792,
+    "par_difficulte": {
+     "d0_f0": 0.38,
+     "d1_f-1": 0.83,
+     "d1_f0": 0.792,
+     "d1_f1": 0.96,
+     "d2_f0": 1.11,
+     "d3_f0": 1.46,
+     "d4_f0": 1.88
+    }
+   },
+   {
+    "source": "sol:mall_night_spider",
+    "vide": 64.5,
+    "objets": 0.53,
+    "valeur": 11.6,
+    "rarete": [
+     74.0,
+     21.75,
+     2.69,
+     1.56,
+     0.0
+    ],
+    "epique_ou_mieux": 0.831,
+    "par_difficulte": {
+     "d0_f0": 0.67,
+     "d1_f-1": 1.13,
+     "d1_f0": 0.831,
+     "d1_f1": 0.82,
+     "d2_f0": 1.07,
+     "d3_f0": 1.51,
+     "d4_f0": 1.79
+    }
+   },
+   {
+    "source": "sol:mall_omnistore",
+    "vide": 99.1,
+    "objets": 0.01,
+    "valeur": 2.6,
+    "rarete": [
+     0.0,
+     0.0,
+     0.0,
+     100.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.859,
+    "par_difficulte": {
+     "d0_f0": 0.44,
+     "d1_f-1": 0.75,
+     "d1_f0": 0.859,
+     "d1_f1": 0.79,
+     "d2_f0": 0.97,
+     "d3_f0": 1.44,
+     "d4_f0": 1.74
+    }
+   },
+   {
+    "source": "sol:mall_security_bot",
+    "vide": 59.5,
+    "objets": 0.61,
+    "valeur": 12.9,
+    "rarete": [
+     74.47,
+     21.6,
+     2.58,
+     1.35,
+     0.0
+    ],
+    "epique_ou_mieux": 0.823,
+    "par_difficulte": {
+     "d0_f0": 0.57,
+     "d1_f-1": 0.78,
+     "d1_f0": 0.823,
+     "d1_f1": 0.87,
+     "d2_f0": 1.16,
+     "d3_f0": 1.46,
+     "d4_f0": 1.89
+    }
+   },
+   {
+    "source": "sol:mall_store_warden",
+    "vide": 0.0,
+    "objets": 3.53,
+    "valeur": 72.2,
+    "rarete": [
+     72.81,
+     23.21,
+     3.07,
+     0.91,
+     0.0
+    ],
+    "epique_ou_mieux": 3.209,
+    "par_difficulte": {
+     "d0_f0": 2.06,
+     "d1_f-1": 3.25,
+     "d1_f0": 3.209,
+     "d1_f1": 3.34,
+     "d2_f0": 3.94,
+     "d3_f0": 6.08,
+     "d4_f0": 7.94
+    }
+   },
+   {
+    "source": "sol:mall_violent",
+    "vide": 0.0,
+    "objets": 3.53,
+    "valeur": 72.1,
+    "rarete": [
+     72.78,
+     23.32,
+     2.98,
+     0.91,
+     0.0
+    ],
+    "epique_ou_mieux": 3.231,
+    "par_difficulte": {
+     "d0_f0": 1.97,
+     "d1_f-1": 3.15,
+     "d1_f0": 3.231,
+     "d1_f1": 2.87,
+     "d2_f0": 3.99,
+     "d3_f0": 6.04,
+     "d4_f0": 8.09
+    }
+   },
+   {
+    "source": "sol:mall_zombie",
+    "vide": 74.4,
+    "objets": 0.38,
+    "valeur": 8.8,
+    "rarete": [
+     74.08,
+     21.25,
+     2.62,
+     2.05,
+     0.0
+    ],
+    "epique_ou_mieux": 0.785,
+    "par_difficulte": {
+     "d0_f0": 0.46,
+     "d1_f-1": 0.73,
+     "d1_f0": 0.785,
+     "d1_f1": 0.86,
+     "d2_f0": 1.16,
+     "d3_f0": 1.5,
+     "d4_f0": 1.82
+    }
+   },
+   {
+    "source": "sol:ss_alien",
+    "vide": 64.5,
+    "objets": 0.53,
+    "valeur": 11.5,
+    "rarete": [
+     74.31,
+     21.61,
+     2.55,
+     1.53,
+     0.0
+    ],
+    "epique_ou_mieux": 0.817,
+    "par_difficulte": {
+     "d0_f0": 0.38,
+     "d1_f-1": 0.77,
+     "d1_f0": 0.817,
+     "d1_f1": 0.94,
+     "d2_f0": 1.07,
+     "d3_f0": 1.43,
+     "d4_f0": 2.14
+    }
+   },
+   {
+    "source": "sol:ss_alien_brood",
+    "vide": 99.2,
+    "objets": 0.01,
+    "valeur": 2.3,
+    "rarete": [
+     0.0,
+     0.0,
+     0.0,
+     100.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.775,
+    "par_difficulte": {
+     "d0_f0": 0.6,
+     "d1_f-1": 0.87,
+     "d1_f0": 0.775,
+     "d1_f1": 0.81,
+     "d2_f0": 1.04,
+     "d3_f0": 1.45,
+     "d4_f0": 2.11
+    }
+   },
+   {
+    "source": "sol:ss_architect",
+    "vide": 64.3,
+    "objets": 0.54,
+    "valeur": 11.7,
+    "rarete": [
+     74.17,
+     21.65,
+     2.65,
+     1.53,
+     0.0
+    ],
+    "epique_ou_mieux": 0.818,
+    "par_difficulte": {
+     "d0_f0": 0.57,
+     "d1_f-1": 0.84,
+     "d1_f0": 0.818,
+     "d1_f1": 0.85,
+     "d2_f0": 1.07,
+     "d3_f0": 1.51,
+     "d4_f0": 1.81
+    }
+   },
+   {
+    "source": "sol:ss_atlas",
+    "vide": 62.7,
+    "objets": 1.26,
+    "valeur": 31.8,
+    "rarete": [
+     71.44,
+     22.99,
+     3.0,
+     2.57,
+     0.0
+    ],
+    "epique_ou_mieux": 3.252,
+    "par_difficulte": {
+     "d0_f0": 1.98,
+     "d1_f-1": 3.18,
+     "d1_f0": 3.252,
+     "d1_f1": 3.12,
+     "d2_f0": 4.37,
+     "d3_f0": 5.56,
+     "d4_f0": 7.5
+    }
+   },
+   {
+    "source": "sol:ss_detector",
+    "vide": 64.4,
+    "objets": 0.53,
+    "valeur": 11.6,
+    "rarete": [
+     74.19,
+     21.56,
+     2.66,
+     1.59,
+     0.0
+    ],
+    "epique_ou_mieux": 0.847,
+    "par_difficulte": {
+     "d0_f0": 0.52,
+     "d1_f-1": 0.94,
+     "d1_f0": 0.847,
+     "d1_f1": 0.84,
+     "d2_f0": 0.98,
+     "d3_f0": 1.5,
+     "d4_f0": 2.03
+    }
+   },
+   {
+    "source": "sol:ss_drone_tieur",
+    "vide": 62.8,
+    "objets": 1.26,
+    "valeur": 31.5,
+    "rarete": [
+     71.56,
+     22.97,
+     2.96,
+     2.51,
+     0.0
+    ],
+    "epique_ou_mieux": 3.166,
+    "par_difficulte": {
+     "d0_f0": 1.92,
+     "d1_f-1": 3.47,
+     "d1_f0": 3.166,
+     "d1_f1": 3.27,
+     "d2_f0": 4.17,
+     "d3_f0": 5.95,
+     "d4_f0": 7.83
+    }
+   },
+   {
+    "source": "sol:ss_security_droid",
+    "vide": 64.6,
+    "objets": 0.53,
+    "valeur": 11.5,
+    "rarete": [
+     74.3,
+     21.61,
+     2.57,
+     1.53,
+     0.0
+    ],
+    "epique_ou_mieux": 0.811,
+    "par_difficulte": {
+     "d0_f0": 0.6,
+     "d1_f-1": 0.69,
+     "d1_f0": 0.811,
+     "d1_f1": 0.84,
+     "d2_f0": 1.02,
+     "d3_f0": 1.58,
+     "d4_f0": 2.0
+    }
+   },
+   {
+    "source": "sol:ss_spectre",
+    "vide": 64.5,
+    "objets": 0.54,
+    "valeur": 11.5,
+    "rarete": [
+     74.31,
+     21.55,
+     2.68,
+     1.47,
+     0.0
+    ],
+    "epique_ou_mieux": 0.785,
+    "par_difficulte": {
+     "d0_f0": 0.47,
+     "d1_f-1": 0.76,
+     "d1_f0": 0.785,
+     "d1_f1": 0.63,
+     "d2_f0": 0.98,
+     "d3_f0": 1.57,
+     "d4_f0": 2.02
+    }
+   },
+   {
+    "source": "sol:ss_station_guardian",
+    "vide": 64.5,
+    "objets": 0.53,
+    "valeur": 11.5,
+    "rarete": [
+     74.43,
+     21.54,
+     2.56,
+     1.46,
+     0.0
+    ],
+    "epique_ou_mieux": 0.78,
+    "par_difficulte": {
+     "d0_f0": 0.41,
+     "d1_f-1": 0.85,
+     "d1_f0": 0.78,
+     "d1_f1": 0.86,
+     "d2_f0": 1.13,
+     "d3_f0": 1.45,
+     "d4_f0": 2.19
+    }
+   },
+   {
+    "source": "sol:ss_teleporter",
+    "vide": 64.4,
+    "objets": 0.54,
+    "valeur": 11.7,
+    "rarete": [
+     74.17,
+     21.63,
+     2.58,
+     1.61,
+     0.0
+    ],
+    "epique_ou_mieux": 0.862,
+    "par_difficulte": {
+     "d0_f0": 0.5,
+     "d1_f-1": 0.76,
+     "d1_f0": 0.862,
+     "d1_f1": 0.79,
+     "d2_f0": 0.95,
+     "d3_f0": 1.34,
+     "d4_f0": 1.78
+    }
+   },
+   {
+    "source": "tresor:armory_chest",
+    "vide": 0.0,
+    "objets": 4.0,
+    "valeur": 1081.4,
+    "rarete": [
+     21.09,
+     3.93,
+     66.45,
+     7.16,
+     1.36
+    ],
+    "epique_ou_mieux": 34.127,
+    "par_difficulte": {
+     "d0_f0": 28.67,
+     "d1_f-1": 39.29,
+     "d1_f0": 34.127,
+     "d1_f1": 40.68,
+     "d2_f0": 39.47,
+     "d3_f0": 41.0,
+     "d4_f0": 43.79
+    }
+   },
+   {
+    "source": "tresor:barrel",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 58.1,
+    "rarete": [
+     48.33,
+     45.66,
+     6.01,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:cargo_crate",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 565.7,
+    "rarete": [
+     46.99,
+     16.19,
+     27.61,
+     7.68,
+     1.52
+    ],
+    "epique_ou_mieux": 27.611,
+    "par_difficulte": {
+     "d0_f0": 22.91,
+     "d1_f-1": 34.91,
+     "d1_f0": 27.611,
+     "d1_f1": 34.09,
+     "d2_f0": 31.08,
+     "d3_f0": 36.91,
+     "d4_f0": 39.38
+    }
+   },
+   {
+    "source": "tresor:chest",
+    "vide": 0.0,
+    "objets": 4.0,
+    "valeur": 903.2,
+    "rarete": [
+     14.47,
+     10.13,
+     64.94,
+     9.07,
+     1.39
+    ],
+    "epique_ou_mieux": 41.793,
+    "par_difficulte": {
+     "d0_f0": 36.33,
+     "d1_f-1": 48.63,
+     "d1_f0": 41.793,
+     "d1_f1": 49.57,
+     "d2_f0": 45.6,
+     "d3_f0": 49.92,
+     "d4_f0": 53.77
+    }
+   },
+   {
+    "source": "tresor:corpse",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 390.9,
+    "rarete": [
+     45.94,
+     29.19,
+     15.29,
+     7.83,
+     1.75
+    ],
+    "epique_ou_mieux": 23.945,
+    "par_difficulte": {
+     "d0_f0": 19.19,
+     "d1_f-1": 30.32,
+     "d1_f0": 23.945,
+     "d1_f1": 30.27,
+     "d2_f0": 27.1,
+     "d3_f0": 31.5,
+     "d4_f0": 34.54
+    }
+   },
+   {
+    "source": "tresor:crate",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 257.5,
+    "rarete": [
+     52.98,
+     34.56,
+     6.72,
+     4.36,
+     1.38
+    ],
+    "epique_ou_mieux": 14.337,
+    "par_difficulte": {
+     "d0_f0": 11.53,
+     "d1_f-1": 19.74,
+     "d1_f0": 14.337,
+     "d1_f1": 19.2,
+     "d2_f0": 18.09,
+     "d3_f0": 20.45,
+     "d4_f0": 22.51
+    }
+   },
+   {
+    "source": "tresor:cryo_pod",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 435.0,
+    "rarete": [
+     20.23,
+     51.29,
+     20.34,
+     6.45,
+     1.69
+    ],
+    "epique_ou_mieux": 20.349,
+    "par_difficulte": {
+     "d0_f0": 16.89,
+     "d1_f-1": 25.96,
+     "d1_f0": 20.349,
+     "d1_f1": 25.9,
+     "d2_f0": 24.28,
+     "d3_f0": 27.18,
+     "d4_f0": 29.8
+    }
+   },
+   {
+    "source": "tresor:cupboard",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 96.8,
+    "rarete": [
+     46.51,
+     31.94,
+     21.55,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:locker",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 517.1,
+    "rarete": [
+     59.67,
+     15.62,
+     14.89,
+     8.34,
+     1.47
+    ],
+    "epique_ou_mieux": 29.455,
+    "par_difficulte": {
+     "d0_f0": 23.5,
+     "d1_f-1": 37.32,
+     "d1_f0": 29.455,
+     "d1_f1": 36.96,
+     "d2_f0": 34.95,
+     "d3_f0": 38.95,
+     "d4_f0": 43.53
+    }
+   },
+   {
+    "source": "tresor:mall_cart",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 50.1,
+    "rarete": [
+     90.28,
+     9.72,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:mall_corpse",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 545.3,
+    "rarete": [
+     23.06,
+     40.29,
+     25.66,
+     9.15,
+     1.84
+    ],
+    "epique_ou_mieux": 27.43,
+    "par_difficulte": {
+     "d0_f0": 22.28,
+     "d1_f-1": 33.78,
+     "d1_f0": 27.43,
+     "d1_f1": 34.13,
+     "d2_f0": 31.15,
+     "d3_f0": 34.36,
+     "d4_f0": 38.89
+    }
+   },
+   {
+    "source": "tresor:mall_display",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 273.6,
+    "rarete": [
+     4.25,
+     49.72,
+     44.62,
+     1.4,
+     0.0
+    ],
+    "epique_ou_mieux": 3.497,
+    "par_difficulte": {
+     "d0_f0": 3.03,
+     "d1_f-1": 4.41,
+     "d1_f0": 3.497,
+     "d1_f1": 4.13,
+     "d2_f0": 4.23,
+     "d3_f0": 4.46,
+     "d4_f0": 5.09
+    }
+   },
+   {
+    "source": "tresor:mall_jewel_safe",
+    "vide": 0.0,
+    "objets": 4.0,
+    "valeur": 1231.6,
+    "rarete": [
+     12.14,
+     17.99,
+     61.29,
+     7.2,
+     1.38
+    ],
+    "epique_ou_mieux": 34.328,
+    "par_difficulte": {
+     "d0_f0": 29.34,
+     "d1_f-1": 40.68,
+     "d1_f0": 34.328,
+     "d1_f1": 40.71,
+     "d2_f0": 38.74,
+     "d3_f0": 41.82,
+     "d4_f0": 44.6
+    }
+   },
+   {
+    "source": "tresor:mall_register",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 237.2,
+    "rarete": [
+     44.03,
+     55.97,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:mall_stock_box",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 343.8,
+    "rarete": [
+     40.03,
+     39.89,
+     12.33,
+     6.09,
+     1.65
+    ],
+    "epique_ou_mieux": 19.364,
+    "par_difficulte": {
+     "d0_f0": 15.68,
+     "d1_f-1": 24.02,
+     "d1_f0": 19.364,
+     "d1_f1": 25.19,
+     "d2_f0": 23.35,
+     "d3_f0": 25.57,
+     "d4_f0": 28.91
+    }
+   },
+   {
+    "source": "tresor:mall_vending",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 101.0,
+    "rarete": [
+     83.85,
+     16.15,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:med_cabinet",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 161.3,
+    "rarete": [
+     39.28,
+     33.65,
+     27.07,
+     0.0,
+     0.0
+    ],
+    "epique_ou_mieux": 0.0,
+    "par_difficulte": {
+     "d0_f0": 0.0,
+     "d1_f-1": 0.0,
+     "d1_f0": 0.0,
+     "d1_f1": 0.0,
+     "d2_f0": 0.0,
+     "d3_f0": 0.0,
+     "d4_f0": 0.0
+    }
+   },
+   {
+    "source": "tresor:safe",
+    "vide": 0.0,
+    "objets": 4.0,
+    "valeur": 1042.2,
+    "rarete": [
+     16.74,
+     9.46,
+     63.48,
+     8.98,
+     1.33
+    ],
+    "epique_ou_mieux": 41.243,
+    "par_difficulte": {
+     "d0_f0": 34.34,
+     "d1_f-1": 49.51,
+     "d1_f0": 41.243,
+     "d1_f1": 48.04,
+     "d2_f0": 45.16,
+     "d3_f0": 49.18,
+     "d4_f0": 54.96
+    }
+   },
+   {
+    "source": "tresor:stagecoach",
+    "vide": 0.0,
+    "objets": 4.0,
+    "valeur": 721.1,
+    "rarete": [
+     26.35,
+     17.71,
+     45.88,
+     8.72,
+     1.34
+    ],
+    "epique_ou_mieux": 40.291,
+    "par_difficulte": {
+     "d0_f0": 33.41,
+     "d1_f-1": 49.03,
+     "d1_f0": 40.291,
+     "d1_f1": 48.91,
+     "d2_f0": 46.63,
+     "d3_f0": 50.91,
+     "d4_f0": 54.91
+    }
+   },
+   {
+    "source": "tresor:terminal",
+    "vide": 0.0,
+    "objets": 2.5,
+    "valeur": 237.2,
+    "rarete": [
+     35.5,
+     32.88,
+     30.15,
+     1.47,
+     0.0
+    ],
+    "epique_ou_mieux": 3.673,
+    "par_difficulte": {
+     "d0_f0": 2.91,
+     "d1_f-1": 4.61,
+     "d1_f0": 3.673,
+     "d1_f1": 4.97,
+     "d2_f0": 4.36,
+     "d3_f0": 4.87,
+     "d4_f0": 4.93
+    }
+   },
+   {
+    "source": "tresor:wagon",
+    "vide": 0.0,
+    "objets": 3.5,
+    "valeur": 425.6,
+    "rarete": [
+     49.11,
+     38.27,
+     5.16,
+     6.14,
+     1.33
+    ],
+    "epique_ou_mieux": 26.136,
+    "par_difficulte": {
+     "d0_f0": 21.0,
+     "d1_f-1": 34.0,
+     "d1_f0": 26.136,
+     "d1_f1": 34.71,
+     "d2_f0": 31.2,
+     "d3_f0": 35.22,
+     "d4_f0": 39.92
+    }
+   },
+   {
+    "source": "tresor:wardrobe",
+    "vide": 0.0,
+    "objets": 3.0,
+    "valeur": 491.0,
+    "rarete": [
+     39.04,
+     0.0,
+     52.65,
+     6.92,
+     1.39
+    ],
+    "epique_ou_mieux": 24.92,
+    "par_difficulte": {
+     "d0_f0": 20.31,
+     "d1_f-1": 30.11,
+     "d1_f0": 24.92,
+     "d1_f1": 30.03,
+     "d2_f0": 28.2,
+     "d3_f0": 32.15,
+     "d4_f0": 34.11
+    }
+   }
+  ],
+  "observe_vs_simule": [
+   {
+    "source": "conteneur",
+    "observe_n": 3794,
+    "observe": [
+     88.61,
+     8.99,
+     2.29,
+     0.11,
+     0.0
+    ],
+    "simule": [
+     60.48,
+     21.32,
+     17.45,
+     0.68,
+     0.07
+    ]
+   },
+   {
+    "source": "cadavre",
+    "observe_n": 4140,
+    "observe": [
+     85.46,
+     14.06,
+     0.43,
+     0.05,
+     0.0
+    ],
+    "simule": [
+     52.47,
+     20.84,
+     24.61,
+     1.81,
+     0.27
+    ]
+   },
+   {
+    "source": "sol",
+    "observe_n": 3265,
+    "observe": [
+     77.03,
+     22.27,
+     0.21,
+     0.49,
+     0.0
+    ],
+    "simule": [
+     73.2,
+     22.6,
+     2.85,
+     1.35,
+     0.0
+    ]
+   }
+  ]
+ }
+}

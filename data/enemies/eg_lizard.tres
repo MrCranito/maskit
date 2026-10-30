@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_lizard"
+display_name = "Lézard des sables"
+max_hp = 70.0
+move_speed = 205.0
+body_radius = 16.0
+detection_radius = 340.0
+detection_angle_deg = 130.0
+lose_sight_time = 3.0
+alert_duration = 0.5
+alert_neighbors_radius = 360.0
+patrol_radius = 140.0
+sight_gain = 1.5
+hearing_radius = 360.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 64.0
+attack_damage = 7.0
+attack_cooldown = 1.1
+attack_windup = 0.35
+projectile_speed = 0.0
+tactic = &"rusher"
+can_flank = true
+zigzag_amplitude = 34.0
+zigzag_period = 0.45
+strafe_ratio = 0.7
+attack_pattern = &"lunge"
+lunge_distance = 90.0
+lunge_speed = 520.0
+combo_hits = 2
+combo_interval = 0.22
+stagger_ratio = 0.3
+stagger_time = 0.35
+knockback = 90.0
+ground_drop_chance = 0.2
+corpse_name = "Lézard des sables mort"
+skills = [{"id": &"eg_burrow", "cooldown": 9.0, "initial_cooldown": 2.5, "windup": 0.45, "min_range": 150.0, "max_range": 520.0, "speed": 320.0, "travel_time": 1.4, "emerge_windup": 0.4, "radius": 64.0, "damage": 13.0, "priority": 1.3}]

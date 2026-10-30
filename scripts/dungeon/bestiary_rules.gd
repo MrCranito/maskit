@@ -14,7 +14,8 @@ const DATA_DIR := "res://data/enemies/"
 
 
 ## Applique les règles. `floors` : floor_index → FloorLayout. Renvoie un résumé (tests, debug F3).
-static func apply(floors: Dictionary, world: WorldData, run_seed: int) -> Dictionary:
+## `difficulty` (0..4) choisit l'escorte du boss ; -1 = GameState.difficulty.
+static func apply(floors: Dictionary, world: WorldData, run_seed: int, difficulty: int = -1) -> Dictionary:
 	var summary := {"boss_floor": null, "boss_removed": 0, "elites": 0}
 	if world == null or floors.is_empty():
 		return summary
@@ -48,7 +49,7 @@ static func apply(floors: Dictionary, world: WorldData, run_seed: int) -> Dictio
 	if elites.is_empty():
 		return summary
 	# 2) Élites : escorte du boss, gardes des salles au trésor, rares en combat.
-	var escorts := int(Balance.get_value(SECTION, "elite_boss_escorts", 2))
+	var escorts := boss_escorts(difficulty if difficulty >= 0 else GameState.difficulty)
 	var guards := int(Balance.get_value(SECTION, "elite_super_loot_guards", 1))
 	var chances: Array = Balance.get_value(SECTION, "elite_combat_chance", [0.0, 0.04, 0.08]) as Array
 	for fi3: Variant in keys:
@@ -75,6 +76,18 @@ static func apply(floors: Dictionary, world: WorldData, run_seed: int) -> Dictio
 				sp3.kind = elites[(used + int(fi3)) % elites.size()] if rtype != &"combat" else _pick(elites, rng, sp3.kind)
 				summary["elites"] = int(summary["elites"]) + 1
 	return summary
+
+
+## Nombre d'élites d'escorte du boss pour une difficulté (0..4). `[boss] elite_boss_escorts`
+## est un tableau indexé par difficulté ; une valeur unique (ancien format) vaut pour toutes.
+static func boss_escorts(difficulty: int) -> int:
+	var v: Variant = Balance.get_value(SECTION, "elite_boss_escorts", 1)
+	if v is Array:
+		var a := v as Array
+		if a.is_empty():
+			return 0
+		return maxi(int(a[clampi(difficulty, 0, a.size() - 1)]), 0)
+	return maxi(int(v), 0)
 
 
 ## Élites du monde dont la donnée existe.
