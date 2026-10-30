@@ -10,6 +10,12 @@ const SEED := 20261030
 
 var out: String = ""
 var weapons: PackedStringArray = PackedStringArray()
+## --burst : capture aussi rafale_<id> après 1 s de tir continu (cône de dispersion ouvert).
+var burst: bool = false
+## --no-arsenal : saute les captures de l'écran d'arsenal.
+var no_arsenal: bool = false
+## --prefix=… : préfixe des fichiers (avant_ / apres_).
+var prefix: String = ""
 
 
 func _ready() -> void:
@@ -18,6 +24,12 @@ func _ready() -> void:
 			out = a.substr(6)
 		elif a.begins_with("--weapons="):
 			weapons = a.substr(10).split(",", false)
+		elif a == "--burst":
+			burst = true
+		elif a == "--no-arsenal":
+			no_arsenal = true
+		elif a.begins_with("--prefix="):
+			prefix = a.substr(9)
 	_run.call_deferred()
 
 
@@ -35,7 +47,7 @@ func _shot(n: String) -> void:
 	var img := get_tree().root.get_viewport().get_texture().get_image()
 	if img != null and out != "":
 		DirAccess.make_dir_recursive_absolute(out)
-		var p := out.path_join("%s.png" % n)
+		var p := out.path_join("%s%s.png" % [prefix, n])
 		img.save_png(p)
 		print("capture ", p)
 
@@ -52,11 +64,13 @@ func _find_scroll(n: Node) -> ScrollContainer:
 
 func _run() -> void:
 	# 1. Écran d'arsenal : une capture par écran, en défilant jusqu'en bas.
-	get_tree().change_scene_to_file(ARSENAL_SCENE)
-	await _sleep(1.5)
-	var scroll := _find_scroll(get_tree().current_scene)
+	var scroll: ScrollContainer = null
 	var page := 0
-	await _shot("arsenal_%d" % page)
+	if not no_arsenal:
+		get_tree().change_scene_to_file(ARSENAL_SCENE)
+		await _sleep(1.5)
+		scroll = _find_scroll(get_tree().current_scene)
+		await _shot("arsenal_%d" % page)
 	if scroll != null:
 		var bar := scroll.get_v_scroll_bar()
 		var step := int(scroll.size.y * 0.85)
@@ -101,6 +115,9 @@ func _run() -> void:
 		# Grenades en cloche : capture en vol ; balles et plombs : capture juste après le tir.
 		await _sleep(0.35 if w.projectile_style == &"grenade" else 0.12)
 		await _shot("tir_%s" % id)
+		if burst:
+			await _sleep(0.9)
+			await _shot("rafale_%s" % id)
 		aim_stick.output = Vector2.ZERO
 		await _sleep(0.8)
 	get_tree().quit(0)
