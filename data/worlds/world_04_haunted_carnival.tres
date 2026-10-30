@@ -1,0 +1,99 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_04_haunted_carnival"
+display_name = "Carnaval hanté"
+biome = &"haunted_carnival"
+palette = {
+"canvas_red": Color(0.72, 0.12, 0.16, 1),
+"canvas_white": Color(0.9, 0.84, 0.8, 1),
+"dirt": Color(0.36, 0.28, 0.4, 1),
+"extraction": Color(0.3, 0.85, 0.45, 0.45),
+"floor": Color(0.42, 0.32, 0.36, 1),
+"gold": Color(1, 0.78, 0.3, 1),
+"neon_magenta": Color(1, 0.3, 0.85, 1),
+"neon_violet": Color(0.7, 0.4, 1, 1),
+"pavers": Color(0.46, 0.4, 0.52, 1),
+"shadow": Color(0.1, 0.06, 0.22, 1),
+"sky_bottom": Color(0.5, 0.2, 0.55, 1),
+"sky_mid": Color(0.3, 0.12, 0.42, 1),
+"sky_top": Color(0.1, 0.05, 0.2, 1),
+"stairs": Color(0.6, 0.5, 0.62, 1),
+"street": Color(0.4, 0.3, 0.44, 1),
+"void": Color(0.08, 0.05, 0.14, 1),
+"wall": Color(0.38, 0.26, 0.4, 1),
+"warm_bulb": Color(1, 0.75, 0.42, 1)
+}
+enemy_roster = {
+&"boss": {
+&"cv_acrobat": 2.0,
+&"cv_circus_dog": 2.0,
+&"cv_lost_clown": 2.0
+},
+&"combat": {
+&"cv_acrobat": 2.5,
+&"cv_big_plush": 1.0,
+&"cv_circus_dog": 2.5,
+&"cv_ghost_carousel": 1.2,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 1.5
+},
+&"corridor": {
+&"cv_acrobat": 2.0,
+&"cv_circus_dog": 2.5,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 0.45
+},
+&"extraction": {
+&"cv_acrobat": 2.0,
+&"cv_big_plush": 1.2,
+&"cv_circus_dog": 2.0,
+&"cv_ghost_carousel": 1.2,
+&"cv_lost_clown": 2.0,
+&"cv_penumbra": 1.5
+},
+&"loot": {
+&"cv_acrobat": 1.5,
+&"cv_circus_dog": 1.5,
+&"cv_ghost_carousel": 0.36,
+&"cv_lost_clown": 3.0,
+&"cv_penumbra": 0.45
+},
+&"rest": {
+&"cv_big_plush": 0.3,
+&"cv_lost_clown": 1.0
+},
+&"spawn": {
+&"cv_lost_clown": 1.0
+},
+&"super_loot": {
+&"cv_big_plush": 1.5,
+&"cv_ghost_carousel": 1.5,
+&"cv_penumbra": 1.5
+},
+&"trap": {
+&"cv_acrobat": 2.0,
+&"cv_ghost_carousel": 1.5,
+&"cv_lost_clown": 1.0,
+&"cv_penumbra": 3.0
+}
+}
+building_archetypes = Array[StringName]([&"shooting", &"candy", &"ducks", &"prizes", &"fortune", &"popcorn", &"hammer", &"souvenirs", &"mirrors", &"freaks", &"theatre", &"caravan", &"director_caravan", &"ticket_booth", &"service_yard", &"big_top", &"hangar", &"workshop", &"museum", &"arcade"])
+building_names = {}
+container_kinds = Array[StringName]([&"hc_fair_crate", &"hc_stand_counter", &"hc_caravan_chest", &"hc_trash_can", &"hc_corpse", &"hc_plush_corpse"])
+prop_kinds = Array[StringName]([&"hc_lamp_post", &"hc_debris", &"hc_balloon_bunch", &"hc_barrier", &"hc_trash_bin", &"hc_food_cart", &"hc_dead_tree", &"hc_sign_post", &"hc_bench", &"hc_bumper_car", &"hc_shooting_counter", &"hc_prize_shelf", &"hc_candy_machine", &"hc_duck_pool", &"hc_plush_pile", &"hc_crystal_table", &"hc_hammer_tower", &"hc_mirror", &"hc_cage", &"hc_puppet_stage", &"hc_bunk", &"hc_trunk", &"hc_crate_stack", &"hc_bleachers", &"hc_ring_barrier"])
+floors_min = 0
+floors_max = 0
+boss_kind = &"cv_circus_king"
+elite_kinds = Array[StringName]([&"cv_fairground_being", &"cv_fire_clown"])
+generator_path = "res://scripts/biomes/haunted_carnival/hc_generator.gd"
+builder_path = "res://scripts/biomes/haunted_carnival/hc_builder.gd"
+containers_dir = "res://assets/sprites/haunted_carnival/containers/"
+floor_names = {
+0: "Le parc"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"

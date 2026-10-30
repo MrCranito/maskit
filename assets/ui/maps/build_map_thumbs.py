@@ -221,7 +221,187 @@ def mall():
     finish(img.convert("RGB"), "mall")
 
 
+# --- Terres gelées (agent Terres gelées) ---------------------------------------------------
+
+def frozen_lands(capture=""):
+    """Vignette des Terres gelées : recadrage 16:9 du rendu pré-calculé (mini-carte du paquet
+    assets/prerender/frozen_lands/<seed>/minimap.webp, ou toute image donnée) centré sur le
+    laboratoire aux cristaux ; sinon illustration peinte (plateau de glace, base, cristal)."""
+    if not capture:
+        root = os.path.join(OUT, "..", "..", "prerender", "frozen_lands")
+        if os.path.isdir(root):
+            for s in sorted(os.listdir(root)):
+                p = os.path.join(root, s, "minimap.webp")
+                if os.path.exists(p):
+                    capture = p
+    if capture and os.path.exists(capture):
+        src = Image.open(capture).convert("RGB")
+        sw, sh = src.size
+        # Cadre 16:9 autour du centre (le labo circulaire est au centre du plan, un peu haut).
+        cw = int(sw * 0.78)
+        ch = int(cw * H / W)
+        cx, cy = sw * 0.5, sh * 0.49
+        box = (int(cx - cw / 2), int(cy - ch / 2), int(cx + cw / 2), int(cy + ch / 2))
+        img = src.crop(box).resize((W, H), Image.LANCZOS)
+        img = ImageEnhance.Contrast(img).enhance(1.12)
+        img = ImageEnhance.Color(img).enhance(1.1)
+        finish(img, "frozen_lands")
+        return
+    w, h = W * S, H * S
+    img = vgrad(w, h, [(0.0, (8, 14, 36)), (0.5, (14, 28, 56)), (1.0, (40, 70, 110))]).convert("RGBA")
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(5)
+    # Plateau de glace (ellipse bruitée) et banquise
+    pts = []
+    for a in range(0, 360, 6):
+        r = 1.0 + rnd.uniform(-0.08, 0.08)
+        pts.append((w * 0.5 + math.cos(math.radians(a)) * w * 0.42 * r, h * 0.58 + math.sin(math.radians(a)) * h * 0.46 * r))
+    d.polygon(pts, fill=(96, 150, 200, 255))
+    pts2 = [(x, y - 14 * S) for (x, y) in pts]
+    d.polygon(pts2, fill=(214, 228, 242, 255))
+    # Base en croix : bunkers gris et cour centrale
+    cx, cy = w * 0.5, h * 0.55
+    for (x0, y0, x1, y1) in [(-0.22, -0.07, 0.22, 0.07), (-0.07, -0.26, 0.07, 0.2), (-0.3, -0.2, -0.12, -0.08), (0.12, -0.2, 0.3, -0.08)]:
+        d.rectangle([cx + x0 * w, cy + y0 * h, cx + x1 * w, cy + y1 * h], fill=(78, 86, 100, 255), outline=(30, 34, 46, 255), width=3)
+        d.rectangle([cx + x0 * w, cy + y0 * h, cx + x1 * w, cy + y0 * h + 10 * S], fill=(200, 212, 226, 255))
+    # Laboratoire circulaire + cristal
+    r = h * 0.11
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(40, 62, 92, 255), outline=(150, 190, 230, 255), width=4)
+    img = Image.alpha_composite(img, glow((w, h), (cx, cy), int(r * 1.6), (90, 200, 255), 170))
+    d = ImageDraw.Draw(img)
+    d.polygon([(cx, cy - r * 0.9), (cx + r * 0.35, cy + r * 0.3), (cx - r * 0.35, cy + r * 0.3)], fill=(170, 235, 255, 255))
+    d.polygon([(cx + r * 0.4, cy - r * 0.5), (cx + r * 0.65, cy + r * 0.3), (cx + r * 0.15, cy + r * 0.3)], fill=(120, 205, 250, 255))
+    # Héliport et lumières rouges
+    hx, hy = w * 0.2, h * 0.3
+    d.rectangle([hx - 40 * S, hy - 30 * S, hx + 40 * S, hy + 30 * S], fill=(60, 68, 84, 255))
+    d.ellipse([hx - 22 * S, hy - 22 * S, hx + 22 * S, hy + 22 * S], outline=(250, 190, 60, 255), width=4)
+    for _ in range(8):
+        px, py = rnd.uniform(w * 0.2, w * 0.8), rnd.uniform(h * 0.25, h * 0.85)
+        img = Image.alpha_composite(img, glow((w, h), (px, py), 14 * S, (255, 60, 50), 180))
+    # Flocons
+    d = ImageDraw.Draw(img)
+    for _ in range(260):
+        px, py = rnd.uniform(0, w), rnd.uniform(0, h)
+        rr = rnd.uniform(1, 3) * S
+        d.ellipse([px - rr, py - rr, px + rr, py + rr], fill=(240, 248, 255, rnd.randint(90, 200)))
+    finish(img.convert("RGB"), "frozen_lands")
+
+
+# --- Carnaval hanté (agent Carnaval) -----------------------------------------------------
+
+def haunted_carnival(capture=""):
+    """Vignette du Carnaval hanté : recadrage 16:9 du rendu pré-calculé (mini-carte du paquet
+    assets/prerender/haunted_carnival/<seed>/minimap.webp, ou toute image donnée) centré sur le
+    chapiteau ; sinon illustration peinte (chapiteau rayé, grande roue, nuit violette)."""
+    if not capture:
+        root = os.path.join(OUT, "..", "..", "prerender", "haunted_carnival")
+        if os.path.isdir(root):
+            for s in sorted(os.listdir(root)):
+                p = os.path.join(root, s, "minimap.webp")
+                if os.path.exists(p):
+                    capture = p
+    if capture and os.path.exists(capture):
+        src = Image.open(capture).convert("RGB")
+        sw, sh = src.size
+        # Cadre 16:9 : largeur du parc, centré sur le chapiteau (≈ 40 % de la hauteur du plan).
+        cw = int(sw * 0.8)
+        ch = int(cw * 9 / 16)
+        cx, cy = sw * 0.5, sh * 0.42
+        box = (int(cx - cw / 2), int(cy - ch / 2), int(cx + cw / 2), int(cy + ch / 2))
+        img = src.crop(box).resize((W, H), Image.LANCZOS)
+        img = ImageEnhance.Color(img).enhance(1.15)
+        img = ImageEnhance.Contrast(img).enhance(1.08)
+        finish(img, "haunted_carnival")
+        return
+    w, h = W * S, H * S
+    rnd = random.Random(5)
+    img = vgrad(w, h, [(0, (18, 8, 36)), (0.6, (70, 24, 96)), (1, (30, 12, 44))]).convert("RGBA")
+    d = ImageDraw.Draw(img)
+    # Grande roue à gauche
+    cx, cy, r = w * 0.22, h * 0.48, h * 0.34
+    for k in range(16):
+        a = k / 16 * math.tau
+        d.line([cx, cy, cx + math.cos(a) * r, cy + math.sin(a) * r], fill=(230, 90, 160, 255), width=3)
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(255, 120, 200, 255), width=6)
+    d.ellipse([cx - r * 0.55, cy - r * 0.55, cx + r * 0.55, cy + r * 0.55], outline=(255, 200, 120, 255), width=3)
+    glow_layer = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    glow_layer = Image.alpha_composite(glow_layer, glow((w, h), (cx, cy), r * 1.1, (255, 60, 200), 140))
+    # Chapiteau rayé à droite
+    tx, ty, tw, th = w * 0.68, h * 0.62, w * 0.42, h * 0.34
+    for k in range(18):
+        a0 = k / 18 * math.tau
+        a1 = (k + 1) / 18 * math.tau
+        col = (190, 30, 50, 255) if k % 2 else (235, 220, 210, 255)
+        d.polygon([(tx, ty - th * 0.9), (tx + math.cos(a0) * tw / 2, ty + math.sin(a0) * th * 0.4), (tx + math.cos(a1) * tw / 2, ty + math.sin(a1) * th * 0.4)], fill=col)
+    d.rectangle([tx - tw * 0.5, ty + th * 0.1, tx + tw * 0.5, ty + th * 0.75], fill=(120, 40, 120, 255))
+    glow_layer = Image.alpha_composite(glow_layer, glow((w, h), (tx, ty + th * 0.4), tw * 0.5, (180, 80, 255), 150))
+    # Sol pavé + guirlandes
+    d.rectangle([0, h * 0.84, w, h], fill=(48, 30, 56, 255))
+    for k in range(0, w, 26):
+        d.ellipse([k, h * 0.18 + 14 * math.sin(k / 60), k + 8, h * 0.18 + 8 + 14 * math.sin(k / 60)], fill=(255, 210, 120, 255))
+    img = Image.alpha_composite(img, glow_layer.filter(ImageFilter.GaussianBlur(24)))
+    finish(img.convert("RGB"), "haunted_carnival")
+
+
+# --- Pyramides d'Égypte (agent Pyramides) ----------------------------------------------------
+
+def egypt_pyramids(capture=""):
+    """Vignette des Pyramides d'Égypte : recadrage 16:9 du rendu pré-calculé (mini-carte du paquet
+    assets/prerender/egypt_pyramids/<seed>/minimap.webp, ou toute image donnée) centré sur le grand
+    temple ; sinon illustration peinte (pyramides au couchant, temple doré)."""
+    if not capture:
+        root = os.path.join(OUT, "..", "..", "prerender", "egypt_pyramids")
+        if os.path.isdir(root):
+            for s in sorted(os.listdir(root)):
+                p = os.path.join(root, s, "minimap.webp")
+                if os.path.exists(p):
+                    capture = p
+    if capture and os.path.exists(capture):
+        src = Image.open(capture).convert("RGB")
+        sw, sh = src.size
+        cw = int(sw * 0.82)
+        ch = int(cw * H / W)
+        cx, cy = sw * 0.5, sh * 0.5
+        box = (int(cx - cw / 2), int(cy - ch / 2), int(cx + cw / 2), int(cy + ch / 2))
+        img = src.crop(box).resize((W, H), Image.LANCZOS)
+        img = ImageEnhance.Contrast(img).enhance(1.1)
+        img = ImageEnhance.Color(img).enhance(1.12)
+        warm = vgrad(W, H, [(0, (255, 170, 90)), (1, (120, 50, 40))])
+        img = Image.blend(img, warm, 0.1)
+        finish(img, "egypt_pyramids")
+        return
+    w, h = W * S, H * S
+    rnd = random.Random(9)
+    img = vgrad(w, h, [(0.0, (90, 40, 70)), (0.4, (240, 120, 70)), (0.62, (255, 190, 110)), (1.0, (200, 140, 70))]).convert("RGBA")
+    img = Image.alpha_composite(img, glow((w, h), (w * 0.3, h * 0.55), 160, (255, 230, 170), 220))
+    d = ImageDraw.Draw(img)
+    # Dunes
+    d.polygon([(0, h * 0.62), (w * 0.3, h * 0.56), (w * 0.6, h * 0.64), (w, h * 0.58), (w, h), (0, h)], fill=(214, 160, 88, 255))
+    d.polygon([(0, h * 0.78), (w * 0.4, h * 0.72), (w * 0.8, h * 0.8), (w, h * 0.74), (w, h), (0, h)], fill=(232, 182, 104, 255))
+    # Pyramides
+    for (px, base, hh, c1, c2) in [(w * 0.78, w * 0.42, h * 0.5, (200, 150, 84), (120, 78, 42)), (w * 0.52, w * 0.26, h * 0.32, (210, 158, 90), (130, 84, 46)),
+                                   (w * 0.14, w * 0.22, h * 0.26, (205, 152, 86), (125, 80, 44))]:
+        d.polygon([(px - base / 2, h * 0.64), (px, h * 0.64 - hh), (px + base / 2, h * 0.64)], fill=c2)
+        d.polygon([(px - base / 2, h * 0.64), (px, h * 0.64 - hh), (px - base * 0.05, h * 0.64)], fill=c1)
+    # Temple doré au premier plan : pylônes, colonnes, sanctuaire
+    tx, ty = w * 0.42, h * 0.86
+    d.rectangle([tx - 200 * S, ty - 90 * S, tx + 200 * S, ty], fill=(190, 140, 80, 255), outline=(70, 40, 20, 255), width=3)
+    for k in range(8):
+        cx = tx - 170 * S + k * 48 * S
+        d.rectangle([cx - 8 * S, ty - 80 * S, cx + 8 * S, ty], fill=(230, 190, 120, 255), outline=(70, 40, 20, 255), width=2)
+    d.rectangle([tx - 60 * S, ty - 120 * S, tx + 60 * S, ty - 40 * S], fill=(222, 170, 60, 255), outline=(70, 40, 20, 255), width=3)
+    img = Image.alpha_composite(img, glow((w, h), (tx, ty - 80 * S), 90 * S, (255, 200, 90), 150))
+    d = ImageDraw.Draw(img)
+    for k in range(6):
+        px, py = tx - 180 * S + k * 72 * S, ty - 60 * S
+        d.ellipse([px - 5 * S, py - 5 * S, px + 5 * S, py + 5 * S], fill=(255, 150, 50, 255))
+    finish(img.convert("RGB"), "egypt_pyramids")
+
+
 if __name__ == "__main__":
     far_west(sys.argv[1] if len(sys.argv) > 1 else "")
     space_station()
     mall()
+    frozen_lands()
+    haunted_carnival()
+    egypt_pyramids()

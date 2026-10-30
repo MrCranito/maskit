@@ -1,0 +1,15 @@
+#!/bin/bash
+# « python3 » du pipeline de pré-rendu sous macOS (voir tools/prerender/mac_env.sh) : les scènes
+# Blender (*_scene.py) passent par le Blender installé, le reste (compose.py, *_grade.py) par le
+# Python embarqué de Blender (numpy) complété par Pillow dans $MASKIT_PYLIB.
+BL=${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}
+BP=$(ls "$(dirname "$BL")"/../Resources/*/python/bin/python3.* 2>/dev/null | grep -v config | head -1)
+export PYTHONPATH="${MASKIT_PYLIB:-$HOME/.cache/maskit/pylib}${PYTHONPATH:+:$PYTHONPATH}"
+case "$1" in
+	*_scene.py)
+		s=$1
+		shift
+		exec "$BL" -b --factory-startup --python-use-system-env --python-exit-code 1 --python "$s" -- "$@"
+		;;
+esac
+exec "$BP" "$@"

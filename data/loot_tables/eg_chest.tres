@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"eg_chest"
+display_name = "Coffre de bois"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.1
+search_time = 1.4
+entries = {
+&"bandage": 3.0,
+&"eg_bronze_dagger": 2.0,
+&"eg_dates": 3.0,
+&"eg_healing_balm": 1.5,
+&"eg_papyrus": 2.0,
+&"eg_silver_coins": 5.0,
+&"eg_water_skin": 3.0,
+&"wpn_gadget_c4": 0.015,
+&"wpn_gadget_decoy": 0.15,
+&"wpn_gadget_drone": 0.004,
+&"wpn_gadget_frag": 0.15,
+&"wpn_gadget_mine": 0.015,
+&"wpn_gadget_smoke": 0.048,
+&"wpn_pistol_deagle": 0.03,
+&"wpn_pistol_glock18": 0.096,
+&"wpn_pistol_p320": 0.007,
+&"wpn_rifle_ak47": 0.3,
+&"wpn_rifle_aug": 0.007,
+&"wpn_rifle_m4a1": 0.096,
+&"wpn_rifle_scarh": 0.03,
+&"wpn_rocket_javelin": 0.007,
+&"wpn_rocket_m202": 0.03,
+&"wpn_rocket_rpg7": 0.096,
+&"wpn_smg_mp5": 0.3,
+&"wpn_smg_p90": 0.03,
+&"wpn_smg_uzi": 0.007,
+&"wpn_smg_vector": 0.096,
+&"wpn_sniper_ax50": 0.096,
+&"wpn_sniper_m24": 0.3,
+&"wpn_sniper_m82": 0.03
+}
