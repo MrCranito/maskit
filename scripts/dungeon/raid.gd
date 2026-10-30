@@ -695,8 +695,13 @@ func _on_player_died() -> void:
 	if _raid_over:
 		return
 	_cancel_extraction(false)
-	var delay := Balance.get_float("raid", "death_screen_delay", Balance.get_float("raid", "reload_delay", 2.0))
-	get_tree().create_timer(delay).timeout.connect(_finish_death)
+	# Séquence de mort (scripts/ui/death_overlay.gd) puis écran de fin, en temps réel (ralenti).
+	var delay := DeathOverlay.outro_time()
+	if delay <= 0.0:
+		_finish_death.call_deferred()
+		return
+	DeathOverlay.play(self, player)
+	get_tree().create_timer(delay, true, false, true).timeout.connect(_finish_death)
 
 
 ## Abandon volontaire (menu pause, confirmation déjà faite) = mort immédiate.
