@@ -263,9 +263,12 @@ func _fall() -> void:
 		var pts := PackedVector2Array()
 		for i in 20:
 			var a := TAU * float(i) / 20.0
-			var wob := 1.0 + 0.12 * sin(a * 3.0 + 1.3)
-			pts.append(Vector2(cos(a) * r * 1.5 * wob, sin(a) * r * 0.7 * wob))
-		pool.draw_colored_polygon(pts, Color(0.32, 0.02, 0.05, 0.75)))
+			var wob := 1.0 + 0.14 * sin(a * 3.0 + 1.3) + 0.06 * sin(a * 7.0)
+			pts.append(Vector2(cos(a) * r * 1.25 * wob, sin(a) * r * 0.6 * wob))
+		pool.draw_colored_polygon(pts, Color(0.2, 0.0, 0.03, 0.42))
+		for i in pts.size():
+			pts[i] *= 0.62
+		pool.draw_colored_polygon(pts, Color(0.16, 0.0, 0.02, 0.4)))
 	player.add_child(pool)
 	var tp := _tw()
 	tp.tween_interval(t * 0.6)
@@ -274,6 +277,11 @@ func _fall() -> void:
 
 func _on_outro_done() -> void:
 	_end_slowmo()
+	# L'écran de fin reprend le titre : le bandeau et les textes s'effacent, le monde reste sombre.
+	var tf := _tw().set_parallel(true)
+	tf.tween_property(_title, "modulate:a", 0.0, 0.2)
+	tf.tween_property(_sub, "modulate:a", 0.0, 0.2)
+	tf.tween_method(_set_band, _band_t, 0.0, 0.2)
 	if not NetHooks.active:
 		return
 	var tw := _tw().set_parallel(true)
