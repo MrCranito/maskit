@@ -766,7 +766,7 @@ func test_shop_tabs_and_cosmetic_notice() -> void:
 	_test_profile(0)
 	var s := _shop()
 	await wait_frames(2)
-	assert_eq(s.tabs, [&"character", &"weapon", &"packs", &"chests", &"gems"] as Array[StringName], "Onglets Personnages, Armes, Packs, Coffres, Gemmes")
+	assert_eq(s.tabs, [&"character", &"weapon", &"packs", &"chests", &"gold", &"gems"] as Array[StringName], "Onglets Personnages, Armes, Packs, Coffres, Or, Gemmes")
 	assert_eq(s.current_tab, &"character")
 	assert_eq(s.cards.size(), s.character_skins().size() + 1, "Une carte par skin + le personnage de base")
 	assert_true(s.action_buttons.has(s.base_skin.id), "Carte du personnage de base")

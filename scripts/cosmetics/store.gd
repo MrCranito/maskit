@@ -97,6 +97,33 @@ static func purchase_pack(index: int) -> bool:
 	return true
 
 
+# --- Or contre gemmes -------------------------------------------------------------------
+
+## Packs d'or achetés en gemmes ([shop] gold_packs : [[or, gemmes], …]) : de quoi s'équiper à
+## l'armurerie avant un raid (décision de Victor du 30/10 : CLAUDE.md « Monétisation »).
+static func gold_packs() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var raw: Variant = Balance.get_value("shop", "gold_packs", [])
+	if raw is Array:
+		for p: Variant in raw:
+			if p is Array and (p as Array).size() >= 2 and int(p[0]) > 0 and int(p[1]) > 0:
+				out.append({"gold": int(p[0]), "gems": int(p[1])})
+	return out
+
+
+## Achète un pack d'or : débite les gemmes (Profile.debit, mode dev compris) puis crédite l'or.
+## false si l'indice est invalide ou s'il manque des gemmes (rien n'est débité).
+static func purchase_gold_pack(index: int) -> bool:
+	var list := gold_packs()
+	if index < 0 or index >= list.size():
+		return false
+	var p: Dictionary = list[index]
+	if not Profile.debit(&"gems", int(p["gems"])):
+		return false
+	Profile.add_gold(int(p["gold"]))
+	return true
+
+
 # --- Packs à contenu -------------------------------------------------------------------
 
 ## Packs à contenu ([shop] bundles) : [{id, name, price, gems, skins: Array[StringName],
