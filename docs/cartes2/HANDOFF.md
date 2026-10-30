@@ -1,6 +1,14 @@
 # Passation : trois nouvelles cartes + bestiaires (branche `feature/cartes-carnaval-glace-egypte`)
 
-Mis à jour le 30/10/2026 ~20 h 30. À relire avec `docs/cartes2/CONTRAT.md` (règles, propriété des
+Mis à jour le 30/10/2026 ~21 h 45 : **travail arrêté dans la session cloud, reprise dans Claude Code
+sur le Mac de l'utilisateur.** Tous les fichiers sont committés (y compris l'enregistrement des 3 biomes
+dans `biome_registry.gd`, leurs sections de `balance.cfg` et les vignettes) ; le projet compile.
+Aucune des 3 cartes n'est dans `[maps] only_ids` : elles ne sont donc pas proposées dans le jeu tant que
+leur paquet final n'est pas livré. Le rendu final 72 px/case des Terres gelées, en cours dans le cloud,
+est **perdu** (il était hors dépôt) : à relancer avec `tools/prerender/fl_pipeline.sh 12345 <work> 72`
+(ou `fl_final_batches.sh`). Les captures `compare_N.png` sont aussi perdues : les régénérer avec les
+scripts `tools/prerender/{hc,fl,eg}_capture*` / `eg_shots*`. Sur le Mac, le verrou `flock` n'est utile
+que si plusieurs agents rendent en même temps. À relire avec `docs/cartes2/CONTRAT.md` (règles, propriété des
 fichiers, verrous) et les journaux par carte `docs/cartes2/{haunted_carnival,frozen_lands,egypt_pyramids}.md`.
 
 ## Demande de l'utilisateur
@@ -33,13 +41,16 @@ Les scripts d'aperçu/capture de chaque carte : `tools/prerender/{hc,fl,eg}_*`. 
 de travail (hors dépôt) : `/tmp/claude-0/-home-claude/e0bdc8a1-40bd-55ff-aaa7-e9333f948c56/scratchpad/shots/{carnival,frozen,egypt}/`
 (perdues si le conteneur est recréé : re-générer avec les scripts de capture).
 
-## Fichiers partagés NON committés (volontairement)
+## Fichiers partagés (committés à l'arrêt)
 `scripts/biomes/biome_registry.gd` (enregistre les 3 biomes), `data/balance.cfg` (sections
-`[haunted_carnival]`, `[frozen_lands]`, `[egypt_pyramids]`, `[bestiary_egypt_pyramids]`, et
-`perm_carnaval_hante` dans `only_ids`), `assets/ui/maps/build_map_thumbs.py` (3 vignettes). À
-committer au **commit d'intégration**, quand les trois paquets finaux sont livrés et la suite verte.
-⚠ `perm_carnaval_hante` est déjà dans `only_ids` alors que son paquet doit être re-rendu : le retirer
-si on intègre avant le nouveau rendu.
+`[haunted_carnival]`, `[frozen_lands]`, `[egypt_pyramids]`, `[bestiary_egypt_pyramids]`),
+`assets/ui/maps/build_map_thumbs.py` (3 vignettes). `[maps] only_ids` ne contient AUCUNE des 3 cartes :
+ajouter `perm_carnaval_hante`, `perm_terres_gelees`, `perm_pyramides_egypte` une fois leur paquet final
+livré et vérifié.
+Derniers changements non encore rendus : `hc_scene.py` (passe de modélisation du Carnaval en cours :
+enceinte du chapiteau, tête de clown, bâtiments, encombrement — vérifier ce qui est fait en lisant le
+diff du dernier commit), `fl_scene.py` (réglages lumière avant le final), `eg_grade.py` (halos de
+torches réduits, sable plus ocre).
 
 ## Tests connus en échec (dernière suite complète : 704 tests, 691 OK, 11 KO)
 - Paquets pré-rendus absents ou périmés (Pyramides pas encore rendu, Terres gelées 12345 ancien plan,

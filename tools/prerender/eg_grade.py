@@ -43,17 +43,17 @@ def gpx(cx, cy):
 GLOWS = []
 for t in C.get("torches", []):
     x, y = gpx(t[0] + 0.5, t[1] + 0.5)
-    GLOWS.append((x, y, 3.2 * PPC, 3.0 * PPC, (1.0, 0.5, 0.14), 0.5))
+    GLOWS.append((x, y, 1.2 * PPC, 1.1 * PPC, (1.0, 0.55, 0.18), 0.5))
 for s in L.get("prop_spawns", []):
     if s.get("kind") in ("eg_brazier", "eg_torch", "eg_fire_bowl", "eg_campfire"):
         x, y = gpx(s["cell"][0] + 0.5, s["cell"][1] + 0.5)
-        GLOWS.append((x, y, 3.4 * PPC, 3.1 * PPC, (1.0, 0.46, 0.1), 0.6))
+        GLOWS.append((x, y, 1.5 * PPC, 1.4 * PPC, (1.0, 0.5, 0.14), 0.55))
 sa = C.get("sanctuary", [30, 32, 12, 12])
 x, y = gpx(sa[0] + sa[2] / 2, sa[1] + sa[3] / 2)
-GLOWS.append((x, y, sa[2] * 0.6 * PPC, sa[3] * 0.6 * PPC, (1.0, 0.55, 0.15), 0.2))
+GLOWS.append((x, y, sa[2] * 0.45 * PPC, sa[3] * 0.45 * PPC, (1.0, 0.55, 0.15), 0.14))
 for ct in C.get("courts", [])[:1]:
     x, y = gpx(ct[0] + ct[2] / 2, ct[1] + ct[3] / 2)
-    GLOWS.append((x, y, ct[2] * 0.7 * PPC, ct[3] * 0.7 * PPC, (1.0, 0.55, 0.2), 0.16))
+    GLOWS.append((x, y, ct[2] * 0.5 * PPC, ct[3] * 0.5 * PPC, (1.0, 0.55, 0.2), 0.08))
 
 # Masque « intérieur » (cases FLOOR/DOOR/STAIRS de pièces non ouvertes : murs exclus), adouci.
 _open = set()
@@ -72,6 +72,23 @@ for _y, _row in enumerate(L["tiles"]):
 from PIL import ImageFilter
 _mi = Image.fromarray((_m * 255).astype(np.uint8)).resize(((TW + 2 * M) * 8, (TH + 2 * M) * 8), Image.BILINEAR)
 IN_MASK = _mi.filter(ImageFilter.GaussianBlur(6))
+# Masque « sable » (cases VOID / STREET hors dallage, marge comprise), adouci.
+_s = np.ones((TH + 2 * M, TW + 2 * M), np.float32)
+for _y, _row in enumerate(L["tiles"]):
+    for _x, _ch in enumerate(_row):
+        if _ch not in ("0", "1"):
+            _s[_y + M, _x + M] = 0.0
+_si = Image.fromarray((_s * 255).astype(np.uint8)).resize(((TW + 2 * M) * 8, (TH + 2 * M) * 8), Image.BILINEAR)
+SAND_MASK = _si.filter(ImageFilter.GaussianBlur(5))
+SAND_SAT = float(os.environ.get("EG_GRADE_SAND_SAT", "1.08"))
+SAND_CON = float(os.environ.get("EG_GRADE_SAND_CON", "1.18"))
+SHADOW = float(os.environ.get("EG_GRADE_SHADOW", "0.3"))
+
+
+def sandm(x0, y0, w, h):
+    sx = SAND_MASK.width / FW
+    box = (x0 * sx, y0 * sx, (x0 + w) * sx, (y0 + h) * sx)
+    return np.asarray(SAND_MASK.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0
 
 
 def inside(x0, y0, w, h):
@@ -88,7 +105,7 @@ def glow_field(x0, y0, w, h):
         if gx + rx < x0 or gx - rx > x0 + w or gy + ry < y0 or gy - ry > y0 + h:
             continue
         d2 = ((xs - gx) / rx) ** 2 + ((ys - gy) / ry) ** 2
-        f = np.clip(1.0 - d2, 0.0, 1.0) ** 2 * (k * GLOW)
+        f = np.clip(1.0 - d2, 0.0, 1.0) ** 3 * (k * GLOW)
         out += f[:, :, None] * np.array(col, np.float32)[None, None, :]
     return out
 
@@ -138,6 +155,18 @@ def grade(a, x0, y0):
     # 2. ombres → brun chocolat
     sh = np.clip(1.0 - lum / 0.32, 0.0, 1.0)[:, :, None]
     f = f * (1.0 - 0.35 * sh) + (lum[:, :, None] * np.array([1.15, 0.78, 0.5], np.float32)) * (0.35 * sh)
+    # 2b. sable : plus ocre doré et plus contrasté ; ombres portées plus sombres (détache les
+    # pavillons du sol)
+    sm = sandm(x0, y0, a.shape[1], a.shape[0])[:, :, None]
+    l2 = (f @ np.array([0.299, 0.587, 0.114], np.float32))[:, :, None]
+    ochre = l2 + (f - l2) * SAND_SAT
+    ochre = ochre * np.array([1.02, 0.99, 0.92], np.float32)
+    lm_ = 0.42
+    ochre = ochre * ((lm_ + (l2 - lm_) * SAND_CON) / np.maximum(l2, 1e-3))
+    f = f * (1.0 - sm) + ochre * sm
+    l2 = f @ np.array([0.299, 0.587, 0.114], np.float32)
+    shd = np.clip(1.0 - l2 / 0.3, 0.0, 1.0)[:, :, None]
+    f = f * (1.0 - SHADOW * shd)
     # 3. intérieurs assombris
     i = inside(x0, y0, a.shape[1], a.shape[0])[:, :, None]
     f = f * (1.0 - i * (1.0 - DARK_IN))

@@ -64,4 +64,11 @@ Captures et comparaisons : `scratchpad/shots/egypt/` (`compare_N.png`, `M_overvi
   (ajout de `perm_pyramides_egypte` une fois le paquet 72 px/case livré).
 - `export_layout.gd`, `prerender_backdrop.gd` : aucun changement nécessaire (génériques).
 
-## Évaluation (voir le rapport final)
+## Évaluation
+Itérations basse résolution (12 px/case, 6 échantillons) comparées à la planche
+(`scratchpad/shots/egypt/compare_N.png`). Étapes décisives : plan en croix v3 (it. 13‑16),
+étalonnage par appariement de luminance `eg_grade.py` (it. 19‑21), géométrie « ruine » (arases
+érodées, brèches, blocs tombés, piliers d'angle), correction de la matière d'arase (sable parasite),
+intérieurs meublés, toits en dalles‑poutres, sphinx couchés, pyramides à gradins, parvis ensablé,
+marge de rochers / palmiers (it. 22‑29), halos de torches resserrés et sable ocre contrasté (29h).
+Note retenue avant le final : ≈ 7,5 / 10 (coordination : ~7,2 sur it. 29 avant étalonnage 29h).

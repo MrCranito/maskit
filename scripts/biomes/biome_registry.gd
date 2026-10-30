@@ -8,6 +8,9 @@ const BIOMES: Array[Dictionary] = [
 	{"biome": &"far_west", "world": "res://data/worlds/world_01_far_west.tres", "enemy_kinds": ""},
 	{"biome": &"space_station", "world": "res://data/worlds/world_02_space_station.tres", "enemy_kinds": "res://scripts/biomes/space_station/enemy_kinds.gd"},
 	{"biome": &"mall", "world": "res://data/worlds/world_03_mall.tres", "enemy_kinds": "res://scripts/biomes/mall/enemy_kinds.gd"},
+	{"biome": &"egypt_pyramids", "world": "res://data/worlds/world_06_egypt_pyramids.tres", "enemy_kinds": "res://scripts/biomes/egypt_pyramids/enemy_kinds.gd"},
+	{"biome": &"haunted_carnival", "world": "res://data/worlds/world_04_haunted_carnival.tres", "enemy_kinds": "res://scripts/biomes/haunted_carnival/enemy_kinds.gd"},
+	{"biome": &"frozen_lands", "world": "res://data/worlds/world_05_frozen_lands.tres", "enemy_kinds": "res://scripts/biomes/frozen_lands/enemy_kinds.gd"},
 ]
 
 ## Scripts déclarant des conteneurs (constante CONTAINER_DEFS ou DEFS) et des cachettes
@@ -15,6 +18,9 @@ const BIOMES: Array[Dictionary] = [
 const DEF_SCRIPTS: Array[String] = [
 	"res://scripts/biomes/space_station/space_station_builder.gd",
 	"res://scripts/biomes/mall/mall_builder.gd",
+	"res://scripts/biomes/haunted_carnival/hc_builder.gd",
+	"res://scripts/biomes/frozen_lands/frozen_lands_builder.gd",
+	"res://scripts/biomes/egypt_pyramids/eg_builder.gd",
 ]
 ## Valeurs par défaut des champs absents d'une définition de biome.
 const DEF_DEFAULTS := {"scale": 0.55, "block": Vector2.ZERO, "reach": 4.0, "shadow": 0.0, "foot": 4.0}

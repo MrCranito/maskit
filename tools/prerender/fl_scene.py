@@ -2745,7 +2745,8 @@ def render_chunked(path, chunk=1024, ov=24, grade_=True):
             print("  chunk", x0, y0, round(dt, 1), flush=True)
     scene.render.use_border = False
     canvas.save(path)
-    os.remove(tmp)
+    if os.path.exists(tmp):
+        os.remove(tmp)
     return dt
 # ======================================================================= masque d'emprise zénithal (repris de fw_scene.py)
 def render_mask(path, ppc=4, zmin=0.16, zmax=1.0, ss=4):

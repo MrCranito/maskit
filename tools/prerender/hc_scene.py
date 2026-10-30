@@ -1158,10 +1158,10 @@ def mat_clown_face(name):
     """Tête de clown : peau blanche émissive, joues roses, variations."""
     s = NT(name)
     n = s.noise(s.obj(), 4.0, 4, 0.5)
-    col = s.mix(s.mul(n, 0.4), (0.72, 0.55, 0.92), (0.5, 0.3, 0.75))
+    col = s.mix(s.mul(n, 0.4), (0.62, 0.36, 0.85), (0.4, 0.18, 0.62))
     s.done(col, 0.5)
-    s.b.inputs["Emission Color"].default_value = (0.7, 0.45, 1.0, 1)
-    s.b.inputs["Emission Strength"].default_value = 0.6
+    s.b.inputs["Emission Color"].default_value = (0.6, 0.3, 1.0, 1)
+    s.b.inputs["Emission Strength"].default_value = 0.22
     return s.m
 
 
@@ -1170,8 +1170,8 @@ def build_materials():
     mat_dirt("dirt_dark", (0.12, 0.1, 0.13), (0.22, 0.18, 0.22))
     mat_pavers("pavers", (0.25, 0.23, 0.28), (0.11, 0.105, 0.14))
     mat_pavers("pavers_lot", (0.27, 0.25, 0.3), (0.12, 0.11, 0.15))
-    mat_pavers("flags", (0.33, 0.29, 0.33), (0.15, 0.13, 0.17), 0.85)
-    mat_simple("stone_ochre", (0.42, 0.33, 0.3), 0.85, 0.0, 0.35)
+    mat_pavers("flags", (0.42, 0.35, 0.36), (0.13, 0.11, 0.14), 0.75)
+    mat_simple("stone_ochre", (0.62, 0.42, 0.3), 0.85, 0.0, 0.35)
     mat_grass("grass")
     mat_grass("forest_floor", (0.1, 0.13, 0.14))
     mat_wood("plank", (0.42, 0.26, 0.24))
@@ -1996,12 +1996,12 @@ def build_enclosure():
         return
     w = MB()
     dec = MB()
-    hw = 1.05
+    hw = 1.35
     cxp, cyp = TENT["c"]
     pil = []
     for (x, y) in sorted(ENC_CELLS):
-        w.box(x, Y(y + 1), 0.0, x + 1, Y(y), hw, "stone_ochre" if (x * 3 + y) % 4 else "stone")
-        w.box(x - 0.04, Y(y + 1) - 0.04, hw, x + 1.04, Y(y) + 0.04, hw + 0.1, "stone_dark")
+        w.box(x, Y(y + 1), 0.0, x + 1, Y(y), hw, "stone_ochre")
+        w.box(x - 0.06, Y(y + 1) - 0.06, hw, x + 1.06, Y(y) + 0.06, hw + 0.12, "stone")
         if (x + y) % 2 == 0:
             w.box(x + 0.25, Y(y + 0.75), hw + 0.1, x + 0.75, Y(y + 0.25), hw + 0.34, "stone_ochre")
         for sd, dx, dy in SIDES:
@@ -2010,7 +2010,7 @@ def build_enclosure():
                 continue
             outer = enc_d(nx, ny) > enc_d(x, y)
             # face extérieure : niche en arcade (fond sombre, petite flamme chaude)
-            if outer and (x * 7 + y * 5) % 3 == 0:
+            if outer:
                 ox_, oy_ = x + 0.5 + dx * 0.52, Y(y + 0.5) - dy * 0.52
                 ax = abs(dy) > 0
                 if ax:
@@ -2383,14 +2383,14 @@ def build_gate():
         mb.sphere(q[0], q[1], q[2], r * S, mat, sub, sx, sy, sz)
 
     # arche de pierre à ampoules derrière la tête (plan vertical tourné vers la caméra)
-    RA = 3.55
+    RA = 4.5
     na = 26
     for k in range(na):
         a0 = math.pi * k / na
         a1 = math.pi * (k + 1) / na
         p0 = hp(math.cos(a0) * RA, -0.9, -1.6 + math.sin(a0) * RA)
         p1 = hp(math.cos(a1) * RA, -0.9, -1.6 + math.sin(a1) * RA)
-        mb.seg(p0, p1, 0.24 * S, "stone_ochre" if k % 2 else "stone", 8)
+        mb.seg(p0, p1, 0.3 * S, "stone_ochre" if k % 2 else "stone", 8)
         q0 = hp(math.cos(a0) * (RA + 0.32), -0.7, -1.6 + math.sin(a0) * (RA + 0.32))
         mb.sphere(q0[0], q0[1], q0[2], 0.07 * S, "lamp_gold" if k % 2 else "lamp_magenta", 1)
         q1 = hp(math.cos(a0) * (RA - 0.3), -0.7, -1.6 + math.sin(a0) * (RA - 0.3))
@@ -2398,7 +2398,7 @@ def build_gate():
     sph(0, 0, 0.2, 2.9, "clown_face", 1.0, 0.85, 1.08, 3)             # crâne
     sph(0, 0.9, -1.2, 2.2, "clown_face", 1.08, 0.8, 0.75, 3)          # mâchoire
     for s_ in (-1, 1):
-        sph(s_ * 1.45, 2.05, -0.55, 0.95, "plush_pink", 1.0, 0.6, 0.8)   # pommettes
+        sph(s_ * 1.5, 2.25, -0.5, 0.7, "balloon_r", 1.0, 0.6, 0.8)    # pommettes
         sph(s_ * 1.05, 2.35, 0.8, 0.62, "cloth_purple", 1.25, 0.55, 0.95)  # orbites
         sph(s_ * 1.0, 2.62, 0.72, 0.26, "eyes_glow", 1.0, 1.0, 1.25, 1)  # yeux lumineux
         sph(s_ * 1.0, 2.82, 0.72, 0.1, "metal_dark", 1.0, 1.0, 1.4, 1)   # pupilles fendues
@@ -2411,25 +2411,25 @@ def build_gate():
                 "hair_violet" if j % 2 == 0 else "balloon_p", 1.0, 0.9, 0.9)
         GLOWS.append(hp(s_ * 1.0, 3.6, 0.72) + (NEON["green"], 1.6))
     sph(0, 2.85, -0.05, 0.62, "balloon_r", 1.0, 1.0, 1.0)              # nez
-    sph(0, 2.4, -1.5, 1.0, "metal_dark", 2.05, 0.5, 0.55)              # bouche béante
-    sph(0, 2.55, -1.5, 0.55, "neon_magenta", 2.6, 0.3, 0.45, 1)        # lueur au fond de la gorge
+    sph(0, 2.75, -1.65, 1.0, "metal_dark", 2.05, 0.6, 0.65)              # bouche béante
+    sph(0, 2.95, -1.5, 0.6, "neon_magenta", 2.8, 0.35, 0.5, 1)        # lueur au fond de la gorge
     for k in range(13):                                                # lèvres (grand sourire)
         t = k / 12
         a_ = math.pi * (0.1 + 0.8 * t)
-        q0 = hp(-2.05 + 4.1 * t, 2.55, -0.95 - 0.35 * math.sin(a_) + 0.35 * (2 * t - 1) ** 2)
-        q1 = hp(-2.05 + 4.1 * (k + 1) / 12, 2.55, -0.95 - 0.35 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)) + 0.35 * (2 * (k + 1) / 12 - 1) ** 2)
+        q0 = hp(-2.05 + 4.1 * t, 3.05, -0.95 - 0.35 * math.sin(a_) + 0.35 * (2 * t - 1) ** 2)
+        q1 = hp(-2.05 + 4.1 * (k + 1) / 12, 3.05, -0.95 - 0.35 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)) + 0.35 * (2 * (k + 1) / 12 - 1) ** 2)
         if k < 12:
             mb.seg(q0, q1, 0.17 * S, "balloon_r", 6)
-        q2 = hp(-1.85 + 3.7 * t, 2.5, -2.05 + 0.25 * math.sin(a_))
+        q2 = hp(-1.85 + 3.7 * t, 3.00, -2.3 + 0.15 * math.sin(a_))
         if k < 12:
-            q3 = hp(-1.85 + 3.7 * (k + 1) / 12, 2.5, -2.05 + 0.25 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)))
+            q3 = hp(-1.85 + 3.7 * (k + 1) / 12, 3.00, -2.3 + 0.15 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)))
             mb.seg(q2, q3, 0.14 * S, "balloon_r", 6)
         if 1 <= k <= 11:                                                  # dents pointues
-            top = hp(-2.0 + 4.0 * t, 2.62, -1.05 - 0.33 * math.sin(a_) + 0.3 * (2 * t - 1) ** 2)
-            tip = hp(-2.0 + 4.0 * t, 2.66, -1.5 - 0.3 * math.sin(a_))
+            top = hp(-2.0 + 4.0 * t, 3.12, -1.05 - 0.33 * math.sin(a_) + 0.3 * (2 * t - 1) ** 2)
+            tip = hp(-2.0 + 4.0 * t, 3.16, -1.5 - 0.3 * math.sin(a_))
             mb.seg(top, tip, 0.13 * S, "canvas_white", 5, r2=0.0)
-            bot = hp(-1.8 + 3.6 * t, 2.58, -1.95 + 0.22 * math.sin(a_))
-            tip2 = hp(-1.8 + 3.6 * t, 2.6, -1.6 + 0.22 * math.sin(a_))
+            bot = hp(-1.8 + 3.6 * t, 3.08, -2.2 + 0.12 * math.sin(a_))
+            tip2 = hp(-1.8 + 3.6 * t, 3.10, -1.82 + 0.12 * math.sin(a_))
             mb.seg(bot, tip2, 0.11 * S, "canvas_white", 5, r2=0.0)
     for k in range(22):                                                   # collerette violette / rose
         a_ = k / 22 * math.tau
