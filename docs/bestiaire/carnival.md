@@ -102,13 +102,27 @@ d'attention pour le chef de projet :
 - Coop : la zone de musique (`cv_music_zone.gd`) et l'aura du forain sont locales à l'hôte (pas de
   copie visuelle chez l'invité, comme la tornade du Far West) ; l'opacité de la Pénombre
   (`set_modulate`) n'est pas relayée (même remarque que la Nuit blanche du centre commercial).
-- Pas de table `enemy_cv_*` : sans carte, le butin retombera sur la table du biome quand le monde
-  existera (à créer avec le biome).
+- Butin : seule table propre `data/loot_tables/enemy_cv_circus_king.tres` (exigée pour chaque boss
+  par `tests/test_boss_loot.gd` ; 4-6 objets, jamais vide, Épiques et Légendaires possibles). Objets
+  génériques (pas encore d'objets du carnaval) calqués sur la table de l'Omnistore. Les autres
+  cv_* retomberont sur la table du biome quand le monde existera.
 
 ## Tests
 `tests/test_bestiary_carnival.gd` : données, planches, noms et caractéristiques de la planche,
 compétences connues, valeurs dans balance.cfg, bestiaire, effets de chaque compétence, élites, boss
 (phases, transitions, parade, pièges, feux d'artifice).
 
+Suite complète (30/10) : 722 tests, 717 OK ; restent 3 tests de chronométrage hors périmètre
+(`test_mall.gd`, `test_raid.gd`, `test_space_station.gd` : génération d'étage > 50 ms sur cette
+machine lente) ; l'échec `test_boss_loot` (table du Roi du cirque) est corrigé.
+
 ## Captures (`docs/bestiaire/captures/carnival/`)
+Arène de test dans un raid de Dust Creek (pas de carte du carnaval), brouillard levé, HUD caché.
 - `planche_modeles_carnival.png` — les 9 modèles (idle, attaque, cadavre).
+- `en_jeu_classiques_repos.png`, `en_jeu_classiques_combat_{0,1,2}.png` — les 6 communs.
+- `competences_telegraphes.png`, `competences_effets.png`, `competences_valse.png` — klaxon, salto,
+  plongeon, valse du manège, ballon.
+- `en_jeu_elites_repos.png`, `en_jeu_elites_combat_{0,1,2}.png`, `elites_telegraphes.png`,
+  `elites_cercle_de_feu_boniment.png` — élites et leurs compétences.
+- `boss_phase1.png`, `boss_phase1_jonglage.png`, `boss_phase2_parade.png`, `boss_phase2_pieges.png`,
+  `boss_phase3_grand_final.png`, `boss_phase3_feux.png` — les 3 phases du Roi du cirque.

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_cv_circus_king"
+display_name = "Dépouille du Roi du cirque"
+rolls_min = 4
+rolls_max = 6
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"bandage": 4,
+&"gold_bar": 0.03,
+&"gold_nugget": 5,
+&"medkit": 2,
+&"pearl_necklace": 0.00832,
+&"raw_diamond": 0.006,
+&"wpn_gadget_mine": 0.00832,
+&"wpn_rifle_scarh": 0.02,
+&"wpn_smg_p90": 0.03,
+&"wpn_smg_uzi": 0.001113
+}

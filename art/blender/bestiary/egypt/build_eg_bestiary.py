@@ -1182,11 +1182,13 @@ class Pharaoh(EgHuman):
         for v in cap.verts:
             x, y, z = v.co
             z = max(z, -0.3)
-            v.co = Vector((x * 0.245 * (1.0 + 0.35 * max(0.0, -z)), y * 0.235 + 0.02, z * 0.18 + 0.30))
+            v.co = Vector((x * 0.235 * (1.0 + 0.35 * max(0.0, -z)), y * 0.20 + 0.045, z * 0.18 + 0.30))
         self.part("nemes", cap, "lapis", head)
-        for k, z in enumerate((0.25, 0.31, 0.37)):
-            self.part("nemesStripe", C.bm_xform(ring(0.250 - 0.045 * k, 0.240 - 0.045 * k, 0.018), loc=(0, 0.02, z)),
-                      "gold", head)
+        for k, z in enumerate((0.20, 0.26, 0.32, 0.38, 0.43)):
+            n = (z - 0.30) / 0.18
+            c = math.sqrt(max(0.0, 1.0 - n * n))
+            rx = 0.235 * c * (1.0 + 0.35 * max(0.0, -n)) + 0.006
+            self.part("nemesStripe", C.bm_xform(ring(rx, 0.20 * c + 0.006, 0.016), loc=(0, 0.045, z)), "gold", head)
         self.part("nemesBand", C.bm_xform(C.bm_box(0.36, 0.03, 0.04, bevel=0.01), loc=(0, -0.172, 0.29)), "gold", head)
         for sx in (1, -1):
             lap = C.bm_box(0.10, 0.06, 0.40, bevel=0.015)
@@ -1206,12 +1208,12 @@ class Pharaoh(EgHuman):
                   "lapis", head)
         self.part("uraeusEye", C.bm_xform(C.bm_sphere(6, 4, 0.012), loc=(0, -0.225, 0.43)), "eye_glow", head, nofs=True)
         # lueur dorée : disque solaire derrière la tête
-        self.part("halo", C.bm_xform(ring(0.34, 0.34, 0.03, 40), loc=(0, 0.26, 0.26), rot=(math.pi / 2 - 0.25, 0, 0)),
+        self.part("halo", C.bm_xform(ring(0.32, 0.32, 0.028, 40), loc=(0, 0.26, 0.26), rot=(math.pi / 2 - 0.25, 0, 0)),
                   "halo", head, nofs=True)
         for k in range(12):
             a = 2 * math.pi * k / 12
-            self.part("haloRay", C.bm_xform(C.bm_cyl(4, 0.018, 0.0, 0.12), loc=(0.40 * math.cos(a), 0.26 + 0.1 * math.sin(a) * 0.25, 0.26 + 0.40 * math.sin(a)),
-                      rot=(math.pi / 2 - 0.25, 0, 0)), "halo", head, nofs=True)
+            self.part("haloRay", C.bm_xform(C.bm_cyl(4, 0.018, 0.0, 0.12), loc=(0.41 * math.cos(a), 0.26 + 0.10 * math.sin(a), 0.26 + 0.41 * math.sin(a)),
+                      rot=(0, math.pi / 2 - a, 0)), "halo", head, nofs=True)
 
     def dress(self) -> None:
         sp, pel = self.j["spine"], self.j["pelvis"]
@@ -1278,7 +1280,7 @@ class Pharaoh(EgHuman):
         sh = self.shoulder
         hr = [Vector((0.06, -0.24, -0.06)), Vector((0.10, -0.04, 0.34)), Vector((0.10, -0.02, 0.40)),
               Vector((0.12, -0.44, -0.10)), Vector((0.12, -0.42, -0.14)), Vector((0.0, -0.26, -0.16))][i]
-        rot = [(0.1, 0, 0), (-0.6, 0, 0), (-0.75, 0, 0), (1.2, 0, 0), (1.15, 0, 0), (0.3, 0, 0)][i]
+        rot = [(0.1, 0, 0), (-0.6, 0, 0), (-0.75, 0, 0), (0.95, 0, 0), (0.9, 0, 0), (0.3, 0, 0)][i]
         self.arm_ik("R", sh["R"] + hr, Vector((-0.9, 0.3, 0.0)))
         self.wrot("staff", rot)
         grip2 = self.hand["R"] - staff_dir(rot) * 0.20
