@@ -3,19 +3,23 @@ extends ModalPanel
 ## Options : volume de la musique, volume des effets (AudioManager), vibrations on/off,
 ## images par seconde (Max = fréquence de l'écran jusqu'à 120, 60, ou éco 30 : moins de chauffe).
 ## Les valeurs sont sauvegardées dans SaveManager.data["settings"] (MenuKit.set_setting).
+## Versions de test uniquement (DevMode.is_available : build debug ou éditeur, donc l'APK de la CI) :
+## interrupteur « Argent illimité » (DevMode), seule façon de l'activer sur téléphone (pas de F3/F4).
 
 var music_slider: HSlider = null
 var sfx_slider: HSlider = null
 var vibration_toggle: Button = null
 ## Images par seconde (FrameRate) : Max → 60 → éco.
 var fps_button: Button = null
+## Interrupteur du mode dev « argent illimité » (null hors version de test).
+var dev_toggle: Button = null
 ## Section « Sauvegarde cloud » (CloudSync) : état + compte, bouton Synchroniser.
 var cloud_status_label: Label = null
 var sync_button: Button = null
 
 
 func _init() -> void:
-	super._init("Options", Vector2(620, 520))
+	super._init("Options", Vector2(620, 600 if DevMode.is_available() else 520))
 
 
 func _build_body() -> void:
@@ -69,7 +73,40 @@ func _build_body() -> void:
 		fps_button.text = FrameRate.label_for(mode)
 		MenuKit.sfx(&"toggle"))
 	row2.add_child(fps_button)
+	_build_dev()
 	_build_account()
+
+
+## Versions de test : gemmes et or illimités (DevMode), le vrai solde n'est jamais touché.
+func _build_dev() -> void:
+	if not DevMode.is_available():
+		return
+	var row := HBoxContainer.new()
+	row.name = "DevRow"
+	row.add_theme_constant_override("separation", 16)
+	body.add_child(row)
+	var col := VBoxContainer.new()
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 0)
+	row.add_child(col)
+	col.add_child(MenuKit.label("Argent illimité", 26, MenuKit.TEXT, MenuKit.nunito(800)))
+	col.add_child(MenuKit.label("Version de test : gemmes et or ∞, ton vrai solde est gardé", 15, MenuKit.TEXT_DIM, MenuKit.nunito(600)))
+	dev_toggle = MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
+	dev_toggle.name = "DevToggle"
+	dev_toggle.toggle_mode = true
+	dev_toggle.button_pressed = DevMode.is_unlimited()
+	dev_toggle.text = "Activé" if dev_toggle.button_pressed else "Désactivé"
+	var on := MenuKit.panel_style(MenuKit.VIOLET, Color(MenuKit.GOLD, 0.9), 16, 2, 10)
+	on.border_width_bottom = 5
+	dev_toggle.add_theme_stylebox_override("pressed", on)
+	dev_toggle.add_theme_stylebox_override("hover_pressed", on)
+	dev_toggle.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
+	dev_toggle.toggled.connect(func(v: bool) -> void:
+		var now := DevMode.set_unlimited(v)
+		dev_toggle.set_pressed_no_signal(now)
+		dev_toggle.text = "Activé" if now else "Désactivé"
+		MenuKit.sfx(&"toggle"))
+	row.add_child(dev_toggle)
 
 
 ## Compte et sauvegarde cloud (CloudSync) : état, identifiant du compte invité, bouton Synchroniser.

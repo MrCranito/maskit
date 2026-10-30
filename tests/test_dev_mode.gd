@@ -151,3 +151,24 @@ func test_panneau_dev_bascule() -> void:
 	assert_false(p.badge.visible)
 	DevMode.build_check = func() -> bool: return false
 	assert_null(DevPanel.attach(self), "aucun panneau hors build de développement")
+
+
+## Téléphone (pas de F3/F4) : interrupteur dans Options, seulement dans une version de test.
+func test_interrupteur_dans_les_options() -> void:
+	DevMode.build_check = func() -> bool: return true
+	var p := OptionsPanel.new()
+	add_child_autofree(p)
+	await wait_process_frames(2)
+	assert_not_null(p.dev_toggle, "interrupteur présent en version de test")
+	var before := DevMode.is_unlimited()
+	p.dev_toggle.button_pressed = not before
+	assert_eq(DevMode.is_unlimited(), not before, "bascule le mode")
+	DevMode.set_unlimited(before)
+	p.queue_free()
+	DevMode.build_check = func() -> bool: return false
+	var q := OptionsPanel.new()
+	add_child_autofree(q)
+	await wait_process_frames(2)
+	assert_null(q.dev_toggle, "absent d'une version publiée")
+	DevMode.build_check = Callable()
+
