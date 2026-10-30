@@ -27,7 +27,7 @@ import sys, json, math, random, time, os
 import bpy, bmesh
 from mathutils import Vector, Matrix, Euler, noise as mnoise
 
-A = sys.argv[1:]
+A = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]  # blender -b --python … -- args
 LAYOUT = json.load(open(A[0]))
 OUT = A[1]
 PPC = int(A[2]) if len(A) > 2 else 24
@@ -2283,6 +2283,15 @@ def setup_render():
     sc = scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
+    # CYCLES_DEVICE=METAL / CUDA / OPTIX : rendu GPU (tools/prerender/mac_env.sh), CPU par défaut
+    gpu = os.environ.get("CYCLES_DEVICE", "CPU")
+    if gpu != "CPU":
+        prefs = bpy.context.preferences.addons["cycles"].preferences
+        prefs.compute_device_type = gpu
+        prefs.get_devices()
+        for d in prefs.devices:
+            d.use = d.type == gpu
+        sc.cycles.device = "GPU"
     sc.cycles.samples = SAMPLES
     sc.cycles.use_denoising = True
     sc.cycles.max_bounces = 4

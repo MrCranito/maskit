@@ -4,7 +4,7 @@
 # les morceaux manquants (dossier <work>/_chunks_full, b<id>_in.png déjà rendus conservés).
 #
 # Usage : tools/prerender/hc_pipeline.sh <seed> <work_dir> [ppc=72] [samples=16] [margin=6]
-#   ex. : flock /home/claude/.blender_render.lock tools/prerender/hc_pipeline.sh 2025 /tmp/hc2025
+#   ex. : flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" tools/prerender/hc_pipeline.sh 2025 /tmp/hc2025
 # Aperçu rapide : hc_pipeline.sh <seed> <work_dir> 12 4   (≈ 2 min ; ne pas livrer : le jeu et les
 # tests exigent ≥ 72 px/case).
 # Réglages du rendu (variables d'environnement, voir tools/prerender/hc_scene.py) : HC_EXPOSURE,
@@ -19,7 +19,7 @@ SAMPLES=${4:-16}
 MARGIN=${5:-6}
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PACK="$ROOT/assets/prerender/haunted_carnival/$SEED"
-GLOCK=/home/claude/.godot.lock
+GLOCK=${GODOT_LOCK:-/home/claude/.godot.lock}
 mkdir -p "$WORK"
 cd "$ROOT"
 flock "$GLOCK" godot --headless --path . --import > /dev/null 2>&1 || true

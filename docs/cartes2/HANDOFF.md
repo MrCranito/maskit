@@ -24,6 +24,13 @@ fichiers, verrous) et les journaux par carte `docs/cartes2/{haunted_carnival,fro
 4. Git (CLAUDE.md) : jamais de push sur `main` ; PR avec description précise + captures sur la branche
    `pr-assets` ; ne jamais fusionner soi-même.
 
+## Environnement macOS (Mac de l'utilisateur, M4, GPU Metal)
+- `source tools/prerender/mac_env.sh` avant tout `*_pipeline.sh` : `python3` des scènes → Blender 5.2
+  installé (`blender -b --python … -- args`), compose/étalonnage → Python de Blender + Pillow
+  (`~/.cache/maskit/pylib`), Cycles sur GPU (`CYCLES_DEVICE=METAL`), verrous dans `~/.cache/maskit/`
+  (`GODOT_LOCK`, `BLENDER_LOCK`), `timeout` GNU (coreutils). Prérequis : `brew install flock coreutils`.
+- Aperçu complet ppc 12 / 4 samples ≈ 3 min (Pyramides).
+
 ## Environnement (à réinstaller dans un nouveau conteneur)
 - Godot 4.7.2 : `Godot_v4.7.2-stable_linux.x86_64.zip` depuis les releases GitHub → `/usr/local/bin/godot`.
 - Blender en module : `pip install --break-system-packages bpy` (5.2.3), Cycles CPU.

@@ -4,7 +4,7 @@
 # (dossier <work>/_chunks_full, b<id>_in.png déjà rendus conservés).
 #
 # Usage : tools/prerender/fl_pipeline.sh <seed> <work_dir> [ppc=72] [samples=16] [margin=6]
-#   ex. : flock /home/claude/.blender_render.lock tools/prerender/fl_pipeline.sh 12345 /tmp/fl12345
+#   ex. : flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" tools/prerender/fl_pipeline.sh 12345 /tmp/fl12345
 # Aperçu rapide : fl_pipeline.sh <seed> <work_dir> 12 4   (≈ 2 min ; ne pas livrer : le jeu et les
 # tests exigent ≥ 72 px/case).
 # Réglages du rendu (variables d'environnement, voir tools/prerender/fl_scene.py) : FL_EXPOSURE,
@@ -19,12 +19,12 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PACK="$ROOT/assets/prerender/frozen_lands/$SEED"
 mkdir -p "$WORK"
 cd "$ROOT"
-flock /home/claude/.godot.lock godot --headless --path . --import > /dev/null 2>&1 || true
-flock /home/claude/.godot.lock godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
+flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_05_frozen_lands.tres
-flock /home/claude/.blender_render.lock python3 tools/prerender/fl_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" python3 tools/prerender/fl_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
-flock /home/claude/.godot.lock godot --headless --path . --import > /dev/null 2>&1 || true
-flock /home/claude/.godot.lock godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/frozen_lands/$SEED/"
-flock /home/claude/.godot.lock godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/frozen_lands/$SEED/"
+flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
 echo "Paquet : $PACK"

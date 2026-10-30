@@ -12,7 +12,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 for i in $(seq 1 40); do
 	set +e
-	FL_CHUNK_LIMIT=$PER flock /home/claude/.blender_render.lock python3 tools/prerender/fl_scene.py "$LAYOUT" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int 6 > "$WORK/batch_$i.log" 2>&1
+	FL_CHUNK_LIMIT=$PER flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" python3 tools/prerender/fl_scene.py "$LAYOUT" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int 6 > "$WORK/batch_$i.log" 2>&1
 	rc=$?
 	set -e
 	echo "batch $i rc=$rc $(grep -c chunk "$WORK/batch_$i.log") lines"
