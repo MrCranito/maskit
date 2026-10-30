@@ -708,9 +708,20 @@ func _finish_extraction() -> void:
 		return
 	_raid_over = true
 	_cancel_extraction(false)
-	var summary: Dictionary = Profile.finish_extraction(get_carried_weapon_ids(), GameState.raid_inventory)
+	# Exemplaires tenus (WeaponData) : leurs affixes rejoignent la réserve avec eux.
+	var summary: Dictionary = Profile.finish_extraction(get_carried_weapons(), GameState.raid_inventory)
 	_end_raid_state()
 	_show_end_screen(true, summary)
+
+
+## Exemplaires tenus (affixes compris) : API joueur get_carried_weapons, sinon les ids
+## (get_carried_weapon_ids, sans affixe).
+func get_carried_weapons() -> Array:
+	if is_instance_valid(player) and player.has_method(&"get_carried_weapons"):
+		var v: Variant = player.call(&"get_carried_weapons")
+		if v is Array:
+			return v
+	return get_carried_weapon_ids()
 
 
 ## Ids des armes tenues (API joueur, repli : arme courante).

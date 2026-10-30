@@ -307,6 +307,11 @@ func get_carried_weapon_ids() -> Array[StringName]:
 	return loadout.carried_ids()
 
 
+## Exemplaires tenus (affixes compris) + équipement s'il reste des charges (extraction).
+func get_carried_weapons() -> Array[WeaponData]:
+	return loadout.carried_weapons()
+
+
 # =============================================================================
 # Équipement (contrat « Refonte n°2 »)
 # =============================================================================

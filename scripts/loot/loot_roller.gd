@@ -8,6 +8,7 @@ extends RefCounted
 ##   × (1 + loot_rarity_bonus_weights[r] × map_rarity_bonus)   (carte jouée, [maps])
 ## Les tableaux sont indexés par rareté (0 Commun … 4 Légendaire), cf. [loot].
 ## Nombre d'objets × map_quantity_mult (carte jouée ; chance de conteneur vide ÷ ce facteur).
+## Les armes tirées reçoivent leurs affixes aléatoires (Affixes.roll_item, phase 8).
 
 const ROOM_SUPER_LOOT := &"super_loot"
 
@@ -89,7 +90,8 @@ static func roll(table: LootTable, rng: RandomNumberGenerator, ctx: Context) -> 
 		weights.erase(id)
 		var it := LootDB.get_item(id)
 		var count := rng.randi_range(maxi(it.drop_min, 1), maxi(it.drop_max, it.drop_min))
-		out.append({"item": it, "count": mini(count, maxi(it.stack_max, 1) * 4)})
+		# Arme : affixes tirés au drop (RNG dérivé, ne décale pas le reste du tirage).
+		out.append({"item": Affixes.roll_item(it, rng), "count": mini(count, maxi(it.stack_max, 1) * 4)})
 	sort_entries(out)
 	return out
 

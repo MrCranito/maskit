@@ -26,7 +26,8 @@ signal raider_level_up(level: int, unlocks: Array)
 
 const SAVE_KEY := "profile"
 
-## Armes en réserve : [{ "uid": int, "id": String }]
+## Armes en réserve : [{ "uid": int, "id": String, "affixes": Array[String] }] — `affixes` = affixes
+## tirés au drop de CET exemplaire (phase 8) ; absent dans les anciennes sauvegardes = aucun.
 var weapons: Array[Dictionary] = []
 ## Arsenal de départ choisi : uids (références dans `weapons`) : jusqu'à `loadout_slots()`
 ## armes (slot weapon) + 1 équipement (slot gadget : grenade, mine, C4, drone).
@@ -77,6 +78,8 @@ var raider_xp: int = 0
 var raid_in_progress: bool = false
 ## Armes emportées dans le raid en cours (ids), pour le résumé de mort.
 var raid_weapon_ids: Array[StringName] = []
+## Affixes des armes emportées (même ordre que raid_weapon_ids) : cartes de l'écran de mort.
+var raid_weapon_affixes: Array = []
 var _next_uid: int = 1
 
 
@@ -90,14 +93,36 @@ func _ready() -> void:
 
 # --- Réserve d'armes ------------------------------------------------------------
 
-func add_weapon(id: StringName) -> int:
+## Ajoute un exemplaire à la réserve. `affixes` : affixes tirés au drop (vide = aucun : achat,
+## artisanat, récompenses, arme de départ).
+func add_weapon(id: StringName, affixes: Array = []) -> int:
 	if not WeaponCatalog.has_weapon(id):
 		push_warning("Profile: arme inconnue %s" % id)
 		return -1
 	var uid := _next_uid
 	_next_uid += 1
-	weapons.append({"uid": uid, "id": String(id)})
+	weapons.append({"uid": uid, "id": String(id), "affixes": _affix_strings(affixes)})
 	return uid
+
+
+## Ajoute un exemplaire tel quel (affixes compris).
+func add_weapon_instance(w: WeaponData) -> int:
+	return add_weapon(w.id, w.rolled_affixes) if w != null else -1
+
+
+static func _affix_strings(affixes: Array) -> Array:
+	var out: Array = []
+	for a: StringName in Affixes.normalized(affixes):
+		out.append(String(a))
+	return out
+
+
+## Affixes d'un exemplaire de la réserve (vide si aucun ou uid inconnu).
+func weapon_affixes_of(uid: int) -> Array[StringName]:
+	for e: Dictionary in weapons:
+		if int(e["uid"]) == uid:
+			return Affixes.normalized(e.get("affixes", []) as Array)
+	return [] as Array[StringName]
 
 
 func remove_weapon(uid: int) -> bool:
@@ -116,17 +141,20 @@ func weapon_id_of(uid: int) -> StringName:
 	return &""
 
 
+## Exemplaire (WeaponData du catalogue, ou copie portant ses affixes : Affixes.make_weapon).
 func get_weapon_data(uid: int) -> WeaponData:
-	return WeaponCatalog.get_weapon(weapon_id_of(uid))
+	return Affixes.make_weapon(WeaponCatalog.get_weapon(weapon_id_of(uid)), weapon_affixes_of(uid))
 
 
-## Réserve triée (rareté décroissante, puis catégorie) : [{uid, id, data: WeaponData}].
+## Réserve triée (rareté décroissante, puis catégorie) : [{uid, id, data: WeaponData (exemplaire),
+## affixes: Array[StringName]}].
 func get_stash_weapons() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	for e: Dictionary in weapons:
-		var w := WeaponCatalog.get_weapon(StringName(str(e["id"])))
-		if w != null:
-			out.append({"uid": int(e["uid"]), "id": w.id, "data": w})
+		var base := WeaponCatalog.get_weapon(StringName(str(e["id"])))
+		if base != null:
+			var ax := Affixes.normalized(e.get("affixes", []) as Array)
+			out.append({"uid": int(e["uid"]), "id": base.id, "data": Affixes.make_weapon(base, ax), "affixes": ax})
 	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		var wa: WeaponData = a["data"]
 		var wb: WeaponData = b["data"]
@@ -246,7 +274,9 @@ func start_raid() -> Array[WeaponData]:
 	var out: Array[WeaponData] = []
 	raid_gadget = null
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	for u: int in loadout.duplicate():
+		# Exemplaire avec ses affixes : il les garde en main pendant tout le raid.
 		var w := get_weapon_data(u)
 		if w != null:
 			if w.is_gadget():
@@ -254,6 +284,7 @@ func start_raid() -> Array[WeaponData]:
 			else:
 				out.append(w)
 			raid_weapon_ids.append(w.id)
+			raid_weapon_affixes.append(_affix_strings(w.rolled_affixes))
 		remove_weapon(u)
 	loadout.clear()
 	raid_in_progress = true
@@ -267,17 +298,23 @@ func start_raid() -> Array[WeaponData]:
 
 
 ## Extraction réussie : armes portées + contenu du sac reviennent dans la réserve.
-## Renvoie un résumé {weapons: Array[StringName], items: Dictionary, value: int (or estimé au
-## marchand), loot_value: int (valeur brute), gems: int, unlock_kills: Array (Economy.kill_report)}.
+## `carried` : exemplaires tenus (WeaponData : leurs affixes sont conservés) ou ids (aucun affixe,
+## ancienne API). Renvoie un résumé {weapons: Array[StringName], weapon_entries: Array de
+## {id, affixes} (même ordre), items: Dictionary, value: int (or estimé au marchand),
+## loot_value: int (valeur brute), gems: int, unlock_kills: Array (Economy.kill_report)}.
 ## Aucune pièce d'or n'est donnée : le butin se vend au marchand.
-func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) -> Dictionary:
+func finish_extraction(carried: Array, bag: Inventory) -> Dictionary:
 	var got_weapons: Array[StringName] = []
+	var entries: Array = []
 	var got_items: Dictionary = {}
 	var value := 0
 	var estimate := 0
-	for id: StringName in carried_weapon_ids:
-		if add_weapon(id) > 0:
-			got_weapons.append(id)
+	for v: Variant in carried:
+		var cid: StringName = (v as WeaponData).id if v is WeaponData else StringName(str(v))
+		var cax: Array = (v as WeaponData).rolled_affixes if v is WeaponData else []
+		if add_weapon(cid, cax) > 0:
+			got_weapons.append(cid)
+			entries.append({"id": cid, "affixes": Affixes.normalized(cax)})
 	if bag != null:
 		for i in bag.capacity():
 			var slot: Dictionary = bag.get_slot(i)
@@ -289,8 +326,9 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 				continue
 			if item.is_weapon():
 				for _n in count:
-					if add_weapon(item.weapon_id) > 0:
+					if add_weapon(item.weapon_id, item.weapon_affixes) > 0:
 						got_weapons.append(item.weapon_id)
+						entries.append({"id": item.weapon_id, "affixes": Affixes.normalized(item.weapon_affixes)})
 			else:
 				items[String(item.id)] = int(items.get(String(item.id), 0)) + count
 				got_items[item.id] = int(got_items.get(item.id, 0)) + count
@@ -302,14 +340,15 @@ func finish_extraction(carried_weapon_ids: Array[StringName], bag: Inventory) ->
 	var report := Economy.kill_report(raid_kills, kills_by_kind)
 	raid_in_progress = false
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	raid_packed.clear()
 	stats["extractions"] = int(stats.get("extractions", 0)) + 1
 	var chest := add_chest_progress()
 	ensure_starter()
 	save()
 	gems_changed.emit(gems)
-	return {"weapons": got_weapons, "items": got_items, "value": estimate, "loot_value": value,
-		"gems": earned, "unlock_kills": report, "chest": chest}
+	return {"weapons": got_weapons, "weapon_entries": entries, "items": got_items, "value": estimate,
+		"loot_value": value, "gems": earned, "unlock_kills": report, "chest": chest}
 
 
 ## Une extraction réussie de plus vers le prochain coffre gratuit ([chests] every_extractions).
@@ -328,16 +367,22 @@ func add_chest_progress() -> bool:
 ## lost_estimate: int (or estimé du sac perdu)}. (« unlock_kills » : « kills » est l'entier du pass de combat.)
 func finish_death() -> Dictionary:
 	var lost := raid_weapon_ids.duplicate()
+	var lost_entries: Array = []
+	for i in lost.size():
+		var ax: Array = raid_weapon_affixes[i] if i < raid_weapon_affixes.size() and raid_weapon_affixes[i] is Array else []
+		lost_entries.append({"id": lost[i], "affixes": Affixes.normalized(ax)})
 	var report := Economy.kill_report(raid_kills, kills_by_kind)
 	var gs: Node = get_node_or_null(^"/root/GameState")
 	var lost_estimate := Economy.estimate_inventory(gs.get("raid_inventory") as Inventory if gs != null else null)
 	raid_in_progress = false
 	raid_weapon_ids.clear()
+	raid_weapon_affixes.clear()
 	raid_packed.clear()
 	stats["deaths"] = int(stats.get("deaths", 0)) + 1
 	var given := ensure_starter()
 	save()
-	return {"lost_weapons": lost, "starter_given": given, "unlock_kills": report, "lost_estimate": lost_estimate}
+	return {"lost_weapons": lost, "lost_entries": lost_entries, "starter_given": given, "unlock_kills": report,
+		"lost_estimate": lost_estimate}
 
 
 ## Gemmes gagnées à l'extraction (balance.cfg [shop]).
@@ -447,7 +492,8 @@ func sell_weapon(uid: int) -> int:
 	return g
 
 
-## Uid d'un exemplaire vendable de ce modèle (hors arsenal de départ si possible), -1 sinon.
+## Uid d'un exemplaire vendable de ce modèle (hors arsenal de départ si possible, et celui qui a
+## le MOINS d'affixes : on ne vend pas un exemplaire à affixes par surprise), -1 sinon.
 func spare_weapon_uid(id: StringName) -> int:
 	var cands: Array[int] = []
 	for e: Dictionary in weapons:
@@ -455,9 +501,18 @@ func spare_weapon_uid(id: StringName) -> int:
 			cands.append(int(e["uid"]))
 	if cands.size() <= 1:
 		return -1
-	for u: int in cands:
-		if not loadout.has(u):
-			return u
+	var best := -1
+	var best_n := 1 << 30
+	for pass_loadout: bool in [false, true]:
+		for u: int in cands:
+			if loadout.has(u) != pass_loadout:
+				continue
+			var n := weapon_affixes_of(u).size()
+			if n < best_n:
+				best_n = n
+				best = u
+		if best >= 0:
+			return best
 	return cands[cands.size() - 1]
 
 
@@ -757,6 +812,7 @@ func to_dict() -> Dictionary:
 		"skins_owned": sk, "skin_character": String(skin_character),
 		"skin_weapons": skin_weapons.duplicate(), "stats": stats.duplicate(),
 		"raid_in_progress": raid_in_progress, "raid_weapon_ids": rw, "next_uid": _next_uid,
+		"raid_weapon_affixes": raid_weapon_affixes.duplicate(true),
 		"raider_xp": raider_xp,
 		"shop_first_bonus_used": shop_first_bonus_used, "bundles_bought": _names_to_array(bundles_bought),
 		"free_chests": free_chests, "chest_progress": chest_progress, "chest_pity": chest_pity_count,
@@ -767,7 +823,10 @@ func from_dict(d: Dictionary) -> void:
 	weapons.clear()
 	for e: Variant in d.get("weapons", []):
 		if e is Dictionary and WeaponCatalog.has_weapon(StringName(str(e.get("id", "")))):
-			weapons.append({"uid": int(e.get("uid", 0)), "id": str(e.get("id"))})
+			# Ancienne sauvegarde (pas de clé « affixes ») ou affixe retiré du jeu : ignoré.
+			var ax: Variant = e.get("affixes", [])
+			weapons.append({"uid": int(e.get("uid", 0)), "id": str(e.get("id")),
+				"affixes": _affix_strings(ax if ax is Array else [])})
 	loadout.clear()
 	for u: Variant in d.get("loadout", []):
 		if not weapon_id_of(int(u)).is_empty():
@@ -814,6 +873,9 @@ func from_dict(d: Dictionary) -> void:
 	raid_weapon_ids.clear()
 	for s: Variant in d.get("raid_weapon_ids", []):
 		raid_weapon_ids.append(StringName(str(s)))
+	raid_weapon_affixes.clear()
+	for a: Variant in d.get("raid_weapon_affixes", []):
+		raid_weapon_affixes.append(_affix_strings(a if a is Array else []))
 	_next_uid = int(d.get("next_uid", 1))
 	for e: Dictionary in weapons:
 		_next_uid = maxi(_next_uid, int(e["uid"]) + 1)

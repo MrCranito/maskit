@@ -129,6 +129,17 @@ func replace_current(w: WeaponData) -> void:
 	ammo[current] = clampi(ammo[current], 0, mag) if mag > 0 else 0
 
 
+## Exemplaires tenus (affixes compris) + l'équipement s'il lui reste des charges (extraction).
+func carried_weapons() -> Array[WeaponData]:
+	var out: Array[WeaponData] = []
+	for w: WeaponData in slots:
+		if w != null and not String(w.id).is_empty():
+			out.append(w)
+	if gadget != null and gadget_charges > 0 and not String(gadget.id).is_empty():
+		out.append(gadget)
+	return out
+
+
 ## Ids des armes tenues + de l'équipement s'il lui reste des charges (extraction).
 func carried_ids() -> Array[StringName]:
 	var out: Array[StringName] = []

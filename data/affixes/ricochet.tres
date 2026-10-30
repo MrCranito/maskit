@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AffixData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/affix_data.gd" id="1_affix"]
+
+[resource]
+script = ExtResource("1_affix")
+id = &"ricochet"
+display_name = "Ricochet"
+description = "Rebondit {count} fois sur un mur ou vers un ennemi proche"
+kind = &"ricochet"
+weight = 0.8
+categories = Array[StringName]([&"pistol", &"revolver", &"smg", &"shotgun", &"rifle", &"lmg", &"sniper"])
+color = Color(1, 0.86, 0.3, 1)
+count = 1
+radius = 240.0
+damage_mult = 0.7
