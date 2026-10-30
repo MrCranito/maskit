@@ -43,6 +43,11 @@ const PROPS := {
 ## Grands décors : rôle → [kind, largeur, hauteur (cases)] posés au centre de la salle.
 const BIG_PROPS := {&"hangar": [&"fl_helicopter", 5, 3], &"garage": [&"fl_snowcat", 3, 2], &"crystal_lab": [&"fl_crystal_core", 3, 3]}
 
+## Structures extérieures (plateau de neige) : [kind, largeur, hauteur (cases)] — avant-postes,
+## citernes, conteneurs, radars, autoneiges garées. Nombre = surface / outdoor_structures_area.
+const OUTDOOR := [[&"fl_outpost", 3, 3], [&"fl_fuel_tanks", 3, 2], [&"fl_containers", 3, 2], [&"fl_radar", 2, 2],
+		[&"fl_snowcat", 3, 2]]
+
 ## Décors autorisés dans un couloir étroit.
 const NARROW_OK := {}
 
@@ -128,6 +133,11 @@ static func populate(L: FloorLayout, world: WorldData, seed_value: int, difficul
 	for room0 in L.rooms:
 		if BIG_PROPS.has(_role(room0)):
 			_place_big(c, room0, BIG_PROPS[_role(room0)])
+	for room1 in L.rooms:
+		if room1.tags.has("outdoor"):
+			var rng1 := RandomNumberGenerator.new()
+			rng1.seed = hash([seed_value, L.floor_index, room1.id, "fl_outdoor"])
+			_place_outdoor(c, room1, rng1)
 	for room in L.rooms:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash([seed_value, L.floor_index, room.id, "fl_furnish"])
@@ -403,6 +413,49 @@ static func _place_big(c: Ctx, room: FloorLayout.Room, def: Array) -> void:
 			c.blocked[Vector2i(x2, y2)] = true
 	var s := c.L.add_spawn(c.L.prop_spawns, Vector2i(origin.x + w / 2, origin.y + h - 1), kind, room.id)
 	s.size = Vector2i(w, h)
+
+
+## Structures sur la neige : empreinte entière sur la neige de la salle, entourée d'un anneau
+## d'une case praticable libre (réservé ensuite) → le passage contourne toujours la structure.
+static func _place_outdoor(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator) -> void:
+	var area := float(room.rect.get_area())
+	var n := int(floor(area / maxf(Cfg.getf("outdoor_structures_area", 170.0), 1.0)))
+	var r := room.rect
+	for k in n:
+		var def: Array = OUTDOOR[rng.randi_range(0, OUTDOOR.size() - 1)]
+		var kind: StringName = def[0]
+		if not c.world.has_prop(kind):
+			continue
+		var w: int = def[1]
+		var h: int = def[2]
+		for t in 30:
+			var o := Vector2i(rng.randi_range(r.position.x + 1, r.end.x - w - 1), rng.randi_range(r.position.y + 1, r.end.y - h - 1))
+			var ok := true
+			for y in range(o.y - 2, o.y + h + 2):
+				for x in range(o.x - 2, o.x + w + 2):
+					var p := Vector2i(x, y)
+					var ring2 := x < o.x - 1 or x > o.x + w or y < o.y - 1 or y > o.y + h
+					if ring2:
+						# 2e anneau : seulement pas d'autre structure (passage large)
+						if c.blocked.has(p) and c.room_id_at(p) == room.id:
+							ok = false
+						continue
+					if c.L.get_tile(p) != T.STREET or c.reserved.has(p) or c.blocked.has(p) or c.room_id_at(p) != room.id:
+						ok = false
+						break
+				if not ok:
+					break
+			if not ok:
+				continue
+			for y2 in range(o.y - 1, o.y + h + 1):
+				for x2 in range(o.x - 1, o.x + w + 1):
+					c.reserved[Vector2i(x2, y2)] = true
+			for y3 in range(o.y, o.y + h):
+				for x3 in range(o.x, o.x + w):
+					c.blocked[Vector2i(x3, y3)] = true
+			var s := c.L.add_spawn(c.L.prop_spawns, Vector2i(o.x + w / 2, o.y + h - 1), kind, room.id)
+			s.size = Vector2i(w, h)
+			break
 
 
 # --- Conteneurs ---------------------------------------------------------------------------

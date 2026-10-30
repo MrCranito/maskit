@@ -76,6 +76,38 @@ Critères (itération 13) : volume/angle 7,5 · plan en croix 8,5 · labo centra
 intérieurs 7,5 · navire/épave 7,5 · eau/banquise 8 · palette/lumières 7,5 · matières 7 · lisibilité en jeu 8.
 Exigence : ≥ 7,5 avant le rendu final 72 px/case (rapport au chef de projet avant relance).
 
+## Passe « lumière et matières » (Mac M4, Blender 5.2 / Metal, 30/10/2026)
+Objectif utilisateur : ≥ 9/10 de similitude, insistance sur le jeu de lumière et la profondeur des
+textures. Aperçus ppc 12 / 4 échantillons (≈ 6 s par vue d'ensemble), gros plans `crop:` à 36-40 px/case.
+
+| Itération | Changements | Note /10 |
+|---|---|---|
+| 14 | état repris (rendu du dépôt, plan iter. 13) | 6,3 (réévalué sévèrement : mer noire uniforme, falaise plate, murs clairs, pas de banquise) |
+| 15–16 | matériaux refaits : neige (sastrugi, congères, paillettes, AO bleu), glace (strates, fissures Voronoï, coat, émission profonde), mer (turquoise près des côtes via attribut `shore`, écume, moutons) ; béton/toits sombres ; chapeaux de murs « acier givré » ; navire noir/gris | 6,6 |
+| 17–22 | sol de neige maillé (3×3 facettes/case, congères gaussiennes, accumulation au pied des murs, lissé) ; falaise déplacée par bruit (surplomb), hauteurs continues ; terrasses de glace en Voronoï (lobes, 2 gradins) + pack de plaques + glaçons épars ; lampes suspendues ponctuelles (flaques chaudes), cristaux translucides (bleu profond, liseré cyan) ; héliport orange ; traces de chenilles, crevasses en zigzag, rochers | 6,7 |
+| 23–30 | labo octogonal (mur en acier sombre, écrans cyan intérieurs, fosses techniques à la place des cases d'eau enclavées) ; hangars à charpente ouverte ; structures sur le plateau (avant-postes, citernes, conteneurs, radômes : `fl_outpost`, `fl_fuel_tanks`, `fl_containers`, `fl_radar`, collisions par emprise) ; balisage rouge du bord ; pont d'accès à garde-corps et feux rouges | 6,8 |
+| 31–42 | étalonnage (exposition 0,4, virage des ombres, clarté), appliques chaudes de la passerelle, verrières éclairées sur les toits, îlots de mobilier par rôle (lits, tables, paillasses), débris épars, sols de cour/hangar enneigés par plaques | 6,9 |
+| 43–49 | collisions : palettes sous les petits objets du fouillis (masque cohérent avec le plan), anneau de connexité renforcé ; murs ouverts plus hauts (1,75) + cornières d'arête claires | 7,0 |
+| 50 | bord du plateau en anses profondes (`plat_coves`) ; pas de neige au-delà de BRIDGE_Y0 + 3 (le pont reste sur l'eau) | 7,0 (plafond : 3 itérations < +0,15) |
+| final | 72 px/case, 16 échantillons, Metal : full 287 s, int 65 s, pipeline complet ≈ 7 min | **6,9–7,0** |
+
+Critères (final, sévère) : plan/composition 6,5 · éléments signature 7,5 · intérieurs 7 · extérieurs/abords 7 ·
+palette 7,5 · lumière 6,5 · profondeur/matières 6,5 · volume/angle 6 · lisibilité en jeu 8 · vignettes 6,5.
+Ce qui bloque sous 9 : la planche est une peinture IA en perspective forte (bâtiments hauts, foisonnement de
+petites pièces cloisonnées, halos et brume peints) alors que le jeu impose une caméra orthographique à 38° et
+un plan en grandes salles ; la base reste un rectangle plein (bras de la croix trop larges, plateau
+rectangulaire) ; les murs restent bas pour garder les intérieurs lisibles ; pas de brume/volumétrie (coût et
+lisibilité des tuiles). Pistes : plan en croix aux bras étroits + cloisons intérieures, falaises plus hautes
+en gradins sculptés, halos volumétriques ciblés autour des cristaux et projecteurs.
+
+Réglages par défaut de `fl_scene.py` : `FL_EXPOSURE` 0,4 · `FL_SUN` 2,6 · `FL_SKY` 0,32 · `FL_SAT` 0,95 ·
+`FL_CON` 1,32 · `FL_TONE` 0,3 (virage des ombres) · `FL_CLARITY` 35 · `FL_BLOOM` 0,7 / `FL_BLOOM_T` 185 ·
+`FL_CRYSTAL` 1,6 · `FL_POOL` 2,2 (lampes suspendues) · `FL_SNOW_AO` 0,8 · `FL_DEBRIS` 0,07.
+Nouveaux réglages de `[frozen_lands]` : `plat_coves` (amplitude des anses du plateau),
+`outdoor_structures_area` (une structure de plateau pour N cases de neige). Monde : 4 décors ajoutés à
+`prop_kinds` (rosters / élites / boss inchangés). Test : l'empreinte des grands décors peut être sur la
+neige (STREET) en plus du sol (FLOOR).
+
 ## Ce qui manque
 - Sous-sol « laboratoires enfouis » (2D) ; bestiaire propre (phase 2) ; mobilier par gabarits
   (furnisher) comme la station ; crevasses plus lisibles ; tempête/neige animée en jeu limitée aux

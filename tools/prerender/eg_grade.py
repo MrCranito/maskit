@@ -24,8 +24,9 @@ SRC = sys.argv[1]
 SAT = float(os.environ.get("EG_GRADE_SAT", "1.0"))
 CURVE = float(os.environ.get("EG_GRADE_CURVE", "0.0"))
 GLOW = float(os.environ.get("EG_GRADE_GLOW", "1.0"))
-DARK_IN = float(os.environ.get("EG_GRADE_DARK_IN", "0.66"))
-VIG = float(os.environ.get("EG_GRADE_VIG", "0.38"))
+DARK_IN = float(os.environ.get("EG_GRADE_DARK_IN", "0.5"))
+VIG = float(os.environ.get("EG_GRADE_VIG", "0.5"))
+DESAT_IN = float(os.environ.get("EG_GRADE_DESAT_IN", "0.18"))
 info = json.load(open(os.path.join(SRC, "render.json")))
 L = json.load(open(os.path.join(SRC, "layout.json")))
 PPC, M = info["ppc"], info["margin"]
@@ -50,10 +51,10 @@ for s in L.get("prop_spawns", []):
         GLOWS.append((x, y, 1.5 * PPC, 1.4 * PPC, (1.0, 0.5, 0.14), 0.55))
 sa = C.get("sanctuary", [30, 32, 12, 12])
 x, y = gpx(sa[0] + sa[2] / 2, sa[1] + sa[3] / 2)
-GLOWS.append((x, y, sa[2] * 0.45 * PPC, sa[3] * 0.45 * PPC, (1.0, 0.55, 0.15), 0.14))
+GLOWS.append((x, y, sa[2] * 0.3 * PPC, sa[3] * 0.3 * PPC, (1.0, 0.45, 0.08), 0.12))
 for ct in C.get("courts", [])[:1]:
     x, y = gpx(ct[0] + ct[2] / 2, ct[1] + ct[3] / 2)
-    GLOWS.append((x, y, ct[2] * 0.5 * PPC, ct[3] * 0.5 * PPC, (1.0, 0.55, 0.2), 0.08))
+    GLOWS.append((x, y, ct[2] * 0.5 * PPC, ct[3] * 0.5 * PPC, (1.0, 0.45, 0.1), 0.0))
 
 # Masque « intérieur » (cases FLOOR/DOOR/STAIRS de pièces non ouvertes : murs exclus), adouci.
 _open = set()
@@ -80,9 +81,9 @@ for _y, _row in enumerate(L["tiles"]):
             _s[_y + M, _x + M] = 0.0
 _si = Image.fromarray((_s * 255).astype(np.uint8)).resize(((TW + 2 * M) * 8, (TH + 2 * M) * 8), Image.BILINEAR)
 SAND_MASK = _si.filter(ImageFilter.GaussianBlur(5))
-SAND_SAT = float(os.environ.get("EG_GRADE_SAND_SAT", "1.08"))
+SAND_SAT = float(os.environ.get("EG_GRADE_SAND_SAT", "1.0"))
 SAND_CON = float(os.environ.get("EG_GRADE_SAND_CON", "1.18"))
-SHADOW = float(os.environ.get("EG_GRADE_SHADOW", "0.3"))
+SHADOW = float(os.environ.get("EG_GRADE_SHADOW", "0.12"))
 
 
 def sandm(x0, y0, w, h):
@@ -170,6 +171,8 @@ def grade(a, x0, y0):
     # 3. intérieurs assombris
     i = inside(x0, y0, a.shape[1], a.shape[0])[:, :, None]
     f = f * (1.0 - i * (1.0 - DARK_IN))
+    li = (f @ np.array([0.299, 0.587, 0.114], np.float32))[:, :, None]
+    f = f + (li - f) * (i * DESAT_IN)
     # 4. courbe + saturation
     lum = f @ np.array([0.299, 0.587, 0.114], np.float32)
     nl = scurve(np.clip(lum, 0.0, 1.0), CURVE)
@@ -192,7 +195,72 @@ def grade(a, x0, y0):
     return (np.clip(f, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
 
 
-def process(name, x0, y0, band=512):
+LUT2 = None
+COOL = float(os.environ.get("EG_GRADE_COOL", "0.5"))
+MATCH2 = float(os.environ.get("EG_GRADE_MATCH2", "0.75"))
+
+
+HAZE = float(os.environ.get("EG_GRADE_HAZE", "0.22"))
+HAZE_MAP = None
+
+
+def build_haze(im):
+    """Halo doré diffus (bloom) calculé une fois sur l'image complète en basse résolution :
+    hautes lumières floutées, appliquées en « screen » ; mêmes valeurs pour les patchs."""
+    global HAZE_MAP
+    t = im.resize((max(1, im.width // 8), max(1, im.height // 8)), Image.BILINEAR)
+    a = np.asarray(t, np.float32) / 255.0
+    l = a @ np.array([0.299, 0.587, 0.114], np.float32)
+    k = np.clip((l - 0.55) / 0.35, 0.0, 1.0)[:, :, None]
+    hi = Image.fromarray((np.clip(a * k, 0, 1) * 255).astype(np.uint8))
+    r = max(2, int(PPC * 1.2 / 8))
+    b1 = np.asarray(hi.filter(ImageFilter.GaussianBlur(r)), np.float32) / 255.0
+    b2 = np.asarray(hi.filter(ImageFilter.GaussianBlur(r * 4)), np.float32) / 255.0
+    h = (b1 * 0.6 + b2 * 0.6) * np.array([1.0, 0.78, 0.5], np.float32)
+    HAZE_MAP = Image.fromarray((np.clip(h, 0, 1) * 255).astype(np.uint8))
+
+
+def haze(x0, y0, w, h):
+    if HAZE_MAP is None:
+        return 0.0
+    sx = HAZE_MAP.width / FW
+    box = (x0 * sx, y0 * sx, (x0 + w) * sx, (y0 + h) * sx)
+    return np.asarray(HAZE_MAP.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0
+
+
+def final(a, x0=0, y0=0):
+    """Second appariement de luminance (après assombrissements : intérieurs, ombres, vignettage)
+    sur les quantiles de la planche, puis ombres refroidies (bleu relevé dans les tons bas : la
+    planche a des ombres brun neutre / bleutées, pas orange saturé)."""
+    f = a.astype(np.float32) / 255.0
+    lum = f @ np.array([0.299, 0.587, 0.114], np.float32)
+    if LUT2 is not None:
+        nl = LUT2[np.clip(lum * 255.0, 0, 255).astype(np.int32)]
+        f = f * (nl / np.maximum(lum, 1e-3))[:, :, None]
+        lum = nl
+    k = np.clip(1.0 - lum / 0.5, 0.0, 1.0) * COOL
+    f[:, :, 2] = f[:, :, 2] * (1.0 + k) + lum * 0.04 * k
+    f[:, :, 1] = f[:, :, 1] * (1.0 + 0.06 * k)
+    if HAZE > 0:
+        g = haze(x0, y0, a.shape[1], a.shape[0]) * HAZE
+        f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - g)
+    return (np.clip(f, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
+
+
+def build_lut2(im):
+    global LUT2
+    t = im.copy()
+    t.thumbnail((800, 800))
+    a = np.asarray(t, np.float32) / 255.0
+    l = a @ np.array([0.299, 0.587, 0.114], np.float32)
+    q = np.percentile(l, np.arange(0, 101, 5)).astype(np.float32)
+    q = np.maximum.accumulate(q + np.arange(21, dtype=np.float32) * 1e-5)
+    x = np.linspace(0.0, 1.0, 256, dtype=np.float32)
+    m = np.interp(x, q, REF_Q)
+    LUT2 = x * (1.0 - MATCH2) + m * MATCH2
+
+
+def process(name, x0, y0, band=512, second=True):
     p = os.path.join(SRC, name)
     raw = p[:-4] + "_raw.png"
     if not os.path.exists(raw):
@@ -203,17 +271,21 @@ def process(name, x0, y0, band=512):
     for yy in range(0, H, band):
         hh = min(band, H - yy)
         a = np.asarray(im.crop((0, yy, W, yy + hh)), dtype=np.uint8)
-        out.paste(Image.fromarray(grade(a, x0, y0 + yy)), (0, yy))
-    out.save(p)
+        g = grade(a, x0, y0 + yy)
+        out.paste(Image.fromarray(final(g, x0, y0 + yy) if second else g), (0, yy))
     print("GRADE", name, W, H, flush=True)
+    return out
 
 
 if __name__ == "__main__":
     _raw = os.path.join(SRC, "full_raw.png")
     build_lut(_raw if os.path.exists(_raw) else os.path.join(SRC, "full.png"))
-    process("full.png", 0, 0)
+    first = process("full.png", 0, 0, second=False)
+    build_lut2(first)
+    build_haze(first)
+    process("full.png", 0, 0).save(os.path.join(SRC, "full.png"))
     for b in info.get("buildings", []):
         n = "b%d_in.png" % b["id"]
         if os.path.exists(os.path.join(SRC, n)):
-            process(n, b["px"][0], b["px"][1])
+            process(n, b["px"][0], b["px"][1]).save(os.path.join(SRC, n))
     print("DONE grade", len(GLOWS), "glows")

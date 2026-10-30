@@ -32,6 +32,10 @@ const DEFS := {
 	&"fl_antenna": {"block": Vector2(24, 24), "col": Color(0.5, 0.55, 0.6), "h": 120.0},
 	&"fl_helicopter": {"block": Vector2(260, 120), "fp": Vector2i(5, 3), "col": Color(0.3, 0.36, 0.3), "h": 90.0},
 	&"fl_snowcat": {"block": Vector2(150, 80), "fp": Vector2i(3, 2), "col": Color(0.85, 0.3, 0.15), "h": 70.0},
+	&"fl_outpost": {"block": Vector2(180, 170), "fp": Vector2i(3, 3), "col": Color(0.3, 0.32, 0.36), "h": 80.0},
+	&"fl_fuel_tanks": {"block": Vector2(180, 110), "fp": Vector2i(3, 2), "col": Color(0.82, 0.84, 0.86), "h": 60.0},
+	&"fl_containers": {"block": Vector2(170, 110), "fp": Vector2i(3, 2), "col": Color(0.7, 0.2, 0.15), "h": 70.0},
+	&"fl_radar": {"block": Vector2(110, 110), "fp": Vector2i(2, 2), "col": Color(0.85, 0.88, 0.9), "h": 100.0},
 	&"fl_crystal_core": {"block": Vector2(130, 130), "fp": Vector2i(3, 3), "col": Color(0.45, 0.85, 1.0), "h": 150.0, "glow": Color(0.4, 0.85, 1.0)},
 }
 

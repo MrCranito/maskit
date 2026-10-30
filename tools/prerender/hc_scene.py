@@ -494,9 +494,7 @@ def mat_wood(name, c):
 def mat_water(name):
     s = NT(name)
     n = s.noise(s.obj(), 6.0, 4, 0.5)
-    s.done((0.03, 0.12, 0.16), 0.05, s.bump(n, 0.15, 0.02), 0.0)
-    s.b.inputs["Emission Color"].default_value = (0.1, 0.5, 0.6, 1)
-    s.b.inputs["Emission Strength"].default_value = 0.4
+    s.done((0.012, 0.01, 0.02), 0.04, s.bump(n, 0.1, 0.02), 0.0)
     return s.m
 
 
@@ -1080,8 +1078,8 @@ def grade(path):
 
 
 # ======================================================================= matériaux du carnaval
-NEON = {"warm": (1.0, 0.72, 0.42), "pink": (1.0, 0.25, 0.7), "magenta": (1.0, 0.15, 0.85), "red": (1.0, 0.12, 0.1),
-        "violet": (0.6, 0.3, 1.0), "gold": (1.0, 0.8, 0.3), "white": (1.0, 0.92, 0.8), "cyan": (0.3, 0.9, 1.0), "green": (0.4, 1.0, 0.45)}
+NEON = {"warm": (1.0, 0.48, 0.16), "pink": (1.0, 0.25, 0.7), "magenta": (1.0, 0.15, 0.85), "red": (1.0, 0.12, 0.1),
+        "violet": (0.6, 0.3, 1.0), "gold": (1.0, 0.62, 0.2), "white": (1.0, 0.92, 0.8), "cyan": (0.3, 0.9, 1.0), "green": (0.4, 1.0, 0.45)}
 CANVAS = [(0.62, 0.08, 0.1), (0.75, 0.42, 0.08), (0.42, 0.12, 0.55), (0.1, 0.35, 0.5)]
 
 
@@ -1155,18 +1153,30 @@ def mat_bulbs(name, c, strength=6.0, pitch=0.35):
 
 
 def mat_clown_face(name):
-    """Tête de clown : peau blanche émissive, joues roses, variations."""
+    """Tête de clown : peau lilas pâle, fard rose sur les pommettes, orbites violet sombre et bouche
+    rouge sombre (poids par sommet « zw » : R orbites, G bouche, B fard), relief fin."""
     s = NT(name)
     n = s.noise(s.obj(), 4.0, 4, 0.5)
-    col = s.mix(s.mul(n, 0.4), (0.62, 0.36, 0.85), (0.4, 0.18, 0.62))
-    s.done(col, 0.5)
-    s.b.inputs["Emission Color"].default_value = (0.6, 0.3, 1.0, 1)
-    s.b.inputs["Emission Strength"].default_value = 0.22
+    n2 = s.noise(s.obj(), 14.0, 6, 0.7)
+    at = s.n("ShaderNodeAttribute")
+    at.attribute_name = "zw"
+    sc_ = s.n("ShaderNodeSeparateColor")
+    s.l(at.outputs["Color"], sc_.inputs[0])
+    zr, zg, zb = sc_.outputs[0], sc_.outputs[1], sc_.outputs[2]
+    col = s.mix(s.mul(n, 0.6), (0.62, 0.48, 0.76), (0.4, 0.24, 0.58))
+    col = s.mix(s.smooth(n2, 0.6, 0.8, 0.0, 0.3), col, (0.25, 0.12, 0.35))
+    col = s.mix(zb, col, (0.75, 0.12, 0.45))
+    col = s.mix(zr, col, (0.09, 0.02, 0.14))
+    col = s.mix(zg, col, (0.1, 0.0, 0.03))
+    s.done(col, 0.45, s.bump(s.add(n2, s.mul(n, 0.5)), 0.4, 0.04))
+    em = s.mix(zg, (0.0, 0.0, 0.0), (0.7, 0.02, 0.3))
+    s.l(em, s.b.inputs["Emission Color"])
+    s.b.inputs["Emission Strength"].default_value = 0.6
     return s.m
 
 
 def build_materials():
-    mat_dirt("dirt", (0.1, 0.095, 0.12), (0.21, 0.19, 0.23))
+    mat_dirt("dirt", (0.08, 0.08, 0.11), (0.17, 0.16, 0.2))
     mat_dirt("dirt_dark", (0.12, 0.1, 0.13), (0.22, 0.18, 0.22))
     mat_pavers("pavers", (0.25, 0.23, 0.28), (0.11, 0.105, 0.14))
     mat_pavers("pavers_lot", (0.27, 0.25, 0.3), (0.12, 0.11, 0.15))
@@ -1194,7 +1204,7 @@ def build_materials():
     mat_simple("metal_dark", (0.08, 0.08, 0.1), 0.45, 0.7, 0.2)
     mat_simple("metal_mid", (0.3, 0.3, 0.34), 0.45, 0.6, 0.2)
     mat_simple("iron_red", (0.55, 0.08, 0.08), 0.45, 0.5, 0.3)
-    mat_simple("rail_red", (0.7, 0.1, 0.1), 0.35, 0.6, 0.2)
+    mat_simple("rail_red", (0.8, 0.09, 0.08), 0.25, 0.4, 0.15, emit=((1.0, 0.12, 0.1), 0.18))
     mat_simple("rust", (0.35, 0.16, 0.08), 0.8, 0.3, 0.4)
     mat_simple("gold", (0.9, 0.65, 0.2), 0.3, 0.9, 0.2)
     mat_simple("brass", (0.6, 0.45, 0.15), 0.35, 0.8, 0.2)
@@ -1222,8 +1232,13 @@ def build_materials():
     mat_simple("balloon_y", (0.9, 0.7, 0.1), 0.25, 0.0, 0.1)
     mat_simple("skin", (0.9, 0.7, 0.6), 0.6, 0.0, 0.2)
     mat_simple("hair_red", (0.75, 0.1, 0.1), 0.9, 0.0, 0.3)
-    mat_simple("hair_violet", (0.42, 0.1, 0.7), 0.9, 0.0, 0.3)
+    mat_simple("hair_violet", (0.6, 0.06, 0.42), 0.9, 0.0, 0.3)
+    mat_emit("ferris_neon", (0.85, 0.08, 1.0), 1.1)
     mat_clown_face("clown_face")
+    mat_simple("clown_cheek", (0.62, 0.08, 0.42), 0.35, 0.0, 0.15, emit=((1.0, 0.2, 0.7), 0.6))
+    mat_simple("socket_dark", (0.12, 0.03, 0.18), 0.6, 0.0, 0.2)
+    mat_simple("mouth_dark", (0.08, 0.01, 0.04), 0.5, 0.0, 0.2, emit=((0.8, 0.05, 0.4), 0.4))
+    mat_simple("lip_red", (0.5, 0.03, 0.08), 0.35, 0.0, 0.15)
     mat_glass("glass", (0.5, 0.4, 0.7), 0.3)
     mat_glass("glass_dark", (0.2, 0.15, 0.3), 0.6)
     for k, c in NEON.items():
@@ -1233,11 +1248,197 @@ def build_materials():
     mat_emit("bulb_dim", (0.6, 0.4, 0.3), 1.0)
     mat_emit("spot_violet", (0.5, 0.2, 1.0), 2.0)
     mat_emit("eyes", (1.0, 0.15, 0.1), 12.0)
-    mat_emit("eyes_glow", (0.75, 1.0, 0.25), 14.0)
+    mat_emit("eyes_glow", (0.75, 1.0, 0.25), 6.0)
     mat_emit("sky_dark", (0.004, 0.003, 0.01), 1.0)
     mat_lines("paint_white", (0.7, 0.68, 0.7))
     mat_hazard("hazard")
     mat_stars("stars")
+    build_materials_v2()
+
+
+# ======================================================================= matériaux v2 (relief, usure)
+def _brick(s, vec, scale, mortar, w=0.5, h=0.25, offset=0.5, c1=(0.5, 0.5, 0.5), c2=(0.3, 0.3, 0.3), bias=0.0):
+    """Nœud Brick : renvoie (couleur, mortier 0..1)."""
+    b = s.n("ShaderNodeTexBrick")
+    b.offset = offset
+    b.inputs["Scale"].default_value = scale
+    b.inputs["Mortar Size"].default_value = mortar
+    b.inputs["Mortar Smooth"].default_value = 0.35
+    b.inputs["Bias"].default_value = bias
+    b.inputs["Brick Width"].default_value = w
+    b.inputs["Row Height"].default_value = h
+    b.inputs["Color1"].default_value = (*c1, 1)
+    b.inputs["Color2"].default_value = (*c2, 1)
+    b.inputs["Mortar"].default_value = (0, 0, 0, 1)
+    s.l(vec, b.inputs["Vector"])
+    return b.outputs["Color"], b.outputs["Fac"]
+
+
+def mat_flagstones(name, c1, c2, scale=1.0, w=0.9, h=0.6, wet=0.35, moss=0.25):
+    """Dalles / pavés de pierre irréguliers (Voronoi, distance au bord) : joints creux, arêtes
+    ébréchées, teinte par pierre, fissures, flaques brillantes (reflets des néons), mousse.
+    w, h : étirement des pierres (x, y)."""
+    s = NT(name)
+    o = s.obj()
+    warp = s.noise(o, 0.9, 2, 0.5, col=True)
+    vm = s.n("ShaderNodeVectorMath")
+    vm.operation = "MULTIPLY_ADD"
+    s.l(warp, vm.inputs[0])
+    vm.inputs[1].default_value = (0.25, 0.25, 0.0)
+    s.l(o, vm.inputs[2])
+    p = s.vmul(vm.outputs[0], (scale / w, scale / h, scale))
+    ve = s.n("ShaderNodeTexVoronoi")
+    ve.feature = "DISTANCE_TO_EDGE"
+    ve.inputs["Scale"].default_value = 1.0
+    ve.inputs["Randomness"].default_value = 0.85
+    s.l(p, ve.inputs["Vector"])
+    vc = s.n("ShaderNodeTexVoronoi")
+    vc.inputs["Scale"].default_value = 1.0
+    vc.inputs["Randomness"].default_value = 0.85
+    s.l(p, vc.inputs["Vector"])
+    r = s.sep(vc.outputs["Color"])[0]
+    edge = ve.outputs["Distance"]
+    joint = s.smooth(edge, 0.07, 0.015)
+    bevel = s.smooth(edge, 0.0, 0.16)
+    n = s.noise(o, 9.0, 6, 0.65)
+    n2 = s.noise(o, 1.3, 4, 0.6)
+    col = s.mix(r, c1, c2)
+    col = s.mix(s.mul(n, 0.5), col, tuple(x * 0.6 for x in c2))
+    col = s.mix(s.smooth(n2, 0.66, 0.82, 0.0, moss), col, (0.06, 0.08, 0.06))
+    col = s.mix(s.mul(joint, 0.85), col, (0.07, 0.055, 0.07))
+    col = s.mix(s.mul(s.sub(1.0, bevel), 0.35), col, tuple(min(1.0, x * 1.35) for x in c1))
+    wetm = s.mul(s.smooth(n2, 0.28, 0.24), s.smooth(s.noise(o, 0.5, 2, 0.5), 0.5, 0.62))
+    wetm = s.mul(wetm, wet * 2.0)
+    col = s.mix(s.mul(wetm, 0.6), col, (0.02, 0.02, 0.035))
+    rough = s.add(0.8, s.mul(wetm, -0.7))
+    chip = s.smooth(s.add(edge, s.mul(s.noise(o, 22.0, 3, 0.6), 0.08)), 0.05, 0.09)
+    h_ = s.add(s.mul(s.mul(bevel, chip), 0.8), s.add(s.mul(n, 0.25), s.mul(r, 0.35)))
+    rough = s.add(rough, s.mul(s.sub(r, 0.5), 0.2))
+    s.done(col, normal=s.bump(h_, 0.65, 0.04), rough_sock=rough)
+    return s.m
+
+
+def mat_stoneblocks(name, c1, c2, scale=2.0, w=0.6, h=0.32, wear=0.5, rough=0.88):
+    """Pierre de taille (UV : u horizontal, v vertical) : blocs, joints profonds, arêtes usées,
+    coulures sombres vers le bas, lichen."""
+    s = NT(name)
+    u, v, _ = s.sep(s.uv())
+    o = s.obj()
+    p = s.comb(u, v, 0.0)
+    col, mortar = _brick(s, p, scale, 0.03, w, h, 0.5, c1, c2, 0.0)
+    n = s.noise(o, 7.0, 6, 0.65)
+    n2 = s.noise(o, 1.1, 4, 0.55)
+    col = s.mix(s.mul(n, 0.5), col, tuple(x * 0.6 for x in c2))
+    drip = s.noise(s.comb(s.mul(u, 6.0), s.mul(v, 0.4), 0.0), 3.0, 3, 0.5)
+    col = s.mix(s.smooth(drip, 0.55, 0.85, 0.0, 0.5), col, tuple(x * 0.35 for x in c2))
+    col = s.mix(s.smooth(n2, 0.6, 0.8, 0.0, 0.3 * wear), col, (0.08, 0.1, 0.07))
+    col = s.mix(s.mul(mortar, 0.9), col, (0.04, 0.035, 0.05))
+    h_ = s.add(s.mul(mortar, -1.0), s.mul(n, 0.35))
+    s.done(col, rough, s.bump(h_, 0.6, 0.03))
+    return s.m
+
+
+def mat_shingles(name, c1, c2, scale=3.0):
+    """Bardeaux / ardoises en rangées (UV de toit : u le long, v dans la pente), mousse, manques."""
+    s = NT(name)
+    u, v, _ = s.sep(s.uv())
+    o = s.obj()
+    p = s.comb(u, v, 0.0)
+    col, mortar = _brick(s, p, scale, 0.02, 0.35, 0.22, 0.5, c1, c2, 0.0)
+    n = s.noise(o, 6.0, 5, 0.6)
+    n2 = s.noise(o, 0.9, 3, 0.5)
+    fv = s.m_("FRACT", s.m_("DIVIDE", v, 0.22 / scale))
+    col = s.mix(s.mul(s.sub(1.0, fv), 0.5), col, tuple(x * 0.45 for x in c2))
+    col = s.mix(s.smooth(n2, 0.58, 0.8, 0.0, 0.45), col, (0.07, 0.09, 0.06))
+    col = s.mix(s.mul(n, 0.35), col, tuple(x * 0.6 for x in c1))
+    col = s.mix(s.mul(mortar, 0.8), col, (0.02, 0.02, 0.03))
+    h_ = s.add(s.mul(fv, 0.6), s.mul(mortar, -0.6))
+    s.done(col, 0.7, s.bump(s.add(h_, s.mul(n, 0.2)), 0.5, 0.03))
+    return s.m
+
+
+def mat_painted_wood(name, paint, wood=(0.22, 0.14, 0.1), peel=0.45):
+    """Bois peint écaillé : lames, peinture qui part par plaques (bois brut dessous), grain."""
+    s = NT(name)
+    u, v, _ = s.sep(s.uv())
+    r, joint, grain = s.boards(u, v, 0.2, 1.4, 0.025)
+    o = s.obj()
+    n = s.noise(o, 5.0, 6, 0.7)
+    pc = s.mix(s.mul(r, 0.35), paint, tuple(x * 0.7 for x in paint))
+    pc = s.mix(s.mul(grain, 0.3), pc, tuple(x * 0.8 for x in paint))
+    wc = s.mix(s.mul(grain, 0.8), wood, tuple(x * 0.5 for x in wood))
+    pm = s.smooth(n, 0.62 - peel * 0.2, 0.66 - peel * 0.2)
+    col = s.mix(pm, pc, wc)
+    col = s.mix(joint, col, (0.02, 0.015, 0.02))
+    dirt = s.smooth(s.noise(o, 1.2, 3, 0.5), 0.5, 0.8, 0.0, 0.4)
+    col = s.mix(dirt, col, tuple(x * 0.4 for x in paint))
+    h_ = s.add(s.mul(joint, -1.0), s.add(s.mul(pm, -0.25), s.mul(grain, 0.15)))
+    s.done(col, 0.75, s.bump(h_, 0.45, 0.02))
+    return s.m
+
+
+def mat_canvas_v2(name, c1, c2, w=0.5, dirt=0.5):
+    """Toile rayée délavée : rayures, trame, coulures, auréoles d'humidité, plis."""
+    s = NT(name)
+    u, v, _ = s.sep(s.uv())
+    o = s.obj()
+    t = s.m_("FRACT", s.m_("DIVIDE", u, w * 2))
+    k = s.smooth(t, 0.47, 0.53)
+    col = s.mix(k, c1, c2)
+    weave = s.noise(o, 80.0, 2, 0.5)
+    n = s.noise(o, 2.5, 5, 0.6)
+    streak = s.noise(s.comb(s.mul(u, 5.0), s.mul(v, 0.3), 0.0), 2.0, 3, 0.5)
+    col = s.mix(s.smooth(streak, 0.5, 0.85, 0.0, dirt), col, tuple(x * 0.4 for x in c1))
+    col = s.mix(s.smooth(n, 0.55, 0.8, 0.0, dirt * 0.8), col, (0.08, 0.06, 0.07))
+    col = s.mix(s.mul(weave, 0.12), col, (0.0, 0.0, 0.0))
+    fold = s.noise(s.comb(s.mul(u, 1.5), s.mul(v, 0.2), 0.0), 4.0, 2, 0.5)
+    s.done(col, 0.85, s.bump(s.add(s.mul(fold, 0.6), s.mul(weave, 0.1)), 0.35, 0.03))
+    return s.m
+
+
+def mat_pine(name, c, tip):
+    """Aiguilles de sapin : relief fort, pointes éclaircies (bord des étages), variations."""
+    s = NT(name)
+    o = s.obj()
+    n = s.noise(o, 18.0, 6, 0.75)
+    n2 = s.noise(o, 2.0, 3, 0.5)
+    _, _, z = s.sep(o)
+    col = s.mix(s.mul(n, 0.8), c, tip)
+    col = s.mix(s.smooth(n2, 0.4, 0.8, 0.0, 0.5), col, tuple(x * 0.5 for x in c))
+    s.done(col, 0.92, s.bump(n, 0.9, 0.05))
+    return s.m
+
+
+def build_materials_v2():
+    mat_flagstones("pavers", (0.26, 0.25, 0.3), (0.14, 0.13, 0.17), 4.2, 1.1, 0.8, 0.3)
+    mat_flagstones("pavers_lot", (0.37, 0.34, 0.39), (0.21, 0.19, 0.24), 2.6, 1.3, 0.9, 0.35, 0.35)
+    mat_flagstones("flags", (0.3, 0.25, 0.28), (0.16, 0.13, 0.17), 2.2, 1.2, 1.0, 0.35, 0.15)
+    mat_stoneblocks("stone_ochre", (0.5, 0.36, 0.26), (0.33, 0.23, 0.18), 2.2)
+    mat_stoneblocks("stone", (0.33, 0.3, 0.35), (0.2, 0.18, 0.23), 2.4)
+    mat_stoneblocks("stone_dark", (0.17, 0.15, 0.2), (0.1, 0.09, 0.12), 2.4)
+    mat_shingles("roof_rust", (0.42, 0.11, 0.13), (0.22, 0.06, 0.08))
+    mat_shingles("roof_tin", (0.42, 0.2, 0.24), (0.22, 0.1, 0.13))
+    mat_painted_wood("plank_painted", (0.45, 0.12, 0.2))
+    mat_painted_wood("plank", (0.36, 0.24, 0.2), (0.2, 0.13, 0.1), 0.2)
+    mat_painted_wood("plank_dark", (0.17, 0.1, 0.11), (0.12, 0.08, 0.07), 0.2)
+    mat_painted_wood("boards_dark", (0.15, 0.09, 0.1), (0.12, 0.08, 0.07), 0.2)
+    mat_painted_wood("floor_wood", (0.3, 0.19, 0.15), (0.2, 0.12, 0.1), 0.15)
+    off = (0.36, 0.3, 0.3)
+    canv = [(0.42, 0.05, 0.08), (0.36, 0.07, 0.12), (0.28, 0.08, 0.3), (0.3, 0.12, 0.1)]
+    for i, c in enumerate(canv):
+        mat_canvas_v2("stripes_%d" % i, c, off, 0.5)
+        mat_canvas_v2("stripes_fine_%d" % i, c, off, 0.25)
+    mat_canvas_v2("stripes_tent", (0.5, 0.05, 0.08), off, 0.9, 0.55)
+    mat_canvas_v2("stripes_purple", (0.5, 0.05, 0.08), off, 0.6)
+    mat_canvas_v2("stripes_bigtop", (0.26, 0.05, 0.1), (0.5, 0.3, 0.4), 0.9, 0.45)
+    mat_simple("drum_pink", (0.4, 0.06, 0.26), 0.7, 0.0, 0.25, emit=((1.0, 0.15, 0.6), 0.35))
+    mat_emit("drum_window", (1.0, 0.28, 0.55), 1.6)
+    mat_canvas_v2("bigtop_dark", (0.24, 0.04, 0.09), (0.24, 0.04, 0.09), 0.9, 0.5)
+    mat_canvas_v2("bigtop_light", (0.4, 0.22, 0.32), (0.4, 0.22, 0.32), 0.9, 0.5)
+    mat_canvas_v2("canvas_white", (0.44, 0.38, 0.38), (0.44, 0.38, 0.38), 0.5, 0.6)
+    mat_canvas_v2("canvas_red", (0.36, 0.04, 0.07), (0.36, 0.04, 0.07), 0.5, 0.5)
+    mat_pine("pine", (0.04, 0.08, 0.09), (0.12, 0.19, 0.2))
+    mat_pine("pine_dark", (0.025, 0.05, 0.065), (0.07, 0.12, 0.14))
 
 
 # ======================================================================= analyse du layout
@@ -1332,10 +1533,16 @@ ENC_R = tuple(C.get("enc_r", [21.5, 16.5]))
 SPOTS = []           # projecteurs (x, y_blender, z, cible (x, y, z), couleur, énergie)
 
 
+ENC_RECT = C.get("enc_rect", [22, 26, 32, 29])
+ENC_HALLS = [tuple(r) for r in C.get("enc_halls", [])]
+
+
 def enc_d(x, y):
-    dx = (x + 0.5 - TENT["c"][0]) / ENC_R[0]
-    dy = (y + 0.5 - TENT["c"][1]) / ENC_R[1]
-    return dx * dx + dy * dy
+    """Distance « rectangulaire » normalisée au centre de l'enceinte (1 sur son bord)."""
+    ex, ey, ew, eh = ENC_RECT
+    return max(abs(x + 0.5 - (ex + ew / 2)) / (ew / 2), abs(y + 0.5 - (ey + eh / 2)) / (eh / 2))
+
+
 BIG = {"hc_bumper_car": (2, 1), "hc_food_cart": (2, 1), "hc_cage": (2, 1), "hc_bleachers": (3, 1), "hc_ring_barrier": (2, 1), "hc_shooting_counter": (2, 1)}
 for key in ("container_spawns", "hiding_spot_spawns", "prop_spawns"):
     for sp in LAYOUT.get(key, []):
@@ -1374,8 +1581,6 @@ def floor_mat(rid, cell):
         if role in ("plaza", "entrance", "avenue"):
             return "pavers_lot" if role == "entrance" else "pavers"
         # herbe rase le long des palissades des cours et des allées (herbes folles)
-        if (tile(x - 1, y) == 3 or tile(x + 1, y) == 3 or tile(x, y - 1) == 3 or tile(x, y + 1) == 3) and (x * 7 + y * 13) % 3 == 0:
-            return "grass"
         return "dirt"
     if role == "big_top":
         return "sawdust"
@@ -1532,8 +1737,8 @@ def build_walls():
                         tg.seg((x + 0.5, Y(y + 0.5), z0), (x + 0.5 + math.cos(a) * 1.1, Y(y + 0.5) + math.sin(a) * 1.1, z0 + 1.1), 0.06, "trunk", 5, r2=0.02)
                 # ampoules seulement sur les faces donnant sur une allée
                 for sd, dx, dy in SIDES:
-                    if walk(x + dx, y + dy) and (x + y) % 2 == 0:
-                        lights.sphere(x + 0.5 + dx * 0.36, Y(y + 0.5) - dy * 0.36, h + 0.05, 0.09, "neon_warm" if (x // 3 + y) % 2 else "neon_magenta", 1)
+                    if walk(x + dx, y + dy) and (x + y) % 3 == 0:
+                        lights.sphere(x + 0.5 + dx * 0.36, Y(y + 0.5) - dy * 0.36, h + 0.05, 0.08, "lamp_warm" if (x // 3 + y) % 3 else "lamp_magenta", 1)
                 continue
             if k == "stand" and m["slot"] == "hall":
                 k = "bld"
@@ -1558,7 +1763,9 @@ def build_walls():
                 continue
             # bâtiment à toit : roulotte (bois peint), tente (toile), kiosque (bois rayé)
             arch = BLD[b]["arch"] if b is not None else (m["arch"] if m is not None else "")
-            if arch in ("hangar", "workshop", "museum", "arcade"):
+            if m is not None and tuple(m["rect"]) in ENC_HALLS:
+                wmat = "stone_ochre"
+            elif arch in ("hangar", "workshop", "museum", "arcade"):
                 wmat = "brick" if m["room"] % 2 == 0 else "brick_dark"
             elif arch in ("mirrors", "freaks", "theatre"):
                 wmat = "canvas_red" if (x + y) % 2 == 0 else "canvas_white"
@@ -1626,18 +1833,24 @@ def roof_stand(mb, b, m, rng):
     ci = canvas_of(m)
     fx, fy = m.get("facade", [0, 1])
     z_back, z_front = 3.1, 2.5
+    shed = rng.random() < 0.55
+    if shed:
+        # appentis de bardeaux sombres (la toile rayée ne reste qu'en lambrequin côté façade)
+        ci_mat = "roof_rust" if rng.random() < 0.6 else "roof_tin"
+    else:
+        ci_mat = "stripes_%d" % ci
     X0, X1, YN, YS = x - 0.15, x + w + 0.15, Y(y) + 0.15, Y(y + h) - 0.15
     if fy == 1:      # façade au sud : haut au nord
-        mb.poly([(X0, YS, z_front), (X1, YS, z_front), (X1, YN, z_back), (X0, YN, z_back)], "stripes_%d" % ci,
+        mb.poly([(X0, YS, z_front), (X1, YS, z_front), (X1, YN, z_back), (X0, YN, z_back)], ci_mat,
                 [(X0, 0), (X1, 0), (X1, h), (X0, h)])
     elif fy == -1:
-        mb.poly([(X0, YS, z_back), (X1, YS, z_back), (X1, YN, z_front), (X0, YN, z_front)], "stripes_%d" % ci,
+        mb.poly([(X0, YS, z_back), (X1, YS, z_back), (X1, YN, z_front), (X0, YN, z_front)], ci_mat,
                 [(X0, 0), (X1, 0), (X1, h), (X0, h)])
     elif fx == 1:
-        mb.poly([(X0, YS, z_back), (X1, YS, z_front), (X1, YN, z_front), (X0, YN, z_back)], "stripes_%d" % ci,
+        mb.poly([(X0, YS, z_back), (X1, YS, z_front), (X1, YN, z_front), (X0, YN, z_back)], ci_mat,
                 [(YS, 0), (YS, w), (YN, w), (YN, 0)])
     else:
-        mb.poly([(X0, YS, z_front), (X1, YS, z_back), (X1, YN, z_back), (X0, YN, z_front)], "stripes_%d" % ci,
+        mb.poly([(X0, YS, z_front), (X1, YS, z_back), (X1, YN, z_back), (X0, YN, z_front)], ci_mat,
                 [(YS, w), (YS, 0), (YN, 0), (YN, w)])
     # dessous (face visible de l'intérieur) non nécessaire ; frise festonnée sur le bord bas
     if fy == 1:
@@ -1710,7 +1923,7 @@ def roof_tent(mb, b, m, rng, cone="stripes_tent"):
     x, y, w, h = b["rect"]
     cx, cy = x + w / 2, Y(y + h / 2)
     rx, ry = w / 2 + 0.2, h / 2 + 0.2
-    z0, z1 = H_WALL - 0.05, H_WALL + 2.2
+    z0, z1 = H_WALL - 0.05, H_WALL + 3.0
     seg = 28
     for k in range(seg):
         a0 = k / seg * math.tau
@@ -1947,44 +2160,83 @@ def build_big_top():
         inner.sphere(px, py, 2.38, 0.14, "spot_violet", 1)
         GLOWS.append((px, py, 2.3, NEON["violet"], 1.6))
     inner.to_object("_bigtop_inner", "world")
-    # toit : ANNEAU de toile rayée (centre ouvert sur la piste violette, comme la maquette) :
-    # pente du bord extérieur (z0) vers une couronne intérieure (z1) tenue par des mâts dorés,
-    # ampoules magenta / or sur les deux couronnes, fanions.
+    # toit : CÔNE FERMÉ de toile rayée sombre (bordeaux / prune délavés, comme la maquette), profil
+    # concave (bord → couronne → mât), lambrequin festonné, BANDEAU NÉON MAGENTA autour du tambour
+    # (la lueur rose de la planche), ampoules, fanions, mât doré au sommet.
     roof = MB()
-    z0, z1 = H_WALL + 0.3, H_WALL + 2.4
-    ri = 0.62
-    for k in range(seg):
-        a0 = k / seg * math.tau
-        a1 = (k + 1) / seg * math.tau
+    HD = H_WALL + 2.6          # tambour haut (dans l'objet toit : masqué avec lui en passe int)
+    z0 = HD + 0.25
+    zm, zp = HD + 2.4, HD + 4.8
+    for k in range(56):
+        a0 = k / 56 * math.tau
+        a1 = (k + 1) / 56 * math.tau
         p0 = (cx + math.cos(a0) * rx, cy + math.sin(a0) * ry)
         p1 = (cx + math.cos(a1) * rx, cy + math.sin(a1) * ry)
-        q0 = (cx + math.cos(a0) * rx * ri, cy + math.sin(a0) * ry * ri)
-        q1 = (cx + math.cos(a1) * rx * ri, cy + math.sin(a1) * ry * ri)
-        roof.poly([(p0[0], p0[1], z0), (p1[0], p1[1], z0), (q1[0], q1[1], z1), (q0[0], q0[1], z1)], "canvas_red" if k % 2 else "canvas_white")
-        roof.sphere(p0[0], p0[1], z0 + 0.12, 0.12, "lamp_warm" if k % 2 else "lamp_magenta", 1)
-        roof.sphere(q0[0], q0[1], z1 + 0.12, 0.1, "lamp_gold" if k % 2 else "lamp_magenta", 1)
-        roof.poly([(p0[0], p0[1], z0 - 0.45), (p1[0], p1[1], z0 - 0.45), (p1[0], p1[1], z0), (p0[0], p0[1], z0)], "canvas_white" if k % 2 else "canvas_red")
-        # couronne intérieure : garde-corps + rideau court
-        roof.poly([(q0[0], q0[1], z1), (q1[0], q1[1], z1), (q1[0], q1[1], z1 + 0.5), (q0[0], q0[1], z1 + 0.5)], "cloth_purple")
+        roof.poly([(p0[0], p0[1], H_WALL), (p1[0], p1[1], H_WALL), (p1[0], p1[1], HD + 0.3), (p0[0], p0[1], HD + 0.3)],
+                  "drum_pink" if k % 2 else "plank_dark", [(k * 0.5, 0), (k * 0.5 + 0.5, 0), (k * 0.5 + 0.5, 1.8), (k * 0.5, 1.8)])
+        if k % 2 == 0:
+            f0, f1 = 0.2, 0.8
+            w0 = (p0[0] + (p1[0] - p0[0]) * f0, p0[1] + (p1[1] - p0[1]) * f0)
+            w1 = (p0[0] + (p1[0] - p0[0]) * f1, p0[1] + (p1[1] - p0[1]) * f1)
+            o_ = 1.012
+            roof.poly([(cx + (w0[0] - cx) * o_, cy + (w0[1] - cy) * o_, H_WALL + 0.3), (cx + (w1[0] - cx) * o_, cy + (w1[1] - cy) * o_, H_WALL + 0.3),
+                       (cx + (w1[0] - cx) * o_, cy + (w1[1] - cy) * o_, HD - 0.2), (cx + (w0[0] - cx) * o_, cy + (w0[1] - cy) * o_, HD - 0.2)],
+                      "drum_window" if k % 6 else "lamp_warm")
+    rm = 0.5
+    seg2 = 48
+    for k in range(seg2):
+        a0 = k / seg2 * math.tau
+        a1 = (k + 1) / seg2 * math.tau
+        mat = "bigtop_light" if k % 2 else "bigtop_dark"
+        p0 = (cx + math.cos(a0) * rx, cy + math.sin(a0) * ry, z0)
+        p1 = (cx + math.cos(a1) * rx, cy + math.sin(a1) * ry, z0)
+        q0 = (cx + math.cos(a0) * rx * rm, cy + math.sin(a0) * ry * rm, zm)
+        q1 = (cx + math.cos(a1) * rx * rm, cy + math.sin(a1) * ry * rm, zm)
+        # lé de toile affaissé entre deux coutures (ligne médiane plus basse) : relief des rayures
+        am_ = (a0 + a1) / 2
+        sag = 0.22
+        pm0 = (cx + math.cos(am_) * rx * 0.995, cy + math.sin(am_) * ry * 0.995, z0 - 0.04)
+        qm0 = (cx + math.cos(am_) * rx * rm, cy + math.sin(am_) * ry * rm, zm - sag)
+        roof.poly([p0, pm0, qm0, q0], mat, [(k, 0), (k + 0.5, 0), (k + 0.5, 3), (k, 3)])
+        roof.poly([pm0, p1, q1, qm0], mat, [(k + 0.5, 0), (k + 1, 0), (k + 1, 3), (k + 0.5, 3)])
+        roof.poly([q0, qm0, (cx, cy, zp)], mat, [(k, 3), (k + 0.5, 3), (k + 0.5, 6)])
+        roof.poly([qm0, q1, (cx, cy, zp)], mat, [(k + 0.5, 3), (k + 1, 3), (k + 0.5, 6)])
+        # couture (corde) entre les lés
+        roof.seg(p0, q0, 0.035, "plank_dark", 4)
+        roof.seg(q0, (cx, cy, zp), 0.03, "plank_dark", 4)
+        # lambrequin festonné
+        am = (a0 + a1) / 2
+        pm_ = (cx + math.cos(am) * (rx + 0.05), cy + math.sin(am) * (ry + 0.05), z0 - 0.55)
+        roof.poly([(p0[0], p0[1], z0 + 0.02), (p1[0], p1[1], z0 + 0.02), pm_], "canvas_red" if k % 2 else "stripes_bigtop")
+        roof.sphere(p0[0], p0[1], z0 + 0.06, 0.09, "lamp_gold" if k % 3 else "lamp_magenta", 1)
+        if k % 2 == 0:
+            roof.sphere(q0[0], q0[1], zm + 0.05, 0.07, "lamp_magenta", 1)
+    # bandeaux néon autour du tambour (deux anneaux émissifs) + ampoules serrées
+    for (zb, hb, mat) in ((H_WALL - 0.35, 0.16, "neon_magenta"), (HD + 0.12, 0.14, "neon_magenta")):
+        for k in range(seg2):
+            a0 = k / seg2 * math.tau
+            a1 = (k + 1) / seg2 * math.tau
+            p0 = (cx + math.cos(a0) * (rx + 0.06), cy + math.sin(a0) * (ry + 0.06))
+            p1 = (cx + math.cos(a1) * (rx + 0.06), cy + math.sin(a1) * (ry + 0.06))
+            if any(abs((((a0 + a1) / 2) - da + math.pi) % math.tau - math.pi) < 0.1 for da in door_angles):
+                continue
+            roof.poly([(p0[0], p0[1], zb), (p1[0], p1[1], zb), (p1[0], p1[1], zb + hb), (p0[0], p0[1], zb + hb)], mat)
+    for k in range(10):
+        a = k / 10 * math.tau + 0.15
+        GLOWS.append((cx + math.cos(a) * (rx + 1.2), cy + math.sin(a) * (ry + 1.2), 1.4, NEON["magenta"], 1.3))
+    # mât, boule dorée et fanion au sommet ; petits mâts à fanions sur la couronne
+    roof.cyl(cx, cy, zp - 0.3, zp + 1.4, 0.08, "gold", 8)
+    roof.sphere(cx, cy, zp + 1.45, 0.2, "gold", 2)
+    roof.poly([(cx, cy, zp + 1.35), (cx + 1.3, cy, zp + 1.05), (cx, cy, zp + 0.8)], "canvas_red")
     for k in range(8):
-        a = k / 8 * math.tau
-        px, py = cx + math.cos(a) * rx * ri, cy + math.sin(a) * ry * ri
-        roof.cyl(px, py, 0.0, z1 + 1.6, 0.1, "gold", 8)
-        roof.poly([(px, py, z1 + 1.6), (px + 0.7, py, z1 + 1.4), (px, py, z1 + 1.15)], "canvas_red" if k % 2 else "cloth_purple")
-        roof.sphere(px, py, z1 + 1.65, 0.12, "gold", 1)
-    # guirlandes entre les mâts intérieurs
-    for k in range(8):
-        a0 = k / 8 * math.tau
-        a1 = (k + 1) / 8 * math.tau
-        n = 8
-        for j in range(1, n):
-            t = j / n
-            am = a0 + (a1 - a0) * t
-            roof.sphere(cx + math.cos(am) * rx * ri * 0.98, cy + math.sin(am) * ry * ri * 0.98, z1 + 1.3 - 0.35 * math.sin(t * math.pi), 0.07, "lamp_gold", 1)
+        a = k / 8 * math.tau + 0.2
+        px, py = cx + math.cos(a) * rx * rm, cy + math.sin(a) * ry * rm
+        roof.cyl(px, py, zm - 0.1, zm + 0.9, 0.04, "gold", 6)
+        roof.poly([(px, py, zm + 0.9), (px + 0.55, py, zm + 0.75), (px, py, zm + 0.6)], "cloth_purple" if k % 2 else "canvas_red")
     roof.to_object("roof_%d" % bid, "roofs")
     GLOWS.append((cx, cy, 2.2, NEON["violet"], 6.0))
     GLOWS.append((cx, cy, 0.8, NEON["magenta"], 2.5))
-    LAMPS.append((cx, cy, 6.0, NEON["violet"], 6.0))
+    LAMPS.append((cx, cy, zp + 3.0, NEON["violet"], 6.0))
     build_enclosure()
 
 
@@ -2064,6 +2316,41 @@ def build_enclosure():
         dec.seg((px, py, 4.7), (hx, hy, hz), 0.28, "metal_dark", 10, r2=0.36)
         dec.sphere(hx + d.x * 0.18, hy + d.y * 0.18, hz + d.z * 0.18, 0.3, "neon_violet" if k % 2 else "neon_cyan", 1, 1.0, 1.0, 1.0)
         SPOTS.append((px, py, 4.9, (tgt.x, tgt.y, tgt.z), NEON["violet"] if k % 2 else NEON["cyan"], 900.0))
+    # bâtiments d'angle (ruines ouvertes) : chaperon, merlons, contreforts et braseros aux angles
+    for (hx, hy, hw_, hh_) in ENC_HALLS:
+        zt = wall_h(hx, hy)
+        for xx in range(hx, hx + hw_):
+            for yy in range(hy, hy + hh_):
+                if tile(xx, yy) != 3 or (xx, yy) in DOOR_CELLS:
+                    continue
+                w.box(xx - 0.04, Y(yy + 1) - 0.04, zt, xx + 1.04, Y(yy) + 0.04, zt + 0.14, "stone")
+                if (xx + yy) % 2 == 0:
+                    w.box(xx + 0.18, Y(yy + 0.82), zt + 0.14, xx + 0.82, Y(yy + 0.18), zt + 0.5, "stone_ochre")
+        for (qx, qy) in ((hx, hy), (hx + hw_ - 1, hy), (hx, hy + hh_ - 1), (hx + hw_ - 1, hy + hh_ - 1)):
+            w.box(qx - 0.05, Y(qy + 1.05), 0.0, qx + 1.05, Y(qy - 0.05), zt + 0.8, "stone")
+            w.box(qx - 0.2, Y(qy + 1.2), zt + 0.8, qx + 1.2, Y(qy - 0.2), zt + 0.95, "stone_dark")
+            dec.cyl(qx + 0.5, Y(qy + 0.5), zt + 0.95, zt + 1.15, 0.25, "brass", 8, r2=0.32)
+            dec.sphere(qx + 0.5, Y(qy + 0.5), zt + 1.2, 0.14, "lamp_warm", 1, 1.0, 1.0, 1.3)
+            GLOWS.append((qx + 0.5, Y(qy + 0.5), zt + 1.7, NEON["warm"], 1.2))
+    # escaliers monumentaux nord et sud entre les bâtiments d'angle (marches basses non bloquantes),
+    # rampes de pierre et lampions ; les marches descendent vers la cour du chapiteau.
+    if len(ENC_HALLS) == 4:
+        for (ha, hb, down) in ((ENC_HALLS[0], ENC_HALLS[1], 1), (ENC_HALLS[2], ENC_HALLS[3], -1)):
+            px0, px1 = ha[0] + ha[2], hb[0]
+            py0, py1 = ha[1], ha[1] + ha[3]
+            n = (py1 - py0) * 2
+            for k in range(n):
+                f = k / n
+                yy0 = py0 + (py1 - py0) * f
+                yy1 = py0 + (py1 - py0) * (k + 1) / n
+                hz = 0.14 * ((1 - f) if down == 1 else f) + 0.01
+                dec.box(px0, Y(yy1), 0.0, px1, Y(yy0), hz, "stone" if k % 2 else "stone_ochre")
+                dec.box(px0, Y(yy1 if down == 1 else yy0) - 0.03, hz - 0.012, px1, Y(yy1 if down == 1 else yy0) + 0.03, hz, "stone_dark")
+            for sx in (px0 + 0.12, px1 - 0.12):
+                for k in range(0, (py1 - py0) * 2, 2):
+                    yy = py0 + k * 0.5 + 0.5
+                    dec.sphere(sx, Y(yy), 0.25, 0.08, "lamp_warm" if k % 4 else "lamp_magenta", 1)
+            GLOWS.append(((px0 + px1) / 2, Y((py0 + py1) / 2), 1.6, NEON["violet"], 1.5))
     w.to_object("walls_enclosure", "world")
     dec.to_object("_enclosure_dec", "world")
 
@@ -2124,17 +2411,17 @@ def _ferris(mb, cx, cy, r, rng):
         for k in range(n):
             a = k / n * math.tau
             a2 = (k + 1) / n * math.tau
-            mb.seg((cx, cy + off, zc), P(a, R, off), 0.045, "metal_mid", 4)
-            mb.seg(P(a, R, off), P(a2, R, off), 0.08, "iron_red", 5)
+            mb.seg((cx, cy + off, zc), P(a, R, off), 0.045, "metal_dark", 4)
+            mb.seg(P(a, R, off), P(a2, R, off), 0.1, "ferris_neon", 5)
             mb.seg(P(a, R * 0.55, off), P(a2, R * 0.55, off), 0.035, "metal_mid", 4)
-            for j in range(1, 6):
+            for j in (2, 4):
                 t = j / 6
                 p = P(a, R * t, off)
-                mb.sphere(p[0], p[1], p[2], 0.11, "neon_magenta" if k % 2 else "neon_gold", 1)
-            for j in range(4):
-                am = a + (a2 - a) * j / 4
+                mb.sphere(p[0], p[1], p[2], 0.07, "ferris_neon", 1)
+            for j in range(2):
+                am = a + (a2 - a) * j / 2
                 p = P(am, R + 0.1, off)
-                mb.sphere(p[0], p[1], p[2], 0.1, "neon_warm" if j % 2 else "neon_pink", 1)
+                mb.sphere(p[0], p[1], p[2], 0.1, "lamp_warm", 1)
     cols = ["seat_red", "seat_blue", "seat_yellow", "seat_teal", "plush_pink", "cloth_purple"]
     for k in range(n):
         a = k / n * math.tau + math.pi / n
@@ -2143,7 +2430,7 @@ def _ferris(mb, cx, cy, r, rng):
         mb.box(p[0] - 0.38, p[1] - 0.34, p[2] - 0.85, p[0] + 0.38, p[1] + 0.34, p[2] - 0.25, cols[k % 6])
         mb.box(p[0] - 0.4, p[1] - 0.36, p[2] - 0.25, p[0] + 0.4, p[1] + 0.36, p[2] - 0.15, "metal_dark")
         mb.sphere(p[0], p[1] - 0.36, p[2] - 0.2, 0.07, "lamp_warm", 1)
-    GLOWS.append((cx, cy - 2.0, zc, NEON["magenta"], 10.0))
+    GLOWS.append((cx, cy - 2.0, zc, NEON["violet"], 10.0))
     GLOWS.append((cx, cy - 1.0, zc * 0.4, NEON["gold"], 3.0))
     LAMPS.append((cx, cy - 3.0, zc + 2.0, NEON["pink"], 6.0))
 
@@ -2227,8 +2514,8 @@ def _teacups(mb, cx, cy, r, rng):
     for k in range(seg):
         a0 = k / seg * math.tau
         a1 = (k + 1) / seg * math.tau
-        mb.poly([(cx + math.cos(a0) * (R + 0.4), cy + math.sin(a0) * (R + 0.4), 2.3), (cx + math.cos(a1) * (R + 0.4), cy + math.sin(a1) * (R + 0.4), 2.3), (cx, cy, 3.4)],
-                "canvas_white" if k % 2 else "canvas_purple")
+        mb.poly([(cx + math.cos(a0) * (R + 0.4), cy + math.sin(a0) * (R + 0.4), 2.3), (cx + math.cos(a1) * (R + 0.4), cy + math.sin(a1) * (R + 0.4), 2.3), (cx, cy, 4.0)],
+                "canvas_white" if k % 2 else "canvas_red")
         mb.sphere(cx + math.cos(a0) * (R + 0.4), cy + math.sin(a0) * (R + 0.4), 2.25, 0.09, "lamp_magenta" if k % 2 else "lamp_warm", 1)
     GLOWS.append((cx, cy, 1.8, NEON["magenta"], 2.5))
 
@@ -2260,7 +2547,7 @@ def _support_ok(x, y):
     return tile(cx, cy) in (0, 3)
 
 
-def _track(mb, pts, zfun, gauge=0.55, sup_every=3):
+def _track(mb, pts, zfun, gauge=0.7, sup_every=2):
     """Voie : deux rails rouges + traverses + poutres de soutien rouges jusqu'au sol (seulement sur
     les cases non praticables : cohérence rendu / collisions)."""
     prev = None
@@ -2272,15 +2559,17 @@ def _track(mb, pts, zfun, gauge=0.55, sup_every=3):
             if d.length < 1e-4:
                 continue
             side = Vector((-d.y, d.x, 0)).normalized() * gauge
-            mb.seg(tuple(prev + side), tuple(q + side), 0.13, "rail_red", 6)
-            mb.seg(tuple(prev - side), tuple(q - side), 0.13, "rail_red", 6)
-            mb.seg(tuple(prev - Vector((0, 0, 0.28))), tuple(q - Vector((0, 0, 0.28))), 0.1, "iron_red", 5)
+            mb.seg(tuple(prev + side), tuple(q + side), 0.2, "rail_red", 6)
+            mb.seg(tuple(prev - side), tuple(q - side), 0.2, "rail_red", 6)
+            mb.seg(tuple(prev - Vector((0, 0, 0.32))), tuple(q - Vector((0, 0, 0.32))), 0.12, "iron_red", 5)
+            mb.seg(tuple(prev + side * 0.9 - Vector((0, 0, 0.5))), tuple(q + side * 0.9 - Vector((0, 0, 0.5))), 0.06, "iron_red", 4)
+            mb.seg(tuple(prev - side * 0.9 - Vector((0, 0, 0.5))), tuple(q - side * 0.9 - Vector((0, 0, 0.5))), 0.06, "iron_red", 4)
             if i % 2 == 0:
                 mb.seg(tuple(q + side * 1.2), tuple(q - side * 1.2), 0.03, "metal_dark", 4)
             if i % sup_every == 0 and z > 0.3 and _support_ok(q.x, q.y):
                 for s in (1, -1):
                     base = q + side * s * 1.1
-                    mb.seg((base.x, base.y, -0.05), (q.x + side.x * s, q.y + side.y * s, z - 0.25), 0.09, "iron_red", 5)
+                    mb.seg((base.x, base.y, -0.05), (q.x + side.x * s, q.y + side.y * s, z - 0.25), 0.11, "iron_red", 5)
                     mb.seg((base.x, base.y, -0.05), (q.x - side.x * s, q.y - side.y * s, z - 0.25), 0.04, "metal_dark", 4)
                 mb.seg((q.x + side.x * 1.1, q.y + side.y * 1.1, -0.05), (q.x - side.x * 1.1, q.y - side.y * 1.1, -0.05), 0.08, "iron_red", 5)
                 mb.seg((q.x + side.x, q.y + side.y, z - 0.25), (q.x - side.x, q.y - side.y, z - 0.25), 0.07, "iron_red", 5)
@@ -2302,19 +2591,18 @@ def build_coaster():
         # Grande boucle fermée qui TRAVERSE le parc : marge ouest → nord au-dessus de la grande roue
         # → plongée dans la cour nord-est (pylônes) → au-dessus du flanc est de la place et des
         # roulottes → sud-est → sous le parvis → remontée par le sud-ouest.
-        route_g = [(-5.0, 70.0), (-6.0, 40.0), (-3.0, 18.0), (4.0, 3.0), (16.0, -4.0), (30.0, -2.0), (40.0, 0.0),
-                   (44.0, 4.0)] + [(p[0], p[1]) for p in COASTER_IN] + \
-                  [(50.0, 29.0), (60.0, 31.0), (69.0, 36.0), (71.0, 48.0), (64.0, 56.0), (70.0, 66.0), (72.0, 80.0),
-                   (70.0, 98.0), (64.0, 104.0), (58.0, 112.0), (54.0, 124.0), (40.0, 130.0), (24.0, 129.0), (14.0, 120.0),
-                   (6.0, 106.0), (1.0, 96.0), (-4.0, 84.0)]
+        route_g = [(p[0], p[1]) for p in COASTER]
         route = [(p[0], Y(p[1]), 0) for p in route_g]
-        pts = _catmull(route, 8, closed=True)
-        pts.append(pts[0])
+        pts = _catmull(route, 8, closed=False)   # tracé ouvert : entre et sort du cadre au sud
         n = len(pts)
 
         def zf(i, n_):
             t = i / n_
-            return 3.2 + 2.4 * (0.5 + 0.5 * math.sin(t * math.tau * 5.0 + 0.7)) + 3.0 * max(0.0, math.sin(t * math.tau * 2.0 + 2.2)) ** 3
+            z = 3.4 + 3.6 * (0.5 + 0.5 * math.sin(t * math.tau * 6.0 + 0.7)) + 4.5 * max(0.0, math.sin(t * math.tau * 2.0 + 2.2)) ** 3
+            p_ = pts[min(i, len(pts) - 1)]
+            if -p_.y > H - 4:          # voie sud : basse (ne masque pas le parvis)
+                z = 2.6 + (z - 3.4) * 0.25
+            return z
         _track(mb, pts, zf)
         # trains rouges (3 wagons) à deux endroits
         for i0 in (int(n * 0.22), int(n * 0.48), int(n * 0.8)):
@@ -2331,6 +2619,9 @@ def build_coaster():
 
 
 # ======================================================================= portail à la tête de clown
+HEAD_BASE = [0]
+
+
 def build_gate():
     mb = MB()
     gx, gy, gw, gh = GATE
@@ -2368,7 +2659,7 @@ def build_gate():
     # (vecteurs avant f / haut u inclinés de TILT) : crâne, pommettes, arcades menaçantes, orbites
     # violettes et yeux rouges lumineux, nez, bouche béante (lèvres rouges, dents pointues), touffes
     # de cheveux rouges, collerette, chapeau pointu à pompon.
-    S = float(os.environ.get("HC_CLOWN_S", "2.0"))
+    S = float(os.environ.get("HC_CLOWN_S", "1.55"))
     cx, cz = ox + ow / 2, 4.4 + 2.0 * S
     cy = (y0 + y1) / 2 - 0.4
     ct, st_ = math.cos(TILT), math.sin(TILT)
@@ -2378,9 +2669,11 @@ def build_gate():
     def hp(dx, d, h):
         return (cx + dx * S, cy + (f.y * d + u.y * h) * S, cz + (f.z * d + u.z * h) * S)
 
-    def sph(dx, d, h, r, mat, sx=1.0, sy=1.0, sz=1.0, sub=2):
+    hd = MB()   # volumes lisses de la tête (ombrage doux)
+
+    def sph(dx, d, h, r, mat, sx=1.0, sy=1.0, sz=1.0, sub=3):
         q = hp(dx, d, h)
-        mb.sphere(q[0], q[1], q[2], r * S, mat, sub, sx, sy, sz)
+        hd.sphere(q[0], q[1], q[2], r * S, mat, max(sub, 3), sx, sy, sz)
 
     # arche de pierre à ampoules derrière la tête (plan vertical tourné vers la caméra)
     RA = 4.5
@@ -2395,46 +2688,97 @@ def build_gate():
         mb.sphere(q0[0], q0[1], q0[2], 0.07 * S, "lamp_gold" if k % 2 else "lamp_magenta", 1)
         q1 = hp(math.cos(a0) * (RA - 0.3), -0.7, -1.6 + math.sin(a0) * (RA - 0.3))
         mb.sphere(q1[0], q1[1], q1[2], 0.055 * S, "lamp_violet", 1)
-    sph(0, 0, 0.2, 2.9, "clown_face", 1.0, 0.85, 1.08, 3)             # crâne
-    sph(0, 0.9, -1.2, 2.2, "clown_face", 1.08, 0.8, 0.75, 3)          # mâchoire
+    # Tête sculptée : UNE sphère déformée (crâne allongé, mâchoire étroite, orbites creusées,
+    # arcades, pommettes, rictus en croissant remontant aux coins), matériaux par zone (peau,
+    # orbites, bouche), puis yeux lumineux, nez, dents, lèvres, cheveux en touffes, chapeau.
+    R0 = 2.9
+
+    def g2(u_, v_, s_):
+        return math.exp(-(u_ * u_ + v_ * v_) / (2 * s_ * s_))
+
+    def zc(x_):
+        return -0.42 + 0.48 * x_ * x_
+
+    nu, nv = 128, 80
+    base = len(hd.V)
+    HEAD_BASE[0] = base
+    ZW = []
+    zone = []
+    for i in range(nv + 1):
+        ph = math.pi * i / nv
+        for j in range(nu):
+            th = math.tau * j / nu
+            x0, y0, z0 = math.sin(ph) * math.cos(th), math.sin(ph) * math.sin(th), math.cos(ph)
+            fr = max(0.0, y0)
+            disp = 0.0
+            sock = 0.0
+            for sx in (-1, 1):
+                gs = g2(x0 - sx * 0.36, z0 - 0.2, 0.13)
+                sock = max(sock, gs)
+                disp -= 0.3 * gs * fr
+                disp += 0.12 * g2(x0 - sx * 0.34, z0 - 0.42, 0.1) * fr          # arcades
+                disp += 0.16 * g2(x0 - sx * 0.48, z0 + 0.1, 0.14) * fr          # pommettes
+                cheek = g2(x0 - sx * 0.48, z0 + 0.1, 0.12)
+                sock = max(sock, -cheek)
+            mz = math.exp(-((z0 - zc(x0)) / 0.08) ** 2) * (1.0 if abs(x0) < 0.74 else 0.0)
+            disp -= 0.26 * mz * fr
+            disp += 0.05 * g2(x0, z0 + 0.82, 0.18) * fr                      # menton
+            sx_ = 0.95 * (1.0 - 0.18 * max(0.0, -z0) ** 1.4)
+            p = Vector((x0 * sx_, y0 * (0.92 - 0.1 * max(0.0, -z0)), z0 * 1.04)) * (1.0 + disp)
+            q = hp(p.x * R0, p.y * R0, p.z * R0)
+            hd.V.append(q)
+            ck = max(g2(x0 - 0.48, z0 + 0.1, 0.12), g2(x0 + 0.48, z0 + 0.1, 0.12))
+            ff = min(1.0, fr * 2.5)
+            zone.append(0)
+            sk2 = max(g2(x0 - 0.36, z0 - 0.22, 0.17), g2(x0 + 0.36, z0 - 0.22, 0.17))
+            ZW.append((min(1.0, sk2 * 2.2) * ff, min(1.0, mz * 1.4) * ff, min(1.0, ck * 1.3) * ff))
+    mats = ("clown_face", "clown_face", "clown_face", "clown_face")
+    for i in range(nv):
+        for j in range(nu):
+            a0 = base + i * nu + j
+            b0 = base + i * nu + (j + 1) % nu
+            c0 = base + (i + 1) * nu + (j + 1) % nu
+            d0 = base + (i + 1) * nu + j
+            zz = max(zone[a0 - base], zone[c0 - base])
+            hd.F.append([(a0, d0, c0, b0), hd.mi(mats[zz])])
     for s_ in (-1, 1):
-        sph(s_ * 1.5, 2.25, -0.5, 0.7, "balloon_r", 1.0, 0.6, 0.8)    # pommettes
-        sph(s_ * 1.05, 2.35, 0.8, 0.62, "cloth_purple", 1.25, 0.55, 0.95)  # orbites
-        sph(s_ * 1.0, 2.62, 0.72, 0.26, "eyes_glow", 1.0, 1.0, 1.25, 1)  # yeux lumineux
-        sph(s_ * 1.0, 2.82, 0.72, 0.1, "metal_dark", 1.0, 1.0, 1.4, 1)   # pupilles fendues
-        sph(s_ * 1.05, 2.5, 1.45, 0.5, "metal_dark", 1.5, 0.45, 0.35)    # arcades froncées
-        q0, q1 = hp(s_ * 0.35, 2.75, 1.25), hp(s_ * 1.75, 2.35, 1.85)
-        mb.seg(q0, q1, 0.13 * S, "metal_dark", 6)                         # sourcils en V
-        for j in range(7):                                                # touffes violettes
-            a_ = j / 6 * 1.9 - 0.45
-            sph(s_ * (2.5 + 0.45 * math.cos(a_)), 0.2 - 0.3 * j / 6, 0.3 + 1.9 * math.sin(a_), 0.9 - 0.06 * j,
-                "hair_violet" if j % 2 == 0 else "balloon_p", 1.0, 0.9, 0.9)
-        GLOWS.append(hp(s_ * 1.0, 3.6, 0.72) + (NEON["green"], 1.6))
-    sph(0, 2.85, -0.05, 0.62, "balloon_r", 1.0, 1.0, 1.0)              # nez
-    sph(0, 2.75, -1.65, 1.0, "metal_dark", 2.05, 0.6, 0.65)              # bouche béante
-    sph(0, 2.95, -1.5, 0.6, "neon_magenta", 2.8, 0.35, 0.5, 1)        # lueur au fond de la gorge
-    for k in range(13):                                                # lèvres (grand sourire)
-        t = k / 12
-        a_ = math.pi * (0.1 + 0.8 * t)
-        q0 = hp(-2.05 + 4.1 * t, 3.05, -0.95 - 0.35 * math.sin(a_) + 0.35 * (2 * t - 1) ** 2)
-        q1 = hp(-2.05 + 4.1 * (k + 1) / 12, 3.05, -0.95 - 0.35 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)) + 0.35 * (2 * (k + 1) / 12 - 1) ** 2)
-        if k < 12:
-            mb.seg(q0, q1, 0.17 * S, "balloon_r", 6)
-        q2 = hp(-1.85 + 3.7 * t, 3.00, -2.3 + 0.15 * math.sin(a_))
-        if k < 12:
-            q3 = hp(-1.85 + 3.7 * (k + 1) / 12, 3.00, -2.3 + 0.15 * math.sin(math.pi * (0.1 + 0.8 * (k + 1) / 12)))
-            mb.seg(q2, q3, 0.14 * S, "balloon_r", 6)
-        if 1 <= k <= 11:                                                  # dents pointues
-            top = hp(-2.0 + 4.0 * t, 3.12, -1.05 - 0.33 * math.sin(a_) + 0.3 * (2 * t - 1) ** 2)
-            tip = hp(-2.0 + 4.0 * t, 3.16, -1.5 - 0.3 * math.sin(a_))
-            mb.seg(top, tip, 0.13 * S, "canvas_white", 5, r2=0.0)
-            bot = hp(-1.8 + 3.6 * t, 3.08, -2.2 + 0.12 * math.sin(a_))
-            tip2 = hp(-1.8 + 3.6 * t, 3.10, -1.82 + 0.12 * math.sin(a_))
-            mb.seg(bot, tip2, 0.11 * S, "canvas_white", 5, r2=0.0)
+        ex_, ez_ = s_ * 0.36, 0.2
+        ey_ = math.sqrt(max(0.0, 1 - ex_ * ex_ - ez_ * ez_)) * 0.92 * (1 - 0.12)
+        sph(ex_ * 0.9 * R0, ey_ * R0 - 0.1, ez_ * 1.04 * R0, 0.2, "eyes_glow", 1.0, 0.7, 1.0, 1)
+        sph(ex_ * 0.9 * R0, ey_ * R0 + 0.25, ez_ * 1.04 * R0, 0.1, "metal_dark", 1.0, 0.5, 1.6, 1)
+        q0, q1 = hp(s_ * 0.35, 2.75, 1.3), hp(s_ * 1.6, 2.3, 1.75)
+        mb.seg(q0, q1, 0.12 * S, "metal_dark", 6)                         # sourcils en V
+        hrng = random.Random(77 + s_)
+        for j in range(26):                                               # mèches en pointes
+            a_ = -0.9 + 2.4 * j / 25 + hrng.uniform(-0.08, 0.08)
+            rr_ = hrng.uniform(1.4, 2.4)
+            b_ = hp(s_ * 2.35 * math.cos(a_) * 0.95, -0.2 + hrng.uniform(-0.6, 0.4), 2.2 * math.sin(a_) + 0.3)
+            t_ = hp(s_ * (2.35 + rr_) * math.cos(a_), -0.4 + hrng.uniform(-0.6, 0.6), (2.2 + rr_ * 0.8) * math.sin(a_) + 0.3)
+            hd.seg(b_, t_, hrng.uniform(0.35, 0.5) * S, "hair_violet" if j % 3 else "plush_pink", 7, r2=0.02)
+    sph(0, 2.95, -0.1, 0.5, "balloon_r", 1.0, 1.0, 0.95)                # nez
+    sph(0, 2.0, -1.3, 0.5, "lamp_magenta", 2.6, 0.3, 0.3, 1)            # lueur au fond de la gorge
+    nt = 15
+    for k in range(nt + 1):
+        t = k / nt
+        x_ = -0.6 + 1.2 * t
+        z_ = zc(x_)
+        yy = math.sqrt(max(0.0, 1 - (x_ * 0.95) ** 2 - (z_ * 1.04) ** 2)) * 0.9
+        top = hp(x_ * 0.9 * R0, yy * R0 + 0.05, (z_ * 1.04 + 0.07) * R0)
+        bot = hp(x_ * 0.9 * R0, yy * R0 + 0.05, (z_ * 1.04 - 0.07) * R0)
+        if k < nt:
+            t2 = (k + 1) / nt
+            x2 = -0.6 + 1.2 * t2
+            z2 = zc(x2)
+            y2 = math.sqrt(max(0.0, 1 - (x2 * 0.95) ** 2 - (z2 * 1.04) ** 2)) * 0.9
+            mb.seg(top, hp(x2 * 0.9 * R0, y2 * R0 + 0.05, (z2 * 1.04 + 0.07) * R0), 0.11 * S, "lip_red", 6)
+            mb.seg(bot, hp(x2 * 0.9 * R0, y2 * R0 + 0.05, (z2 * 1.04 - 0.07) * R0), 0.1 * S, "lip_red", 6)
+        if 1 <= k < nt:
+            mb.seg(top, hp(x_ * 0.9 * R0, yy * R0 - 0.05, (z_ * 1.04 - 0.02) * R0), 0.1 * S, "canvas_white", 5, r2=0.0)
+            mb.seg(bot, hp(x_ * 0.9 * R0, yy * R0 - 0.05, (z_ * 1.04 + 0.0) * R0), 0.08 * S, "canvas_white", 5, r2=0.0)
     for k in range(22):                                                   # collerette violette / rose
         a_ = k / 22 * math.tau
         q = hp(math.cos(a_) * 2.7, 0.6 + math.sin(a_) * 1.0, -2.6)
-        mb.sphere(q[0], q[1], q[2], 0.58 * S, "cloth_purple" if k % 2 else "plush_pink", 1, 1.0, 1.0, 0.6)
+        hd.sphere(q[0], q[1], q[2], 0.58 * S, "cloth_purple" if k % 2 else "plush_pink", 2, 1.0, 1.0, 0.6)
     q = hp(0, -0.4, 3.0)
     mb.cyl(q[0], q[1], q[2] - 0.3 * S, q[2] + 1.9 * S, 1.05 * S, "stripes_purple", 14, r2=0.1 * S)   # chapeau
     mb.sphere(q[0], q[1], q[2] + 2.0 * S, 0.32 * S, "balloon_r", 2)
@@ -2464,8 +2808,19 @@ def build_gate():
             mb.cyl(lx, y0 - 0.25, z + 0.28, z + 0.38, 0.1, "metal_dark", 6)
         GLOWS.append(((a + b) / 2, y0 - 0.8, 2.2, NEON["warm"], 1.2))
     mb.to_object("props_gate", "world")
-    LAMPS.append((cx, cy - 4.0 * S, cz, NEON["violet"], 14.0))
-    LAMPS.append((cx, cy - 3.0 * S, cz - 2.0 * S, NEON["magenta"], 10.0))
+    ob_h = hd.to_object("props_gate_head", "world", smooth=True)
+    # poids de zones par sommet (orbites, bouche, fard) lus par le matériau clown_face
+    me_h = ob_h.data
+    ca = me_h.color_attributes.new("zw", "FLOAT_COLOR", "POINT")
+    vals = [0.0] * (len(me_h.vertices) * 4)
+    for i_, w_ in enumerate(ZW):
+        k_ = (HEAD_BASE[0] + i_) * 4
+        if k_ + 3 < len(vals):
+            vals[k_:k_ + 4] = [w_[0], w_[1], w_[2], 1.0]
+    ca.data.foreach_set("color", vals)
+    LAMPS.append((cx - 4.5 * S, cy - 2.5 * S, cz + 1.0 * S, NEON["violet"], 9.0))     # latéral gauche
+    LAMPS.append((cx + 4.0 * S, cy - 1.5 * S, cz - 0.5 * S, NEON["pink"], 6.0))       # latéral droit
+    LAMPS.append((cx, cy - 3.8 * S, cz - 2.6 * S, NEON["magenta"], 8.0))              # par en dessous
     GLOWS.append((cx, cy - 2.0, cz - 2.5, NEON["magenta"], 4.0))
     GLOWS.append((ox + ow / 2, y0 - 0.5, 2.2, NEON["gold"], 1.5))
 
@@ -2642,7 +2997,7 @@ def build_props():
 
 
 # ======================================================================= guirlandes, hors jeu, forêt
-CONFETTI = ["balloon_r", "balloon_p", "balloon_y", "lamp_cyan", "plush_pink", "canvas_white"]
+CONFETTI = ["balloon_r", "balloon_p", "paper", "debris", "plush_pink", "canvas_red"]
 
 
 def build_outskirts():
@@ -2651,7 +3006,7 @@ def build_outskirts():
     rng = random.Random(SEED * 3 + 11)
     # guirlandes d'ampoules EN TRAVERS des allées sinueuses (d'un mur / toit à l'autre, tous les
     # ~4,5 cases), mâts posés sur les cases non praticables les plus proches de chaque bord.
-    cols4 = ["lamp_warm", "lamp_magenta", "lamp_gold", "lamp_violet", "lamp_warm", "lamp_cyan"]
+    cols4 = ["lamp_warm", "lamp_gold", "lamp_warm", "lamp_magenta", "lamp_warm", "lamp_gold"]
 
     def pole_at(px_, py_, nx_, ny_, hw):
         d = hw
@@ -2697,13 +3052,13 @@ def build_outskirts():
                 garland((p1[0], Y(p1[1])), (p2[0], Y(p2[1])), 3.0, 3.0, 0.6, n, gk)
                 GLOWS.append((c_.x, Y(c_.y), 2.2, NEON["warm"] if gk % 3 else NEON["magenta"], 0.8))
                 gk += 1
-                d += 4.5
-            acc = (acc + L_) % 4.5
+                d += 10.0
+            acc = (acc + L_) % 10.0
     # guirlandes en étoile : du sommet de la couronne du chapiteau aux mâts du bord de la place
     pcx, pcy = PLAZA_E["c"]
     prx, pry = PLAZA_E["r"]
-    for k in range(16):
-        a_ = k / 16 * math.tau + 0.1
+    for k in range(0):
+        a_ = k / 6 * math.tau + 0.5
         ex, ey = pcx + math.cos(a_) * prx * 0.93, pcy + math.sin(a_) * pry * 0.93
         mb.cyl(ex, Y(ey), 0.0, 3.4, 0.06, "metal_dark", 6)
         mb.sphere(ex, Y(ey), 3.45, 0.1, "lamp_gold", 1)
@@ -2711,37 +3066,7 @@ def build_outskirts():
         ty_ = TC.y - math.sin(a_) * (TR[1] + 0.3) * 0.62
         garland((tx_, ty_), (ex, Y(ey)), H_WALL + 3.6, 3.4, 0.9, 20, k)
         GLOWS.append(((tx_ + ex) / 2, (ty_ + Y(ey)) / 2, 2.6, NEON["magenta"] if k % 2 else NEON["violet"], 0.7))
-    # arbres morts et sapins sombres hors jeu, lampadaires éteints, rochers
-    for (tx, ty, sc) in C.get("trees", []):
-        if rng.random() < 0.35:
-            veg.cyl(tx, Y(ty), -0.05, 2.0 * sc, 0.12, "trunk", 6, r2=0.06)
-            for j in range(4):
-                a = j / 4 * math.tau + rng.random()
-                veg.seg((tx, Y(ty), 1.2 * sc), (tx + math.cos(a) * 1.0, Y(ty) + math.sin(a) * 1.0, 2.1 * sc), 0.05, "trunk", 4, r2=0.02)
-        else:
-            veg.cyl(tx, Y(ty), -0.05, 0.8, 0.1, "trunk", 5)
-            for j in range(3):
-                z0 = 0.5 + j * 0.9 * sc
-                veg.cyl(tx, Y(ty), z0, z0 + 1.3 * sc, 1.2 * sc - j * 0.3, "pine" if (int(tx) + j) % 2 else "pine_dark", 8, r2=0.05)
-    # forêt dense en bordure extérieure (bande de sapins)
-    for i in range(420):
-        side = rng.randint(0, 3)
-        near = rng.random() ** 1.6   # beaucoup d'arbres collés à la palissade (bord irrégulier)
-        if side == 0:
-            tx, ty = rng.uniform(-12, W + 12), -1.5 - near * 11
-        elif side == 1:
-            tx, ty = -1.5 - near * 11, rng.uniform(-6, H + 6)
-        elif side == 2:
-            tx, ty = W + 1.5 + near * 11, rng.uniform(-6, H + 6)
-        else:
-            tx, ty = rng.uniform(-12, W + 12), GATE[1] + 0.5 + rng.uniform(0, 14)
-            if LOT[0] - 1.5 < tx < LOT[0] + LOT[2] + 1.5:
-                continue
-        sc = rng.uniform(0.7, 1.3)
-        veg.cyl(tx, Y(ty), -0.05, 0.6, 0.1, "trunk", 5)
-        for j in range(3):
-            z0 = 0.4 + j * 0.9 * sc
-            veg.cyl(tx, Y(ty), z0, z0 + 1.3 * sc, 1.1 * sc - j * 0.3, "pine" if (i + j) % 2 else "pine_dark", 7, r2=0.05)
+    build_forest(veg, rng)
     mb.to_object("_strings", "world")
     veg.to_object("_veg", "world")
     # fouillis au sol des allées : papiers, débris, flaques (non bloquant)
@@ -2752,21 +3077,25 @@ def build_outskirts():
             if tile(x, y) != 1 or (x, y) in GAME_CELLS:
                 continue
             u = rng2.random()
-            if u < 0.015:
-                cl.cyl(x + 0.5, Y(y + 0.5), 0.0, 0.006, rng2.uniform(0.35, 0.6), "water", 10)
-            elif u < 0.055:
+            if u < 0.055:
                 cl.box(x + rng2.uniform(0.2, 0.5), Y(y + rng2.uniform(0.5, 0.8)), 0.0, x + rng2.uniform(0.5, 0.8), Y(y + rng2.uniform(0.2, 0.5)), 0.008, "paper", rot=rng2.uniform(0, 3))
-            elif u < 0.09:
-                cl.box(x + 0.3, Y(y + 0.7), 0.0, x + 0.7, Y(y + 0.3), 0.03, "debris", rot=rng2.uniform(0, 3))
+            elif u < 0.15:
+                for _ in range(rng2.randint(1, 3)):
+                    qx, qy = x + rng2.uniform(0.1, 0.9), y + rng2.uniform(0.1, 0.9)
+                    sz = rng2.uniform(0.08, 0.22)
+                    cl.box(qx - sz, Y(qy + sz * 0.7), 0.0, qx + sz, Y(qy - sz * 0.7), rng2.uniform(0.02, 0.08), rng2.choice(["debris", "plank_dark", "rust", "paper"]), rot=rng2.uniform(0, 3))
+            elif u < 0.18:
+                qx, qy = x + rng2.uniform(0.2, 0.8), y + rng2.uniform(0.2, 0.8)
+                cl.box(qx - 0.5, Y(qy + 0.06), 0.0, qx + 0.5, Y(qy - 0.06), 0.05, "plank", rot=rng2.uniform(0, 3))
             elif u < 0.105:
-                cl.sphere(x + 0.5, Y(y + 0.5), 0.02, 0.18, rng2.choice(["balloon_r", "balloon_p"]), 1, 1.0, 1.0, 0.3)
+                cl.sphere(x + 0.5, Y(y + 0.5), 0.02, 0.18, rng2.choice(["debris", "plank_dark"]), 1, 1.0, 1.0, 0.3)
             role = role_of(CELL_ROOM.get((x, y), -1))
             # confettis (place, allée centrale, parvis)
-            nconf = 3 if role in ("plaza", "avenue", "entrance") else 1
+            nconf = 1 if role in ("plaza", "avenue", "entrance") else 0
             for _ in range(nconf):
-                if rng2.random() < 0.6:
+                if rng2.random() < 0.3:
                     qx, qy = x + rng2.random(), y + rng2.random()
-                    cl.box(qx, Y(qy + 0.07), 0.0, qx + 0.07, Y(qy), 0.006, rng2.choice(CONFETTI), rot=rng2.uniform(0, 3))
+                    cl.box(qx, Y(qy + 0.09), 0.0, qx + 0.09, Y(qy), 0.006, rng2.choice(["debris", "paper", "plank_dark"]), rot=rng2.uniform(0, 3))
             # encombrement contre les murs / palissades : caisses, barils, poubelles renversées,
             # bancs, peluches abandonnées, barrières, herbes folles (non bloquant, bord de case)
             nb = [(dx, dy) for (_, dx, dy) in SIDES if not walk(x + dx, y + dy)]
@@ -2816,9 +3145,104 @@ def build_outskirts():
                 for _ in range(rng2.randint(3, 6)):
                     gx_, gy_ = ex + rng2.uniform(-0.25, 0.25), ey + rng2.uniform(-0.25, 0.25)
                     cl.seg((gx_, Y(gy_), 0.0), (gx_ + rng2.uniform(-0.12, 0.12), Y(gy_) + rng2.uniform(-0.12, 0.12), rng2.uniform(0.15, 0.4)), 0.025, "pine", 3, r2=0.0)
+    # lanternes sur poteaux le long des bords des allées / cours / place : flaques de lumière
+    # orangée (les points chauds de la planche) ; poteau fin non bloquant.
+    rng3 = random.Random(SEED + 404)
+    placed = []
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 1 or (x, y) in GAME_CELLS:
+                continue
+            nb = [(dx, dy) for (_, dx, dy) in SIDES if not walk(x + dx, y + dy)]
+            if not nb or rng3.random() > 0.16:
+                continue
+            if any(abs(x - px) + abs(y - py) < 5 for (px, py) in placed[-60:]):
+                continue
+            placed.append((x, y))
+            dx, dy = nb[0]
+            ex, ey = x + 0.5 + dx * 0.36, y + 0.5 + dy * 0.36
+            hz = rng3.uniform(1.6, 2.1)
+            cl.cyl(ex, Y(ey), 0.0, hz, 0.035, "metal_dark", 5)
+            cl.seg((ex, Y(ey), hz), (ex - dx * 0.35, Y(ey) + dy * 0.35, hz + 0.1), 0.025, "metal_dark", 4)
+            lx, ly = ex - dx * 0.35, Y(ey) + dy * 0.35
+            cl.box(lx - 0.09, ly - 0.09, hz - 0.22, lx + 0.09, ly + 0.09, hz + 0.02, "lamp_warm")
+            cl.box(lx - 0.11, ly - 0.11, hz + 0.02, lx + 0.11, ly + 0.11, hz + 0.07, "metal_dark")
+            LAMPS.append((lx, ly, hz - 0.3, NEON["warm"], 0.55))
     cl.to_object("_litter", "world")
 
 
+
+
+def _pine(mb, tx, ty, h, r, rng):
+    """Sapin : tronc + 5 étages coniques dentelés (rayon décroissant), pointe fine."""
+    mb.cyl(tx, ty, -0.05, h * 0.25, r * 0.1, "trunk", 5)
+    n = 5
+    for j in range(n):
+        f = j / n
+        z0 = h * (0.12 + 0.17 * j)
+        rr = r * (1.0 - 0.17 * j) * rng.uniform(0.9, 1.1)
+        mb.cyl(tx + rng.uniform(-0.05, 0.05), ty + rng.uniform(-0.05, 0.05), z0, z0 + h * 0.34, rr, "pine" if (j + int(tx * 3)) % 3 else "pine_dark",
+               rng.choice((7, 8, 9)), r2=rr * 0.08, rot=rng.uniform(0, 3))
+    mb.cyl(tx, ty, h * 0.9, h * 1.05, r * 0.12, "pine_dark", 5, r2=0.01)
+
+
+def build_forest(veg, rng):
+    """Forêt de sapins dense tout autour du parc (marge rendue) et dans les grands enclos hors jeu.
+    Un arbre n'est posé que si rien de praticable ne se trouve « derrière » lui à l'image (cases au
+    nord couvertes par sa hauteur projetée) : la forêt ne masque jamais le terrain de jeu."""
+    k = math.tan(TILT)
+    ok_cache = {}
+
+    def clear(cx, cy, rad):
+        key = (cx, cy, rad)
+        if key in ok_cache:
+            return ok_cache[key]
+        r_ = True
+        for yy in range(cy - rad, cy + 2):
+            for xx in range(cx - 1, cx + 2):
+                if walk(xx, yy) or tile(xx, yy) == 3 and 0 <= xx < W and 0 <= yy < H and wall_kind(xx, yy) not in ("fence",):
+                    r_ = False
+        ok_cache[key] = r_
+        return r_
+
+    # tracé des montagnes russes : arbres bas à son voisinage (la voie reste lisible au-dessus)
+    cpts = [Vector((p[0], p[1])) for p in _catmull([(q[0], q[1], 0) for q in COASTER], 4, closed=False)] if COASTER else []
+
+    def near_coaster(tx, ty):
+        for p in cpts:
+            if abs(p.x - tx) < 3.0 and abs(p.y - ty) < 3.0:
+                return True
+        return False
+
+    step = 1.7
+    yy = -MARGIN - 1.0
+    i = 0
+    while yy < H + MARGIN + 3:
+        xx = -MARGIN - 1.0 + (0.6 if i % 2 else 0.0)
+        while xx < W + MARGIN + 1:
+            tx, ty = xx + rng.uniform(-0.7, 0.7), yy + rng.uniform(-0.7, 0.7)
+            xx += step
+            cx, cy = int(math.floor(tx)), int(math.floor(ty))
+            if 0 <= cx < W and 0 <= cy < H and tile(cx, cy) != 0:
+                continue
+            # parvis / entrée sud : pas d'arbres devant l'escalier
+            if ty > LOT[1] - 1 and LOT[0] - 2 < tx < LOT[0] + LOT[2] + 2:
+                continue
+            if rng.random() < 0.12:
+                continue
+            h = rng.uniform(2.4, 5.6) if rng.random() < 0.7 else rng.uniform(5.6, 7.0)
+            if near_coaster(tx, ty):
+                h = rng.uniform(1.6, 2.6)
+            rad = int(math.ceil(h * k * 0.9)) + 1
+            if not clear(cx, cy, rad):
+                h = rng.uniform(1.0, 1.6)
+                if not clear(cx, cy, int(math.ceil(h * k)) + 1):
+                    continue
+            _pine(veg, tx, Y(ty), h, h * rng.uniform(0.32, 0.42), rng)
+            if rng.random() < 0.25:
+                veg.sphere(tx + rng.uniform(-1, 1), Y(ty) + rng.uniform(-1, 1), 0.1, rng.uniform(0.25, 0.5), "stone_dark", 1, 1.0, 1.0, 0.6)
+        yy += step * 0.87
+        i += 1
 
 
 # ======================================================================= bosquets dans les enclos vides
@@ -2915,7 +3339,7 @@ def build_groves():
 
 # ======================================================================= lumières
 LIGHT_E = float(os.environ.get("HC_LIGHT", "100"))
-WASH = float(os.environ.get("HC_WASH", "0.5"))  # nappes diffuses (place, cours, allées)
+WASH = float(os.environ.get("HC_WASH", "0.22"))  # nappes diffuses (place, cours, allées)
 
 
 def build_lights():
@@ -2968,15 +3392,16 @@ def build_lights():
         o.location = (x + w / 2, Y(y + h / 2), 2.2)
         scene.collection.objects.link(o)
         n += 1
-    # halo magenta diffus sur la place (ambiance de la maquette)
-    L_ = bpy.data.lights.new("plaza", "AREA")
-    L_.shape = "DISK"
-    L_.size = 12.0
-    L_.color = NEON["magenta"]
-    L_.energy = LIGHT_E * 2.2 * WASH
-    o = bpy.data.objects.new("plaza", L_)
-    o.location = (TC.x, TC.y, 7.0)
-    scene.collection.objects.link(o)
+    # halo magenta au pied du chapiteau (couronne de lumières basses autour du tambour)
+    for k in range(12):
+        a = k / 12 * math.tau
+        L_ = bpy.data.lights.new("plaza%d" % k, "POINT")
+        L_.color = NEON["magenta"] if k % 2 else NEON["violet"]
+        L_.energy = LIGHT_E * 1.6 * WASH * 2
+        L_.shadow_soft_size = 1.0
+        o = bpy.data.objects.new("plaza%d" % k, L_)
+        o.location = (TC.x + math.cos(a) * (TR[0] + 2.2), TC.y + math.sin(a) * (TR[1] + 2.2), 1.2)
+        scene.collection.objects.link(o)
     # nappes violettes au-dessus de l'allée centrale et du parvis (guirlandes / néons de la maquette)
     k = 0
     for pth in PATHS:
@@ -3042,8 +3467,8 @@ def build_world():
 
 # ======================================================================= rendu
 EXPOSURE = float(os.environ.get("HC_EXPOSURE", "0.15"))
-SUN_E = float(os.environ.get("HC_MOON", "1.6"))
-SKY = float(os.environ.get("HC_SKY", "0.22"))
+SUN_E = float(os.environ.get("HC_MOON", "1.8"))
+SKY = float(os.environ.get("HC_SKY", "0.14"))
 SAT = float(os.environ.get("HC_SAT", "1.3"))
 CON = float(os.environ.get("HC_CON", "1.15"))
 LIFT = float(os.environ.get("HC_LIFT", "10"))
@@ -3088,11 +3513,11 @@ def setup_render():
     bg.inputs[1].default_value = SKY
     moon = bpy.data.lights.new("moon", "SUN")
     moon.energy = SUN_E
-    moon.color = (0.45, 0.55, 1.0)
+    moon.color = (0.55, 0.55, 1.0)
     moon.angle = math.radians(1.5)
     so = bpy.data.objects.new("moon", moon)
     sc.collection.objects.link(so)
-    d = Vector((0.3, -0.4, -0.85)).normalized()
+    d = Vector((0.6, 0.3, -0.75)).normalized()   # lune à l'ouest-sud-ouest : faces visibles modelées
     so.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
     cam = bpy.data.cameras.new("cam")
     cam.type = "ORTHO"
@@ -3137,6 +3562,8 @@ if __name__ == "__main__":
     cam = setup_render()
     t_build = time.time() - t0
     print("BUILD", round(t_build, 1), "s", flush=True)
+    if os.environ.get("HC_SAVE_BLEND"):
+        bpy.ops.wm.save_as_mainfile(filepath=os.environ["HC_SAVE_BLEND"])
     import hashlib
     info = {"tiles_md5": hashlib.md5("".join(TILES).encode()).hexdigest(), "seed": SEED, "ppc": PPC, "tilt_deg": TILT_DEG,
             "projection": "ground_square", "margin": MARGIN, "biome": "haunted_carnival",

@@ -29,54 +29,58 @@ const DS := FloorLayout.DoorState
 
 const KEY_DIRECTOR := &"key_hc_director"
 
-const W := 72
-const H := 126
+const W := 76
+const H := 90
 ## Parvis de l'entrée (apparition) et portail à la tête de clown (deux rangées de mur).
-const LOT := Rect2i(22, 111, 28, 14)
-const GATE := Rect2i(16, 109, 40, 2)
-const GATE_OPEN := Rect2i(33, 109, 6, 2)
+const LOT := Rect2i(26, 76, 25, 13)
+const GATE := Rect2i(19, 74, 39, 2)
+const GATE_OPEN := Rect2i(35, 74, 6, 2)
 ## Grande place ovale pavée (centre, rayons) et sa boîte (compatibilité du contrat de rendu).
-const PLAZA_C := Vector2(36.5, 47.0)
-const PLAZA_R := Vector2(25.0, 19.5)
-const PLAZA := Rect2i(11, 27, 52, 40)
-## Chapiteau monumental (ovale, boîte englobante) : centre, rayons.
-const TENT_RECT := Rect2i(19, 34, 35, 26)
-const TENT_C := Vector2(36.5, 46.5)
-const TENT_R := Vector2(17.0, 12.5)
+const PLAZA_C := Vector2(38.0, 40.5)
+const PLAZA_R := Vector2(25.0, 22.5)
+const PLAZA := Rect2i(13, 18, 50, 45)
+## Chapiteau (ovale, boîte englobante) : centre, rayons. Il occupe la cour de l'enceinte.
+const TENT_RECT := Rect2i(28, 33, 20, 15)
+const TENT_C := Vector2(38.0, 40.5)
+const TENT_R := Vector2(9.5, 7.5)
 ## Anneau de gradins (cases murées) : tent_d dans ]RING, 1].
 const RING := 0.74
-## Enceinte de pierre basse autour du chapiteau (anneau d'une case sur la place), ouvertures
-## [angle, demi-largeur en cases] : grand escalier au sud, portes nord/est/ouest, diagonales.
-const ENC_R := Vector2(21.5, 16.5)
-const ENC_GAPS := [[PI / 2.0, 3.6], [-PI / 2.0, 2.6], [0.0, 2.6], [PI, 2.6],
-	[PI / 4.0, 1.6], [3.0 * PI / 4.0, 1.6], [-PI / 4.0, 1.6], [-3.0 * PI / 4.0, 1.6]]
+## Enceinte de pierre RECTANGULAIRE autour du chapiteau (comme la maquette) : quatre bâtiments
+## en dur aux angles (bandes nord et sud, de part et d'autre des escaliers), murs bas à l'est et à
+## l'ouest avec une porte au milieu. ENC_RECT = emprise totale, ENC_HALLS = bâtiments d'angle
+## [rect, façade], ENC_SIDE_GAP = lignes ouvertes des murs latéraux.
+const ENC_RECT := Rect2i(22, 26, 32, 29)
+const ENC_HALLS := [[Rect2i(22, 26, 13, 5), Vector2i.RIGHT], [Rect2i(41, 26, 13, 5), Vector2i.LEFT],
+	[Rect2i(22, 50, 13, 5), Vector2i.RIGHT], [Rect2i(41, 50, 13, 5), Vector2i.LEFT]]
+const ENC_SIDE_GAP := Vector2i(39, 42)
+const ENC_R := Vector2(16.0, 14.5)
 ## Quartiers (cours ovales) : [centre, rayons, rôle, nom, type de salle].
 const YARDS := [
-	[Vector2(15.5, 16.0), Vector2(12.5, 10.5), &"wheel_yard", "Esplanade de la Grande Roue", &"combat"],
-	[Vector2(57.0, 16.0), Vector2(12.5, 10.5), &"ride_yard", "Cour des Chaises volantes", &"trap"],
-	[Vector2(16.0, 86.0), Vector2(11.5, 10.0), &"ride_yard", "Cour des Tasses", &"combat"],
-	[Vector2(56.0, 86.0), Vector2(11.5, 10.0), &"ride_yard", "Cour du Carrousel", &"loot"],
+	[Vector2(11.0, 15.0), Vector2(10.0, 9.5), &"wheel_yard", "Esplanade de la Grande Roue", &"combat"],
+	[Vector2(65.0, 15.0), Vector2(10.0, 9.5), &"ride_yard", "Cour des Chaises volantes", &"trap"],
+	[Vector2(11.0, 70.0), Vector2(10.0, 9.0), &"ride_yard", "Cour des Tasses", &"combat"],
+	[Vector2(64.0, 69.0), Vector2(10.5, 9.5), &"ride_yard", "Cour du Carrousel", &"loot"],
 ]
 ## Allées sinueuses : [points (cases), largeur, rôle, nom].
 const PATHS := [
-	[[Vector2(36.5, 64.0), Vector2(34.0, 73.0), Vector2(38.5, 82.0), Vector2(35.0, 91.0), Vector2(37.5, 100.0), Vector2(36.0, 110.0)], 5.0, &"avenue", "Allée des Lumières"],
-	[[Vector2(36.5, 29.0), Vector2(35.0, 20.0), Vector2(38.0, 13.0), Vector2(36.0, 7.0)], 4.0, &"alley", "Allée du Belvédère"],
-	[[Vector2(25.0, 9.0), Vector2(31.0, 6.5), Vector2(36.0, 6.0), Vector2(41.0, 6.5), Vector2(47.0, 9.0)], 3.0, &"alley", "Allée des Guirlandes"],
-	[[Vector2(20.0, 32.0), Vector2(18.0, 25.0)], 4.0, &"alley", "Passage de la Grande Roue"],
-	[[Vector2(53.0, 32.0), Vector2(55.0, 25.0)], 4.0, &"alley", "Passage des Chaises"],
-	[[Vector2(13.0, 52.0), Vector2(6.5, 59.0), Vector2(7.0, 67.0), Vector2(12.0, 76.0)], 3.0, &"alley", "Chemin des Roulottes ouest"],
-	[[Vector2(60.0, 52.0), Vector2(66.5, 59.0), Vector2(66.0, 67.0), Vector2(61.0, 76.0)], 3.0, &"alley", "Chemin des Roulottes est"],
-	[[Vector2(26.0, 89.0), Vector2(31.0, 91.0), Vector2(35.0, 91.0)], 3.0, &"alley", "Ruelle des Tasses"],
-	[[Vector2(46.0, 89.0), Vector2(41.0, 91.0), Vector2(37.0, 91.0)], 3.0, &"alley", "Ruelle du Carrousel"],
-	[[Vector2(27.0, 62.0), Vector2(22.0, 70.0), Vector2(18.0, 76.0)], 3.0, &"alley", "Ruelle des Lampions"],
-	[[Vector2(46.0, 62.0), Vector2(51.0, 70.0), Vector2(54.0, 76.0)], 3.0, &"alley", "Ruelle des Fanions"],
+	[[Vector2(38.0, 55.0), Vector2(37.0, 61.0), Vector2(39.0, 67.0), Vector2(38.0, 74.0)], 5.0, &"avenue", "Allée des Lumières"],
+	[[Vector2(38.0, 26.0), Vector2(37.0, 19.0), Vector2(39.0, 13.0), Vector2(38.5, 8.0)], 5.0, &"alley", "Allée du Belvédère"],
+	[[Vector2(20.0, 12.0), Vector2(29.0, 11.0), Vector2(38.0, 11.5), Vector2(47.0, 11.0), Vector2(56.0, 12.0)], 3.0, &"alley", "Allée des Guirlandes"],
+	[[Vector2(19.0, 26.0), Vector2(15.0, 21.0)], 4.0, &"alley", "Passage de la Grande Roue"],
+	[[Vector2(57.0, 26.0), Vector2(61.0, 21.0)], 4.0, &"alley", "Passage des Chaises"],
+	[[Vector2(14.0, 46.0), Vector2(7.0, 52.0), Vector2(7.0, 59.0), Vector2(10.0, 63.0)], 3.0, &"alley", "Chemin des Roulottes ouest"],
+	[[Vector2(62.0, 46.0), Vector2(69.5, 51.0), Vector2(69.5, 57.0), Vector2(66.0, 62.0)], 3.0, &"alley", "Chemin des Roulottes est"],
+	[[Vector2(36.0, 66.0), Vector2(28.0, 68.0), Vector2(20.0, 70.0)], 3.0, &"alley", "Ruelle des Tasses"],
+	[[Vector2(40.0, 66.0), Vector2(47.0, 68.0), Vector2(55.0, 69.0)], 3.0, &"alley", "Ruelle du Carrousel"],
+	[[Vector2(24.0, 58.0), Vector2(19.0, 63.0)], 3.0, &"alley", "Ruelle des Lampions"],
+	[[Vector2(52.0, 58.0), Vector2(57.0, 63.0)], 3.0, &"alley", "Ruelle des Fanions"],
 ]
 ## Grande roue et manèges : [centre, rayon, kind].
-const WHEEL := {"c": Vector2(15.5, 15.5), "r": 6.2, "kind": "ferris_wheel"}
+const WHEEL := {"c": Vector2(10.0, 14.0), "r": 5.4, "kind": "ferris_wheel"}
 const RIDES := [
-	{"c": Vector2(57.5, 15.5), "r": 4.0, "kind": "swing_ride"},
-	{"c": Vector2(16.5, 86.5), "r": 4.0, "kind": "teacups"},
-	{"c": Vector2(55.5, 86.5), "r": 4.6, "kind": "carousel"},
+	{"c": Vector2(66.0, 15.5), "r": 3.8, "kind": "swing_ride"},
+	{"c": Vector2(10.5, 70.5), "r": 3.6, "kind": "teacups"},
+	{"c": Vector2(64.0, 69.0), "r": 4.6, "kind": "carousel"},
 ]
 const HALLS := [
 	[&"hangar", &"hall_hangar", "Hangar des manèges", "Remise des wagonnets"],
@@ -85,11 +89,12 @@ const HALLS := [
 	[&"arcade", &"hall_arcade", "Galerie des jeux", "Salle des flippers"],
 ]
 ## Kiosques (billetteries) du parvis.
-const KIOSKS := [Rect2i(23, 112, 6, 6), Rect2i(43, 112, 6, 6)]
+const KIOSKS := [Rect2i(27, 77, 6, 6), Rect2i(44, 77, 6, 6)]
 ## Sorties de secours (extraction) au bout des chemins des roulottes : [rect, façade].
-const EXITS := [[Rect2i(0, 60, 5, 7), Vector2i.RIGHT], [Rect2i(67, 60, 5, 7), Vector2i.LEFT]]
+const EXITS := [[Rect2i(34, 1, 9, 6), Vector2i.DOWN], [Rect2i(71, 50, 5, 7), Vector2i.LEFT]]
+const EXIT_NAMES := ["Sortie nord (pavillon du Belvédère)", "Sortie de secours est"]
 ## Pylônes des montagnes russes traversant la cour nord-est (cases murées, polyligne).
-const COASTER_IN := [Vector2i(47, 9), Vector2i(48, 13), Vector2i(49, 17), Vector2i(48, 21), Vector2i(47, 25)]
+const COASTER_IN := [Vector2i(57, 7), Vector2i(58, 10), Vector2i(59, 13)]
 
 ## Stands possibles : [archétype, rôle, noms…].
 const STANDS := [
@@ -147,36 +152,23 @@ static func disc_cells(c: Vector2, r: float) -> Array[Vector2i]:
 	return out
 
 
-## Paramètre ovale d'une case (0 au centre, 1 sur le bord du chapiteau).
+## Distance « rectangulaire » normalisée au centre de l'enceinte (1 sur son bord).
 static func enc_d(x: int, y: int) -> float:
-	var dx := (x + 0.5 - TENT_C.x) / ENC_R.x
-	var dy := (y + 0.5 - TENT_C.y) / ENC_R.y
-	return dx * dx + dy * dy
+	var c := Vector2(ENC_RECT.position) + Vector2(ENC_RECT.size) * 0.5
+	var hx := float(ENC_RECT.size.x) * 0.5
+	var hy := float(ENC_RECT.size.y) * 0.5
+	return maxf(absf(x + 0.5 - c.x) / hx, absf(y + 0.5 - c.y) / hy)
 
 
-## Enceinte : cases de la place juste hors de l'ellipse ENC_R (bord 4-voisin), sauf ouvertures.
-static func _enclosure(L: FloorLayout, zone: PackedInt32Array) -> void:
+## Enceinte : murs bas est et ouest entre les bâtiments d'angle, ouverts au milieu (les bandes
+## nord et sud sont les bâtiments d'angle eux-mêmes, séparés par les escaliers).
+static func _enclosure(L: FloorLayout, _zone: PackedInt32Array) -> void:
 	var cells: Array = []
-	var x0 := int(TENT_C.x - ENC_R.x) - 2
-	var y0 := int(TENT_C.y - ENC_R.y) - 2
-	for y in range(maxi(y0, 1), mini(int(TENT_C.y + ENC_R.y) + 3, H - 1)):
-		for x in range(maxi(x0, 1), mini(int(TENT_C.x + ENC_R.x) + 3, W - 1)):
-			if zone[y * W + x] != 0 or L.tiles[y * W + x] != T.STREET:
-				continue
-			if enc_d(x, y) < 1.0:
-				continue
-			if enc_d(x - 1, y) >= 1.0 and enc_d(x + 1, y) >= 1.0 and enc_d(x, y - 1) >= 1.0 and enc_d(x, y + 1) >= 1.0:
-				continue
-			var vx := x + 0.5 - TENT_C.x
-			var vy := y + 0.5 - TENT_C.y
-			var a := atan2(vy, vx)
-			var rr := sqrt(vx * vx + vy * vy)
-			var gap := false
-			for g: Array in ENC_GAPS:
-				if absf(wrapf(a - float(g[0]), -PI, PI)) * rr < float(g[1]):
-					gap = true
-					break
-			if gap:
+	var y0: int = (ENC_HALLS[0][0] as Rect2i).end.y
+	var y1: int = (ENC_HALLS[2][0] as Rect2i).position.y
+	for x: int in [ENC_RECT.position.x, ENC_RECT.end.x - 1]:
+		for y in range(y0, y1):
+			if y >= ENC_SIDE_GAP.x and y < ENC_SIDE_GAP.y:
 				continue
 			L.set_tile(Vector2i(x, y), T.WALL)
 			cells.append([x, y])
@@ -255,7 +247,7 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 		me.arch = &"service_yard"
 		me.role = &"service_yard"
 		me.type = FloorLayout.ROOM_EXTRACTION
-		me.name = "Sortie de secours %s" % ("ouest" if i3 == 0 else "est")
+		me.name = EXIT_NAMES[i3]
 		me.facade = EXITS[i3][1]
 		mods.append(me)
 	for i2 in KIOSKS.size():
@@ -271,12 +263,32 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 		mk.facade = Vector2i.RIGHT if i2 == 0 else Vector2i.LEFT
 		mods.append(mk)
 
+	# Bâtiments en dur aux angles de l'enceinte du chapiteau.
+	var enc_defs: Array = [[&"museum", &"hall_museum", "Musée des horreurs", FloorLayout.ROOM_LOOT],
+		[&"arcade", &"hall_arcade", "Galerie des jeux", FloorLayout.ROOM_COMBAT],
+		[&"workshop", &"hall_workshop", "Atelier des forains", FloorLayout.ROOM_TRAP],
+		[&"hangar", &"hall_hangar", "Remise des wagonnets", FloorLayout.ROOM_COMBAT]]
+	var eo := rng.randi_range(0, 3)
+	for i4 in ENC_HALLS.size():
+		var me4 := Mod.new()
+		me4.rect = ENC_HALLS[i4][0]
+		me4.inner = me4.rect.grow(-1)
+		me4.facade = ENC_HALLS[i4][1]
+		var ed: Array = enc_defs[(i4 + eo) % enc_defs.size()]
+		me4.arch = ed[0]
+		me4.role = ed[1]
+		me4.name = ed[2]
+		me4.type = ed[3]
+		me4.slot = "hall"
+		me4.roof = false   # vus en coupe (ruines de pierre ouvertes, comme la maquette)
+		mods.append(me4)
+
 	# 3. Bâtiments serrés le long des allées (placeur glouton sur les bords de rue) : tentes,
 	#    halls en dur autour de la place, roulottes en périphérie, stands partout ailleurs.
 	var edges := _street_edges(L, rng)
-	var tents := _place(L, taken, zone, edges, rng, [Vector2i(11, 10), Vector2i(10, 11)], 2, "tent")
-	var halls := _place(L, taken, zone, edges, rng, [Vector2i(10, 9), Vector2i(9, 10), Vector2i(11, 8), Vector2i(9, 8), Vector2i(8, 9)], Cfg.geti("hc_halls", 8), "hall")
-	var cars := _place(L, taken, zone, edges, rng, [Vector2i(7, 5), Vector2i(5, 7), Vector2i(6, 5)], Cfg.geti("hc_caravans", 4), "caravan")
+	var tents := _place(L, taken, zone, edges, rng, [Vector2i(9, 8), Vector2i(8, 9)], 2, "tent")
+	var halls := _place(L, taken, zone, edges, rng, [Vector2i(9, 7), Vector2i(7, 9), Vector2i(8, 7), Vector2i(7, 8), Vector2i(7, 7)], Cfg.geti("hc_halls", 8), "hall")
+	var cars := _place(L, taken, zone, edges, rng, [Vector2i(8, 5), Vector2i(5, 8), Vector2i(7, 5), Vector2i(5, 7)], Cfg.geti("hc_caravans", 4), "caravan")
 	var stands := _place(L, taken, zone, edges, rng, [Vector2i(7, 6), Vector2i(6, 7), Vector2i(8, 6), Vector2i(6, 6), Vector2i(6, 5), Vector2i(5, 6)], Cfg.geti("hc_stands_max", 40), "stand")
 	if tents.size() < 2 or cars.size() < Cfg.geti("hc_caravans", 4) or stands.size() < 12:
 		return null
@@ -518,16 +530,19 @@ static func _place(L: FloorLayout, taken: PackedByteArray, zone: PackedInt32Arra
 		var zs := zone[s.y * W + s.x]
 		match kind:
 			"tent":
-				if s.y < 70 or d == Vector2i.DOWN:
+				if s.y < 58 or d == Vector2i.DOWN:
 					continue
 			"hall":
 				if zs != 0:
 					continue
 			"caravan":
-				if zs == 0 or d == Vector2i.DOWN or Vector2(s).distance_to(PLAZA_C) < 30.0:
+				if zs == 0 or d == Vector2i.DOWN or Vector2(s).distance_to(PLAZA_C) < 26.0:
 					continue
 		for sz: Vector2i in sizes:
 			var r := _rect_at(s, d, sz, rng)
+			# bande nord laissée à la forêt (la planche : roue, pavillon, montagnes russes)
+			if kind != "tent" and kind != "hall" and r.position.y < 5:
+				continue
 			if _free(taken, r):
 				_mark(taken, r)
 				out.append([r, -d])
@@ -730,7 +745,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 				if dn > 0 and (by_unit[dn] as Mod).roof:
 					continue
 				# Pas de porte sur la façade extérieure du portail (parvis) sauf billetteries.
-				if (up == 0 and y2 + 1 >= GATE.position.y and dn > 0 and (by_unit[dn] as Mod).slot != "kiosk"):
+				if (up == 0 and y2 + 1 >= GATE.position.y and x2 >= GATE.position.x and x2 < GATE.end.x and dn > 0 and (by_unit[dn] as Mod).slot != "kiosk"):
 					continue
 				_cand(groups, up, dn, Vector2i(x2, y2), false)
 	var door_cells := {}
@@ -994,8 +1009,14 @@ static func _contract(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerat
 	for rd: Dictionary in RIDES:
 		rides.append({"kind": rd["kind"], "c": rd["c"], "r": float(rd["r"])})
 	# Montagnes russes : boucle hors jeu dans la marge (nord, est, sud-est) + section intérieure.
-	var loop: Array = [[-4.0, 60.0], [-4.0, 20.0], [0.0, 4.0], [10.0, -3.0], [26.0, -4.0], [40.0, -2.0], [52.0, -5.0],
-		[64.0, -3.0], [74.0, 2.0], [75.0, 14.0], [72.0, 30.0], [75.0, 46.0], [73.0, 62.0], [75.0, 80.0], [72.0, 98.0], [74.0, 112.0], [70.0, 122.0]]
+	# Boucle fermée (le rendu la lisse) : marge ouest → nord au-dessus de la grande roue → plongée
+	# dans la cour nord-est (pylônes COASTER_IN) → marge est → sud → retour par le sud-ouest.
+	var loop: Array = [[12.0, 104.0], [6.0, 97.0], [0.0, 90.0], [-3.0, 80.0], [-1.0, 71.0], [-3.5, 64.0], [-1.0, 56.0], [-4.5, 48.0], [-1.5, 40.0], [-4.0, 32.0], [0.0, 24.0], [-4.0, 16.0],
+		[-1.0, 3.0], [8.0, -3.5], [14.0, -1.0], [20.0, -4.0], [26.0, -1.5], [31.0, -4.5], [38.0, -2.0], [44.0, -4.0], [52.0, 1.0]]
+	for c0: Vector2i in COASTER_IN:
+		loop.append([c0.x + 0.5, c0.y + 0.5])
+	loop.append_array([[63.0, 20.0], [72.0, 22.0], [77.0, 26.0], [79.5, 32.0], [76.5, 38.0], [80.0, 44.0], [77.0, 51.0],
+		[78.0, 58.0], [81.0, 65.0], [80.5, 72.0], [77.0, 78.0], [77.0, 84.0], [73.0, 90.0], [68.0, 96.0], [64.0, 104.0]])
 	var inner: Array = []
 	for c: Vector2i in COASTER_IN:
 		inner.append([c.x + 0.5, c.y + 0.5])
@@ -1020,4 +1041,5 @@ static func _contract(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerat
 		"coaster_in": inner, "tent": {"rect": TENT_RECT, "c": TENT_C, "r": TENT_R}, "plaza": PLAZA,
 		"plaza_e": {"c": PLAZA_C, "r": PLAZA_R}, "paths": paths, "yards": yards, "lot": LOT,
 		"gate": GATE, "gate_open": GATE_OPEN, "trees": trees,
-		"enclosure": L.get_meta(&"hc_enclosure", []), "enc_r": ENC_R})
+		"enclosure": L.get_meta(&"hc_enclosure", []), "enc_r": ENC_R, "enc_rect": ENC_RECT,
+		"enc_halls": ENC_HALLS.map(func(e: Array) -> Rect2i: return e[0])})

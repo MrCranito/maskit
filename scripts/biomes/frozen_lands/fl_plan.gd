@@ -194,10 +194,12 @@ static func plateau_mask(seed_value: int, ship: Vector2, base: PackedByteArray) 
 				continue
 			if d > PLAT_DIL + 2.5:
 				continue
-			# bruit à facettes : cellules de 5 cases, valeur par cellule → bord anguleux
-			var cx := x / 5
-			var cy := y / 5
-			var n := hash01(cx, cy, s) * 3.0 - 1.5
+			# bruit à facettes : cellules de 6 cases, valeur par cellule → bord anguleux, anses
+			# profondes (amplitude plat_coves, balance.cfg)
+			var cx := x / 6
+			var cy := y / 6
+			var amp := Cfg.getf("plat_coves", 6.0)
+			var n := hash01(cx, cy, s) * amp - amp * 0.5
 			var n2 := hash01(x / 2, y / 2, s + 7) * 1.0 - 0.5
 			if d + n + n2 > PLAT_DIL or x < 3 or y < 3 or x >= W - 3 or y >= H - 3:
 				continue
@@ -206,6 +208,9 @@ static func plateau_mask(seed_value: int, ship: Vector2, base: PackedByteArray) 
 			if sx * sx + sy * sy < 1.0:
 				continue
 			if y >= BRIDGE_Y0 and absi(x - (SPINE_X0 + SPINE_W / 2)) > 5:
+				continue
+			# le pont reste au-dessus de l'eau : pas de neige au-delà de ses premières rangées
+			if y >= BRIDGE_Y0 + 3:
 				continue
 			out[i] = 1
 	return out

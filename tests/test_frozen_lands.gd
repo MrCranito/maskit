@@ -382,7 +382,8 @@ func test_grands_decors_helico_cristaux() -> void:
 			kinds[p.kind] = true
 			if p.size != Vector2i.ONE:
 				for q in FloorLayout.spawn_cells(p):
-					assert_eq(f.get_tile(q), T.FLOOR, "empreinte de %s sur le sol" % p.kind)
+					var tq := f.get_tile(q)
+					assert_true(tq == T.FLOOR or tq == T.STREET, "empreinte de %s sur le sol" % p.kind)
 		assert_true(kinds.has(&"fl_crystal_core"), "grand cristal au centre du labo")
 		assert_true(kinds.has(&"fl_helicopter"), "hélicoptère dans le hangar")
 

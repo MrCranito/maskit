@@ -160,7 +160,8 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 	sa.type = FloorLayout.ROOM_BOSS
 	sa.name = "Sanctuaire du Pharaon"
 	sa.slot = "sanctuary"
-	sa.roof = true
+	# Sans toit : la planche montre le sanctuaire à ciel ouvert (dais à l'ankh d'or, torches).
+	sa.roof = false
 	sa.facade = Vector2i.DOWN
 	mods.append(sa)
 	# Colonnade de la cour à piliers (anneau à 1 case du bord), colonnes de l'hypostyle et des cours.
@@ -384,7 +385,8 @@ static func _module(L: FloorLayout, R: Rect2i, rng: RandomNumberGenerator, slot:
 			k += 1
 		used[nm] = true
 		m.name = nm
-		m.roof = rng.randf() < roof_p * 0.4
+		# Peu de toits : la planche montre presque toutes les salles à ciel ouvert.
+		m.roof = rng.randf() < roof_p * 0.22
 		out.append(m)
 	return out
 

@@ -23,7 +23,7 @@ from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None
 SRC = sys.argv[1]
-SAT = float(os.environ.get("HC_GRADE_SAT", "1.18"))
+SAT = float(os.environ.get("HC_GRADE_SAT", "1.0"))
 GLOW = float(os.environ.get("HC_GRADE_GLOW", "1.0"))
 info = json.load(open(os.path.join(SRC, "render.json")))
 L = json.load(open(os.path.join(SRC, "layout.json")))
@@ -70,7 +70,7 @@ for _y, _row in enumerate(L["tiles"]):
 from PIL import ImageFilter
 _mi = Image.fromarray((_m * 255).astype(np.uint8)).resize(((_TW + 2 * M) * 8, (_TH + 2 * M) * 8), Image.BILINEAR)
 OUT_MASK = _mi.filter(ImageFilter.GaussianBlur(10))
-OUT_K = float(os.environ.get("HC_GRADE_OUTSIDE", "0.56"))
+OUT_K = float(os.environ.get("HC_GRADE_OUTSIDE", "0.95"))
 CURVE = float(os.environ.get("HC_GRADE_CURVE", "0.55"))
 
 
@@ -82,6 +82,46 @@ def outside(x0, y0, w, h):
 
 
 _HZ = None
+# Halo large (bloom atmosphérique) calculé sur l'image ENTIÈRE réduite (≈ 4 px / case) à partir du
+# rendu brut : sans raccord entre bandes ni entre patchs d'intérieur.
+HALO = float(os.environ.get("HC_GRADE_HALO", "0.42"))
+_HL = None
+
+
+CLARITY = float(os.environ.get("HC_GRADE_CLARITY", "0.45"))
+_CL = None
+
+
+def clarity_base(x0, y0, w, h):
+    """Version floue (≈ 1 case) de l'image brute entière, réduite puis relue : base du contraste
+    local (« clarté ») sans raccord entre bandes / patchs."""
+    global _CL
+    if _CL is None:
+        src = os.path.join(SRC, "full_raw.png") if os.path.exists(os.path.join(SRC, "full_raw.png")) else os.path.join(SRC, "full.png")
+        im0 = Image.open(src).convert("RGB")
+        lw, lh = (_TW + 2 * M) * 4, (_TH + 2 * M) * 4
+        _CL = im0.resize((lw, lh), Image.BOX).filter(ImageFilter.GaussianBlur(3))
+    sx = _CL.width / ((_TW + 2 * M) * PPC)
+    box = (x0 * sx, y0 * sx, (x0 + w) * sx, (y0 + h) * sx)
+    return np.asarray(_CL.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0
+
+
+def halo(x0, y0, w, h):
+    global _HL
+    if _HL is None:
+        src = os.path.join(SRC, "full_raw.png") if os.path.exists(os.path.join(SRC, "full_raw.png")) else os.path.join(SRC, "full.png")
+        im0 = Image.open(src).convert("RGB")
+        lw, lh = (_TW + 2 * M) * 4, (_TH + 2 * M) * 4
+        sm = np.asarray(im0.resize((lw, lh), Image.BOX), np.float32) / 255.0
+        lum0 = sm @ np.array([0.299, 0.587, 0.114], np.float32)
+        k = np.clip((lum0 - 0.42) / 0.4, 0.0, 1.0)[:, :, None]
+        b = Image.fromarray((np.clip(sm * k, 0, 1) * 255).astype(np.uint8))
+        g1 = np.asarray(b.filter(ImageFilter.GaussianBlur(5)), np.float32) / 255.0
+        g2 = np.asarray(b.filter(ImageFilter.GaussianBlur(18)), np.float32) / 255.0
+        _HL = Image.fromarray((np.clip(g1 * 0.9 + g2 * 1.6, 0, 1) * 255).astype(np.uint8))
+    sx = _HL.width / ((_TW + 2 * M) * PPC)
+    box = (x0 * sx, y0 * sx, (x0 + w) * sx, (y0 + h) * sx)
+    return np.asarray(_HL.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0 * HALO
 
 
 def haze(x0, y0, w, h):
@@ -115,6 +155,12 @@ def glow_field(x0, y0, w, h):
 def grade(a, x0, y0):
     """a : uint8 (h, w, 3) dont le pixel (0, 0) est (x0, y0) dans full.png."""
     f = a.astype(np.float32) / 255.0
+    # clarté : contraste local à l'échelle de la case (relief des matières, volumes)
+    if CLARITY > 0:
+        bl = clarity_base(x0, y0, a.shape[1], a.shape[0])
+        lf = f @ np.array([0.299, 0.587, 0.114], np.float32)
+        lb = bl @ np.array([0.299, 0.587, 0.114], np.float32)
+        f = np.clip(f + ((lf - lb) * CLARITY)[:, :, None] * (0.4 + 0.6 * np.clip(lf * 3.0, 0, 1))[:, :, None], 0.0, 1.0)
     lum = f @ np.array([0.299, 0.587, 0.114], np.float32)
     # saturation
     f = lum[:, :, None] + (f - lum[:, :, None]) * SAT
@@ -126,16 +172,23 @@ def grade(a, x0, y0):
     f = f + warm[:, :, None] * np.array([0.06, 0.025, -0.02], np.float32)
     # hors parc : assombri, teinté violet nuit
     o = outside(x0, y0, a.shape[1], a.shape[0])[:, :, None]
-    f = f * (1.0 - o * (1.0 - OUT_K)) + o * np.array([0.005, 0.012, 0.045], np.float32)
+    f = f * (1.0 - o * (1.0 - OUT_K)) + o * np.array([0.012, 0.02, 0.06], np.float32)
+    # forêt / hors parc : tire vers le bleu nuit (la planche : bleu-violet, pas magenta)
+    f = f * (1.0 - o[:, :, :] * np.array([0.25, 0.0, -0.1], np.float32))
     # brume violette légère (bruit basse fréquence en coordonnées image, stable entre bandes)
     hz = haze(x0, y0, a.shape[1], a.shape[0])[:, :, None]
     f = f + hz * np.array([0.05, 0.015, 0.08], np.float32) * float(os.environ.get("HC_GRADE_HAZE", "0.45"))
     # lueurs au sol : ajout « screen » modulé (plus fort sur les zones sombres, garde les hautes lumières)
     g = glow_field(x0, y0, a.shape[1], a.shape[0])
     f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - g * (0.45 + 0.25 * (1.0 - np.clip(lum, 0, 1)))[:, :, None])
+    # halo atmosphérique autour des sources lumineuses (ajout « screen »)
+    hl = halo(x0, y0, a.shape[1], a.shape[0])
+    f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - hl)
     # magentas → violets (la planche tire vers le violet bleuté)
     mag = np.clip((f[:, :, 0] - f[:, :, 1]) * 2.0, 0.0, 1.0) * np.clip((f[:, :, 2] - f[:, :, 1]) * 2.0, 0.0, 1.0)
     f = f + mag[:, :, None] * np.array([-0.07, 0.0, 0.05], np.float32)
+    # balance globale (la planche est moins rouge : R:G:B ≈ 0.21:0.13:0.23)
+    f = f * np.array([float(os.environ.get("HC_GRADE_R", "0.86")), 1.0, float(os.environ.get("HC_GRADE_B", "0.95"))], np.float32)
     # courbe en S (contraste ombre / lumière marqué) puis gamma léger vers les tons sombres
     f = np.clip(f, 0.0, 1.0)
     sc = f * f * (3.0 - 2.0 * f)

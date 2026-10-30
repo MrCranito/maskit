@@ -57,6 +57,27 @@ def tile(x, y):
     return int(TILES[y][x])
 
 
+def _inner_voids():
+    """Cases VOID enclavées dans la base (non reliées au bord de la carte par de l'eau) : coins
+    entre l'octogone du labo et la cour. Rendues comme fosses techniques, pas comme de la mer."""
+    seen = set()
+    st = [(x, y) for x in range(W) for y in (0, H - 1)] + [(x, y) for y in range(H) for x in (0, W - 1)]
+    st = [c for c in st if tile(*c) == 0]
+    while st:
+        c = st.pop()
+        if c in seen:
+            continue
+        seen.add(c)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = (c[0] + dx, c[1] + dy)
+            if 0 <= n[0] < W and 0 <= n[1] < H and tile(*n) == 0 and n not in seen:
+                st.append(n)
+    return {(x, y) for y in range(H) for x in range(W) if tile(x, y) == 0 and (x, y) not in seen}
+
+
+INNER_VOID = _inner_voids()
+
+
 def walk(x, y):
     return tile(x, y) in (1, 2, 4, 5, 6)
 
@@ -304,7 +325,7 @@ def mat_panels(name, base, dark, pw=1.0, ph=0.5, seam=0.025, var=0.12, rough=0.4
     return s.m
 
 
-def mat_floor(name, base, dark, cell=1.0, sub=2, var=0.10, rough=0.5, metal=0.35, grate=False, lines=None, wear=0.4):
+def mat_floor(name, base, dark, cell=1.0, sub=2, var=0.10, rough=0.5, metal=0.35, grate=False, lines=None, wear=0.4, snow=0.0):
     """Sol en grandes plaques (cell) subdivisées (sub) ; grate=True : caillebotis (lames fines) ;
     lines = (couleur, largeur) liserés peints le long des joints principaux."""
     s = NT(name)
@@ -362,7 +383,17 @@ def mat_floor(name, base, dark, cell=1.0, sub=2, var=0.10, rough=0.5, metal=0.35
         col = s.mix(lu, col, lc)
     sc_ = s.noise(s.comb(s.mul(u, 60.0), s.mul(v, 3.0), 0.0), 6.0, 3, 0.5)
     h = s.add(h, s.mul(sc_, 0.04))
-    s.done(col, normal=s.bump(h, 0.3, 0.02), metal=metal, rough_sock=s.add(rough, s.mul(n, 0.2)))
+    rg = s.add(rough, s.mul(n, 0.2))
+    if snow > 0:
+        # neige soufflée sur le sol : plaques à bord doux, plus denses par endroits, bosses
+        sn = s.noise(o, 0.28, 4, 0.55)
+        sn2 = s.noise(o, 3.0, 4, 0.6)
+        k = s.smooth(s.add(sn, s.mul(sn2, 0.12)), 0.66 - snow * 0.25, 0.76 - snow * 0.25)
+        col = s.mix(k, col, (0.78, 0.85, 0.96))
+        h = s.add(h, s.mul(k, 0.8))
+        rg = s.add(rg, s.mul(k, 0.3))
+        metal = 0.0
+    s.done(col, normal=s.bump(h, 0.3, 0.02), metal=metal, rough_sock=rg)
     return s.m
 
 
@@ -388,6 +419,15 @@ def mat_decal(name, c, alpha=0.85, scale=3.0):
     m = s.sub(1.0, s.smooth(s.add(d, s.mul(n, 0.35)), 0.25, 0.5))
     s.done(c, 0.9)
     s.l(s.mul(m, alpha), s.b.inputs["Alpha"])
+    return s.m
+
+
+def mat_track(name):
+    """Sillon dans la neige : bleu ombré, semi-transparent, bords bruités."""
+    s = NT(name)
+    n = s.noise(s.obj(), 4.0, 4, 0.6)
+    s.done((0.32, 0.45, 0.66), 0.8, s.bump(n, 0.3, 0.02))
+    s.l(s.smooth(n, 0.3, 0.6, 0.25, 0.7), s.b.inputs["Alpha"])
     return s.m
 
 
@@ -698,50 +738,115 @@ def cells_fit(mb, start, rect, margin=0.04, zlo=0.12, zcut=1.0):
 
 
 # ======================================================================= matériaux des Terres gelées
-def mat_snow(name, base=(0.88, 0.93, 1.0)):
-    """Neige : bosses larges + grain fin, ombres bleutées dans les creux, scintillement discret."""
+def mat_snow(name, base=(0.82, 0.89, 1.0), shade=(0.45, 0.6, 0.88)):
+    """Neige poudreuse / tassée : congères larges (creux bleus), rides de vent (sastrugi) étirées,
+    grain fin, plaques tassées plus grises, paillettes brillantes (rugosité basse ponctuelle) ;
+    relief marqué au bump pour accrocher la lumière rasante."""
     s = NT(name)
     o = s.obj()
+    x, y, z = s.sep(o)
     n1 = s.noise(o, 0.35, 3, 0.5)
     n2 = s.noise(o, 2.2, 5, 0.6)
     n3 = s.noise(o, 14.0, 2, 0.5)
-    col = s.mix(s.smooth(n1, 0.3, 0.75, 0.0, 0.45), base, (0.6, 0.72, 0.9))
-    col = s.mix(s.mul(n2, 0.3), col, (0.92, 0.96, 1.0))
-    col = s.mix(s.smooth(s.noise(o, 0.12, 2, 0.5), 0.4, 0.75, 0.0, 0.35), col, (0.62, 0.72, 0.88))
-    h = s.add(s.add(s.mul(n1, 1.0), s.mul(n2, 0.35)), s.mul(n3, 0.05))
-    rgh = s.add(0.55, s.mul(n3, 0.3))
-    s.done(col, normal=s.bump(h, 0.9, 0.08), rough_sock=rgh)
-    s.b.inputs["Subsurface Weight"].default_value = 0.2
-    s.b.inputs["Subsurface Radius"].default_value = (0.3, 0.5, 0.8)
+    # rides de vent : bruit très étiré (diagonale), donne la texture « peignée » de la planche
+    wx = s.add(s.mul(x, 0.8), s.mul(y, 0.5))
+    wy = s.sub(s.mul(y, 0.8), s.mul(x, 0.5))
+    rip = s.noise(s.comb(s.mul(wx, 0.6), s.mul(wy, 7.0), s.mul(z, 2.0)), 1.6, 4, 0.55)
+    col = s.mix(s.smooth(n1, 0.25, 0.75, 0.0, 0.75), base, shade)
+    col = s.mix(s.mul(n2, 0.35), col, (0.95, 0.98, 1.0))
+    col = s.mix(s.smooth(s.noise(o, 0.12, 2, 0.5), 0.4, 0.75, 0.0, 0.45), col, tuple(c * 0.8 for c in shade))
+    col = s.mix(s.smooth(rip, 0.55, 0.7, 0.0, 0.3), col, shade)
+    packed = s.smooth(s.noise(o, 0.8, 3, 0.6), 0.62, 0.72, 0.0, 0.25)
+    col = s.mix(packed, col, (0.72, 0.78, 0.86))
+    # creux et pieds de murs : occlusion ambiante → bleu profond (lecture « peinte » du relief)
+    if SNOW_AO > 0:
+        aon = s.n("ShaderNodeAmbientOcclusion")
+        aon.inputs["Distance"].default_value = 1.2
+        aon.samples = 6
+        occ = s.sub(1.0, s.m_("POWER", aon.outputs["AO"], 1.5))
+        col = s.mix(s.mul(s.smooth(occ, 0.05, 0.6), SNOW_AO), col, tuple(c * 0.55 for c in shade))
+    h = s.add(s.add(s.mul(n1, 1.0), s.mul(n2, 0.35)), s.add(s.mul(n3, 0.06), s.mul(rip, 0.25)))
+    spark = s.smooth(s.white(s.vmul(o, 40.0)), 0.93, 0.97)
+    rgh = s.sub(s.add(0.6, s.mul(n3, 0.25)), s.mul(spark, 0.5))
+    s.done(col, normal=s.bump(h, 0.95, 0.08), rough_sock=rgh)
+    s.b.inputs["Subsurface Weight"].default_value = 0.25
+    s.b.inputs["Subsurface Radius"].default_value = (0.3, 0.5, 0.9)
+    s.b.inputs["Specular IOR Level"].default_value = 0.6
     return s.m
 
 
-def mat_ice(name, base=(0.4, 0.68, 0.92), dark=(0.08, 0.22, 0.5)):
-    """Glace bleue (falaises, icebergs, crevasses) : stries, transparence simulée par émission."""
+def mat_ice(name, base=(0.4, 0.68, 0.92), dark=(0.08, 0.22, 0.5), glow=0.45):
+    """Glace bleue (falaises, icebergs, crevasses) : strates horizontales, fissures (Voronoï),
+    reflets vitreux (rugosité basse + coat), translucidité simulée (émission bleue profonde dans
+    les creux, plus claire en haut), arêtes givrées blanches."""
     s = NT(name)
     o = s.obj()
-    _, _, z = s.sep(o)
+    x, y, z = s.sep(o)
     n = s.noise(o, 3.0, 4, 0.55)
-    st = s.noise(s.comb(s.mul(s.sep(o)[0], 0.3), s.mul(z, 6.0), 0.0), 8.0, 3, 0.5)
-    col = s.mix(s.mul(n, 0.6), base, dark)
-    col = s.mix(s.smooth(st, 0.6, 0.8, 0.0, 0.5), col, (0.8, 0.92, 1.0))
-    col = s.mix(s.smooth(z, 0.6, 1.2), col, (0.9, 0.95, 1.0))
-    s.done(col, 0.15, s.bump(s.add(n, s.mul(st, 0.3)), 0.5, 0.05))
-    s.b.inputs["Emission Color"].default_value = (*dark, 1)
-    s.b.inputs["Emission Strength"].default_value = 0.35
+    nb = s.noise(o, 0.7, 3, 0.5)
+    st = s.noise(s.comb(s.mul(s.add(x, y), 0.3), s.mul(z, 6.0), 0.0), 8.0, 3, 0.5)
+    cr = s.voronoi(s.vmul(o, 1.3), 1.0, "Distance")
+    crack = s.smooth(cr, 0.06, 0.0)
+    col = s.mix(s.smooth(nb, 0.3, 0.7), base, dark)
+    col = s.mix(s.mul(n, 0.35), col, tuple(c * 0.7 for c in dark))
+    col = s.mix(s.smooth(st, 0.58, 0.78, 0.0, 0.55), col, (0.78, 0.9, 1.0))
+    col = s.mix(s.smooth(z, 0.3, 1.2, 0.0, 0.85), col, (0.88, 0.95, 1.0))
+    col = s.mix(s.mul(crack, 0.7), col, (0.02, 0.08, 0.2))
+    h = s.add(s.add(n, s.mul(st, 0.4)), s.mul(crack, -0.8))
+    s.done(col, 0.12, s.bump(h, 0.65, 0.05))
+    s.b.inputs["Coat Weight"].default_value = 0.6
+    s.b.inputs["Coat Roughness"].default_value = 0.05
+    em = s.mix(s.smooth(nb, 0.3, 0.7), (0.05, 0.3, 0.6), dark)
+    s.l(em, s.b.inputs["Emission Color"])
+    s.b.inputs["Emission Strength"].default_value = glow
     return s.m
 
 
 def mat_sea(name):
-    """Eau noire : très sombre, reflets bleus, houle légère."""
+    """Mer polaire : bleu nuit au large, turquoise au-dessus des plateaux de glace immergés près
+    des côtes (attribut « shore » 0 = rivage → 1 = large), houle (vagues étirées + bruit),
+    écume et frasil blancs en filaments, surtout près de la banquise ; reflets du ciel."""
     s = NT(name)
     o = s.obj()
-    n = s.noise(o, 0.5, 5, 0.6)
-    n2 = s.noise(o, 3.0, 4, 0.5)
-    col = s.mix(s.mul(n, 0.7), (0.012, 0.035, 0.1), (0.035, 0.09, 0.2))
-    col = s.mix(s.smooth(n2, 0.6, 0.75, 0.0, 0.55), col, (0.14, 0.3, 0.5))
-    s.done(col, 0.04, s.bump(s.add(n, s.mul(n2, 0.5)), 0.5, 0.05), 0.0)
+    x, y, z = s.sep(o)
+    at = s.n("ShaderNodeAttribute")
+    at.attribute_name = "shore"
+    sh = at.outputs["Fac"]
+    n = s.noise(o, 0.25, 5, 0.6)
+    w1 = s.noise(s.comb(s.mul(x, 0.35), s.mul(y, 1.6), 0.0), 2.2, 4, 0.6)
+    w2 = s.noise(s.comb(s.mul(x, 1.4), s.mul(y, 0.4), 3.0), 3.5, 3, 0.55)
+    deep = s.mix(s.mul(n, 0.8), (0.025, 0.11, 0.22), (0.06, 0.2, 0.34))
+    mid = (0.07, 0.3, 0.46)
+    near = (0.2, 0.55, 0.66)
+    col = s.mix(s.smooth(sh, 0.0, 0.35), near, mid)
+    col = s.mix(s.smooth(sh, 0.25, 0.9), col, deep)
+    # écume / frasil : filaments clairs, abondants près de la côte
+    fo = s.noise(s.comb(s.mul(x, 0.6), s.mul(y, 2.4), 7.0), 3.0, 6, 0.7)
+    fo_k = s.mul(s.smooth(fo, 0.6, 0.74), s.sub(1.0, s.smooth(sh, 0.1, 0.7, 0.0, 0.75)))
+    col = s.mix(s.mul(fo_k, 0.85), col, (0.75, 0.86, 0.95))
+    sp = s.smooth(s.noise(o, 6.0, 3, 0.5), 0.68, 0.78, 0.0, 0.3)
+    col = s.mix(sp, col, (0.5, 0.7, 0.85))
+    # moutons au large : crêtes blanches étirées et clairsemées
+    wc = s.noise(s.comb(s.mul(x, 0.9), s.mul(y, 3.2), 11.0), 2.5, 5, 0.6)
+    col = s.mix(s.smooth(wc, 0.7, 0.76, 0.0, 0.7), col, (0.8, 0.9, 0.97))
+    h = s.add(s.add(s.mul(w1, 1.0), s.mul(w2, 0.6)), s.mul(fo_k, 0.4))
+    s.done(col, 0.06, s.bump(h, 0.55, 0.06), 0.0)
     s.b.inputs["Specular IOR Level"].default_value = 1.0
+    s.b.inputs["Roughness"].default_value = 0.06
+    return s.m
+
+
+def mat_wallcap(name, base=(0.12, 0.13, 0.16), snow=0.55):
+    """Chapeau de mur : acier sombre givré, neige accumulée par plaques (bruit seuillé), liseré
+    clair d'arête : donne les contours sombres et nets des murs de la planche."""
+    s = NT(name)
+    o = s.obj()
+    n = s.noise(o, 1.4, 4, 0.6)
+    n2 = s.noise(o, 9.0, 3, 0.5)
+    col = s.mix(s.mul(n2, 0.4), base, tuple(min(1, c * 1.6) for c in base))
+    k = s.smooth(n, 0.72 - snow * 0.4, 0.8 - snow * 0.4)
+    col = s.mix(k, col, (0.86, 0.92, 1.0))
+    s.done(col, normal=s.bump(s.add(s.mul(k, 0.6), s.mul(n2, 0.2)), 0.5, 0.03), rough_sock=s.add(0.35, s.mul(k, 0.4)), metal=0.0)
     return s.m
 
 
@@ -787,11 +892,22 @@ def mat_crystal(name, c=(0.2, 0.62, 1.0), strength=1.6):
     o = s.obj()
     n = s.noise(o, 3.0, 4, 0.5)
     _, _, z = s.sep(o)
-    col = s.mix(s.mul(n, 0.6), c, (0.6, 0.9, 1.0))
-    s.done(col, 0.1, None, 0.0)
-    em = s.mix(s.smooth(z, 0.0, 2.5, 0.2, 1.0), (0.05, 0.2, 0.45), c)
+    # facettes : normale brute (pas de lissage) + veines claires ; cœur émissif plus intense en
+    # haut, arêtes (Layer Weight) blanches → cristal translucide qui « brille de l'intérieur »
+    vein = s.smooth(s.voronoi(s.vmul(o, 2.5), 1.0, "Distance"), 0.08, 0.0)
+    col = s.mix(s.mul(n, 0.6), (0.01, 0.08, 0.22), (0.03, 0.2, 0.42))
+    col = s.mix(s.mul(vein, 0.6), col, (0.4, 0.75, 0.95))
+    s.done(col, 0.06, None, 0.0)
+    lw = s.n("ShaderNodeLayerWeight")
+    lw.inputs[0].default_value = 0.4
+    rim = lw.outputs["Facing"]
+    em = s.mix(s.smooth(z, 0.0, 2.5, 0.3, 1.0), (0.0, 0.12, 0.5), c)
+    em = s.mix(s.mul(s.smooth(rim, 0.6, 1.0), 0.35), em, (0.45, 0.9, 1.0))
+    em = s.mix(s.mul(vein, 0.4), em, (0.6, 0.95, 1.0))
     s.l(em, s.b.inputs["Emission Color"])
     s.b.inputs["Emission Strength"].default_value = strength
+    s.b.inputs["Coat Weight"].default_value = 0.8
+    s.b.inputs["Coat Roughness"].default_value = 0.02
     return s.m
 
 
@@ -818,39 +934,56 @@ def mat_sky_world():
     return w
 
 
-NEON = {"warm": (1.0, 0.78, 0.5), "white": (0.85, 0.93, 1.0), "cyan": (0.3, 0.85, 1.0), "red": (1.0, 0.12, 0.08),
+CRYSTAL_E = float(os.environ.get("FL_CRYSTAL", "1.6"))
+SNOW_AO = float(os.environ.get("FL_SNOW_AO", "0.8"))
+DEBRIS_P = float(os.environ.get("FL_DEBRIS", "0.07"))
+NEON = {"warm": (1.0, 0.62, 0.32), "white": (0.85, 0.93, 1.0), "cyan": (0.3, 0.85, 1.0), "red": (1.0, 0.12, 0.08),
         "orange": (1.0, 0.5, 0.12), "green": (0.3, 1.0, 0.5), "blue": (0.3, 0.5, 1.0), "amber": (1.0, 0.75, 0.3)}
 
 
 def build_materials():
     mat_snow("snow")
-    mat_snow("snow_dirty", (0.72, 0.76, 0.82))
+    mat_snow("snow_dirty", (0.7, 0.76, 0.85), (0.38, 0.5, 0.72))
+    mat_snow("snow_floe", (0.7, 0.83, 0.96), (0.36, 0.56, 0.84))
     mat_ice("ice")
-    mat_ice("ice_dark", (0.2, 0.42, 0.7), (0.05, 0.14, 0.3))
-    mat_ice("iceberg", (0.6, 0.8, 0.95), (0.25, 0.45, 0.7))
+    mat_ice("ice_dark", (0.2, 0.42, 0.7), (0.04, 0.12, 0.3))
+    mat_ice("iceberg", (0.6, 0.8, 0.95), (0.2, 0.42, 0.7), 0.3)
+    mat_ice("ice_cliff", (0.5, 0.74, 0.95), (0.06, 0.2, 0.48), 0.4)
     mat_sea("sea")
-    mat_concrete("concrete", (0.42, 0.45, 0.5), (0.14, 0.15, 0.18), stripe=((0.26, 0.28, 0.31), 0.0, 0.12))
-    mat_concrete("concrete_in", (0.55, 0.58, 0.64), (0.2, 0.22, 0.26), pw=1.5, ph=0.8)
-    mat_concrete("concrete_top", (0.38, 0.41, 0.46), (0.15, 0.16, 0.19), pw=2.0, ph=2.0)
-    mat_concrete("concrete_dark", (0.28, 0.3, 0.35), (0.09, 0.1, 0.12))
+    mat_wallcap("wall_cap", (0.11, 0.12, 0.15), 0.18)
+    mat_simple("edge_trim", (0.62, 0.68, 0.76), 0.35, 0.5, 0.15)
+    mat_wallcap("wall_cap_snowy", (0.14, 0.15, 0.18), 0.85)
+    mat_floor("floor_spine", (0.56, 0.6, 0.67), (0.2, 0.22, 0.26), cell=2.0, sub=2, var=0.12, rough=0.6, metal=0.0, wear=0.35, snow=0.3)
+    mat_concrete("concrete", (0.2, 0.22, 0.26), (0.06, 0.07, 0.08), stripe=((0.11, 0.12, 0.14), 0.0, 0.14))
+    mat_concrete("concrete_in", (0.5, 0.53, 0.58), (0.17, 0.18, 0.21), pw=1.5, ph=0.8)
+    mat_concrete("concrete_top", (0.2, 0.22, 0.25), (0.07, 0.08, 0.09), pw=2.0, ph=2.0)
+    mat_concrete("concrete_dark", (0.15, 0.16, 0.19), (0.05, 0.05, 0.06))
     mat_metal_plate("steel_plate")
     mat_metal_plate("steel_dark", (0.2, 0.23, 0.27), (0.05, 0.06, 0.07), pw=0.6, ph=0.6)
-    mat_metal_plate("roof_plate", (0.33, 0.36, 0.4), (0.09, 0.1, 0.12), pw=1.2, ph=0.9)
-    mat_panels("hull_ship", (0.12, 0.13, 0.15), (0.04, 0.04, 0.05), pw=1.5, ph=0.6, metal=0.55, rough=0.5, rivets=True,
-               stripe=((0.6, 0.12, 0.1), 0.3, 0.9))
+    mat_metal_plate("roof_plate", (0.2, 0.22, 0.26), (0.06, 0.07, 0.08), pw=1.2, ph=0.9)
+    mat_panels("hull_ship", (0.1, 0.11, 0.13), (0.03, 0.03, 0.04), pw=1.5, ph=0.6, metal=0.55, rough=0.5, rivets=True,
+               stripe=((0.05, 0.05, 0.06), 0.2, 0.5))
+    mat_panels("hull_grey", (0.3, 0.32, 0.36), (0.08, 0.09, 0.1), pw=1.0, ph=0.6, metal=0.4, rough=0.5, grime=0.5)
     mat_panels("hull_white", (0.78, 0.8, 0.82), (0.3, 0.32, 0.35), pw=1.0, ph=0.6, metal=0.3, rough=0.5, grime=0.5)
     mat_panels("radiator", (0.62, 0.64, 0.66), (0.2, 0.2, 0.22), pw=0.12, ph=4.0, metal=0.7, rough=0.3, var=0.04)
     mat_grating("grating")
-    mat_floor("floor_in", (0.28, 0.3, 0.34), (0.08, 0.09, 0.11), cell=2.0, sub=2, var=0.35, rough=0.6, metal=0.1, wear=0.6)
+    mat_panels("container_red", (0.55, 0.1, 0.07), (0.15, 0.03, 0.02), pw=0.14, ph=4.0, metal=0.4, rough=0.55, grime=0.5)
+    mat_panels("container_blue", (0.12, 0.22, 0.36), (0.03, 0.05, 0.08), pw=0.14, ph=4.0, metal=0.4, rough=0.55, grime=0.5)
+    mat_panels("container_olive", (0.24, 0.27, 0.16), (0.06, 0.07, 0.04), pw=0.14, ph=4.0, metal=0.4, rough=0.55, grime=0.5)
+    mat_panels("radome", (0.82, 0.85, 0.88), (0.45, 0.48, 0.52), pw=0.5, ph=0.35, metal=0.1, rough=0.45, grime=0.3)
+    mat_floor("floor_in", (0.24, 0.25, 0.28), (0.07, 0.08, 0.09), cell=2.0, sub=2, var=0.35, rough=0.55, metal=0.1, wear=0.75)
     mat_floor("floor_lab", (0.46, 0.52, 0.6), (0.14, 0.16, 0.2), cell=1.0, sub=2, var=0.2, rough=0.3, metal=0.1, wear=0.4)
-    mat_floor("floor_hangar", (0.3, 0.32, 0.35), (0.08, 0.08, 0.1), cell=2.0, sub=4, rough=0.6, wear=0.6)
-    mat_floor("floor_yard", (0.4, 0.43, 0.48), (0.12, 0.13, 0.15), cell=2.0, sub=2, var=0.2, rough=0.75, metal=0.0, wear=0.7)
-    mat_floor("floor_boss", (0.16, 0.22, 0.32), (0.05, 0.07, 0.12), cell=1.0, sub=2, rough=0.35, metal=0.4)
+    mat_floor("floor_hangar", (0.24, 0.26, 0.29), (0.07, 0.07, 0.09), cell=2.0, sub=4, rough=0.6, wear=0.7, snow=0.35)
+    mat_floor("floor_yard", (0.26, 0.28, 0.33), (0.08, 0.09, 0.11), cell=2.0, sub=2, var=0.2, rough=0.75, metal=0.0, wear=0.7, snow=0.55)
+    mat_floor("floor_boss", (0.08, 0.13, 0.22), (0.02, 0.04, 0.08), cell=1.0, sub=2, rough=0.3, metal=0.4)
     mat_helipad("helipad")
 
     mat_hazard("hazard")
     mat_hazard("hazard_red", (0.75, 0.1, 0.08), (0.9, 0.92, 0.95), w=0.3)
     mat_paint("paint_yellow", (0.95, 0.6, 0.1), 0.4)
+    mat_paint("paint_orange", (1.0, 0.42, 0.06), 0.35)
+    mat_simple("rock", (0.1, 0.11, 0.14), 0.75, 0.0, 0.4, 3.0, (0.04, 0.045, 0.06), 0.6)
+    mat_track("track")
     mat_paint("paint_white", (0.85, 0.88, 0.9))
     mat_paint("paint_red", (0.7, 0.12, 0.1))
     mat_simple("metal", (0.55, 0.58, 0.62), 0.35, 0.8, 0.15)
@@ -875,10 +1008,10 @@ def build_materials():
     mat_simple("doorway", (0.02, 0.025, 0.035), 0.9, var=0.1)
     mat_simple("rust", (0.45, 0.22, 0.12), 0.8, 0.2, 0.4)
     mat_simple("fluid", (0.2, 0.6, 0.8), 0.1, emit=((0.3, 0.8, 1.0), 2.0))
-    mat_crystal("crystal")
-    mat_crystal("crystal_dim", (0.25, 0.6, 0.9), 1.0)
+    mat_crystal("crystal", (0.05, 0.55, 1.0), CRYSTAL_E)
+    mat_crystal("crystal_dim", (0.04, 0.4, 0.95), CRYSTAL_E * 0.7)
     mat_decal("scorch", (0.025, 0.02, 0.018), 0.9)
-    mat_decal("oil", (0.04, 0.035, 0.03), 0.6)
+    mat_decal("oil", (0.1, 0.1, 0.11), 0.35)
     mat_decal("ice_patch", (0.6, 0.8, 0.95), 0.55, 2.0)
     mat_glass("glass")
     mat_glass("glass_tank", (0.5, 0.85, 0.95), 0.25)
@@ -960,7 +1093,7 @@ for d in DOOR_CELLS:
 
 LAMP_POS = []
 FLOOD_POS = []
-H_OPEN = 1.25        # murs des modules ouverts (vus en coupe)
+H_OPEN = 1.75        # murs des modules ouverts (vus en coupe)
 H_ROOF = 1.9         # murs des bunkers à toit
 H_CUT = 0.7          # hauteur du mur sud dans la passe « int »
 H_DOOR = 0.95
@@ -973,7 +1106,7 @@ def is_cliff(x, y):
     """Mur de bord de plateau : voisin (8) d'une case d'eau."""
     for dy in (-1, 0, 1):
         for dx in (-1, 0, 1):
-            if tile(x + dx, y + dy) == 0:
+            if tile(x + dx, y + dy) == 0 and (x + dx, y + dy) not in INNER_VOID:
                 return True
     return False
 
@@ -981,7 +1114,10 @@ def is_cliff(x, y):
 def floor_mat(rid, cell):
     role = role_of(rid)
     if role in ("walkway",):
-        return "grating"
+        r = ROOM_BY_ID.get(rid)
+        if r and BRIDGE and r["rect"][1] >= BRIDGE[1]:
+            return "grating"
+        return "floor_spine" if r and min(r["rect"][2], r["rect"][3]) >= 3 else "grating"
     if role in ("yard", "gate", "ramp"):
         return "floor_yard"
     if role in ("hangar", "garage"):
@@ -995,69 +1131,441 @@ def floor_mat(rid, cell):
 
 def light_of(rid):
     role = role_of(rid)
-    if role in ("armory", "cryo_vault", "guard_tower"):
+    if role in ("armory", "guard_tower"):
         return "red", 1.0
-    if role in ("lab", "infirmary", "observatory", "radio", "command"):
+    if role in ("lab", "cryo_vault", "observatory"):
         return "cyan", 1.0
+    if role in ("infirmary", "radio", "command"):
+        return "warm", 1.8
     if role in ("crystal_lab",):
         return "blue", 0.6
-    if role in ("barracks", "mess_hall", "closet", "command", "storage", "workshop", "bunker", "hangar", "garage", "generator"):
+    if role in ("hangar", "garage"):
+        return "white", 1.6
+    if role in ("barracks", "mess_hall", "closet", "command", "storage", "workshop", "bunker", "generator"):
         return "warm", 2.4
     return "white", 0.8
 
 
 # ======================================================================= terrain : mer, plateau, falaises
+# ----------------------------------------------------------------------- distance à la côte
+_SHORE = {}
+
+
+def shore_dist():
+    """Distance (cases, chanfrein 8-voisins) de chaque case de la grille étendue à la terre
+    (tile != 0) ; calculée une fois. Grille [-PAD, W+PAD) × [-PAD, H+PAD)."""
+    if "d" in _SHORE:
+        return _SHORE["d"], _SHORE["pad"]
+    pad = 60
+    gw, gh = W + 2 * pad, H + 2 * pad
+    INF = 1e9
+    d = [[INF] * gw for _ in range(gh)]
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 0 or (x, y) in INNER_VOID:
+                d[y + pad][x + pad] = 0.0
+    r2 = math.sqrt(2.0)
+    for j in range(gh):
+        row = d[j]
+        up = d[j - 1] if j else None
+        for i in range(gw):
+            v = row[i]
+            if i and row[i - 1] + 1 < v:
+                v = row[i - 1] + 1
+            if up is not None:
+                if up[i] + 1 < v:
+                    v = up[i] + 1
+                if i and up[i - 1] + r2 < v:
+                    v = up[i - 1] + r2
+                if i + 1 < gw and up[i + 1] + r2 < v:
+                    v = up[i + 1] + r2
+            row[i] = v
+    for j in range(gh - 1, -1, -1):
+        row = d[j]
+        dn = d[j + 1] if j + 1 < gh else None
+        for i in range(gw - 1, -1, -1):
+            v = row[i]
+            if i + 1 < gw and row[i + 1] + 1 < v:
+                v = row[i + 1] + 1
+            if dn is not None:
+                if dn[i] + 1 < v:
+                    v = dn[i] + 1
+                if i + 1 < gw and dn[i + 1] + r2 < v:
+                    v = dn[i + 1] + r2
+                if i and dn[i - 1] + r2 < v:
+                    v = dn[i - 1] + r2
+            row[i] = v
+    _SHORE["d"], _SHORE["pad"] = d, pad
+    return d, pad
+
+
+def shore_at(x, r):
+    """Distance à la terre au point (x, rangée r) continu (bilinéaire), 60 au-delà de la grille."""
+    d, pad = shore_dist()
+    gx, gy = x + pad - 0.5, r + pad - 0.5
+    i, j = int(math.floor(gx)), int(math.floor(gy))
+    fx, fy = gx - i, gy - j
+    gh, gw = len(d), len(d[0])
+
+    def g(a, b):
+        if 0 <= b < gh and 0 <= a < gw:
+            return min(d[b][a], 60.0)
+        return 60.0
+    return (g(i, j) * (1 - fx) * (1 - fy) + g(i + 1, j) * fx * (1 - fy) + g(i, j + 1) * (1 - fx) * fy + g(i + 1, j + 1) * fx * fy)
+
+
+def build_sea(x0, x1, r0, r1, sh):
+    """Grille de mer (1 sommet / case) à SEA_Z, attribut de sommet « shore » (0 côte → 1 large),
+    évalué là où le point apparaît à l'écran (rangée + sh) pour coller aux falaises vues."""
+    import numpy as np
+    nx, ny = x1 - x0 + 1, r1 - r0 + 1
+    V = []
+    S = []
+    for j in range(ny):
+        r = r0 + j
+        for i in range(nx):
+            x = x0 + i
+            V.append((x, Y(r), SEA_Z))
+            S.append(min(1.0, max(0.0, (shore_at(x, r) - 0.5) / 14.0)))
+    F = []
+    for j in range(ny - 1):
+        for i in range(nx - 1):
+            a = j * nx + i
+            F.append((a, a + nx, a + nx + 1, a + 1))
+    me = bpy.data.meshes.new("_sea")
+    me.from_pydata(V, [], F)
+    me.update()
+    at = me.attributes.new("shore", "FLOAT", "POINT")
+    at.data.foreach_set("value", np.array(S, dtype=np.float32))
+    me.materials.append(MATS["sea"])
+    ob = bpy.data.objects.new("_sea", me)
+    coll("world").objects.link(ob)
+
+
+def ice_slab(mb, cx, cy, rad, z0, z1, rng, top="snow_floe", side="ice", n=None, tilt=0.12, rough=0.35, rim=True):
+    """Bloc / plaque de glace : polygone irrégulier (rayon bruité) extrudé de z0 à z1, dessus
+    légèrement incliné, bord supérieur biseauté (anneau un peu plus bas) → arêtes qui accrochent
+    la lumière. Renvoie la liste des points du dessus (x, y)."""
+    n = n or rng.randint(9, 14)
+    ph = rng.uniform(0, 100)
+    pts = []
+    for i in range(n):
+        a = (i + rng.uniform(-0.3, 0.3)) / n * math.tau
+        k = 1.0 + rough * mnoise.noise(Vector((math.cos(a) * 1.3 + ph, math.sin(a) * 1.3, ph))) + rng.uniform(-0.12, 0.12)
+        pts.append((cx + math.cos(a) * rad * k, cy + math.sin(a) * rad * k))
+    ta = rng.uniform(0, math.tau)
+    tz = rng.uniform(-tilt, tilt)
+
+    def zt(px, py):
+        return z1 + ((px - cx) * math.cos(ta) + (py - cy) * math.sin(ta)) / max(rad, 0.1) * tz
+    bev = min(0.12, (z1 - z0) * 0.3) if rim else 0.0
+    inner = [(cx + (px - cx) * 0.9, cy + (py - cy) * 0.9) for (px, py) in pts] if rim else pts
+    mb.poly([(px, py, zt(px, py)) for (px, py) in inner], top)
+    if rim:
+        for i in range(n):
+            a_, b_ = pts[i], pts[(i + 1) % n]
+            ia, ib = inner[i], inner[(i + 1) % n]
+            mb.poly([(a_[0], a_[1], zt(*a_) - bev), (b_[0], b_[1], zt(*b_) - bev), (ib[0], ib[1], zt(*ib)), (ia[0], ia[1], zt(*ia))], top)
+    for i in range(n):
+        a_, b_ = pts[i], pts[(i + 1) % n]
+        mb.poly([(a_[0], a_[1], z0), (b_[0], b_[1], z0), (b_[0], b_[1], zt(*b_) - bev), (a_[0], a_[1], zt(*a_) - bev)], side,
+                [(0, z0), (1, z0), (1, z1), (0, z1)])
+    return pts
+
+
+def lobe(x, r):
+    """Étendue (cases) des terrasses de glace basses au-delà de la falaise : bruit lent → lobes
+    et anses irréguliers autour du plateau rectangulaire (silhouette déchiquetée de la planche)."""
+    n = mnoise.noise(Vector((x / 9.0, r / 9.0, SEED % 97 * 0.37)))
+    n2 = mnoise.noise(Vector((x / 3.5 + 11.0, r / 3.5, 1.7)))
+    return max(0.0, min(9.0, 2.0 + 7.0 * n + 1.5 * n2))
+
+
+def cliff_h(x, r):
+    return H_CLIFF + 0.7 * mnoise.noise(Vector((x * 0.45, r * 0.45, 0.0)))
+
+
+def voronoi_cells(seeds, reach):
+    """Cellules de Voronoï (polygones convexes) par découpage de demi-plans : pour chaque germe,
+    carré de demi-côté `reach` coupé par les médiatrices des germes voisins (grille de seaux)."""
+    bk = {}
+    for k, (x, y) in enumerate(seeds):
+        bk.setdefault((int(x // reach), int(y // reach)), []).append(k)
+    out = []
+    for k, (x, y) in enumerate(seeds):
+        poly = [(x - reach, y - reach), (x + reach, y - reach), (x + reach, y + reach), (x - reach, y + reach)]
+        bx, by = int(x // reach), int(y // reach)
+        for dy in (-2, -1, 0, 1, 2):
+            for dx in (-2, -1, 0, 1, 2):
+                for j in bk.get((bx + dx, by + dy), ()):
+                    if j == k:
+                        continue
+                    ox, oy = seeds[j]
+                    nx_, ny_ = ox - x, oy - y
+                    mx, my = (x + ox) / 2, (y + oy) / 2
+                    res = []
+                    n = len(poly)
+                    for i in range(n):
+                        p_, q_ = poly[i], poly[(i + 1) % n]
+                        dp = (p_[0] - mx) * nx_ + (p_[1] - my) * ny_
+                        dq = (q_[0] - mx) * nx_ + (q_[1] - my) * ny_
+                        if dp <= 0:
+                            res.append(p_)
+                        if (dp <= 0) != (dq <= 0):
+                            t = dp / (dp - dq)
+                            res.append((p_[0] + (q_[0] - p_[0]) * t, p_[1] + (q_[1] - p_[1]) * t))
+                    poly = res
+                    if len(poly) < 3:
+                        break
+        out.append(poly)
+    return out
+
+
+def slab(mb, pts, z0, z1, top, side, rng, gap=0.85, bev=0.08, jag=0.12, tilt=0.06):
+    """Plaque / bloc de glace sur un polygone (cases, y vers le bas) : rétréci vers son centre
+    (joint), bords dentelés (points intermédiaires bruités), dessus légèrement incliné et biseauté,
+    flancs jusqu'à z0."""
+    if len(pts) < 3:
+        return
+    cx = sum(p[0] for p in pts) / len(pts)
+    cy = sum(p[1] for p in pts) / len(pts)
+    pts = [(cx + (p[0] - cx) * gap, cy + (p[1] - cy) * gap) for p in pts]
+    pp = []
+    for i in range(len(pts)):
+        a_, b_ = pts[i], pts[(i + 1) % len(pts)]
+        pp.append(a_)
+        L_ = math.hypot(b_[0] - a_[0], b_[1] - a_[1])
+        nseg = max(1, int(L_ / 0.6))
+        for k in range(1, nseg):
+            f = k / nseg
+            mx, my = a_[0] + (b_[0] - a_[0]) * f, a_[1] + (b_[1] - a_[1]) * f
+            j = rng.uniform(-jag, jag * 0.6)
+            pp.append((mx + (mx - cx) * j, my + (my - cy) * j))
+    ta = rng.uniform(0, math.tau)
+    tz = rng.uniform(-tilt, tilt)
+
+    def zt(px, py):
+        return z1 + ((px - cx) * math.cos(ta) + (py - cy) * math.sin(ta)) * tz
+    inner = [(cx + (p[0] - cx) * 0.93, cy + (p[1] - cy) * 0.93) for p in pp]
+    mb.poly([(p[0], Y(p[1]), zt(*p)) for p in inner], top)
+    n = len(pp)
+    for i in range(n):
+        a_, b_ = pp[i], pp[(i + 1) % n]
+        ia, ib = inner[i], inner[(i + 1) % n]
+        mb.poly([(a_[0], Y(a_[1]), zt(*a_) - bev), (b_[0], Y(b_[1]), zt(*b_) - bev), (ib[0], Y(ib[1]), zt(*ib)), (ia[0], Y(ia[1]), zt(*ia))], top)
+        mb.poly([(a_[0], Y(a_[1]), z0), (b_[0], Y(b_[1]), z0), (b_[0], Y(b_[1]), zt(*b_) - bev), (a_[0], Y(a_[1]), zt(*a_) - bev)], side,
+                [(i * 0.5, z0), (i * 0.5 + 0.5, z0), (i * 0.5 + 0.5, z1), (i * 0.5, z1)])
+
+
+def build_floes(sh):
+    """Banquise en Voronoï : (1) terrasses de glace en gradins collées à la falaise (lobes, deux
+    niveaux), (2) pack de plaques fracturées serrées (joints d'eau sombre) le long de la côte,
+    (3) glaçons épars de plus en plus petits vers le large."""
+    terr = MB()
+    mb = MB()
+    rng = random.Random(SEED * 3 + 7)
+    X0, X1 = -MARGIN - 8, W + MARGIN + 8
+    R0, R1 = -MARGIN - 8, H + MARGIN + 8
+    seeds = []
+    g = 1.9
+    yy = R0
+    while yy < R1:
+        xx = X0
+        while xx < X1:
+            px, py = xx + rng.uniform(-0.8, 0.8), yy + rng.uniform(-0.8, 0.8)
+            d = shore_at(px, py)
+            E = lobe(px, py)
+            band = 0.5 + 4.0 * max(0.0, 0.3 + 0.7 * mnoise.noise(Vector((px / 7.0, py / 7.0, 5.3))))
+            if 0.2 < d < E + band:
+                # plus fin près de la côte (blocs de falaise), plus large dans le pack
+                seeds.append((px, py))
+                if d < E and rng.random() < 0.5:
+                    seeds.append((px + rng.uniform(-0.9, 0.9), py + rng.uniform(-0.9, 0.9)))
+            xx += g
+        yy += g
+    # germes « terre » (non rendus) sur les cases du plateau proches de l'eau : les cellules d'eau
+    # s'arrêtent au trait de côte au lieu de déborder sur la base
+    nw = len(seeds)
+    for y in range(-1, H + 1):
+        for x in range(-1, W + 1):
+            if (tile(x, y) != 0 or (x, y) in INNER_VOID) and any(tile(x + dx, y + dy) == 0 and (x + dx, y + dy) not in INNER_VOID
+                                                                 for dx in range(-5, 6, 2) for dy in range(-5, 6, 2)):
+                seeds.append((x + 0.5, y + 0.5))
+    cells = voronoi_cells(seeds, g * 2.2)
+    for (px, py), poly in zip(seeds[:nw], cells[:nw]):
+        d = shore_at(px, py)
+        E = lobe(px, py)
+        if d < E:
+            hc = cliff_h(px, py)
+            if d < E * 0.55 and d < 4.0:
+                z1 = max(SEA_Z + 1.5, hc - 0.3 - rng.uniform(0.0, 0.35) - d * 0.1)
+            else:
+                z1 = SEA_Z + 0.8 + rng.uniform(0.0, 0.5)
+            slab(terr, poly, SEA_Z - 0.6, z1, "snow", "ice_cliff", rng, gap=rng.uniform(0.9, 0.98), bev=0.14, jag=0.18, tilt=0.05)
+        else:
+            if rng.random() < 0.42:
+                continue
+            slab(mb, poly, SEA_Z - 0.35, SEA_Z + rng.uniform(0.1, 0.28), "snow_floe", "ice", rng, gap=rng.uniform(0.74, 0.9), bev=0.05, jag=0.14, tilt=0.03)
+    terr.to_object("_terraces", "world")
+    # (3) glaçons épars
+    occ = set()
+    for _ in range(9000):
+        px = rng.uniform(X0, X1)
+        py = rng.uniform(R0, R1)
+        d = shore_at(px, py)
+        E = lobe(px, py)
+        if d < E + 7.0:
+            continue
+        cl = max(0.0, mnoise.noise(Vector((px / 9.0, py / 4.0, 2.2))) + 0.15)
+        p = (0.5 if d < E + 14.0 else 0.35) * cl * cl * 2.5
+        rad = rng.uniform(0.2, 1.2) * (0.6 + cl) if d < E + 14.0 else rng.uniform(0.12, 0.6) * (0.6 + cl)
+        if rng.random() > p:
+            continue
+        cells_ = [(int(math.floor(px + dx)), int(math.floor(py + dy))) for dx in range(-1, 2) for dy in range(-1, 2)]
+        if any(c in occ for c in cells_):
+            continue
+        for c in cells_:
+            occ.add(c)
+        ice_slab(mb, px, Y(py), rad, SEA_Z - 0.4, SEA_Z + rng.uniform(0.08, 0.25), rng, "snow_floe", "ice", tilt=0.05, rough=0.55)
+    mb.to_object("_floes", "world")
+
+
+def build_shore_blocks():
+    """Falaises en gradins : blocs de glace chaotiques adossés au bord du plateau (côté eau),
+    un grand bloc haut contre la falaise et des blocs plus bas plus loin → bord déchiqueté et
+    en terrasses de la planche (hors jeu : posés sur les cases d'eau)."""
+    mb = MB()
+    rng = random.Random(SEED * 43 + 5)
+    done = set()
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 3 or not is_cliff(x, y):
+                continue
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                if tile(x + dx, y + dy) != 0:
+                    continue
+                if rng.random() > 0.3:
+                    continue
+                k = (x // 2, y // 2, dx, dy)
+                if k in done:
+                    continue
+                done.add(k)
+                hh = H_CLIFF + 0.7 * mnoise.noise(Vector((x * 0.45, y * 0.45, 0.0)))
+                # gradin haut (contre la falaise)
+                cx = x + 0.5 + dx * rng.uniform(0.7, 1.2)
+                cy = y + 0.5 + dy * rng.uniform(0.7, 1.2)
+                ice_slab(mb, cx, Y(cy), rng.uniform(0.8, 1.5), SEA_Z - 0.6, hh - rng.uniform(0.25, 0.9), rng, "snow", "ice_cliff", tilt=0.2, rough=0.45)
+                # gradin bas (plus loin, plus bas)
+                if rng.random() < 0.7:
+                    cx2 = x + 0.5 + dx * rng.uniform(1.8, 2.8) + dy * rng.uniform(-0.8, 0.8)
+                    cy2 = y + 0.5 + dy * rng.uniform(1.8, 2.8) + dx * rng.uniform(-0.8, 0.8)
+                    ice_slab(mb, cx2, Y(cy2), rng.uniform(0.7, 1.4), SEA_Z - 0.6, SEA_Z + rng.uniform(0.6, 1.8), rng, "snow", "ice_cliff", tilt=0.25, rough=0.5)
+    mb.to_object("_shore", "world")
+
+
+def cliff_face(mb, x, y, side, z0, h, cols=3, rows=5):
+    """Face de falaise vers l'eau : grille déplacée vers l'extérieur par un bruit en coordonnées
+    monde (continu d'une case à l'autre), nul au sommet (arête nette sous le chapeau de neige),
+    surplomb et bombements plus bas → paroi de glace sculptée au lieu d'un plan."""
+    X0, X1, YN, YS = x, x + 1, Y(y), Y(y + 1)
+    if side == "S":
+        a, b, nrm = (X0, YS), (X1, YS), (0, -1)
+    elif side == "N":
+        a, b, nrm = (X1, YN), (X0, YN), (0, 1)
+    elif side == "E":
+        a, b, nrm = (X1, YS), (X1, YN), (1, 0)
+    else:
+        a, b, nrm = (X0, YN), (X0, YS), (-1, 0)
+    grid = []
+    ha, hb = cliff_h(a[0], -a[1]), cliff_h(b[0], -b[1])
+    for j in range(rows + 1):
+        t = j / rows                      # 0 = sommet, 1 = pied
+        row = []
+        for i in range(cols + 1):
+            u = i / cols
+            ht = ha + (hb - ha) * u
+            z = ht + (z0 - ht) * t
+            px = a[0] + (b[0] - a[0]) * u
+            py = a[1] + (b[1] - a[1]) * u
+            n = mnoise.noise(Vector((px * 0.9, py * 0.9, z * 0.8)))
+            n2 = mnoise.noise(Vector((px * 2.5 + 7, py * 2.5, z * 2.0)))
+            k = min(1.0, t * 3.5)
+            off = k * (0.35 + 0.45 * n + 0.15 * n2)
+            row.append((px + nrm[0] * off, py + nrm[1] * off, z))
+        grid.append(row)
+    for j in range(rows):
+        for i in range(cols):
+            p00, p01 = grid[j][i], grid[j][i + 1]
+            p10, p11 = grid[j + 1][i], grid[j + 1][i + 1]
+            mb.poly([p10, p11, p01, p00], "ice_cliff", [(i / cols, p10[2]), ((i + 1) / cols, p11[2]), ((i + 1) / cols, p01[2]), (i / cols, p00[2])])
+
+
 def build_terrain():
     tanT = math.tan(TILT)
-    # mer : plan noir sous tout le cadre (décalé pour couvrir la projection inclinée)
-    sea = MB()
+    # mer : grille sous tout le cadre (décalée pour couvrir la projection inclinée), attribut
+    # « shore » = distance (vue écran) au plateau, normalisée : turquoise près de la côte.
     x0, x1 = -MARGIN - 20, W + MARGIN + 20
     r0, r1 = -MARGIN - 30, H + MARGIN + 30
     sh = -SEA_Z * tanT
-    sea.poly([(x0, Y(r1) - sh, SEA_Z), (x1, Y(r1) - sh, SEA_Z), (x1, Y(r0) + sh, SEA_Z), (x0, Y(r0) + sh, SEA_Z)], "sea",
-             [(x0, Y(r1)), (x1, Y(r1)), (x1, Y(r0)), (x0, Y(r0))])
-    sea.to_object("_sea", "world")
-    # plaques de banquise dérivante dans l'eau (hors plateau)
-    ice = MB()
-    rng = random.Random(SEED * 3 + 7)
-    for k in range(160):
-        px = rng.uniform(-MARGIN, W + MARGIN)
-        py = rng.uniform(-MARGIN, H + MARGIN)
-        cx, cy = int(px), int(py)
-        near = False
-        for dy in range(-2, 3):
-            for dx in range(-2, 3):
-                if tile(cx + dx, cy + dy) != 0:
-                    near = True
-        if near:
-            continue
-        n = rng.randint(5, 8)
-        rr = rng.uniform(0.8, 2.6)
-        pts = []
-        for i in range(n):
-            a = i / n * math.tau
-            rad = rr * rng.uniform(0.6, 1.0)
-            pts.append((px + math.cos(a) * rad, Y(py) + math.sin(a) * rad))
-        z0 = SEA_Z - 0.3
-        z1 = SEA_Z + rng.uniform(0.08, 0.25)
-        st = len(ice.V)
-        ice.poly([(x_, y_, z1) for (x_, y_) in pts], "snow_dirty")
-        for i in range(n):
-            a_, b_ = pts[i], pts[(i + 1) % n]
-            ice.poly([(a_[0], a_[1], z0), (b_[0], b_[1], z0), (b_[0], b_[1], z1), (a_[0], a_[1], z1)], "ice")
-    ice.to_object("_floes", "world")
+    build_sea(x0, x1, r0 - int(sh) - 2, r1 + int(sh) + 2, sh)
+    build_floes(sh)
     # plateau : une face de neige par case praticable extérieure (STREET) + falaise au bord
     snow = MB()
     cliff = MB()
     rng2 = random.Random(SEED * 11 + 3)
+    # neige au sol : 3×3 facettes par case, relief doux (bruit) et accumulation contre les murs
+    # (congères adossées) → ombres bleues et arêtes qui accrochent la lumière
+    zc = {}
+
+    def snow_z(vx, vy):
+        k = (round(vx * 3), round(vy * 3))
+        if k in zc:
+            return zc[k]
+        n = mnoise.noise(Vector((vx * 0.35, vy * 0.35, 3.1))) * 0.07 + mnoise.noise(Vector((vx * 1.4, vy * 1.4, 8.3))) * 0.025
+        dmin = 9.0
+        for dy in (-2, -1, 0, 1):
+            for dx in (-2, -1, 0, 1):
+                cx_, cy_ = int(math.floor(vx)) + dx, int(math.floor(vy)) + dy
+                if tile(cx_, cy_) == 3:
+                    ex = max(cx_ - vx, 0.0, vx - (cx_ + 1))
+                    ey = max(cy_ - vy, 0.0, vy - (cy_ + 1))
+                    dmin = min(dmin, math.hypot(ex, ey))
+        acc = max(0.0, 1.0 - dmin / 1.6) ** 1.6 * (0.22 + 0.12 * mnoise.noise(Vector((vx * 0.6, vy * 0.6, 1.0))))
+        dz = 0.0
+        for (dcx, dcy, dra, drb, dh) in DRIFT_BUCKET.get((int(vx) // 4, int(vy) // 4), ()):
+            u_ = (vx - dcx) * 0.8 + (vy - dcy) * 0.6
+            v_ = -(vx - dcx) * 0.6 + (vy - dcy) * 0.8
+            q = (u_ / dra) ** 2 + (v_ / drb) ** 2
+            if q < 4.0:
+                dz = max(dz, dh * math.exp(-q * 1.5) * (1.0 + 0.25 * mnoise.noise(Vector((vx * 2.0, vy * 2.0, 4.0)))))
+        z = max(0.0, 0.03 + n) + acc + dz
+        # héliport et ponton : dalles posées à plat, neige rabotée autour (fondu sur 1,5 case)
+        for (rx, ry, rw, rh) in (HELI, DOCK):
+            ex = max(rx - vx, 0.0, vx - (rx + rw))
+            ey = max(ry - vy, 0.0, vy - (ry + rh))
+            z *= min(1.0, math.hypot(ex, ey) / 1.5)
+        zc[k] = z
+        return z
+    plan_drifts()
+    vid = {}
+    sm_ = snow.mi("snow")
+
+    def sv(ix, iy):
+        k = (ix, iy)
+        if k not in vid:
+            vx, vy = ix / 3.0, iy / 3.0
+            snow.V.append((vx, Y(vy), snow_z(vx, vy)))
+            vid[k] = len(snow.V) - 1
+        return vid[k]
     for y in range(H):
         for x in range(W):
             t = tile(x, y)
             if t == 1:
-                X0, X1, YN, YS = x, x + 1, Y(y), Y(y + 1)
-                snow.poly([(X0, YS, 0.0), (X1, YS, 0.0), (X1, YN, 0.0), (X0, YN, 0.0)], "snow",
-                          [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
-    snow.to_object("ground_snow", "world")
+                for j in range(3):
+                    for i in range(3):
+                        ix, iy = x * 3 + i, y * 3 + j
+                        snow.F.append([(sv(ix, iy + 1), sv(ix + 1, iy + 1), sv(ix + 1, iy), sv(ix, iy)), sm_])
+    snow.to_object("ground_snow", "world", smooth=True)
     # falaise : murs de bord (tile 3 voisins d'eau) → bloc de glace du niveau de la mer jusqu'à
     # H_CLIFF, chapeau de neige ; faces vers l'eau en glace bleue striée.
     for y in range(H):
@@ -1065,60 +1573,154 @@ def build_terrain():
             if tile(x, y) != 3 or not is_cliff(x, y):
                 continue
             X0, X1, YN, YS = x, x + 1, Y(y), Y(y + 1)
-            h = H_CLIFF + 0.7 * mnoise.noise(Vector((x * 0.45, y * 0.45, 0.0)))
-            cliff.poly([(X0, YS, h), (X1, YS, h), (X1, YN, h), (X0, YN, h)], "snow", [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
+            # hauteurs aux coins (continues d'une case à l'autre) : arête de falaise ondulée
+            hNW, hNE, hSW, hSE = cliff_h(x, y), cliff_h(x + 1, y), cliff_h(x, y + 1), cliff_h(x + 1, y + 1)
+            h = (hNW + hNE + hSW + hSE) / 4
+            cliff.poly([(X0, YS, hSW), (X1, YS, hSE), (X1, YN, hNE), (X0, YN, hNW)], "snow", [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
             for side, dx, dy in (("S", 0, 1), ("N", 0, -1), ("E", 1, 0), ("W", -1, 0)):
                 nt_ = tile(x + dx, y + dy)
                 if nt_ == 3 and is_cliff(x + dx, y + dy):
                     continue
-                if nt_ == 0:
-                    z0 = SEA_Z - 0.6
-                    mat = "ice"
-                    # surplomb irrégulier
-                    ov = 0.3 + 0.5 * rng2.random()
-                else:
-                    z0 = 0.0
-                    mat = "snow_dirty"
-                    ov = 0.0
+                if nt_ == 0 and (x + dx, y + dy) not in INNER_VOID:
+                    cliff_face(cliff, x, y, side, SEA_Z - 0.6, h)
+                    continue
+                z0 = 0.0
+                mat = "snow_dirty"
                 if side == "S":
-                    pts = [(X0, YS - ov, z0), (X1, YS - ov, z0), (X1, YS, h), (X0, YS, h)]
+                    pts = [(X0, YS, z0), (X1, YS, z0), (X1, YS, hSE), (X0, YS, hSW)]
                 elif side == "N":
-                    pts = [(X1, YN + ov, z0), (X0, YN + ov, z0), (X0, YN, h), (X1, YN, h)]
+                    pts = [(X1, YN, z0), (X0, YN, z0), (X0, YN, hNW), (X1, YN, hNE)]
                 elif side == "E":
-                    pts = [(X1 + ov, YS, z0), (X1 + ov, YN, z0), (X1, YN, h), (X1, YS, h)]
+                    pts = [(X1, YS, z0), (X1, YN, z0), (X1, YN, hNE), (X1, YS, hSE)]
                 else:
-                    pts = [(X0 - ov, YN, z0), (X0 - ov, YS, z0), (X0, YS, h), (X0, YN, h)]
+                    pts = [(X0, YN, z0), (X0, YS, z0), (X0, YS, hSW), (X0, YN, hNW)]
                 cliff.poly(pts, mat, [(0, z0), (1, z0), (1, h), (0, h)])
     cliff.to_object("cliff", "world")
-    # congères (bosses de neige) et crevasses (contrat decor) sur le plateau
+    build_shore_blocks()
+    # crevasses (contrat decor) : fissures fines en zigzag, lèvres de glace bleue, fond sombre
     dr = MB()
     for d in C.get("decor", []):
         if d["kind"] == "crevasse":
             px, py = d["pos"]
             sz = float(d["size"])
             rot = math.radians(float(d.get("rot", 0.0)))
-            c, s = math.cos(rot), math.sin(rot)
-            w_ = 0.7
-            pts = []
-            for (u, v) in ((-sz / 2, -w_), (sz / 2, -w_ * 0.6), (sz / 2, w_ * 0.6), (-sz / 2, w_)):
-                pts.append((px + u * c - v * s, Y(py) + u * s + v * c))
-            dr.poly([(a, b, 0.006) for (a, b) in pts], "ice_dark")
-            dr.poly([(px + (a - px) * 1.25, Y(py) + (b - Y(py)) * 1.25, 0.004) for (a, b) in pts], "ice")
-            dr.poly([(pts[0][0], pts[0][1], -0.9), (pts[1][0], pts[1][1], -0.9), (pts[1][0], pts[1][1], 0.0), (pts[0][0], pts[0][1], 0.0)], "ice_dark")
+            crack(dr, px, py, sz, rot, random.Random(int(px * 31 + py * 7)))
+    # congères allongées (vent d'ouest) et rochers sombres affleurants
     rng3 = random.Random(SEED * 5 + 1)
     for y in range(0, H, 2):
         for x in range(0, W, 2):
             if tile(x, y) != 1 or (x, y) in GAME_CELLS or (HELI[0] <= x < HELI[0] + HELI[2] and HELI[1] <= y < HELI[1] + HELI[3]) or (DOCK[0] <= x < DOCK[0] + DOCK[2] and DOCK[1] <= y < DOCK[1] + DOCK[3]):
                 continue
             near_wall = any(tile(x + dx, y + dy) == 3 for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2))
-            if rng3.random() > (0.16 if near_wall else 0.05):
+            if rng3.random() > (0.45 if near_wall else 0.3):
                 continue
-            # pas sur les cases du jeu voisines (anneau 3×3 libre)
             if any(tile(x + dx, y + dy) != 1 for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
                 continue
-            dr.sphere(x + 0.5 + rng3.uniform(-0.3, 0.3), Y(y) - 0.5 + rng3.uniform(-0.3, 0.3), -0.12, rng3.uniform(0.6, 1.4), "snow", 2,
-                      rng3.uniform(1.0, 2.0), rng3.uniform(0.8, 1.4), rng3.uniform(0.2, 0.36), nscale=0.8, rng=rng3)
+            if rng3.random() < 0.3 and near_wall:
+                # rochers sombres à demi enfouis + chapeau de neige
+                for k in range(rng3.randint(1, 3)):
+                    rx, ry = x + 0.5 + rng3.uniform(-0.6, 0.6), Y(y) - 0.5 + rng3.uniform(-0.6, 0.6)
+                    rr = rng3.uniform(0.2, 0.42)
+                    dr.sphere(rx, ry, -0.05, rr, "rock", 1, rng3.uniform(1.0, 1.5), rng3.uniform(0.8, 1.2), 0.6, jitter=0.3, rng=rng3)
+                    dr.sphere(rx - 0.05, ry + 0.05, rr * 0.25, rr * 0.7, "snow", 1, 1.2, 1.0, 0.3, jitter=0.2, rng=rng3)
+                continue
+            # congère : bosse gaussienne allongée intégrée au maillage de neige (snow_z)
+            continue
+    # débris épars à demi enfouis (non bloquants, sous 0,16) : pierres sombres, fûts couchés,
+    # planches, plaques de tôle → moucheture sombre du plateau de la planche
+    rng4 = random.Random(SEED * 13 + 7)
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 1 or (x, y) in GAME_CELLS or rng4.random() > DEBRIS_P:
+                continue
+            if HELI[0] <= x < HELI[0] + HELI[2] and HELI[1] <= y < HELI[1] + HELI[3]:
+                continue
+            px_, py_ = x + rng4.uniform(0.2, 0.8), Y(y) - rng4.uniform(0.2, 0.8)
+            k_ = rng4.random()
+            if k_ < 0.5:
+                rr = rng4.uniform(0.1, 0.24)
+                dr.sphere(px_, py_, 0.0, rr, "rock", 1, rng4.uniform(1.0, 1.6), rng4.uniform(0.7, 1.1), 0.45, jitter=0.3, rng=rng4)
+            elif k_ < 0.7:
+                ang = rng4.uniform(0, math.pi)
+                dr.seg((px_ - math.cos(ang) * 0.25, py_ - math.sin(ang) * 0.25, 0.08), (px_ + math.cos(ang) * 0.25, py_ + math.sin(ang) * 0.25, 0.08), 0.13,
+                       rng4.choice(["drum_red", "drum_grey", "rust"]), 10)
+            elif k_ < 0.85:
+                ang = rng4.uniform(0, math.pi)
+                dr.box(px_ - 0.35, py_ - 0.06, 0.0, px_ + 0.35, py_ + 0.06, 0.05, "wood", rot=ang)
+            else:
+                dr.box(px_ - 0.25, py_ - 0.2, 0.0, px_ + 0.25, py_ + 0.2, 0.03, rng4.choice(["metal_mid", "roof_plate", "rust"]), rot=rng4.uniform(0, 3))
+    build_tracks(dr)
     dr.to_object("_drifts", "world")
+
+
+DRIFT_BUCKET = {}
+
+
+def plan_drifts():
+    """Congères (vent de nord-ouest) : bosses gaussiennes allongées réparties sur la neige,
+    plus nombreuses près des murs ; rangées par seaux de 4×4 cases pour snow_z."""
+    rng = random.Random(SEED * 5 + 2)
+    for y in range(0, H, 2):
+        for x in range(0, W, 2):
+            if tile(x, y) != 1:
+                continue
+            near_wall = any(tile(x + dx, y + dy) == 3 for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2))
+            if rng.random() > (0.4 if near_wall else 0.22):
+                continue
+            d = (x + rng.uniform(0, 2), y + rng.uniform(0, 2), rng.uniform(1.6, 3.6), rng.uniform(0.55, 1.1), rng.uniform(0.25, 0.55))
+            for by in range(int(d[1] - 7) // 4, int(d[1] + 7) // 4 + 1):
+                for bx in range(int(d[0] - 7) // 4, int(d[0] + 7) // 4 + 1):
+                    DRIFT_BUCKET.setdefault((bx, by), []).append(d)
+
+
+def crack(mb, px, py, sz, rot, rng):
+    """Fissure : ligne brisée (6-9 segments), largeur variable, fond bleu nuit, lèvres claires."""
+    n = rng.randint(6, 9)
+    c, s_ = math.cos(rot), math.sin(rot)
+    pts = []
+    for i in range(n + 1):
+        u = -sz / 2 + sz * i / n
+        v = rng.uniform(-0.35, 0.35)
+        pts.append((px + u * c - v * s_, py + u * s_ + v * c))
+    for i in range(n):
+        (ax, ay), (bx, by) = pts[i], pts[(i + 1)]
+        dx, dy = bx - ax, by - ay
+        L_ = math.hypot(dx, dy) or 1.0
+        nx_, ny_ = -dy / L_, dx / L_
+        w0 = 0.04 + 0.16 * math.sin(math.pi * i / n)
+        w1 = 0.04 + 0.16 * math.sin(math.pi * (i + 1) / n)
+        for (k, mat, z) in ((2.4, "ice", 0.012), (1.0, "ice_dark", 0.016)):
+            mb.poly([(ax - nx_ * w0 * k, Y(ay - ny_ * w0 * k), z), (bx - nx_ * w1 * k, Y(by - ny_ * w1 * k), z),
+                     (bx + nx_ * w1 * k, Y(by + ny_ * w1 * k), z), (ax + nx_ * w0 * k, Y(ay + ny_ * w0 * k), z)], mat)
+
+
+def build_tracks(mb):
+    """Traces de chenilles et de pas dans la neige : marches aléatoires sur les cases de neige,
+    deux sillons bleutés parallèles (autoneige) ou une file d'empreintes."""
+    rng = random.Random(SEED * 61 + 9)
+    starts = [c for c in [(x, y) for y in range(H) for x in range(W)] if tile(*c) == 1]
+    if not starts:
+        return
+    for k in range(14):
+        x, y = rng.choice(starts)
+        px, py = x + 0.5, y + 0.5
+        ang = rng.uniform(0, math.tau)
+        twin = rng.random() < 0.6
+        for st in range(rng.randint(20, 45)):
+            ang += rng.uniform(-0.25, 0.25)
+            nx_, ny_ = px + math.cos(ang) * 0.6, py + math.sin(ang) * 0.6
+            if tile(int(nx_), int(ny_)) != 1:
+                ang += math.pi * rng.uniform(0.5, 1.0)
+                continue
+            ox, oy = -math.sin(ang), math.cos(ang)
+            offs = (-0.28, 0.28) if twin else (0.0,)
+            for o in offs:
+                ax, ay = px + ox * o, py + oy * o
+                bx, by = nx_ + ox * o, ny_ + oy * o
+                w = 0.09 if twin else 0.05
+                mb.poly([(ax - ox * w, Y(ay - oy * w), 0.01), (bx - ox * w, Y(by - oy * w), 0.01),
+                         (bx + ox * w, Y(by + oy * w), 0.01), (ax + ox * w, Y(ay + oy * w), 0.01)], "track")
+            px, py = nx_, ny_
 
 
 # ======================================================================= sols intérieurs et marquages
@@ -1175,9 +1777,18 @@ def build_floors():
                     for ex in (x - 0.3, x + w + 0.3):
                         mk.cyl(ex, Y(y + k + 0.5), SEA_Z - 0.5, 0.0, 0.14, "rust", 8)
                     mk.box(x - 0.4, Y(y + k + 0.6), -0.15, x + w + 0.4, Y(y + k + 0.4), -0.02, "steel_dark")
-                for k in range(0, h, 4):
-                    mk.sphere(x - 0.3, Y(y + k + 1.5), 0.75, 0.1, "neon_red", 1)
-                    mk.sphere(x + w + 0.3, Y(y + k + 1.5), 0.75, 0.1, "neon_red", 1)
+                # garde-corps extérieurs, lampadaires à feu rouge, poutres latérales
+                for ex in (x - 0.22, x + w + 0.1):
+                    mk.box(ex, Y(y + h), -0.35, ex + 0.12, Y(y), 0.0, "steel_dark")
+                    mk.box(ex, Y(y + h), 0.55, ex + 0.12, Y(y), 0.62, "metal_mid")
+                    for k in range(0, h + 1, 1):
+                        mk.box(ex + 0.03, Y(y + k) - 0.03, 0.0, ex + 0.09, Y(y + k) + 0.03, 0.58, "metal_dark")
+                for k in range(1, h, 3):
+                    for ex in (x - 0.45, x + w + 0.45):
+                        mk.cyl(ex, Y(y + k + 0.5), SEA_Z, 1.9, 0.06, "metal_dark", 8)
+                        mk.box(ex - 0.12, Y(y + k + 0.5) - 0.08, 1.85, ex + 0.12, Y(y + k + 0.5) + 0.08, 1.95, "metal_dark")
+                        mk.sphere(ex, Y(y + k + 0.5), 2.02, 0.11, "neon_red", 1)
+                        ALARM_POS.append((ex, Y(y + k + 0.5), 2.05))
         if role in ("hangar", "garage"):
             for (a0, a1, b0, b1) in ((x + 0.3, x + w - 0.3, y + 0.3, y + 0.6), (x + 0.3, x + w - 0.3, y + h - 0.6, y + h - 0.3)):
                 mk.box(a0, Y(b1), 0.0, a1, Y(b0), 0.012, "hazard")
@@ -1194,11 +1805,11 @@ def build_floors():
     for i in range(seg):
         a0, a1 = i / seg * math.tau, (i + 1) / seg * math.tau
         mk.poly([(cx + math.cos(a0) * R, Y(cy) + math.sin(a0) * R, 0.065), (cx + math.cos(a1) * R, Y(cy) + math.sin(a1) * R, 0.065),
-                 (cx + math.cos(a1) * (R + 0.25), Y(cy) + math.sin(a1) * (R + 0.25), 0.065), (cx + math.cos(a0) * (R + 0.25), Y(cy) + math.sin(a0) * (R + 0.25), 0.065)], "paint_yellow")
+                 (cx + math.cos(a1) * (R + 0.25), Y(cy) + math.sin(a1) * (R + 0.25), 0.065), (cx + math.cos(a0) * (R + 0.25), Y(cy) + math.sin(a0) * (R + 0.25), 0.065)], "paint_orange")
     hs = R * 0.62
-    mk.box(cx - hs, Y(cy) - hs, 0.065, cx - hs + 0.28, Y(cy) + hs, 0.07, "paint_yellow")
-    mk.box(cx + hs - 0.28, Y(cy) - hs, 0.065, cx + hs, Y(cy) + hs, 0.07, "paint_yellow")
-    mk.box(cx - hs, Y(cy) - 0.14, 0.065, cx + hs, Y(cy) + 0.14, 0.07, "paint_yellow")
+    mk.box(cx - hs, Y(cy) - hs, 0.065, cx - hs + 0.28, Y(cy) + hs, 0.07, "paint_orange")
+    mk.box(cx + hs - 0.28, Y(cy) - hs, 0.065, cx + hs, Y(cy) + hs, 0.07, "paint_orange")
+    mk.box(cx - hs, Y(cy) - 0.14, 0.065, cx + hs, Y(cy) + 0.14, 0.07, "paint_orange")
     # bordure de l'héliport : rambarde basse et lampes
     for (a0, a1, b0, b1) in ((hx + 0.4, hx + hw - 0.4, hy + 0.4, hy + 0.5), (hx + 0.4, hx + hw - 0.4, hy + hh - 0.5, hy + hh - 0.4),
                              (hx + 0.4, hx + 0.5, hy + 0.4, hy + hh - 0.4), (hx + hw - 0.5, hx + hw - 0.4, hy + 0.4, hy + hh - 0.4)):
@@ -1353,13 +1964,29 @@ def build_walls():
                 wn = trims.setdefault("_winlights", MB())
                 wn.box(X0 + 0.25, YS - 0.03, 0.4, X1 - 0.25, YS, 0.62, "window_cold" if rngw.random() < 0.7 else "screen_cyan")
             # chapeau : béton enneigé (snow) sur les murs bas, plaque sur les bunkers
-            cap = "snow" if h <= H_PARAPET + 1e-3 else "concrete_top"
+            cap = "wall_cap_snowy" if h <= H_PARAPET + 1e-3 else "wall_cap"
             if south_row:
                 target(x, y, True).poly([(X0, YS, h), (X1, YS, h), (X1, YN, h), (X0, YN, h)], cap, [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
                 target(x, y).poly([(X0, YS, H_CUT), (X1, YS, H_CUT), (X1, YN, H_CUT), (X0, YN, H_CUT)], "concrete_dark",
                                   [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
             else:
                 target(x, y).poly([(X0, YS, h), (X1, YS, h), (X1, YN, h), (X0, YN, h)], cap, [(X0, YS), (X1, YS), (X1, YN), (X0, YN)])
+            # liserés d'arête (cornière d'acier clair, givrée) le long des bords libres du chapeau :
+            # contours nets des murs, lisibles sur mobile
+            if h > H_PARAPET + 1e-3 and not roofed:
+                tb_ = trims.setdefault("_edges", MB())
+                e_ = 0.07
+                for side, dx, dy in SIDES:
+                    if tile(x + dx, y + dy) == 3:
+                        continue
+                    if side == "S":
+                        tb_.box(X0, YS, h, X1, YS + e_, h + 0.04, "edge_trim")
+                    elif side == "N":
+                        tb_.box(X0, YN - e_, h, X1, YN, h + 0.04, "edge_trim")
+                    elif side == "E":
+                        tb_.box(X1 - e_, YS, h, X1, YN, h + 0.04, "edge_trim")
+                    else:
+                        tb_.box(X0, YS, h, X0 + e_, YN, h + 0.04, "edge_trim")
             # lampes d'alerte rouges / plaques d'acier sur les murs extérieurs hauts
             if h >= H_OPEN and not roofed and rngw.random() < 0.14 and tile(x, y + 1) in (1, 2):
                 lp = trims.setdefault("_lamps", MB())
@@ -1447,6 +2074,58 @@ def build_walls():
 
 
 # ======================================================================= toits des bunkers, tourelles, dômes
+def roof_hangar(mb, b, rng):
+    """Hangar à charpente ouverte (toiture arrachée par les tempêtes) : fermes d'acier sombre en
+    travers tous les 1,5 case, longerons, quelques tôles restées en place couvertes de neige,
+    projecteur et lampe d'alerte ; l'intérieur (hélicoptère / autoneige) reste visible."""
+    x, y, w, h = b["rect"]
+    z = H_ROOF
+    horiz = w >= h
+    # acrotère (rive) en acier sombre, neige dessus
+    for (a0, a1, b0, b1) in ((x, x + w, y, y + 0.22), (x, x + w, y + h - 0.22, y + h), (x, x + 0.22, y, y + h), (x + w - 0.22, x + w, y, y + h)):
+        mb.box(a0, Y(b1), z, a1, Y(b0), z + 0.18, "steel_dark")
+        mb.box(a0, Y(b1), z + 0.18, a1, Y(b0), z + 0.21, "wall_cap_snowy")
+    L_ = w if horiz else h
+    n = int(L_ / 1.5)
+    for k in range(1, n):
+        t = k * L_ / n
+        if horiz:
+            mb.box(x + t - 0.07, Y(y + h - 0.2), z, x + t + 0.07, Y(y + 0.2), z + 0.12, "steel_dark")
+            mb.box(x + t - 0.05, Y(y + h - 0.2), z + 0.12, x + t + 0.05, Y(y + 0.2), z + 0.14, "wall_cap_snowy")
+        else:
+            mb.box(x + 0.2, Y(y + t + 0.07), z, x + w - 0.2, Y(y + t - 0.07), z + 0.12, "steel_dark")
+            mb.box(x + 0.2, Y(y + t + 0.05), z + 0.12, x + w - 0.2, Y(y + t - 0.05), z + 0.14, "wall_cap_snowy")
+    # longerons
+    for f in (0.33, 0.66):
+        if horiz:
+            yy = y + h * f
+            mb.box(x + 0.2, Y(yy + 0.05), z + 0.12, x + w - 0.2, Y(yy - 0.05), z + 0.2, "metal_dark")
+        else:
+            xx = x + w * f
+            mb.box(xx - 0.05, Y(y + h - 0.2), z + 0.12, xx + 0.05, Y(y + 0.2), z + 0.2, "metal_dark")
+    # tôles restantes (≈ 25 %) enneigées, légèrement de travers
+    for k in range(1, n - 1):
+        if rng.random() < 0.28:
+            t0 = k * L_ / n
+            t1 = (k + 1) * L_ / n
+            f0 = rng.uniform(0.0, 0.5)
+            f1 = f0 + rng.uniform(0.25, 0.5)
+            if horiz:
+                mb.box(x + t0, Y(y + 0.2 + (h - 0.4) * f1), z + 0.2, x + t1, Y(y + 0.2 + (h - 0.4) * f0), z + 0.24, "roof_plate")
+                mb.box(x + t0 + 0.1, Y(y + 0.2 + (h - 0.4) * f1) + 0.1, z + 0.24, x + t1 - 0.1, Y(y + 0.2 + (h - 0.4) * f0) - 0.1, z + 0.27, "snow")
+            else:
+                mb.box(x + 0.2 + (w - 0.4) * f0, Y(y + t1), z + 0.2, x + 0.2 + (w - 0.4) * f1, Y(y + t0), z + 0.24, "roof_plate")
+                mb.box(x + 0.3 + (w - 0.4) * f0, Y(y + t1) + 0.1, z + 0.24, x + 0.1 + (w - 0.4) * f1, Y(y + t0) - 0.1, z + 0.27, "snow")
+    # projecteur et lampe d'alerte aux angles
+    FLOOD_POS.append((x + 0.5, Y(y + 0.5) + 0.3, z + 1.0, rng.choice([-1.0, 1.0])))
+    mb.cyl(x + 0.5, Y(y + 0.5), z, z + 0.9, 0.05, "metal", 6)
+    mb.box(x + 0.32, Y(y + 0.5) - 0.12, z + 0.85, x + 0.68, Y(y + 0.5) + 0.12, z + 1.1, "metal_dark")
+    mb.box(x + 0.35, Y(y + 0.5) - 0.16, z + 0.88, x + 0.65, Y(y + 0.5) - 0.12, z + 1.07, "neon_white")
+    for (lx, ly) in ((x + w - 0.4, y + 0.4), (x + 0.4, y + h - 0.4), (x + w - 0.4, y + h - 0.4)):
+        mb.sphere(lx, Y(ly), z + 0.32, 0.1, "neon_red", 1)
+        ALARM_POS.append((lx, Y(ly), z + 0.32))
+
+
 def roof_bunker(mb, b, rng):
     """Toit plat de bunker : dalle de béton enneigée, acrotère, grilles d'aération, antennes,
     radar, caissons, cheminée, lampe rouge, plaques d'acier."""
@@ -1481,6 +2160,15 @@ def roof_bunker(mb, b, rng):
         else:
             mb.cyl(vx, Y(vy), zt, zt + 0.35, 0.22, "metal_mid", 12)
             mb.cyl(vx, Y(vy), zt + 0.35, zt + 0.45, 0.3, "metal_dark", 12)
+    # verrières éclairées de l'intérieur (lueur chaude ou cyan) + rambarde
+    for k in range(rng.randint(2, 3)):
+        sx0 = x + rng.uniform(1.0, max(1.1, w - 2.6))
+        sy0 = y + rng.uniform(1.6, max(1.7, h - 2.0))
+        sw, sh_ = rng.uniform(1.0, 1.6), rng.uniform(0.6, 0.9)
+        mb.box(sx0 - 0.08, Y(sy0 + sh_ + 0.08), zt, sx0 + sw + 0.08, Y(sy0 - 0.08), zt + 0.16, "metal_dark")
+        mb.box(sx0, Y(sy0 + sh_), zt + 0.16, sx0 + sw, Y(sy0), zt + 0.18, rng.choice(["window", "window", "window_cold"]))
+        for j in range(1, 4):
+            mb.box(sx0 + sw * j / 4 - 0.02, Y(sy0 + sh_), zt + 0.18, sx0 + sw * j / 4 + 0.02, Y(sy0), zt + 0.2, "metal_dark")
     # radiateurs / plaques (hangar : grande trappe)
     mb.box(x + 0.4, Y(y + 1.3), zt, x + w - 0.4, Y(y + 0.35), zt + 0.06, "snow")
     if arch == "fl_hangar":
@@ -1564,6 +2252,18 @@ def roof_bunker(mb, b, rng):
         mb.box(x + 0.4, Y(y + h - 0.4), zt, x + w - 0.4, Y(y + h - 0.6), zt + 0.02, "hazard")
 
 
+def lab_open(cx, cy, r, ang):
+    """Ouverture du labo : la bande de mur (au-delà du cercle du sol) est praticable à cet angle."""
+    for da in (-0.015, 0.0, 0.015):
+        for dr in (0.95, 1.25):
+            rr = (r + dr) * oct_k(ang + da)
+            px = cx + math.cos(ang + da) * rr
+            py = cy - math.sin(ang + da) * rr
+            if walk(int(math.floor(px)), int(math.floor(py))):
+                return True
+    return False
+
+
 def openings_mask(cx, cy, r, ang, spread=0.06):
     for da in (-spread, 0.0, spread):
         for dr in (0.3, 0.6, 0.9):
@@ -1574,9 +2274,18 @@ def openings_mask(cx, cy, r, ang, spread=0.06):
     return False
 
 
-def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_from=0.0, mat_in="concrete_in"):
+def oct_k(a):
+    """Facteur de rayon d'un octogone à côtés face aux axes (apothème 1)."""
+    t = (a + math.pi / 8) % (math.pi / 4) - math.pi / 8
+    return 1.0 / math.cos(t)
+
+
+def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_from=0.0, mat_in="concrete_in", octo=False, cap="snow"):
     south = math.sin((a0 + a1) / 2) < 0
-    P = [(cx + math.cos(a) * r0, cy + math.sin(a) * r0, cx + math.cos(a) * r1, cy + math.sin(a) * r1) for a in (a0, a1)]
+    kk = oct_k if octo else (lambda a: 1.0)
+    P = [(cx + math.cos(a) * r0 * kk(a), cy + math.sin(a) * r0 * kk(a), cx + math.cos(a) * r1 * kk(a), cy + math.sin(a) * r1 * kk(a)) for a in (a0, a1)]
+
+    cap_mat = cap
 
     def quad(mb, z0, z1, cap=True):
         (ax0, ay0, ax1, ay1), (bx0, by0, bx1, by1) = P
@@ -1585,7 +2294,7 @@ def ring_wall_seg(mb_low, mb_high, cx, cy, r0, r1, a0, a1, z_cut, z_top, mat, z_
         mb.poly([(bx0, by0, z0), (ax0, ay0, z0), (ax0, ay0, z1), (bx0, by0, z1)], mat_in,
                 [(a1 * r0, z0), (a0 * r0, z0), (a0 * r0, z1), (a1 * r0, z1)])
         if cap:
-            mb.poly([(ax0, ay0, z1), (ax1, ay1, z1), (bx1, by1, z1), (bx0, by0, z1)], "snow",
+            mb.poly([(ax0, ay0, z1), (ax1, ay1, z1), (bx1, by1, z1), (bx0, by0, z1)], cap_mat,
                     [(a0 * r0, 0), (a0 * r1, 0), (a1 * r1, 1), (a1 * r0, 1)])
     if south and z_top > z_cut and z_from < z_cut:
         quad(mb_low, z_from, z_cut)
@@ -1635,7 +2344,11 @@ def build_tower(b, roof, rng):
     R = r + 0.9
     pts = [(cx + math.cos(i / seg * math.tau + rot) * R, cy + math.sin(i / seg * math.tau + rot) * R) for i in range(seg)]
     roof.poly([(px, py, z1) for (px, py) in pts], "roof_plate")
-    roof.poly([(px, py, z1 + 0.06) for (px, py) in [(cx + (px - cx) * 0.85, cy + (py - cy) * 0.85) for (px, py) in pts]], "snow")
+    roof.poly([(px, py, z1 + 0.06) for (px, py) in [(cx + (px - cx) * 0.85, cy + (py - cy) * 0.85) for (px, py) in pts]], "wall_cap")
+    # trappe centrale, caissons et radar (lecture « fortin » sombre de la planche)
+    roof.poly([(px, py, z1 + 0.08) for (px, py) in [(cx + (px - cx) * 0.4, cy + (py - cy) * 0.4) for (px, py) in pts]], "steel_dark")
+    roof.box(cx - R * 0.55, cy - R * 0.2, z1 + 0.06, cx - R * 0.3, cy + R * 0.2, z1 + 0.32, "metal_mid")
+    roof.box(cx + R * 0.3, cy - R * 0.45, z1 + 0.06, cx + R * 0.55, cy - R * 0.15, z1 + 0.3, "crate_red")
     for i in range(seg):
         a_, b_ = pts[i], pts[(i + 1) % seg]
         roof.poly([(a_[0], a_[1], z1), (b_[0], b_[1], z1), (b_[0], b_[1], z1 + 0.35), (a_[0], a_[1], z1 + 0.35)], "concrete")
@@ -1644,7 +2357,7 @@ def build_tower(b, roof, rng):
             f1 = k / 3 + 0.25
             roof.box(min(a_[0] + (b_[0] - a_[0]) * f0, a_[0] + (b_[0] - a_[0]) * f1) - 0.05, min(a_[1] + (b_[1] - a_[1]) * f0, a_[1] + (b_[1] - a_[1]) * f1) - 0.05, z1 + 0.35,
                      max(a_[0] + (b_[0] - a_[0]) * f0, a_[0] + (b_[0] - a_[0]) * f1) + 0.05, max(a_[1] + (b_[1] - a_[1]) * f0, a_[1] + (b_[1] - a_[1]) * f1) + 0.05, z1 + 0.55, "concrete")
-    roof.sphere(cx, cy, z1 - 0.05, R * 0.7, "snow", 2, 1.0, 1.0, 0.14, nscale=0.6, rng=rng)
+    roof.sphere(cx - R * 0.25, cy + R * 0.3, z1 - 0.02, R * 0.4, "snow", 2, 1.3, 0.8, 0.14, nscale=0.6, rng=rng)
     for i in range(seg):
         a_ = pts[i]
         roof.sphere(a_[0] * 0.92 + cx * 0.08, a_[1] * 0.92 + cy * 0.08, z1 + 0.6, 0.1, "neon_red" if i % 2 else "neon_cyan", 1)
@@ -1725,12 +2438,20 @@ def build_lab_ring():
     for i in range(seg):
         a0 = i / seg * math.tau
         a1 = (i + 1) / seg * math.tau
-        if openings_mask(rcx, rcy, r, (a0 + a1) / 2):
+        if lab_open(rcx, rcy, r, (a0 + a1) / 2):
             continue
-        ring_wall_seg(mb, mb, cx, cy, r + 0.05, r + 0.75, a0, a1, 0.45, z1, "concrete_dark", mat_in="concrete_dark")
-        if i % 6 == 2:
-            am = (a0 + a1) / 2
-            mb.box(cx + math.cos(am) * (r + 0.4) - 0.2, cy + math.sin(am) * (r + 0.4) - 0.2, 0.9, cx + math.cos(am) * (r + 0.4) + 0.2, cy + math.sin(am) * (r + 0.4) + 0.2, 1.3, "window_cold")
+        ring_wall_seg(mb, mb, cx, cy, r + 0.05, r + 0.62, a0, a1, 0.45, z1, "steel_dark", mat_in="steel_dark", octo=True, cap="wall_cap")
+        # panneaux lumineux cyan sur la face intérieure (2 sur 3 segments) + pilastres
+        am = (a0 + a1) / 2
+        kq = oct_k(am)
+        ri = (r + 0.02) * kq
+        if i % 3 != 0:
+            pa = (cx + math.cos(a0 + 0.004) * ri, cy + math.sin(a0 + 0.004) * ri)
+            pb = (cx + math.cos(a1 - 0.004) * ri, cy + math.sin(a1 - 0.004) * ri)
+            mb.poly([(pa[0], pa[1], 0.55), (pb[0], pb[1], 0.55), (pb[0], pb[1], 1.25), (pa[0], pa[1], 1.25)],
+                    "screen_cyan" if i % 7 else "screen_orange", [(0, 0), (1, 0), (1, 1), (0, 1)])
+        else:
+            mb.box(cx + math.cos(am) * ri - 0.12, cy + math.sin(am) * ri - 0.12, 0.0, cx + math.cos(am) * ri + 0.12, cy + math.sin(am) * ri + 0.12, z1 + 0.15, "metal_mid")
     x, y, w, h = LAB_ROUND["rect"]
     for yy in range(y, y + h):
         for xx in range(x, x + w):
@@ -1740,7 +2461,30 @@ def build_lab_ring():
             if d < r + 0.6 or d > r + 1.6:
                 continue
             mb.box(xx, Y(yy + 1), 0.0, xx + 1, Y(yy), 0.42, "concrete_dark")
-            mb.box(xx, Y(yy + 1), 0.42, xx + 1, Y(yy), 0.45, "snow")
+            mb.box(xx, Y(yy + 1), 0.42, xx + 1, Y(yy), 0.45, "wall_cap_snowy")
+    # sol sous les angles de l'octogone (cases de mur entre le cercle et l'octogone)
+    for yy in range(y, y + h):
+        for xx in range(x, x + w):
+            if tile(xx, yy) == 3 and math.hypot(xx + 0.5 - rcx, yy + 0.5 - rcy) < r + 1.7:
+                mb.poly([(xx, Y(yy + 1), 0.0), (xx + 1, Y(yy + 1), 0.0), (xx + 1, Y(yy), 0.0), (xx, Y(yy), 0.0)], "floor_boss",
+                        [(xx, -yy - 1), (xx + 1, -yy - 1), (xx + 1, -yy), (xx, -yy)])
+    # fosses techniques (cases VOID enclavées) : caillebotis sombre, groupes froids, tuyaux
+    prng = random.Random(SEED * 29)
+    for (xx, yy) in INNER_VOID:
+        mb.poly([(xx, Y(yy + 1), -0.3), (xx + 1, Y(yy + 1), -0.3), (xx + 1, Y(yy), -0.3), (xx, Y(yy), -0.3)], "grating",
+                [(xx, -yy - 1), (xx + 1, -yy - 1), (xx + 1, -yy), (xx, -yy)])
+        for side, dx, dy in SIDES:
+            if tile(xx + dx, yy + dy) != 0:
+                face(mb, xx, yy, side, -0.3, 0.0, "steel_dark")
+        r_ = prng.random()
+        if r_ < 0.35:
+            mb.box(xx + 0.12, Y(yy + 0.88), -0.3, xx + 0.88, Y(yy + 0.12), 0.25, "metal_mid")
+            mb.cyl(xx + 0.5, Y(yy) - 0.5, 0.25, 0.3, 0.3, "metal_dark", 12)
+            mb.box(xx + 0.2, Y(yy + 0.8), 0.25, xx + 0.8, Y(yy + 0.2), 0.27, "wall_cap_snowy")
+        elif r_ < 0.55:
+            mb.seg((xx + 0.1, Y(yy) - 0.5, -0.1), (xx + 0.9, Y(yy) - 0.5, -0.1), 0.12, prng.choice(["metal", "rust", "cable_yellow"]), 8)
+        elif r_ < 0.65:
+            mb.sphere(xx + 0.5, Y(yy) - 0.5, -0.05, 0.14, "neon_cyan", 1)
     # consoles en anneau (hors ouvertures)
     rng = random.Random(SEED * 23)
     for k in range(32):
@@ -1803,7 +2547,9 @@ def build_roofs():
         arch = b["arch"]
         rng = random.Random(bid * 7919 + SEED)
         mb = MB()
-        if arch in ("fl_bunker", "fl_hangar"):
+        if arch == "fl_hangar":
+            roof_hangar(mb, b, rng)
+        elif arch == "fl_bunker":
             roof_bunker(mb, b, rng)
         elif arch == "fl_tower":
             build_tower(b, mb, rng)
@@ -2022,13 +2768,78 @@ def prop(mb, kind, L, rng):
         helicopter(mb, L, rng)
     elif k == "fl_snowcat":
         snowcat(mb, L, rng)
+    elif k == "fl_outpost":
+        outpost(mb, L, rng)
+    elif k == "fl_fuel_tanks":
+        for vv in (D * 0.3, D * 0.72):
+            for uu in (-a + 0.3, a - 0.3):
+                L.box(mb, uu - 0.08, vv - 0.3, 0.0, uu + 0.08, vv + 0.3, 0.35, "metal_dark")
+            L.hcyl(mb, -a + 0.1, a - 0.1, vv, 0.62, 0.34, rng.choice(["hull_white", "white_panel"]), 18)
+            L.hcyl(mb, -a + 0.05, -a + 0.12, vv, 0.62, 0.36, "metal_mid", 18)
+            L.hcyl(mb, a - 0.12, a - 0.05, vv, 0.62, 0.36, "metal_mid", 18)
+            L.box(mb, -a + 0.3, vv - 0.12, 0.92, a - 0.3, vv + 0.12, 0.98, "snow")
+            L.box(mb, -0.2, vv - 0.36, 0.45, 0.2, vv - 0.33, 0.6, "hazard")
+        L.hcyl(mb, -a, a, D * 0.51, 0.18, 0.06, "rust", 8)
+        L.box(mb, a - 0.35, D * 0.05, 0.0, a - 0.05, D * 0.2, 0.9, "metal_dark")
+        L.sph(mb, a - 0.2, D * 0.12, 0.95, 0.07, "neon_amber", 1)
+    elif k == "fl_containers":
+        cols = ["container_red", "container_blue", "container_olive"]
+        rng.shuffle(cols)
+        L.box(mb, -a + 0.05, 0.08, 0.0, a - 0.05, D * 0.48, 0.95, cols[0])
+        L.box(mb, -a + 0.05, D * 0.52, 0.0, a - 0.05, D - 0.06, 0.95, cols[1])
+        L.box(mb, -a + 0.4, D * 0.3, 0.95, a - 0.3, D * 0.75, 1.85, cols[2])
+        for (v0, v1, z1) in ((0.08, D * 0.48, 0.95), (D * 0.52, D - 0.06, 0.95), (D * 0.3, D * 0.75, 1.85)):
+            L.box(mb, -a + 0.15, v0 + 0.05, z1, a - 0.15, v1 - 0.05, z1 + 0.04, "snow")
+        L.box(mb, -a + 0.04, 0.06, 0.15, -a + 0.06, D * 0.48, 0.8, "metal_dark")
+    elif k == "fl_radar":
+        cx_, cy_ = L.p(0.0, D / 2)
+        r_ = min(A, D) / 2 - 0.1
+        mb.box(cx_ - r_, cy_ - r_, 0.0, cx_ + r_, cy_ + r_, 0.45, "concrete")
+        mb.box(cx_ - r_ + 0.05, cy_ - r_ + 0.05, 0.45, cx_ + r_ - 0.05, cy_ + r_ - 0.05, 0.48, "wall_cap_snowy")
+        mb.cyl(cx_, cy_, 0.45, 0.75, r_ * 0.55, "metal_dark", 16)
+        mb.sphere(cx_, cy_, 1.35, r_ * 0.95, "radome", 3)
+        for i in range(8):
+            an = i / 8 * math.tau
+            mb.seg((cx_ + math.cos(an) * r_ * 0.7, cy_ + math.sin(an) * r_ * 0.7, 0.75), (cx_ + math.cos(an) * r_ * 0.95, cy_ + math.sin(an) * r_ * 0.95, 1.35), 0.025, "metal_mid", 4)
+        mb.cyl(cx_, cy_, 1.35 + r_ * 0.9, 1.35 + r_ * 0.9 + 0.6, 0.03, "metal", 6)
+        mb.sphere(cx_, cy_, 1.35 + r_ * 0.9 + 0.65, 0.07, "neon_red", 1)
+        ALARM_POS.append((cx_, cy_, 1.35 + r_ * 0.9 + 0.7))
     elif k == "fl_crystal_core":
         cx_, cy_ = L.p(0.0, D / 2)
         mb.cyl(cx_, cy_, 0.0, 0.25, min(A, D) / 2 - 0.1, "metal_dark", 24)
-        mb.cyl(cx_, cy_, 0.25, 0.3, min(A, D) / 2 - 0.2, "neon_cyan", 24)
+        mb.cyl(cx_, cy_, 0.25, 0.3, min(A, D) / 2 - 0.2, "lamp_cyan", 24)
         crystal_cluster(mb, cx_, cy_, rng, 2.8, "crystal")
     else:
         crate(mb, L, 0.0, 0.08, min(A, D) * 0.8, 0.0, rng)
+
+
+def outpost(mb, L, rng):
+    """Avant-poste préfabriqué (3×3) : caisson d'acier sombre à cadre rouge, toit enneigé à
+    débord, porte éclairée en chaud, fenêtre, antenne à feu rouge, groupe électrogène."""
+    a = L.A / 2 - 0.1
+    d = L.D - 0.1
+    L.box(mb, -a, 0.15, 0.0, a, d - 0.1, 1.25, "steel_dark")
+    for (u0, u1) in ((-a - 0.04, -a + 0.1), (a - 0.1, a + 0.04)):
+        for (v0, v1) in ((0.11, 0.25), (d - 0.2, d - 0.06)):
+            L.box(mb, u0, v0, 0.0, u1, v1, 1.3, "crate_red")
+    L.box(mb, -a - 0.04, 0.11, 1.18, a + 0.04, d - 0.06, 1.3, "crate_red")
+    L.box(mb, -a - 0.15, 0.0, 1.3, a + 0.15, d + 0.05, 1.42, "roof_plate")
+    L.box(mb, -a - 0.05, 0.1, 1.42, a + 0.05, d - 0.05, 1.5, "snow")
+    # porte (face sud = v grand) et fenêtres chaudes
+    L.box(mb, -0.25, d - 0.11, 0.0, 0.25, d - 0.08, 0.85, "window")
+    L.box(mb, -0.3, d - 0.12, 0.85, 0.3, d - 0.07, 0.92, "metal_dark")
+    for uu in (-a + 0.35, a - 0.35):
+        L.box(mb, uu - 0.18, d - 0.11, 0.5, uu + 0.18, d - 0.08, 0.85, "window")
+    INT_LAMPS_OUT.append((L.p(0.0, d + 0.4), 0.6))
+    # antenne, radiateurs, groupe
+    ux, uy = L.p(a - 0.3, 0.45)
+    mb.cyl(ux, uy, 1.5, 3.4, 0.035, "metal", 6)
+    mb.box(ux - 0.3, uy - 0.02, 2.6, ux + 0.3, uy + 0.02, 2.64, "metal")
+    mb.sphere(ux, uy, 3.45, 0.08, "neon_red", 1)
+    ALARM_POS.append((ux, uy, 3.5))
+    L.box(mb, -a + 0.2, 0.3, 1.5, -a + 0.9, 0.9, 1.75, "metal_mid")
+    for j in range(4):
+        L.box(mb, -a + 0.25, 0.35 + j * 0.13, 1.75, -a + 0.85, 0.4 + j * 0.13, 1.77, "metal_dark")
 
 
 def helicopter(mb, L, rng):
@@ -2082,7 +2893,8 @@ def build_props():
         name = ("furn_%d" % bid) if bid is not None else "props"
         mb = groups.setdefault(name, MB())
         rng = random.Random(hash((p["cell"][0], p["cell"][1], p["kind"])) & 0xffffff)
-        back = back_side(rect) if p["kind"] not in ("fl_helicopter", "fl_snowcat", "fl_crystal_core", "fl_table", "fl_map_table", "fl_antenna", "fl_telescope") else "N"
+        back = back_side(rect) if p["kind"] not in ("fl_helicopter", "fl_snowcat", "fl_crystal_core", "fl_table", "fl_map_table", "fl_antenna", "fl_telescope",
+                                                     "fl_outpost", "fl_fuel_tanks", "fl_containers", "fl_radar") else "N"
         Lc = Local(rect, back)
         st = len(mb.V)
         prop(mb, p["kind"], Lc, rng)
@@ -2103,6 +2915,13 @@ CLUTTER = {
     "yard": ["crates", "crates", "drums", "sandbags"], "walkway": ["crates", "drums"], "ramp": ["sandbags", "drums"],
     "gate": ["sandbags"], "heliport": ["drums", "crates"], "dock": ["crates", "drums"], "snow": ["crates", "drums", "sled"],
     "crystal_lab": [],
+}
+ISLAND = {
+    "barracks": ["bunk", "bunk", "table", "locker"], "mess_hall": ["table", "table", "table", "stove"],
+    "lab": ["tank", "labbench", "console"], "cryo_vault": ["tank", "tank", "labbench"], "infirmary": ["bed", "bed", "cabinet"],
+    "storage": ["crates", "crates", "shelf", "drums"], "command": ["table", "console", "rack"], "workshop": ["bench", "crates", "drums"],
+    "bunker": ["crates", "sandbags", "drums"], "radio": ["rack", "console"], "hangar": ["crates", "drums", "toolbox"],
+    "garage": ["drums", "crates", "toolbox"], "generator": ["drums", "pipes", "crates"], "armory": ["crates", "locker"],
 }
 CLUTTER_P = {"walkway": 0.12, "yard": 0.18, "snow": 0.02, "heliport": 0.1, "dock": 0.25, "ramp": 0.35, "gate": 0.35}
 CLUTTER_CELLS = []
@@ -2154,12 +2973,39 @@ def clutter_item(mb, kind, L, rng):
         for (pu, pv) in ((-a + 0.1, 0.2), (a - 0.15, 0.2), (-a + 0.1, 0.75), (a - 0.15, 0.75)):
             L.box(mb, pu, pv, 0.0, pu + 0.05, pv + 0.05, 0.42, "metal_dark")
         L.box(mb, -0.15, 0.35, 0.47, 0.15, 0.6, 0.55, rng.choice(["paint_white", "crate_red", "screen_cyan"]))
+    elif kind == "bunk":
+        prop(mb, "fl_bunk", L, rng)
+    elif kind == "bed":
+        prop(mb, "fl_med_bed", L, rng)
+    elif kind == "labbench":
+        prop(mb, "fl_lab_bench", L, rng)
     elif kind == "sled":
         L.box(mb, -0.4, 0.1, 0.05, 0.4, 0.5, 0.1, "wood")
         L.box(mb, -0.3, 0.15, 0.1, 0.3, 0.45, 0.4, "canvas")
 
 
+def pal(mb, x, y):
+    mb.box(x + 0.08, Y(y + 0.92), 0.0, x + 0.92, Y(y + 0.08), 0.2, "wood")
+    for k in range(4):
+        mb.box(x + 0.1 + k * 0.21, Y(y + 0.9), 0.2, x + 0.25 + k * 0.21, Y(y + 0.1), 0.22, "wood")
+
+
+def _slice_area(mb, st, zlo=0.16, zhi=1.0):
+    pts = [mb.V[i] for i in range(st, len(mb.V)) if zlo < mb.V[i][2] < zhi]
+    if not pts:
+        return 0.0
+    return (max(p[0] for p in pts) - min(p[0] for p in pts)) * (max(p[1] for p in pts) - min(p[1] for p in pts))
+
+
 def _keeps_ring(c, blocked):
+    # aucune case voisine ne doit devenir un cul-de-sac isolé (test de connexité case par case)
+    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+        q = (c[0] + dx, c[1] + dy)
+        if not walk(*q) or q in blocked:
+            continue
+        if not any(walk(q[0] + ex, q[1] + ey) and (q[0] + ex, q[1] + ey) not in blocked and (q[0] + ex, q[1] + ey) != c
+                   for ex, ey in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+            return False
     ring = [(c[0] + dx, c[1] + dy) for dx, dy in ((-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0))]
     free = [q for q in ring if walk(*q) and q not in blocked]
     if not free:
@@ -2215,7 +3061,7 @@ def build_clutter():
             island = False
             if not walls and role in ("barracks", "mess_hall", "lab", "infirmary", "command", "workshop", "storage", "bunker", "radio", "hangar", "garage"):
                 # îlot au milieu de la salle (tables, cuves, caisses) : 1 case sur 6, anneau libre
-                island = (x * 7 + y * 3 + SEED) % 6 == 0
+                island = (x * 7 + y * 3 + SEED) % 3 == 0
                 if island:
                     walls = ["N"]
             if not walls or len(walls) > 2:
@@ -2229,17 +3075,21 @@ def build_clutter():
             back = "N" if "N" in walls else walls[0]
             Lc = Local([x, y, 1, 1], back)
             st = len(mb.V)
-            ik = rng.choice(["crates", "drums", "table", "tank"] if island else kinds)
+            ik = rng.choice(ISLAND.get(role, ["crates", "drums", "table"]) if island else kinds)
             clutter_item(mb, ik, Lc, rng)
             cells_fit(mb, st, [x, y, 1, 1], margin=0.06)
             CLUTTER_CELLS.append((x, y))
+            # petit objet : palette sous l'objet → emprise > 50 % de la case, cohérente avec les
+            # collisions dérivées du masque (la case est bien bloquée)
+            if _slice_area(mb, st) < 0.7:
+                pal(mb, x, y)
     # groupes de caisses / fûts au milieu de la cour (hors axes)
     for r in ROOMS:
         if role_of(r["id"]) != "yard":
             continue
         x, y, w, h = r["rect"]
         rng = random.Random(r["id"] * 977 + SEED)
-        n = max(3, int(w * h / 40))
+        n = max(3, int(w * h / 14))
         tries = 0
         placed = 0
         while placed < n and tries < 300:
@@ -2330,14 +3180,14 @@ def ship(mb, X, Yb, size, rot):
         u = -Lg / 2 + t * Lg
         hw = Wd / 2 * (1.0 - (abs(t - 0.45) / 0.55) ** 2.4) + 0.05
         hull_pts.append((u, hw))
-    for (z0, z1, mat, k0, k1) in ((base - 1.2, base + 0.8, "hull_ship", 0.85, 1.0), (base + 0.8, base + 1.8, "hull_white", 1.0, 1.02)):
+    for (z0, z1, mat, k0, k1) in ((base - 1.2, base + 0.8, "hull_ship", 0.85, 1.0), (base + 0.8, base + 1.8, "hull_ship", 1.0, 1.02)):
         for i in range(n):
             (u0, w0), (u1, w1) = hull_pts[i], hull_pts[i + 1]
             for sg in (1, -1):
                 mb.poly([P(u0, sg * w0 * k0, z0), P(u1, sg * w1 * k0, z0), P(u1, sg * w1 * k1, z1), P(u0, sg * w0 * k1, z1)][::sg], mat,
                         [(u0, z0), (u1, z0), (u1, z1), (u0, z1)])
     mb.poly([P(u, w * 1.02, base + 1.8) for (u, w) in hull_pts] + [P(u, -w * 1.02, base + 1.8) for (u, w) in hull_pts[::-1]], "steel_dark")
-    mb.poly([P(u, w * 0.92, base + 1.85) for (u, w) in hull_pts[1:-1]] + [P(u, -w * 0.92, base + 1.85) for (u, w) in hull_pts[1:-1][::-1]], "snow")
+    mb.poly([P(u, w * 0.92, base + 1.85) for (u, w) in hull_pts[1:-1]] + [P(u, -w * 0.92, base + 1.85) for (u, w) in hull_pts[1:-1][::-1]], "wall_cap")
     # bastingage
     for i in range(n):
         (u0, w0), (u1, w1) = hull_pts[i], hull_pts[i + 1]
@@ -2351,8 +3201,8 @@ def ship(mb, X, Yb, size, rot):
         pts = [P(u0, v0, z0), P(u1, v0, z0), P(u1, v1, z0), P(u0, v1, z0), P(u0, v0, z1), P(u1, v0, z1), P(u1, v1, z1), P(u0, v1, z1)]
         faces = [(0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7)]
         mb._add(pts, faces, mat)
-    boxP(Lg * 0.05, -Wd * 0.36, base + 1.85, Lg * 0.38, Wd * 0.36, base + 2.9, "hull_white")
-    boxP(Lg * 0.12, -Wd * 0.3, base + 2.9, Lg * 0.3, Wd * 0.3, base + 3.7, "hull_white")
+    boxP(Lg * 0.05, -Wd * 0.36, base + 1.85, Lg * 0.38, Wd * 0.36, base + 2.9, "hull_grey")
+    boxP(Lg * 0.12, -Wd * 0.3, base + 2.9, Lg * 0.3, Wd * 0.3, base + 3.7, "hull_grey")
     boxP(Lg * 0.14, -Wd * 0.32, base + 3.2, Lg * 0.29, Wd * 0.32, base + 3.45, "window_cold")
     boxP(Lg * 0.29, -Wd * 0.14, base + 2.9, Lg * 0.37, Wd * 0.14, base + 4.6, "crate_red")
     boxP(Lg * 0.29, -Wd * 0.15, base + 4.3, Lg * 0.37, Wd * 0.15, base + 4.75, "metal_dark")
@@ -2362,6 +3212,27 @@ def ship(mb, X, Yb, size, rot):
     mb.seg(P(Lg * 0.4, 0, base + 1.85), P(Lg * 0.4, 0, base + 3.6), 0.05, "metal", 6)
     mb.seg(P(Lg * 0.4, -0.5, base + 3.2), P(Lg * 0.4, 0.5, base + 3.2), 0.03, "metal", 4)
     boxP(Lg * 0.1, -Wd * 0.25, base + 3.7, Lg * 0.28, Wd * 0.25, base + 3.78, "snow")
+    # pont avant : tourelle, écoutilles, conteneurs, plaques de neige ; canots orange ; hublots chauds
+    boxP(-Lg * 0.36, -Wd * 0.13, base + 1.85, -Lg * 0.26, Wd * 0.13, base + 2.2, "steel_dark")
+    mb.cyl(*P(-Lg * 0.31, 0, base + 2.2)[:2], base + 2.2, base + 2.45, Wd * 0.13, "metal_mid", 12)
+    mb.seg(P(-Lg * 0.33, 0, base + 2.35), P(-Lg * 0.45, 0, base + 2.45), 0.06, "metal_dark", 6)
+    for k_ in range(3):
+        u_ = -Lg * 0.2 + k_ * Lg * 0.07
+        boxP(u_, -Wd * 0.18, base + 1.85, u_ + Lg * 0.05, Wd * 0.18, base + 2.0, "steel_dark")
+        boxP(u_ + 0.05, -Wd * 0.15, base + 2.0, u_ + Lg * 0.05 - 0.05, Wd * 0.15, base + 2.03, "snow")
+    boxP(-Lg * 0.02, -Wd * 0.3, base + 1.85, Lg * 0.04, -Wd * 0.02, base + 2.5, "container_red")
+    boxP(-Lg * 0.02, Wd * 0.02, base + 1.85, Lg * 0.04, Wd * 0.3, base + 2.5, "container_blue")
+    for sg in (1, -1):
+        boxP(Lg * 0.1, sg * Wd * 0.38 - 0.25, base + 2.95, Lg * 0.22, sg * Wd * 0.38 + 0.25, base + 3.25, "paint_orange")
+        for k_ in range(5):
+            u_ = Lg * 0.07 + k_ * Lg * 0.06
+            mb.sphere(*P(u_, sg * Wd * 0.365, base + 2.5), 0.08, "window", 1)
+    rs = random.Random(SEED * 37)
+    for k_ in range(14):
+        u_ = rs.uniform(-Lg * 0.42, Lg * 0.45)
+        v_ = rs.uniform(-Wd * 0.3, Wd * 0.3)
+        r_ = rs.uniform(0.3, 0.9)
+        mb.poly([P(u_ + math.cos(t_ / 7 * math.tau) * r_ * 1.4, v_ + math.sin(t_ / 7 * math.tau) * r_, base + 1.87) for t_ in range(7)], "snow")
     # mât avant, grue, antennes
     mb.seg(P(-Lg * 0.2, 0, base + 1.85), P(-Lg * 0.2, 0, base + 5.0), 0.06, "metal", 6)
     mb.seg(P(-Lg * 0.2, -0.6, base + 3.9), P(-Lg * 0.2, 0.6, base + 3.9), 0.03, "metal", 4)
@@ -2474,6 +3345,9 @@ def build_decor():
 
 # ======================================================================= lumières
 LIGHT_E = float(os.environ.get("FL_LIGHT", "28"))
+POOL_K = float(os.environ.get("FL_POOL", "2.2"))
+INT_LAMPS = []
+INT_LAMPS_OUT = []
 
 
 def build_lights():
@@ -2487,8 +3361,8 @@ def build_lights():
         col, k = light_of(rid)
         bid = CELL_BLD.get((x + w // 2, y + h // 2))
         roofed = bid is not None and BLD[bid]["arch"] in ("fl_bunker", "fl_hangar")
-        z = 1.35 if roofed else 1.1
-        step = 7.0 if role in ("yard", "walkway") else 5.0
+        z = 1.35 if roofed else 1.05
+        step = 7.0 if role in ("yard", "walkway") else 3.6
         nx = max(1, int(round(w / step)))
         ny = max(1, int(round(h / step)))
         lrng = random.Random(rid * 31 + SEED)
@@ -2498,12 +3372,19 @@ def build_lights():
                 py = y + (j + 0.5) * h / ny + lrng.uniform(-0.8, 0.8)
                 if not walk(int(px), int(py)):
                     continue
-                L_ = bpy.data.lights.new("l%d" % n, "AREA")
                 c_ = NEON[col] if role not in ("yard", "walkway") else (0.8, 0.9, 1.0)
+                if role in ("yard", "walkway"):
+                    L_ = bpy.data.lights.new("l%d" % n, "AREA")
+                    L_.energy = LIGHT_E * k * 0.5 * lrng.uniform(0.7, 1.2)
+                    L_.shape = "DISK"
+                    L_.size = 2.5
+                else:
+                    # lampe suspendue : flaque de lumière nette (point, ombre douce courte)
+                    L_ = bpy.data.lights.new("l%d" % n, "POINT")
+                    L_.energy = LIGHT_E * k * POOL_K * lrng.uniform(0.6, 1.3)
+                    L_.shadow_soft_size = 0.18
+                    INT_LAMPS.append((px, Y(py), z + 0.04, col))
                 L_.color = c_
-                L_.energy = LIGHT_E * k * (0.5 if role in ("yard", "walkway") else 1.0) * lrng.uniform(0.7, 1.2)
-                L_.shape = "DISK"
-                L_.size = 2.5 if role in ("yard", "walkway") else 2.2
                 o = bpy.data.objects.new("l%d" % n, L_)
                 o.location = (px, Y(py), z)
                 scene.collection.objects.link(o)
@@ -2560,11 +3441,87 @@ def build_lights():
             o.location = (rcx + ox, -rcy + oy, 1.6)
             scene.collection.objects.link(o)
             n += 1
+    for ((ox, oy), oz) in INT_LAMPS_OUT:
+        L_ = bpy.data.lights.new("o%d" % n, "POINT")
+        L_.color = NEON["warm"]
+        L_.energy = LIGHT_E * 2.5
+        L_.shadow_soft_size = 0.2
+        o = bpy.data.objects.new("o%d" % n, L_)
+        o.location = (ox, oy, oz)
+        scene.collection.objects.link(o)
+        n += 1
+    lm = MB()
+    for (lx, ly, lz, col) in INT_LAMPS:
+        lm.cyl(lx, ly, lz - 0.02, lz + 0.02, 0.07, "lamp_" + col, 8)
+    if INT_LAMPS:
+        lm.to_object("_intlamps", "roofs")
     print("  lights", n, flush=True)
+
+
+def build_spine_lamps():
+    """Appliques chaudes le long de la passerelle centrale (sur les murs qui la bordent, toutes les
+    3 rangées) : flaques de lumière orangée sur le dallage clair, comme l'allée de la planche."""
+    mb = MB()
+    for r in ROOMS:
+        if role_of(r["id"]) != "walkway":
+            continue
+        x, y, w, h = r["rect"]
+        if w < 3 or h < w or (BRIDGE and y >= BRIDGE[1]):
+            continue
+        for yy in range(y + 1, y + h, 3):
+            for (wx, side) in ((x - 1, 1), (x + w, -1)):
+                if tile(wx, yy) != 3:
+                    continue
+                hh = wall_h(wx, yy)
+                ex = wx + (1.0 if side > 0 else 0.0)
+                mb.box(ex - 0.08 * side - 0.04, Y(yy) - 0.65, hh - 0.35, ex + 0.04, Y(yy) - 0.35, hh - 0.15, "metal_dark")
+                mb.box(ex - 0.1 * side - 0.02, Y(yy) - 0.62, hh - 0.36, ex - 0.06 * side + 0.02, Y(yy) - 0.38, hh - 0.3, "lamp_warm")
+                L_ = bpy.data.lights.new("sp%d_%d" % (wx, yy), "POINT")
+                L_.color = NEON["warm"]
+                L_.energy = LIGHT_E * 2.2
+                L_.shadow_soft_size = 0.15
+                o = bpy.data.objects.new("sp%d_%d" % (wx, yy), L_)
+                o.location = (ex + 0.35 * side, Y(yy) - 0.5, hh - 0.45)
+                scene.collection.objects.link(o)
+    mb.to_object("_spinelamps", "world")
+
+
+def build_perimeter():
+    """Balisage du bord du plateau (cases de falaise, hors jeu) : poteaux à feu rouge espacés,
+    quelques mâts d'antenne haubanés et caisses abandonnées → points rouges de la planche."""
+    mb = MB()
+    rng = random.Random(SEED * 71 + 3)
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 3 or not is_cliff(x, y):
+                continue
+            hsh = (x * 73856093 ^ y * 19349663 ^ SEED) % 1000
+            hz = cliff_h(x + 0.5, y + 0.5)
+            if not any(tile(x + dx, y + dy) == 1 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                continue
+            if hsh < 70:
+                mb.cyl(x + 0.5, Y(y) - 0.5, hz, hz + 1.3, 0.045, "metal_dark", 6)
+                mb.box(x + 0.4, Y(y) - 0.6, hz + 1.25, x + 0.6, Y(y) - 0.4, hz + 1.32, "metal_dark")
+                mb.sphere(x + 0.5, Y(y) - 0.5, hz + 1.4, 0.09, "neon_red", 1)
+                ALARM_POS.append((x + 0.5, Y(y) - 0.5, hz + 1.45))
+            elif hsh < 85:
+                mb.cyl(x + 0.5, Y(y) - 0.5, hz, hz + 2.6, 0.04, "metal", 6)
+                for zz in (1.0, 1.6, 2.2):
+                    mb.box(x + 0.2, Y(y) - 0.53, hz + zz, x + 0.8, Y(y) - 0.47, hz + zz + 0.04, "metal")
+                mb.sphere(x + 0.5, Y(y) - 0.5, hz + 2.65, 0.08, "neon_red", 1)
+            elif hsh < 120:
+                L_ = Local([x, y, 1, 1], "N")
+                st = len(mb.V)
+                crate(mb, L_, 0.0, 0.15, rng.uniform(0.45, 0.65), 0.0, rng)
+                for i in range(st, len(mb.V)):
+                    vx, vy, vz = mb.V[i]
+                    mb.V[i] = (vx, vy, vz + hz)
+    mb.to_object("_perim", "world")
 
 
 def build_world():
     build_terrain()
+    build_perimeter()
     build_floors()
     build_walls()
     build_lab_ring()
@@ -2573,15 +3530,16 @@ def build_world():
     build_clutter()
     build_floor_details()
     build_decor()
+    build_spine_lamps()
     build_lights()
 
 
 # ======================================================================= rendu
-EXPOSURE = float(os.environ.get("FL_EXPOSURE", "0.15"))
-SUN_E = float(os.environ.get("FL_SUN", "4.0"))
-SKY = float(os.environ.get("FL_SKY", "0.55"))
-SAT = float(os.environ.get("FL_SAT", "1.2"))
-CON = float(os.environ.get("FL_CON", "1.25"))
+EXPOSURE = float(os.environ.get("FL_EXPOSURE", "0.4"))
+SUN_E = float(os.environ.get("FL_SUN", "2.6"))
+SKY = float(os.environ.get("FL_SKY", "0.32"))
+SAT = float(os.environ.get("FL_SAT", "0.95"))
+CON = float(os.environ.get("FL_CON", "1.32"))
 LIFT = float(os.environ.get("FL_LIFT", "8"))
 
 
@@ -2621,16 +3579,16 @@ def setup_render():
     w.use_nodes = True
     bg = w.node_tree.nodes["Background"]
     # ciel couvert blanc-bleu : lumière d'ambiance froide et douce
-    bg.inputs[0].default_value = (0.4, 0.55, 0.85, 1)
+    bg.inputs[0].default_value = (0.22, 0.4, 0.8, 1)
     bg.inputs[1].default_value = SKY
     sun = bpy.data.lights.new("sun", "SUN")
     sun.energy = SUN_E
-    sun.color = (0.9, 0.95, 1.0)
+    sun.color = (0.82, 0.9, 1.0)
     sun.angle = math.radians(2.5)
     so = bpy.data.objects.new("sun", sun)
     sc.collection.objects.link(so)
     # soleil bas au nord-ouest, voilé : ombres longues et douces vers le sud-est
-    d = Vector((0.5, -0.6, -0.42)).normalized()
+    d = Vector((0.66, -0.58, -0.36)).normalized()
     so.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
     # contre-jour bleu depuis le sud (réflexion de la glace)
     es = bpy.data.lights.new("icelight", "SUN")
@@ -2938,7 +3896,10 @@ def render_occ(path, zmin=0.3):
     return dt
 
 # ======================================================================= étalonnage (remplace grade de fw_scene)
-BLOOM = float(os.environ.get("FL_BLOOM", "0.55"))
+BLOOM = float(os.environ.get("FL_BLOOM", "0.7"))
+BLOOM_T = int(os.environ.get("FL_BLOOM_T", "185"))
+CLARITY = float(os.environ.get("FL_CLARITY", "35"))
+TONE = float(os.environ.get("FL_TONE", "0.3"))
 
 
 def grade(path):
@@ -2947,7 +3908,7 @@ def grade(path):
     from PIL import Image, ImageEnhance, ImageFilter, ImageChops
     im = Image.open(path).convert("RGB")
     if BLOOM > 0:
-        hi = im.point(lambda v: max(0, v - 200) * 4)
+        hi = im.point(lambda v: max(0, v - BLOOM_T) * 3)
         r1 = max(2, int(PPC_CUR * 0.25))
         b1 = hi.filter(ImageFilter.GaussianBlur(r1))
         b2 = hi.filter(ImageFilter.GaussianBlur(r1 * 4))
@@ -2955,7 +3916,18 @@ def grade(path):
         im = ImageChops.add(im, glow)
     im = ImageEnhance.Color(im).enhance(SAT)
     im = ImageEnhance.Contrast(im).enhance(CON)
+    # contraste local large (« clarté ») puis fin : relief peint, lisible sur mobile
+    im = im.filter(ImageFilter.UnsharpMask(radius=max(3, int(PPC_CUR * 1.5)), percent=int(CLARITY), threshold=0))
     im = im.filter(ImageFilter.UnsharpMask(radius=max(2, int(PPC_CUR * 0.3)), percent=30, threshold=2))
+    # virage : ombres vers le bleu nuit / sarcelle, hautes lumières neutres (lumières chaudes
+    # conservées)
+    if TONE > 0:
+        import numpy as np
+        a = np.asarray(im).astype(np.float32) / 255.0
+        lum = a.mean(axis=2, keepdims=True)
+        sh_w = np.clip(1.0 - lum * 1.8, 0.0, 1.0) * TONE
+        a = a * (1 - sh_w) + (a * np.array([0.78, 0.95, 1.18], dtype=np.float32)) * sh_w
+        im = Image.fromarray((np.clip(a, 0, 1) * 255 + 0.5).astype(np.uint8))
     lut = [int(LIFT + v * (255 - LIFT) / 255) for v in range(256)]
     im = im.point(lut * 3)
     im.save(path)

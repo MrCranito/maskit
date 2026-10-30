@@ -26,6 +26,9 @@ flock "$GLOCK" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "$GLOCK" godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_04_haunted_carnival.tres
 python3 tools/prerender/hc_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+# Post-étalonnage (lueurs au sol, brume, forêt) : repart toujours du rendu brut qui vient d'être fait.
+rm -f "$WORK"/*_raw.png
+python3 tools/prerender/hc_grade.py "$WORK"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
 flock "$GLOCK" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "$GLOCK" godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/haunted_carnival/$SEED/"
