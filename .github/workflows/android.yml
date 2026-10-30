@@ -5,9 +5,10 @@
 #   https://github.com/MrCranito/maskit/releases/latest/download/RaidersGo.apk
 # Page : https://github.com/MrCranito/maskit/releases/tag/android-latest
 #
-# APK signé avec un keystore DEBUG FIXE (tools/android/debug.keystore, ou le secret
-# ANDROID_DEBUG_KEYSTORE_B64 s'il est défini) : la même clé à chaque build, donc chaque APK
-# s'installe par-dessus le précédent sans perdre la sauvegarde. Installable pour tester
+# APK signé avec un keystore DEBUG FIXE : le secret ANDROID_DEBUG_KEYSTORE_B64 s'il est défini
+# (Settings > Secrets > Actions, contenu : `base64 -w 0 debug.keystore`), sinon la clé de test
+# versionnée tools/android/debug.keystore (mot de passe « android »). La même clé à chaque build,
+# donc chaque APK s'installe par-dessus le précédent sans perdre la sauvegarde. Installable pour tester
 # (« sources inconnues »), pas publiable sur le Play Store. Pour une version store : keystore de release en
 # secrets (voir export.yml). Le numéro de version (versionCode) suit le numéro de run, pour
 # que chaque nouvel APK s'installe par-dessus le précédent.
@@ -39,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
@@ -81,9 +82,12 @@ jobs:
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > "$KS"
             echo "Clé : secret ANDROID_DEBUG_KEYSTORE_B64"
-          else
+          elif [ -s tools/android/debug.keystore ]; then
             cp tools/android/debug.keystore "$KS"
             echo "Clé : tools/android/debug.keystore"
+          else
+            echo "::error::Aucun keystore debug : définis le secret ANDROID_DEBUG_KEYSTORE_B64 ou versionne tools/android/debug.keystore."
+            exit 1
           fi
           keytool -list -keystore "$KS" -storepass android | grep -i "SHA-256" || true
           mkdir -p ~/.config/godot
@@ -135,10 +139,9 @@ jobs:
 
       - name: Journal d'export en cas d'échec
         if: failure()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test -f export.log || echo "pas de journal" > export.log
-          gh release delete android-build-log --cleanup-tag -y 2>/dev/null || true
-          gh release create android-build-log export.log --target "$GITHUB_SHA" --prerelease \
-            --title "Journal d'échec du build Android" --notes "Run ${GITHUB_RUN_NUMBER}"
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-export-log
+          path: export.log
+          if-no-files-found: ignore
+          retention-days: 14
