@@ -20,12 +20,12 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PACK="$ROOT/assets/prerender/mall/$SEED"
 mkdir -p "$WORK"
 cd "$ROOT"
-godot --headless --path . --import > /dev/null 2>&1 || true
-godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
+flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_03_mall.tres
-python3 tools/prerender/mall_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+flock "${BLENDER_LOCK:-/tmp/maskit_blender.lock}" python3 tools/prerender/mall_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
-godot --headless --path . --import > /dev/null 2>&1 || true
-godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/mall/$SEED/"
-godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
+flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/mall/$SEED/"
+flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
 echo "Paquet : $PACK"
