@@ -350,6 +350,70 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 	assert_false(get_tree().paused, "pause levée")
 
 
+func _touch(idx: int, pos: Vector2, pressed: bool) -> InputEventScreenTouch:
+	var t := InputEventScreenTouch.new()
+	t.index = idx
+	t.position = pos
+	t.pressed = pressed
+	return t
+
+
+func _drag(idx: int, pos: Vector2) -> InputEventScreenDrag:
+	var d := InputEventScreenDrag.new()
+	d.index = idx
+	d.position = pos
+	return d
+
+
+func test_carte_plein_ecran_zoom_gestes_et_icones() -> void:
+	var mm := _raid.minimap
+	mm.open_full_map()
+	await wait_process_frames(3)
+	var fm := mm.full_map
+	assert_true(fm.zoom.is_min_zoom(), "ouverture : carte entière")
+	assert_true(fm.zoom_out_button.disabled, "− grisé au zoom min")
+	var icon_px := fm.view.player_mark.scale.x * fm.view.content.scale.x
+	fm.zoom_step(2.0)
+	assert_almost_eq(fm.zoom.zoom_factor(), 2.0, 0.001)
+	assert_false(fm.zoom_out_button.disabled)
+	assert_almost_eq(fm.view.player_mark.scale.x * fm.view.content.scale.x, icon_px, 0.0001,
+		"icône du joueur : taille écran constante")
+	# Recentrer (bouton) : joueur au centre, ou au plus près si près d'un bord.
+	fm.recenter()
+	var p := fm.player_position()
+	var expect := MapZoom.new()
+	expect.setup(fm.zoom.view_size, fm.zoom.world, fm.zoom.max_factor)
+	expect.scale = fm.zoom.scale
+	expect.center_on(p)
+	assert_almost_eq(fm.zoom.offset.distance_to(expect.offset), 0.0, 0.01, "recentré sur le joueur")
+	# Pincement à deux doigts (écartement ×1,5) au centre de la vue.
+	var vr := fm.view.get_global_rect()
+	var c := vr.get_center()
+	var s0 := fm.zoom.scale
+	fm._input(_touch(0, c - Vector2(40, 0), true))
+	fm._input(_touch(1, c + Vector2(40, 0), true))
+	fm._input(_drag(1, c + Vector2(60, 0)))
+	fm._input(_drag(0, c - Vector2(60, 0)))
+	assert_almost_eq(fm.zoom.scale, minf(s0 * 1.5, fm.zoom.max_scale()), 0.0001, "pincement : zoom ×1,5")
+	fm._input(_touch(1, c + Vector2(60, 0), false))
+	fm._input(_touch(0, c - Vector2(60, 0), false))
+	# Double-tap : retour sur le joueur après un déplacement.
+	fm.zoom.pan(Vector2(300, 200))
+	fm._input(_touch(0, c, true))
+	fm._input(_touch(0, c, false))
+	fm._input(_touch(0, c + Vector2(3, 2), true))
+	fm._input(_touch(0, c + Vector2(3, 2), false))
+	expect.scale = fm.zoom.scale
+	expect.center_on(p)
+	assert_almost_eq(fm.zoom.offset.distance_to(expect.offset), 0.0, 0.01, "double-tap : recentré")
+	assert_true(mm.is_full_map_open(), "un toucher sur la carte ne la ferme plus")
+	# Toucher hors du panneau : ferme.
+	fm._input(_touch(0, Vector2(2, 2), true))
+	fm._input(_touch(0, Vector2(2, 2), false))
+	assert_false(mm.is_full_map_open(), "toucher sur le voile = fermer")
+	assert_false(get_tree().paused)
+
+
 func test_minimap_rendu_des_cases() -> void:
 	var tex := MiniMap.tile_texture(_raid.layout, 2)
 	assert_eq(tex.get_size(), Vector2(_raid.layout.size * 2))
