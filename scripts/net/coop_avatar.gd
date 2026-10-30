@@ -12,6 +12,9 @@ const NAME_COLOR := Color(0.45, 0.9, 1.0)
 var coop: CoopRaid = null
 var peer_name: String = "Coéquipier"
 var skin_id: StringName = &""
+## Skins d'armes du coéquipier (String(id d'arme) → String(id de skin)) : ses armes sont habillées
+## de SES skins, jamais de ceux du profil local.
+var weapon_skin_ids: Dictionary = {}
 var buffer: SnapshotBuffer = SnapshotBuffer.new()
 var clock: SnapshotBuffer.ClockSync = null
 var interp_delay_ms: float = 100.0
@@ -67,6 +70,7 @@ func _ready() -> void:
 	visual = PlayerVisual.new()
 	add_child(visual)
 	with_partner_skin(func() -> void: visual.setup(self))
+	visual.weapon_view.set_skin_ids(weapon_skin_ids)
 	loadout.set_weapons([Player.load_default_weapon()])
 	_on_weapon_changed(false)
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -104,6 +108,7 @@ func set_skin(id: StringName) -> void:
 	visual = PlayerVisual.new()
 	add_child(visual)
 	with_partner_skin(func() -> void: visual.setup(self))
+	visual.weapon_view.set_skin_ids(weapon_skin_ids)
 	visual.set_weapon(weapon, false)
 	if old != null:
 		old.queue_free()
@@ -146,8 +151,11 @@ func apply_state(s: NetProtocol.PlayerState) -> void:
 		_on_weapon_changed(true)
 
 
-## Armes tenues du coéquipier (ids), emplacement courant, équipement.
-func apply_loadout(ids: Array[String], slot: int, gadget_id: String, charges: int, p_max_hp: float) -> void:
+## Armes tenues du coéquipier (ids), emplacement courant, équipement, skins d'armes (même ordre
+## que `ids`, « » = aucun ; liste vide = aucun skin, ex. ancienne version).
+func apply_loadout(ids: Array[String], slot: int, gadget_id: String, charges: int, p_max_hp: float,
+		skins: Array[String] = []) -> void:
+	weapon_skin_ids = WeaponSkin.skin_map(ids, skins)
 	var list: Array[WeaponData] = []
 	for id: String in ids:
 		list.append(WeaponCatalog.get_weapon(StringName(id)) if id != "" else null)
@@ -162,6 +170,8 @@ func apply_loadout(ids: Array[String], slot: int, gadget_id: String, charges: in
 		loadout.gadget_charges = charges
 	if p_max_hp > 0.0:
 		max_hp = p_max_hp
+	if visual != null and visual.weapon_view != null:
+		visual.weapon_view.set_skin_ids(weapon_skin_ids)
 	_on_weapon_changed(false)
 
 

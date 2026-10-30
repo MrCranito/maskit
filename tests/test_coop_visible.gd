@@ -92,7 +92,10 @@ func test_main_menu_plus_slot_in_solo() -> void:
 	await wait_process_frames(3)
 	assert_not_null(m.mate_plus, "bouton « + » à côté du héros")
 	assert_true(m.mate_plus.visible)
-	assert_gte(m.mate_plus.size.x * m.lobby.stage.scale.x, 88.0, "cible tactile confortable à l'écran")
+	# Réduit à la demande de Victor (était ~117 px) ; reste une cible tactile confortable.
+	var on_screen := m.mate_plus.size.x * m.lobby.stage.scale.x
+	assert_gte(on_screen, 64.0, "cible tactile confortable à l'écran")
+	assert_lt(m.mate_plus.size.x, 150.0, "« + » réduit (était 150 px de l'image du camp)")
 	assert_true(m.lobby.mate == null or not m.lobby.mate.visible, "pas de coéquipier en solo")
 	assert_false(MainMenu.in_coop_room(), "solo : DÉPLOYER garde le choix des cartes")
 

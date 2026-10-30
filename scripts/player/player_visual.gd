@@ -92,6 +92,7 @@ var _weapon_flip: float = 1.0
 var _weapon_turn_aim: float = 30.0
 var _weapon_turn_move: float = 12.0
 var _weapon_flip_dead: float = 0.18
+var _corpse_alpha: float = 0.9
 var _weapon_behind_in: float = -0.42
 var _weapon_behind_out: float = -0.26
 
@@ -178,6 +179,7 @@ func _load_balance() -> void:
 	_weapon_turn_aim = Balance.get_float("player_visual", "weapon_turn_speed_aim", 30.0)
 	_weapon_turn_move = Balance.get_float("player_visual", "weapon_turn_speed_move", 12.0)
 	_weapon_flip_dead = Balance.get_float("player_visual", "weapon_flip_deadzone", 0.18)
+	_corpse_alpha = Balance.get_float("death", "corpse_alpha", 0.9)
 	_weapon_behind_in = Balance.get_float("player_visual", "weapon_behind_enter", -0.42)
 	_weapon_behind_out = Balance.get_float("player_visual", "weapon_behind_exit", -0.26)
 
@@ -383,7 +385,7 @@ func set_reload(progress: float) -> void:
 func refresh_state() -> void:
 	var hidden: bool = player.is_hidden()
 	_shadow.visible = not hidden
-	_hp_bar.visible = not hidden
+	_hp_bar.visible = not hidden and player.is_alive()
 	_hp_bar.queue_redraw()
 	set_reload(_reload_progress)
 	update_facing(true)
@@ -463,7 +465,7 @@ func _process(delta: float) -> void:
 			_body.self_modulate = Color(1.0 + fa * 2.0, 1.0 + fa * 2.0, 1.0 + fa * 2.0)
 	var alpha: float = 1.0
 	if not alive:
-		alpha = 0.35
+		alpha = _corpse_alpha  # cadavre bien visible (séquence de mort : DeathOverlay)
 	elif hidden:
 		alpha = player.hidden_alpha
 	elif player.is_invulnerable() and _flash_left <= 0.0:

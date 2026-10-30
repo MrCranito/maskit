@@ -60,13 +60,15 @@ func _on_gold(g: int, animate: bool = true) -> void:
 	_tw.parallel().tween_property(self, "scale", Vector2.ONE, 0.3).from(Vector2(1.12, 1.12)) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_tw.tween_callback(func() -> void:
-		_set_shown(g)
-		value_label.add_theme_color_override("font_color", MenuKit.TEXT))
+		_set_shown(g))
 
 
 func _set_shown(v: int) -> void:
 	shown = v
-	value_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else Economy.fmt(v)
+	var anim_color: Variant = value_label.get_theme_color("font_color") if _tw != null and _tw.is_running() else null
+	MenuKit.set_amount(value_label, v)
+	if anim_color != null:   # défilement en cours : garde la couleur gain / dépense
+		value_label.add_theme_color_override("font_color", anim_color)
 
 
 func _gui_input(event: InputEvent) -> void:
