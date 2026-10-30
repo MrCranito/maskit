@@ -498,21 +498,26 @@ func mate_height() -> float:
 	return hero.height_px * Balance.get_float("menu", "lobby_mate_scale", 0.94)
 
 
-## Affiche (ou masque) le coéquipier avec ce skin (null = apparence par défaut).
-func set_mate(skin: SkinData, show: bool) -> void:
+## Affiche (ou masque) le coéquipier avec ce skin (null = apparence par défaut), tenant son arme
+## `weapon` habillée de SES skins d'armes `weapon_skins` (id d'arme → id de skin).
+func set_mate(skin: SkinData, show: bool, weapon: WeaponData = null, weapon_skins: Dictionary = {}) -> void:
 	if mate == null:
 		if not show:
 			return
 		mate = LobbyHero.new(false)
 		mate.name = "Mate"
 		mate.skin = skin
+		mate.set_weapon(weapon, weapon_skins)
 		mate.position = mate_feet()
 		mate.height_px = mate_height()
 		mate.phase = 0.37  # pas en phase avec le héros
 		hero_layer.add_child(mate)
 		hero_layer.move_child(mate, hero.get_index())  # derrière le héros (en retrait)
-	elif show and mate.skin != skin:
-		mate.set_skin(skin, true)
+	else:
+		if show and mate.skin != skin:
+			mate.set_skin(skin, true)
+		if show:
+			mate.set_weapon(weapon, weapon_skins, true)
 	mate.visible = show
 
 

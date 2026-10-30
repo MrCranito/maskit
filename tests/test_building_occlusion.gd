@@ -165,3 +165,86 @@ func test_cartes_station_et_galeries() -> void:
 		await get_tree().process_frame
 		_tick(b)
 		assert_almost_eq(b.fade_of(int(sl["bid"])), 1.0, 0.001, "%s : opaque" % biome)
+
+
+# --- Vrai sol sous le bâtiment estompé (patchs « sol seul », passe gnd) --------------------
+
+const PACKS := [&"far_west", &"space_station", &"mall", &"haunted_carnival", &"frozen_lands", &"egypt_pyramids"]
+
+
+## Chaque bâtiment qui occulte (tranches id ≥ 0) a son patch « sol seul » dans le paquet.
+func test_paquets_ont_un_sol_par_batiment() -> void:
+	for biome: StringName in PACKS:
+		var seeds := PrerenderBackdrop.available_seeds(biome)
+		assert_false(seeds.is_empty(), "%s : paquet présent" % biome)
+		if seeds.is_empty():
+			continue
+		var b := PrerenderBackdrop.create(seeds[0], null, biome)
+		add_child_autofree(b)
+		var ids := {}
+		for e: Dictionary in b.meta["occluders"]:
+			for sl: Array in e["slices"]:
+				if int(sl[1]) >= 0:
+					ids[int(sl[1])] = true
+		assert_gt(ids.size(), 0, "%s : bâtiments qui occultent" % biome)
+		for bid: int in ids:
+			assert_true(b.has_ground(bid), "%s : sol seul du bâtiment %d" % [biome, bid])
+		for e: Dictionary in b.meta.get("grounds", []):
+			assert_true(ResourceLoader.exists(b.pack_dir + String(e["file"])), "%s : %s" % [biome, e["file"]])
+
+
+func test_sol_visible_quand_le_batiment_s_estompe() -> void:
+	var s := _setup()
+	if s.size() != 2 or (s[1] as Dictionary).is_empty():
+		pass_test("paquet absent")
+		return
+	var b: PrerenderBackdrop = s[0]
+	var sl: Dictionary = s[1]
+	var bid: int = sl["bid"]
+	_tick(b)
+	assert_eq(b.ground_alpha(bid), 0.0, "au repos : patch chargé mais non dessiné")
+	var hero := _unit(&"player", _behind(sl))
+	_tick(b)
+	assert_almost_eq(b.ground_alpha(bid), 1.0, 0.001, "bâtiment estompé : vrai sol affiché dessous")
+	hero.global_position = Vector2(-1.0e5, -1.0e5)
+	_tick(b)
+	assert_eq(b.ground_alpha(bid), 0.0, "bâtiment opaque : patch masqué")
+
+
+## « Au-dessus » (bord nord, sous le toit projeté) et « sous le toit » (dans l'emprise) : pour
+## chaque bâtiment avec intérieur des 6 cartes pré-rendues, le fondu se déclenche.
+func test_fondu_au_dessus_et_sous_le_toit_partout() -> void:
+	for biome: StringName in PACKS:
+		var seeds := PrerenderBackdrop.available_seeds(biome)
+		if seeds.is_empty():
+			continue
+		var b := PrerenderBackdrop.create(seeds[0], null, biome)
+		add_child(b)
+		b.set_process(false)
+		b.ensure_occluder_holder()
+		b.stream_margin = 1.0e7  # toutes les tuiles
+		b._stream()
+		b._update_occluders()
+		var hero := Node2D.new()
+		hero.add_to_group(&"player")
+		add_child(hero)
+		hero.global_position = Vector2(-1.0e5, -1.0e5)
+		var n := 0
+		for e: Dictionary in b.meta["interiors"]:
+			var bid := int(e["id"])
+			if not b._by_key.has(bid):
+				continue
+			var r: Array = e["rect"]
+			var cx := (float(r[0]) + float(r[2]) * 0.5) * TS
+			for feet: Vector2 in [Vector2(cx, (float(r[1]) + float(r[3]) * 0.5) * TS),
+					Vector2(cx, float(r[1]) * TS - 8.0)]:
+				hero.global_position = feet
+				_tick(b)
+				assert_almost_eq(b.fade_of(bid), float(b._fade_alpha), 0.001,
+					"%s bâtiment %d : fondu avec l'unité en %s" % [biome, bid, feet])
+				hero.global_position = Vector2(-1.0e5, -1.0e5)
+				_tick(b)
+				n += 1
+		assert_gt(n, 0, "%s : bâtiments testés" % biome)
+		hero.free()
+		b.free()

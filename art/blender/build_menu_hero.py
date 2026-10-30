@@ -1,5 +1,7 @@
-"""Héros du menu principal de RaidersGo : pose « lobby » (idle 3/4, fusil en main), rendue
-pour chaque skin depuis le modèle scripté de build_hero.py (même matériaux toon, même contour).
+"""Héros du menu principal de RaidersGo : pose « lobby » (idle 3/4, mains prêtes à tenir l'arme),
+rendue pour chaque skin depuis le modèle scripté de build_hero.py (même matériaux toon, même contour).
+L'arme n'est PAS dans l'image : le jeu pose par-dessus l'arme réellement équipée (icône Blender de
+l'arme + skin d'arme, scripts/ui/menus/lobby_hero.gd), puis les mains (<skin>_hands.png) devant elle.
 
 Usage (depuis la racine du projet) :
     python3 art/blender/build_menu_hero.py                      # tous les skins
@@ -10,7 +12,10 @@ Usage (depuis la racine du projet) :
 
 Sorties : assets/ui/menu/hero/<skin>.png (pose fixe haute résolution FRAME_W x FRAME_H, ≥ 800 px
           de héros : net sur un écran Retina 2532 x 1170 / 2778 x 1284 où il fait ~45 % de la hauteur)
-          assets/ui/menu/hero/hero_menu.json (taille du cadre, pieds, hauteur du héros).
+          assets/ui/menu/hero/<skin>_hands.png (mains seules, même cadre : posées devant l'arme)
+          assets/ui/menu/hero/hero_menu.json (taille du cadre, pieds, hauteur du héros, main qui
+          tient l'arme « hand » en px et angle du canon « weapon_angle_deg » à l'écran).
+    --with-rifle : ancien rendu, fusil générique dans l'image (sans calque de mains).
 L'idle (respiration, balancement) est procédurale, dans le jeu (scripts/ui/menus/lobby_hero.gd) :
 fluide à 60 fps, une seule texture par skin.
 Caméra orthographique basse (ELEV degrés) : le héros est vu presque de face, légèrement de
@@ -81,12 +86,47 @@ def setup(res: tuple[int, int], ortho: float, target_z: float, elev: float = ELE
     return hero, cam
 
 
-def apply(hero: H.Hero, sid: str) -> None:
+def apply(hero: H.Hero, sid: str, rifle: bool = False) -> None:
     hero.shop = False
     hero.apply_skin(sid)
     for ob in hero.acc.get("menu_rifle", []):
+        ob.hide_render = not rifle
+        ob.hide_viewport = not rifle
+
+
+def hand_objects() -> list:
+    """Mains (gants + manchettes) : seules visibles dans le calque posé devant l'arme."""
+    return [ob for ob in bpy.context.scene.objects if ob.type == "MESH"
+            and ob.name.split(".")[0] in HAND_PARTS]
+
+
+HAND_PARTS = ("handR", "handL", "gcuffR", "gcuffL")
+
+
+def render_hands(path_big: str, path: str, size: tuple[int, int]) -> None:
+    """Rend uniquement les mains (le reste masqué), même caméra : calque devant l'arme."""
+    keep = set(hand_objects())
+    saved = []
+    for ob in bpy.context.scene.objects:
+        if ob.type == "MESH" and ob not in keep and not ob.hide_render:
+            saved.append(ob)
+            ob.hide_render = True
+    render(path_big, path, size)
+    for ob in saved:
         ob.hide_render = False
-        ob.hide_viewport = False
+
+
+def grip_info(hero: H.Hero, cam) -> dict:
+    """Main qui tient l'arme (px du cadre final) et angle du canon à l'écran (degrés, y vers le bas),
+    d'après le fusil de référence (menuRifle : canon le long de -Y local)."""
+    bpy.context.view_layer.update()
+    hand = hero.j["spine"].matrix_world @ H.HAND_R
+    g = hero.j_menu_rifle.matrix_world
+    tip = hand + g.to_3x3() @ Vector((0.0, -0.5, 0.0))
+    a = C.world_to_px(cam, hand)
+    b = C.world_to_px(cam, tip)
+    ang = math.degrees(math.atan2(b[1] - a[1], b[0] - a[0]))
+    return {"hand": [round(a[0] / SS, 1), round(a[1] / SS, 1)], "weapon_angle_deg": round(ang, 1)}
 
 
 def pose_menu(hero: H.Hero, i: int) -> None:
@@ -131,12 +171,14 @@ def main() -> None:
         return
     if "--test" in args:
         hero, cam = setup((FRAME_W * SS, FRAME_H * SS), ORTHO_H, TARGET_Z, outline=OUTLINE)
-        sid = args[args.index("--test") + 1] if len(args) > args.index("--test") + 1 else "default"
-        apply(hero, sid)
+        k = args.index("--test")
+        sid = args[k + 1] if len(args) > k + 1 and not args[k + 1].startswith("--") else "default"
+        apply(hero, sid, "--with-rifle" in args)
         pose_menu(hero, 0)
         p = os.path.join(TMP, "test_%s.png" % sid)
         render(p + ".big.png", p, (FRAME_W, FRAME_H))
-        print("TEST", p)
+        render_hands(p + ".hands.big.png", p.replace(".png", "_hands.png"), (FRAME_W, FRAME_H))
+        print("TEST", p, grip_info(hero, cam))
         return
     skins = args[args.index("--skins") + 1].split(",") if "--skins" in args else list(H.SKINS)
     os.makedirs(OUT, exist_ok=True)
@@ -147,14 +189,25 @@ def main() -> None:
     top = C.world_to_px(cam, (0, 0, 1.0))
     unit_px = round((feet[1] - top[1] / SS), 1)
     from PIL import Image
+    rifle = "--with-rifle" in args
+    grip: dict = {}
+
+    def save_clean(src: str, dst: str) -> None:
+        im = Image.open(src).convert("RGBA")
+        im.putalpha(im.getchannel("A").point(lambda v: 0 if v < 4 else v))
+        im.save(dst, optimize=True)
+
     for sid in skins:
-        apply(hero, sid)
+        apply(hero, sid, rifle)
         pose_menu(hero, 0)
         p = os.path.join(TMP, "%s_pose.png" % sid)
         render(p + ".big.png", p, (FRAME_W, FRAME_H))
-        im = Image.open(p).convert("RGBA")
-        im.putalpha(im.getchannel("A").point(lambda v: 0 if v < 4 else v))
-        im.save(os.path.join(OUT, "%s.png" % sid), optimize=True)
+        save_clean(p, os.path.join(OUT, "%s.png" % sid))
+        if not rifle:
+            ph = os.path.join(TMP, "%s_hands.png" % sid)
+            render_hands(ph + ".big.png", ph, (FRAME_W, FRAME_H))
+            save_clean(ph, os.path.join(OUT, "%s_hands.png" % sid))
+            grip = grip_info(hero, cam)
         print("SKIN", sid, flush=True)
     ref = os.path.join(OUT, "default.png")
     hero_px = 0
@@ -167,8 +220,13 @@ def main() -> None:
         "feet": feet, "unit_px": unit_px,
         "notes": "<skin>.png : pose fixe (idle procédurale dans lobby_hero.gd). feet = pieds (px depuis le "
                  "coin haut-gauche du cadre). unit_px = hauteur en px d'une unité Blender du modèle. hero_px = "
-                 "hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte.",
+                 "hauteur visible du héros (skin par défaut) : elle correspond à une case de la carte. "
+                 "hand = main qui tient l'arme (px du cadre), weapon_angle_deg = angle du canon à l'écran "
+                 "(y vers le bas) ; <skin>_hands.png = mains seules, posées devant l'arme.",
     }
+    if grip:
+        meta.update(grip)
+        meta["hands"] = True
     with open(os.path.join(OUT, "hero_menu.json"), "w") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False)
         f.write("\n")

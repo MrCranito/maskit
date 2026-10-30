@@ -88,4 +88,64 @@ func _run() -> void:
 		await _shot("marche_%s" % n)
 	move_stick.output = Vector2.ZERO
 	await _sleep(0.3)
+	# Bouton Fouiller : apparition, fouille en cours, objet qui jaillit.
+	var lh := raid.ui_layer.get_node_or_null(^"InventoryHud") as InventoryHud
+	var fake := FakeTarget.new()
+	add_child(fake)
+	EventBus.interact_target_changed.emit(fake)
+	await _sleep(0.5)
+	await _shot("fouiller")
+	EventBus.search_progress.emit(null, 0.62)
+	await _sleep(0.1)
+	await _shot("fouiller_progression")
+	EventBus.search_progress.emit(null, 1.0)
+	EventBus.item_picked_up.emit(LootDB.get_item(&"pocket_watch"), 1)
+	await _sleep(0.3)
+	await _shot("fouiller_objet")
+	EventBus.interact_target_changed.emit(null)
+	await _sleep(0.3)
+	# Inventaire de raid ouvert : armes, équipement, emplacements rapides, sac, détail.
+	var inv := GameState.raid_inventory
+	var m4 := LootDB.get_item(&"wpn_rifle_m4a1")
+	if m4 != null:
+		inv.add_item(Affixes.make_item(m4, [&"burn", &"freeze"]), 1)
+	for id: StringName in [&"gold_nugget", &"pocket_watch", &"wpn_gadget_c4", &"revolver_ammo", &"canned_beans",
+			&"sheriff_badge", &"whisky", &"key_bank_vault", &"mall_cash_bundle", &"raw_diamond", &"dynamite",
+			&"treasure_map", &"money_bag", &"lasso"]:
+		var it := LootDB.get_item(id)
+		if it != null:
+			inv.add_item(it, 2 if id == &"gold_nugget" else 1)
+	if lh != null:
+		var scr: Node = lh.inventory_screen
+		scr.call(&"open")
+		await _sleep(0.4)
+		await _shot("inventaire")
+		var at := -1
+		for i in inv.capacity():
+			var s := inv.get_slot(i)
+			if not s.is_empty() and (s["item"] as ItemData).is_weapon() and (s["item"] as ItemData).weapon_id == &"rifle_m4a1":
+				at = i
+		# Ancien écran : sélection par « selected » ; nouvel écran : _select(SEL_BAG = 0 / SEL_QUICK = 3, i).
+		if at >= 0:
+			if scr.has_method(&"_select"):
+				scr.call(&"_select", 0, at)
+			else:
+				scr.set(&"selected", at)
+				scr.call(&"_refresh")
+			await _sleep(0.3)
+			await _shot("inventaire_arme")
+		if scr.has_method(&"_select"):
+			scr.call(&"_select", 3, 0)
+			await _sleep(0.3)
+			await _shot("inventaire_rapide")
+		scr.call(&"close")
 	get_tree().quit(0)
+
+
+## Cible d'interaction factice (bouton Fouiller sans conteneur réel).
+class FakeTarget extends Node2D:
+	func get_interact_label() -> String:
+		return "Fouiller"
+
+	func get_interact_icon() -> String:
+		return "search"

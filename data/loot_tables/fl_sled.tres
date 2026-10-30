@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"fl_sled"
+display_name = "Traîneau de ravitaillement"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.1
+search_time = 1.5
+entries = {
+&"fl_flare": 2,
+&"fl_fuel_can": 3,
+&"fl_ration": 6,
+&"fl_steel_plate": 2,
+&"fl_thermos": 2,
+&"wpn_gadget_c4": 0.00982,
+&"wpn_gadget_decoy": 0.188,
+&"wpn_gadget_drone": 0.001307,
+&"wpn_gadget_frag": 0.188,
+&"wpn_gadget_mine": 0.00982,
+&"wpn_gadget_smoke": 0.06,
+&"wpn_pistol_deagle": 0.009821,
+&"wpn_pistol_glock18": 0.08,
+&"wpn_pistol_p320": 0.001307,
+&"wpn_rifle_ak47": 0.25,
+&"wpn_rifle_aug": 0.001307,
+&"wpn_rifle_m4a1": 0.08,
+&"wpn_rifle_scarh": 0.009821,
+&"wpn_rocket_javelin": 0.001307,
+&"wpn_rocket_m202": 0.009821,
+&"wpn_rocket_rpg7": 0.08,
+&"wpn_smg_mp5": 0.25,
+&"wpn_smg_p90": 0.009821,
+&"wpn_smg_uzi": 0.001307,
+&"wpn_smg_vector": 0.08,
+&"wpn_sniper_ax50": 0.08,
+&"wpn_sniper_m24": 0.25,
+&"wpn_sniper_m82": 0.009821
+}

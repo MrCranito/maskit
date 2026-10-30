@@ -123,6 +123,10 @@ func _on_inventory_toggled(open: bool) -> void:
 	if open:
 		loot_window.close()
 	action_button.set_suppressed(open)
+	# Le bouton pause (frère, dessiné au-dessus) chevaucherait l'en-tête de l'inventaire.
+	var pb := get_parent().get_node_or_null(^"PauseMenu/PauseButton") as Control if get_parent() != null else null
+	if pb != null:
+		pb.visible = not open
 
 
 func _on_item_picked_up(item: Resource, count: int) -> void:
@@ -179,7 +183,7 @@ func _push_feed(text: String, color: Color, item: ItemData, duration: float = FE
 	if tex != null:
 		var ic := TextureRect.new()
 		ic.texture = tex
-		ic.modulate = item.tint
+		ic.modulate = LootVisuals.item_tint(item)
 		ic.custom_minimum_size = Vector2(26, 26)
 		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

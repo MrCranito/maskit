@@ -105,6 +105,10 @@ var _extraction_marker: Node2D = null
 ## Zones d'extraction de l'étage (ExtractionZone) et zone en cours de canalisation.
 var extraction_zones: Array[ExtractionZone] = []
 var _active_zone: ExtractionZone = null
+## Horloge du raid (s, hors pause) : durée de vie des zones d'extraction (ExtractionPlan).
+var raid_clock: float = 0.0
+## Zones déjà averties avant fermeture (nœud → true).
+var _warned_zones: Dictionary = {}
 ## Calque plein écran de la canalisation (vignette, compte à rebours, flash final).
 var extraction_overlay: ExtractionOverlay = null
 var end_screen: RaidEndScreen = null
@@ -127,6 +131,10 @@ func _ready() -> void:
 	NoiseSources.clear()
 	run_seed = GameState.run_seed
 	difficulty = GameState.difficulty
+	# État de butin du raid précédent (cadavres, butin au sol, conteneurs) : effacé avant la
+	# construction de l'étage 0, qui restaure sinon ceux de la partie précédente.
+	LootManager.begin_raid(run_seed)
+	party_size = CoopRules.raid_party_size()
 	_load_world()
 	_generate_floors()
 	_apply_map_modifiers()
@@ -190,6 +198,7 @@ func _generate_floors() -> void:
 		if not floors.has(0) and not floors.is_empty():
 			push_warning("Raid: le générateur n'a pas produit d'étage 0.")
 		uses_generator = not floors.is_empty()
+		_plan_extractions()
 		if map_seed != 0 and floors.has(0):
 			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
 		# Bestiaire : un seul boss par raid, élites du monde (scripts/dungeon/bestiary_rules.gd).
@@ -199,7 +208,22 @@ func _generate_floors() -> void:
 		if gen != null and world == null:
 			push_warning("Raid: générateur présent mais pas de monde, carte d'exemple.")
 		floors[0] = FloorLayout.make_sample()
+		_plan_extractions()
 	current_floor = 0 if floors.has(0) else int(floors.keys()[0])
+
+
+## Trois zones d'extraction à durée de vie par étage qui en a (ExtractionPlan). Graine du raid :
+## mêmes zones chez l'hôte et l'invité. Étage 0 pré-rendu : l'emprise rendue est évitée.
+func _plan_extractions() -> void:
+	for idx: int in floors.keys():
+		var l: FloorLayout = floors[idx]
+		var blocked: Array[Rect2] = []
+		if idx == 0 and map_seed != 0 and world != null:
+			var pb := PrerenderBackdrop.create(map_seed, l, StringName(world.get("biome")))
+			if pb != null:
+				blocked = pb.collision_rects()
+				pb.free()
+		ExtractionPlan.apply(l, hash([run_seed, idx, "extraction"]), blocked)
 
 
 func _load_module_scripts() -> void:
@@ -694,8 +718,13 @@ func _on_player_died() -> void:
 	if _raid_over:
 		return
 	_cancel_extraction(false)
-	var delay := Balance.get_float("raid", "death_screen_delay", Balance.get_float("raid", "reload_delay", 2.0))
-	get_tree().create_timer(delay).timeout.connect(_finish_death)
+	# Séquence de mort (scripts/ui/death_overlay.gd) puis écran de fin, en temps réel (ralenti).
+	var delay := DeathOverlay.outro_time()
+	if delay <= 0.0:
+		_finish_death.call_deferred()
+		return
+	DeathOverlay.play(self, player)
+	get_tree().create_timer(delay, true, false, true).timeout.connect(_finish_death)
 
 
 ## Abandon volontaire (menu pause, confirmation déjà faite) = mort immédiate.
@@ -849,6 +878,8 @@ func is_raid_over() -> bool:
 
 func _process(delta: float) -> void:
 	_stairs_cooldown = maxf(_stairs_cooldown - delta, 0.0)
+	if not _raid_over:
+		raid_clock += delta
 	if not is_instance_valid(player) or layout == null:
 		return
 	if fog != null and not _transitioning:
@@ -857,6 +888,7 @@ func _process(delta: float) -> void:
 	if cell != _last_player_cell:
 		_last_player_cell = cell
 		_update_banner(false)
+	_update_zone_clocks()
 	_update_extraction(cell, delta)
 
 
@@ -866,13 +898,58 @@ static func extraction_channel_time() -> float:
 	return maxf(Balance.get_float("extraction", "channel_time", 5.0), 0.05)
 
 
+## Durée de canalisation de la zone en cours (zone d'urgence : × emergency_channel_mult).
+func current_channel_time() -> float:
+	var t := extraction_channel_time()
+	if _active_zone != null and is_instance_valid(_active_zone) and _active_zone.emergency:
+		t *= maxf(Balance.get_float("extraction", "emergency_channel_mult", 2.0), 1.0)
+	return t
+
+
+## Avance l'horloge des zones de l'étage : avertissement avant fermeture, fermeture (la
+## canalisation en cours s'interrompt), ouverture de la zone d'urgence.
+func _update_zone_clocks() -> void:
+	if _raid_over:
+		return
+	for z: ExtractionZone in extraction_zones:
+		if not is_instance_valid(z):
+			continue
+		var before := z.state
+		var st := z.update_clock(raid_clock)
+		if st == before:
+			continue
+		match st:
+			ExtractionZone.State.CLOSING:
+				if not _warned_zones.has(z):
+					_warned_zones[z] = true
+					show_toast("L'extraction %s ferme dans %d s" % [z.zone_name, ceili(z.remaining_at(raid_clock))])
+			ExtractionZone.State.CLOSED:
+				if z == _active_zone:
+					_cancel_extraction(false)
+					show_toast("Extraction %s fermée : canalisation interrompue" % z.zone_name)
+				else:
+					show_toast("Extraction %s fermée" % z.zone_name)
+			ExtractionZone.State.OPEN:
+				if before == ExtractionZone.State.DORMANT:
+					show_toast("Extraction d'urgence ouverte : %s" % z.zone_name)
+
+
+## Zones ouvertes de l'étage courant.
+func get_open_extraction_zones() -> Array[ExtractionZone]:
+	var out: Array[ExtractionZone] = []
+	for z: ExtractionZone in extraction_zones:
+		if is_instance_valid(z) and z.is_open():
+			out.append(z)
+	return out
+
+
 func is_extracting() -> bool:
 	return _extraction_time >= 0.0
 
 
 ## Progression de la canalisation (0..1), 0 si aucune.
 func get_extraction_progress() -> float:
-	return clampf(_extraction_time / extraction_channel_time(), 0.0, 1.0) if is_extracting() else 0.0
+	return clampf(_extraction_time / current_channel_time(), 0.0, 1.0) if is_extracting() else 0.0
 
 
 func _update_extraction(cell: Vector2i, delta: float) -> void:
@@ -880,7 +957,10 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 		return
 	var alive := (not player.has_method("is_alive") or bool(player.call("is_alive"))) \
 		and not (NetHooks.active and NetHooks.is_downed(player))
-	var on_zone := alive and layout.extraction_cells.has(cell)
+	var zone := get_extraction_zone_at(cell) if alive else null
+	var on_zone := zone != null and zone.is_open()
+	if is_extracting() and _active_zone != null and zone != _active_zone:
+		on_zone = false
 	if not on_zone:
 		if is_extracting():
 			_cancel_extraction(alive)
@@ -889,10 +969,10 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 		_start_extraction()
 	_extraction_time += delta
 	if _active_zone != null and is_instance_valid(_active_zone):
-		_active_zone.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
+		_active_zone.set_progress(get_extraction_progress(), current_channel_time() - _extraction_time)
 	if extraction_overlay != null:
-		extraction_overlay.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
-	if _extraction_time >= extraction_channel_time():
+		extraction_overlay.set_progress(get_extraction_progress(), current_channel_time() - _extraction_time)
+	if _extraction_time >= current_channel_time():
 		_finish_extraction()
 
 
@@ -905,8 +985,11 @@ func _start_extraction() -> void:
 	if extraction_overlay == null:
 		extraction_overlay = ExtractionOverlay.new()
 		add_child(extraction_overlay)
-	extraction_overlay.set_progress(0.0, extraction_channel_time())
-	var n := alert_enemies_near(player.global_position, Balance.get_float("extraction", "alert_radius", 520.0))
+	extraction_overlay.set_progress(0.0, current_channel_time())
+	var alert_r := Balance.get_float("extraction", "alert_radius", 520.0)
+	if _active_zone != null and _active_zone.emergency:
+		alert_r *= Balance.get_float("extraction", "emergency_alert_mult", 1.5)
+	var n := alert_enemies_near(player.global_position, alert_r)
 	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
 
 
@@ -947,7 +1030,9 @@ func _build_extraction_marker() -> void:
 	m.name = "ExtractionZones"
 	m.z_index = 1
 	floor_root.add_child(m)
-	for z: ExtractionZone in ExtractionZone.create_all(layout.extraction_cells):
+	var zones: Array[ExtractionZone] = ExtractionZone.create_from_specs(layout.extraction_specs) 		if not layout.extraction_specs.is_empty() else ExtractionZone.create_all(layout.extraction_cells)
+	for z: ExtractionZone in zones:
+		z.update_clock(raid_clock)
 		m.add_child(z)
 		extraction_zones.append(z)
 	_extraction_marker = m
@@ -1051,7 +1136,8 @@ func _on_debug_toggled(_enabled: bool) -> void:
 	pass
 
 
-## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée.
+## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée,
+## F7 = horloge des extractions + 60 s.
 func _unhandled_input(event: InputEvent) -> void:
 	if not GameState.debug_enabled or _raid_over:
 		return
@@ -1063,6 +1149,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F6:
 				get_viewport().set_input_as_handled()
 				_finish_death()
+			KEY_F7:
+				# Avance l'horloge des extractions d'une minute (tester les fermetures).
+				get_viewport().set_input_as_handled()
+				raid_clock += 60.0
 
 
 # --- UI -------------------------------------------------------------------------
@@ -1306,6 +1396,8 @@ func get_toast_text() -> String:
 
 ## Carte jouée (null = aucune).
 var map_card: MapCard = null
+## Joueurs du raid (1 en solo, 2 en coop) : densité d'ennemis × [coop] enemy_density_<n>.
+var party_size: int = 1
 
 
 ## Au lancement, après la génération : bonus de butin (LootRoller) et densité d'ennemis
@@ -1313,11 +1405,13 @@ var map_card: MapCard = null
 func _apply_map_modifiers() -> void:
 	map_card = GameState.current_map as MapCard
 	LootRoller.reset_map_bonus()
-	if map_card == null:
-		return
-	LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
-	LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
-	var density: float = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	var density: float = 1.0
+	if map_card != null:
+		LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
+		LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
+		density = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	# Coop : plus d'ennemis à plusieurs (même tirage chez l'hôte et l'invité : seed + nombre de joueurs).
+	density *= CoopRules.party_mult("enemy_density", party_size)
 	if is_equal_approx(density, 1.0):
 		return
 	for idx: Variant in floors:
@@ -1528,6 +1622,17 @@ func _debug_weapons_text() -> String:
 	return ", ".join(parts) if not parts.is_empty() else "aucune"
 
 
+func _debug_zones_text() -> String:
+	var parts := PackedStringArray()
+	for z: ExtractionZone in extraction_zones:
+		if not is_instance_valid(z):
+			continue
+		var t := "∞" if z.closes_at == INF else ExtractionZone.format_time(z.closes_at)
+		parts.append("%s%s %s→%s [%s]" % ["!" if z.emergency else "", z.zone_name,
+			ExtractionZone.format_time(z.opens_at), t, ExtractionZone.State.keys()[z.state]])
+	return ", ".join(parts) if not parts.is_empty() else "—"
+
+
 ## Encart près du joueur : seed, étage, modules branchés, armes, extraction.
 func _draw_debug_info(canvas: Node2D) -> void:
 	if not is_instance_valid(player):
@@ -1542,8 +1647,9 @@ func _draw_debug_info(canvas: Node2D) -> void:
 			get_alive_turrets().size(), get_destroyed_turret_cells().size()],
 		"Armes : %s" % _debug_weapons_text(),
 		"Extraction : %s (%.1f s) · F5 extraire · F6 mourir" % [
-			("%.1f / %.1f s" % [_extraction_time, extraction_channel_time()]) if is_extracting() else "—",
-			extraction_channel_time()],
+			("%.1f / %.1f s" % [_extraction_time, current_channel_time()]) if is_extracting() else "—",
+			current_channel_time()],
+		"Horloge %s · zones : %s · F7 +60 s" % [ExtractionZone.format_time(raid_clock), _debug_zones_text()],
 	])
 	var font := ThemeDB.fallback_font
 	var origin := player.global_position + Vector2(-150, -150)

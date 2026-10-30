@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_hcard"]
+
+[resource]
+script = ExtResource("1_hcard")
+id = &"perm_carnaval_hante"
+display_name = "Carnaval hanté"
+description = "Un ancien parc d'attractions maintenant maudit. Des rires résonnent encore dans le vent, mais il n'y a plus que des ombres, des manèges brisés et des souvenirs qui tuent."
+world_path = "res://data/worlds/world_04_haunted_carnival.tres"
+difficulty = 2
+accent_color = Color(0.78, 0.42, 1, 1)
+modifiers = {
+"night": true
+}
+tags = PackedStringArray("Nuit", "Boss")
+reward_text = "Butin standard"

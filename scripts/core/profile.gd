@@ -238,6 +238,20 @@ func get_loadout_weapons() -> Array[WeaponData]:
 	return out
 
 
+## Arme principale montrée dans les mains du héros hors raid (menu, salon, boutique) : première
+## arme de l'arsenal de départ, sinon la meilleure arme de la réserve (rareté), sinon le pistolet
+## de départ.
+func get_main_weapon() -> WeaponData:
+	var lo := get_loadout_weapons()
+	if not lo.is_empty():
+		return lo[0]
+	for e: Dictionary in get_stash_weapons():
+		var w: WeaponData = e["data"]
+		if not w.is_gadget():
+			return w
+	return WeaponCatalog.get_weapon(WeaponCatalog.STARTER_ID)
+
+
 ## Équipement de l'arsenal de départ (null si aucun).
 func get_loadout_gadget() -> WeaponData:
 	for u: int in loadout:

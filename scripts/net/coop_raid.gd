@@ -302,6 +302,9 @@ func _send_loadout() -> void:
 	_ev.text(String(g.id) if g != null else "")
 	_ev.u8(local.get_gadget_charges())
 	_ev.f32(local.max_hp)
+	# Skins d'armes (même ordre que les armes), en fin de message : une ancienne version les ignore.
+	for sid: String in WeaponSkin.skin_ids_for(ws):
+		_ev.text(sid)
 	_ev.end()
 
 
@@ -467,12 +470,17 @@ func _on_loadout() -> void:
 	var gid := _r.text()
 	var charges := _r.u8()
 	var mhp := _r.f32()
+	var skins: Array[String] = []
+	for i: int in n:
+		if _r.remaining() <= 0:
+			break
+		skins.append(_r.text())
 	if pname != "":
 		partner_name = pname
 		avatar.peer_name = pname
 		avatar.refresh_tag()
 	avatar.set_skin(StringName(skin))
-	avatar.apply_loadout(ids, slot, gid, charges, mhp)
+	avatar.apply_loadout(ids, slot, gid, charges, mhp, skins)
 	hud.refresh_partner()
 
 
@@ -482,7 +490,12 @@ func _apply_peer_loadout_info(info: Dictionary) -> void:
 		var ids: Array[String] = []
 		for id: Variant in lo:
 			ids.append(str(id))
-		avatar.apply_loadout(ids, 0, "", 0, -1.0)
+		var skins: Array[String] = []
+		var ws: Variant = info.get("wskins", [])
+		if ws is Array:
+			for s: Variant in ws:
+				skins.append(str(s))
+		avatar.apply_loadout(ids, 0, "", 0, -1.0, skins)
 
 
 func _weapon_for(id: String) -> WeaponData:
@@ -1123,17 +1136,21 @@ func _index_enemies() -> void:
 		i += 1
 
 
-## PV ennemis × [net] coop_enemy_hp_mult (une fois par ennemi ; étage restauré : PV déjà
-## mis à l'échelle lors de la visite précédente).
+## PV et dégâts ennemis selon le barème [coop] enemy_hp_<n> / enemy_damage_<n> (une fois par
+## ennemi ; étage restauré : PV déjà mis à l'échelle lors de la visite précédente). Le nombre
+## d'ennemis, lui, est ajusté à la génération (Raid._apply_map_modifiers, enemy_density_<n>).
 func _scale_enemies(restored: bool) -> void:
-	var m := CoopRules.coop_hp_mult()
-	if is_equal_approx(m, 1.0):
+	var n := raid.party_size if raid != null else 2
+	var m := CoopRules.party_mult("enemy_hp", n)
+	var dm := CoopRules.party_mult("enemy_damage", n)
+	if is_equal_approx(m, 1.0) and is_equal_approx(dm, 1.0):
 		return
 	for id: int in _enemies:
 		var e := _enemies[id] as Enemy
 		if e.has_meta(&"coop_scaled"):
 			continue
 		e.set_meta(&"coop_scaled", true)
+		e.diff_damage_mult *= dm
 		var ratio := e.hp / maxf(e.max_hp, 0.01)
 		e.max_hp *= m
 		e.hp = minf(e.hp, e.max_hp) if restored else e.max_hp * ratio

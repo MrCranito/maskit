@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/sprites/haunted_carnival/icons/hc_cotton_candy.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"hc_cotton_candy"
+display_name = "Barbe à papa"
+description = "Sucre filé rose, étonnamment encore moelleux. Redonne un peu de vie."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 0
+type = &"consumable"
+stack_max = 6
+value = 12
+weight = 0.1
+drop_min = 1
+drop_max = 2
+heal_amount = 15.0

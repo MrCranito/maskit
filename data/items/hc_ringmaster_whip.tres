@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" path="res://assets/sprites/haunted_carnival/icons/hc_ringmaster_whip.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"hc_ringmaster_whip"
+display_name = "Fouet du Directeur"
+description = "Le fouet du maître de piste, poignée incrustée d'améthystes. Légendaire."
+icon = ExtResource("2_icon")
+tint = Color(1,1,1,1)
+rarity = 4
+type = &"valuable"
+stack_max = 1
+value = 950
+weight = 0.6
+drop_min = 1
+drop_max = 1
+heal_amount = 0.0

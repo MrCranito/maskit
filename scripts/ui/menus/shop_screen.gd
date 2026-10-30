@@ -503,9 +503,8 @@ func _character_card(s: SkinData) -> Control:
 	p.custom_minimum_size = Vector2(Balance.get_float("menu", "skin_card_width", 168.0), 250)
 	p.add_child(MenuKit.rarity_backdrop(s.rarity))
 	var bottom_h: float = 104.0
-	var tr := TextureRect.new()
+	var tr := HeroPoseRect.make(s)  # pose + arme principale tenue
 	tr.name = "Preview"
-	tr.texture = cropped_preview(pose_texture(s))
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

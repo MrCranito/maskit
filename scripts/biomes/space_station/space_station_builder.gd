@@ -898,24 +898,42 @@ func _build_ambience() -> void:
 	cm.color = v if v is Color else defaults[key]
 	add_child(cm)
 	var strength := float(_cfg("glow_strength", 1.0))
+	# Néons défaillants : sortis de la couche statique, ils grésillent dans AmbientLights.
+	var seed_value := layout.size.x * 31 + layout.size.y * 7 + layout.floor_index
+	var split: Array = AmbientLights.split_flicker(_glows, int(_cfg("flicker_every", 7)), 115.0, 155.0, seed_value)
 	var glows := GlowLayer.new()
 	glows.name = "Glows"
-	glows.glows = _glows
+	glows.glows = split[0]
 	glows.strength = strength
 	glows.material = WorldProp.glow_material()
 	glows.z_index = 45
 	glows.z_as_relative = false
 	add_child(glows)
-	if not _alarms.is_empty():
-		var al := AlarmLayer.new()
-		al.name = "Alarms"
-		al.alarms = _alarms
-		al.speed = float(_cfg("alarm_pulse_speed", 2.6))
-		al.material = WorldProp.glow_material()
-		al.z_index = 46
-		al.z_as_relative = false
-		add_child(al)
+	_build_ambient_lights(split[1], strength, seed_value)
 	_build_motes()
+
+
+## Lumières animées (néons qui grésillent, voyants, gyrophares) : AmbientLights, sous le brouillard.
+## Contrairement à Glows/Alarms, cette couche reste visible sur le pont pré-rendu (le rendu
+## Blender n'a pas de lumière animée). Les gyrophares remplacent l'ancienne AlarmLayer.
+func _build_ambient_lights(flicker: Array, strength: float, seed_value: int) -> void:
+	var fl: Array = []
+	for g: Array in flicker:
+		fl.append([g[0], g[1], g[2], float(g[3]) * strength])
+	var leds: Array = AmbientLights.pick_leds(_glows, int(_cfg("led_every", 3)), 60.0, 80.0,
+		float(_cfg("led_radius", 16.0)), seed_value)
+	var alarms: Array = []
+	var alarm_k := float(_cfg("alarm_strength", 0.8))
+	for a: Array in _alarms:
+		var p: Vector2 = a[0]
+		# Point testé au brouillard : la case praticable devant le mur (le gyrophare est en hauteur).
+		alarms.append([p, float(a[1]), RED, alarm_k, p + Vector2(0.0, wall_height * 0.6 + 8.0)])
+	var tex: Texture2D = Prop.ATLAS if Prop.has_piece("glow") else null
+	var region := Prop.piece_region("glow") if tex != null else Rect2()
+	var al := AmbientLights.create(tex, region, fl, leds, alarms)
+	al.z_index = 46
+	al.z_as_relative = false
+	add_child(al)
 
 
 ## Particules froides en suspension (une seule couche GPU).
@@ -973,27 +991,6 @@ class GlowLayer extends Node2D:
 			var k: float = float(g[3]) * strength
 			draw_texture_rect_region(Prop.ATLAS, Rect2(p - Vector2(rad, rad), Vector2(rad, rad) * 2.0), reg, Color(col, 0.32 * k))
 			draw_texture_rect_region(Prop.ATLAS, Rect2(p - Vector2(rad, rad) * 0.35, Vector2(rad, rad) * 0.7), reg, Color(col.lightened(0.4), 0.3 * k))
-
-
-## Alarmes rouges : dessinées une fois, pulsation par modulate (aucun redessin).
-class AlarmLayer extends Node2D:
-	var alarms: Array = []
-	var speed: float = 2.6
-	var _t: float = 0.0
-
-	func _process(delta: float) -> void:
-		_t += delta
-		modulate.a = 0.35 + 0.65 * maxf(sin(_t * speed), 0.0)
-
-	func _draw() -> void:
-		if not Prop.has_piece("glow"):
-			return
-		var reg := Prop.piece_region("glow")
-		for a: Array in alarms:
-			var p: Vector2 = a[0]
-			var rad: float = a[1]
-			draw_texture_rect_region(Prop.ATLAS, Rect2(p - Vector2(rad, rad), Vector2(rad, rad) * 2.0), reg, Color(SpaceStationBuilder.RED, 0.45))
-			draw_texture_rect_region(Prop.ATLAS, Rect2(p - Vector2(rad, rad) * 0.3, Vector2(rad, rad) * 0.6), reg, Color(1.0, 0.6, 0.5, 0.4))
 
 
 # --- Butin : conteneurs et cachettes du biome ------------------------------------------------
