@@ -878,7 +878,8 @@ func _refresh_mate() -> void:
 		return
 	var info: Dictionary = s.peer_info
 	var skin := SkinData.get_skin(StringName(String(info.get("skin", ""))))
-	lobby.set_mate(skin, true)
+	var held := LobbyHero.held_from_info(info)
+	lobby.set_mate(skin, true, held["weapon"], held["skins"])
 	var nm := String(info.get("name", s.peer_name))
 	mate_tag.text = nm if nm != "" else "Coéquipier"
 	mate_status.text = CoopLobby.status_text(info, s.peer_connected, s.peer_where())

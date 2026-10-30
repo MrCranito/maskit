@@ -4,11 +4,14 @@ Usage (depuis la racine du projet) :
     python3 art/blender/build_weapons.py                   # tout (sprites tenus, icônes, sprites au sol)
     python3 art/blender/build_weapons.py smg_mp5 rifle_aug # quelques-uns
     python3 art/blender/build_weapons.py --sheet out.png   # planche-contact des icônes (après rendu)
+    python3 art/blender/build_weapons.py --icon-meta       # métadonnées des icônes seulement (sans rendu)
 
 Sorties :
 - assets/sprites/weapons/<id>.png + <id>.json (grip, muzzle en px dans l'image, scale, size) :
   arme tenue, 3/4 plongeant, canon vers la DROITE ;
 - assets/ui/weapons/<id>.png : icône d'inventaire de profil (256x128, fond transparent) ;
+  assets/ui/weapons/<id>.json : grip, muzzle (px dans l'icône), size : arme tenue en grand par le
+  héros des menus (lobby_hero.gd) ;
 - gadgets : assets/sprites/weapons/<id>_world.png (objet vu du dessus, 64x64 ; drone : + <id>_world_b.png,
   hélices décalées pour l'animation).
 Repère de modélisation : X = vers l'avant (canon), Z = haut, Y = profondeur (côté visible = -Y).
@@ -650,8 +653,9 @@ def _cam_uv(cam, pts):
     return loc[:, 0], loc[:, 1]
 
 
-def _render(wid, build, elev, size, outline, pad_px, azim=0.0, ppu=PX_PER_UNIT):
-    """Rend l'objet ; size None = taille déduite de ppu. Renvoie (chemin, cam, info, (W, H))."""
+def _render(wid, build, elev, size, outline, pad_px, azim=0.0, ppu=PX_PER_UNIT, do_render=True):
+    """Rend l'objet ; size None = taille déduite de ppu. Renvoie (chemin, cam, info, (W, H)).
+    do_render False : scène et caméra seulement (métadonnées, aucun rendu)."""
     C.reset_scene()
     info = build(mats())
     pts = _points()
@@ -674,8 +678,24 @@ def _render(wid, build, elev, size, outline, pad_px, azim=0.0, ppu=PX_PER_UNIT):
     bpy.context.scene.camera = cam
     os.makedirs(TMP, exist_ok=True)
     big = os.path.join(TMP, wid + "_big.png")
-    C.render_to(big)
+    if do_render:
+        C.render_to(big)
     return big, cam, info, (W, H)
+
+
+def write_icon_meta(wid: str) -> None:
+    """assets/ui/weapons/<id>.json : poignée et bout du canon dans l'icône (px), même cadrage que
+    render_item (aucun rendu). Sert à tenir l'arme en grand dans les menus (héros du lobby)."""
+    fn = WEAPONS[wid]
+    _big, cam, info, (W, H) = _render(wid, fn, ICON_ELEV, ICON_SIZE, 2.2, 10, azim=ICON_AZIM, do_render=False)
+    g = C.world_to_px(cam, info["grip"])
+    mz = C.world_to_px(cam, info["muzzle"])
+    meta = {"grip": [round(g[0] / SS, 1), round(g[1] / SS, 1)],
+            "muzzle": [round(mz[0] / SS, 1), round(mz[1] / SS, 1)], "size": [W, H]}
+    with open(os.path.join(OUT_ICON, wid + ".json"), "w") as f:
+        json.dump(meta, f, indent=2)
+        f.write("\n")
+    print("ICON_META", wid, meta, flush=True)
 
 
 def render_item(wid: str) -> None:
@@ -710,6 +730,8 @@ def render_item(wid: str) -> None:
                                   2.2, 10, azim=ICON_AZIM if not gadget else -25.0)
     os.makedirs(OUT_ICON, exist_ok=True)
     C.downscale(big, os.path.join(OUT_ICON, wid + ".png"), (W, H))
+    if not gadget:
+        write_icon_meta(wid)
     # objet au sol / en vol (vu du dessus, 3/4 très plongeant)
     if gadget:
         if wid == "gadget_drone":
@@ -763,6 +785,8 @@ def write_category_fallbacks() -> None:
         if not os.path.exists(os.path.join(OUT, src + ".png")):
             continue
         shutil.copy(os.path.join(OUT_ICON, src + ".png"), os.path.join(OUT_ICON, cat + ".png"))
+        if os.path.exists(os.path.join(OUT_ICON, src + ".json")):
+            shutil.copy(os.path.join(OUT_ICON, src + ".json"), os.path.join(OUT_ICON, cat + ".json"))
         for ext in (".png", ".json"):
             shutil.copy(os.path.join(OUT, src + ext), os.path.join(OUT, cat + ext))
 
@@ -771,6 +795,13 @@ def main() -> None:
     args = sys.argv[1:]
     if "--sheet" in args:
         contact_sheet(args[args.index("--sheet") + 1])
+        return
+    if "--icon-meta" in args:
+        # métadonnées des icônes seulement (aucun rendu) : armes demandées, sinon toutes
+        ids = [a for a in args if a != "--icon-meta"] or [w for w in WEAPONS if not w.startswith("gadget_")]
+        for wid in ids:
+            write_icon_meta(wid)
+        write_category_fallbacks()
         return
     for wid in (args or list(WEAPONS)):
         render_item(wid)

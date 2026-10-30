@@ -852,9 +852,8 @@ func _build_bundles() -> void:
 		grid.add_child(card)
 		var hero := _first_of_kind(b, SkinData.KIND_CHARACTER)
 		if hero != null:
-			var t := TextureRect.new()
+			var t := HeroPoseRect.make(hero)  # pose + arme principale tenue
 			t.name = "Hero"
-			t.texture = ShopScreen.cropped_preview(ShopScreen.pose_texture(hero))
 			t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			t.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1131,8 +1130,7 @@ func _show_reveal(r: Dictionary) -> void:
 	glow.offset_bottom = -200
 	veil.add_child(glow)
 	if s.kind == SkinData.KIND_CHARACTER:
-		var t := TextureRect.new()
-		t.texture = ShopScreen.cropped_preview(ShopScreen.pose_texture(s))
+		var t := HeroPoseRect.make(s)  # pose + arme principale tenue
 		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		t.mouse_filter = Control.MOUSE_FILTER_IGNORE

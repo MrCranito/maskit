@@ -69,6 +69,27 @@ static func equipped_for(w: WeaponData) -> SkinData:
 	return null
 
 
+## Ids des skins équipés sur ces armes (même ordre, « » = aucun) : envoyés au coéquipier pour qu'il
+## voie nos armes telles que nous les voyons. Skins d'armes désactivés : que des « ».
+static func skin_ids_for(weapons: Array) -> Array[String]:
+	var out: Array[String] = []
+	for w: Variant in weapons:
+		var s: SkinData = equipped_for(w as WeaponData) if w is WeaponData and is_enabled() else null
+		out.append(String(s.id) if s != null else "")
+	return out
+
+
+## Dictionnaire id d'arme → id de skin (WeaponView.set_skin_ids) à partir de deux listes parallèles.
+static func skin_map(weapon_ids: Array, skins: Array) -> Dictionary:
+	var d: Dictionary = {}
+	for i: int in mini(weapon_ids.size(), skins.size()):
+		var wid := str(weapon_ids[i])
+		var sid := str(skins[i])
+		if not wid.is_empty() and not sid.is_empty():
+			d[wid] = sid
+	return d
+
+
 ## Équipe un skin possédé sur son arme (skin par arme) ou sa catégorie. Renvoie false sinon.
 static func equip(skin_id: StringName) -> bool:
 	var s := SkinData.get_skin(skin_id)
