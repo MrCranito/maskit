@@ -30,28 +30,28 @@ const H := 88
 const KEY_TREASURY := &"key_eg_treasury"
 
 ## Grand temple (emprise murs compris), sa cour à piliers, le sanctuaire.
-const ENCLOSURE := Rect2i(22, 24, 28, 28)
-const SANCTUARY := Rect2i(31, 33, 10, 10)
-## Temple nord (salle hypostyle à ciel ouvert entourée de chambres).
-const NORTH := Rect2i(27, 8, 18, 17)
-## Ailes accolées au grand temple, pavillons d'angle en décrochement.
-const WING_W := Rect2i(11, 29, 12, 17)
-const WING_E := Rect2i(49, 29, 12, 17)
-const PAV := {&"nw": Rect2i(6, 14, 13, 16), &"ne": Rect2i(53, 14, 13, 16), &"sw": Rect2i(5, 45, 18, 21), &"se": Rect2i(49, 45, 18, 21)}
+const ENCLOSURE := Rect2i(21, 23, 30, 30)
+const SANCTUARY := Rect2i(30, 32, 12, 12)
+## Temple nord (salle hypostyle à ciel ouvert entourée de chambres), accolé au grand temple.
+const NORTH := Rect2i(27, 6, 18, 18)
+## Ailes et pavillons d'angle, détachés par des passages de sable (2 à 3 cases).
+const WING_W := Rect2i(9, 28, 10, 18)
+const WING_E := Rect2i(53, 28, 10, 18)
+const PAV := {&"nw": Rect2i(4, 11, 15, 14), &"ne": Rect2i(53, 11, 15, 14), &"sw": Rect2i(3, 49, 16, 18), &"se": Rect2i(53, 49, 16, 18)}
 ## Porte-pylône au sud du grand temple (couloir central de 2 cases, corps de garde de chaque côté).
-const GATEHOUSE := Rect2i(31, 51, 10, 8)
-const PYLONS := [Rect2i(31, 51, 4, 8), Rect2i(37, 51, 4, 8)]
+const GATEHOUSE := Rect2i(31, 52, 10, 8)
+const PYLONS := [Rect2i(31, 52, 4, 8), Rect2i(37, 52, 4, 8)]
 ## Avenue des sphinx (arrivée), colosses assis, escalier monumental (décor, non bloquant).
-const AVENUE := Rect2i(30, 59, 12, 28)
-const SPHINX := [Rect2i(24, 64, 6, 9), Rect2i(42, 64, 6, 9)]
+const AVENUE := Rect2i(30, 60, 12, 27)
+const SPHINX := [Rect2i(22, 63, 8, 11), Rect2i(42, 63, 8, 11)]
 const STAIRS := Rect2i(31, 66, 10, 4)
 const SPAWN := Vector2i(35, 85)
 ## Pyramides : grandes (coins), petites (milieu des côtés, décalées par seed ; bas-droite).
-const PYR_BIG := [Rect2i(0, 0, 15, 12), Rect2i(57, 0, 15, 12), Rect2i(1, 70, 16, 17)]
-const PYR_SMALL := [Rect2i(1, 31, 8, 8), Rect2i(63, 31, 8, 8), Rect2i(55, 72, 11, 11)]
-const OASIS_POOL := Rect2i(1, 15, 4, 6)
-const EXTRACTION := [Vector2i(67, 20), Vector2i(68, 20), Vector2i(67, 21), Vector2i(68, 21),
-	Vector2i(3, 60), Vector2i(4, 60), Vector2i(3, 61), Vector2i(4, 61)]
+const PYR_BIG := [Rect2i(0, 0, 15, 10), Rect2i(57, 0, 15, 10), Rect2i(1, 70, 16, 17)]
+const PYR_SMALL := [Rect2i(1, 31, 6, 6), Rect2i(65, 31, 6, 6), Rect2i(55, 72, 11, 11)]
+const OASIS_POOL := Rect2i(1, 25, 5, 4)
+const EXTRACTION := [Vector2i(66, 26), Vector2i(67, 26), Vector2i(66, 27), Vector2i(67, 27),
+	Vector2i(3, 46), Vector2i(4, 46), Vector2i(3, 47), Vector2i(4, 47)]
 
 ## Rôles des chambres : [rôle, type, nom].
 const CHAMBERS := [
@@ -115,14 +115,14 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 
 	# 2. Modules (ordre : les murs partagés sont réécrits par le suivant, portails alignés).
 	var treasury_slot: StringName = [&"nw", &"ne", &"sw", &"se"][rng.randi_range(0, 3)]
-	var central := _module(L, ENCLOSURE, rng, "central", 3, [Vector2i.UP, Vector2i.DOWN], used, gates, 0.6)
+	var central := _module(L, ENCLOSURE, rng, "central", 3, [Vector2i.UP, Vector2i.DOWN], used, gates, 0.6, 9.0)
 	var north := _module(L, NORTH, rng, "north", 3, [Vector2i.DOWN, Vector2i.UP], used, gates, 0.5)
 	# Le grand temple est reconstruit après le temple nord : son portail nord rejoint celui du nord.
 	for g: Rect2i in gates:
 		L.fill_rect(g, T.FLOOR)
 	var wing_w := _module(L, WING_W, rng, "wing_w", 0, [], used, gates, 0.6)
 	var wing_e := _module(L, WING_E, rng, "wing_e", 0, [], used, gates, 0.6)
-	var pav_gates := {&"nw": [Vector2i.RIGHT], &"ne": [Vector2i.LEFT], &"sw": [Vector2i.RIGHT, Vector2i.DOWN], &"se": [Vector2i.LEFT, Vector2i.DOWN]}
+	var pav_gates := {&"nw": [Vector2i.RIGHT, Vector2i.DOWN], &"ne": [Vector2i.LEFT, Vector2i.DOWN], &"sw": [Vector2i.RIGHT, Vector2i.UP], &"se": [Vector2i.LEFT, Vector2i.UP]}
 	var pavs := {}
 	for k: StringName in PAV:
 		pavs[k] = _module(L, PAV[k], rng, "pav_" + String(k), 3, pav_gates[k], used, gates, 0.5)
@@ -189,7 +189,7 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 	# 4. Trésor : une chambre d'un pavillon d'angle.
 	var cands: Array[Mod] = []
 	for m2 in mods:
-		if m2.slot == "pav_" + String(treasury_slot) and not m2.open and m2.inner.get_area() >= 6:
+		if m2.slot == "pav_" + String(treasury_slot) and not m2.open and m2.inner.size.x >= 3 and m2.inner.size.y >= 3:
 			cands.append(m2)
 	if cands.is_empty():
 		return null
@@ -237,17 +237,19 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 		gr.tags = PackedStringArray(["gate", "open"])
 	var outs := [
 		[Rect2i(0, 0, W, H), FloorLayout.ROOM_CORRIDOR, "Désert", "desert"],
-		[Rect2i(1, 1, 70, 12), FloorLayout.ROOM_LOOT, "Plateau des pyramides", "desert"],
-		[Rect2i(1, 13, 10, 57), FloorLayout.ROOM_EXTRACTION, "Dunes de l'ouest", "dunes"],
-		[Rect2i(61, 13, 10, 57), FloorLayout.ROOM_COMBAT, "Dunes de l'est", "dunes"],
-		[Rect2i(62, 14, 9, 14), FloorLayout.ROOM_EXTRACTION, "Campement des pilleurs", "camp"],
-		[Rect2i(1, 13, 5, 14), FloorLayout.ROOM_REST, "Oasis", "oasis"],
-		[Rect2i(19, 12, 8, 17), FloorLayout.ROOM_TRAP, "Allée des obélisques", "desert"],
-		[Rect2i(45, 12, 8, 17), FloorLayout.ROOM_COMBAT, "Ruines de l'est", "desert"],
-		[Rect2i(23, 52, 8, 14), FloorLayout.ROOM_COMBAT, "Parvis ouest", "desert"],
-		[Rect2i(41, 52, 8, 14), FloorLayout.ROOM_COMBAT, "Parvis est", "desert"],
-		[Rect2i(1, 66, 29, 21), FloorLayout.ROOM_COMBAT, "Nécropole sud-ouest", "desert"],
-		[Rect2i(42, 66, 29, 21), FloorLayout.ROOM_LOOT, "Nécropole sud-est", "desert"],
+		[Rect2i(1, 1, 70, 10), FloorLayout.ROOM_LOOT, "Plateau des pyramides", "desert"],
+		[Rect2i(1, 11, 8, 59), FloorLayout.ROOM_EXTRACTION, "Dunes de l'ouest", "dunes"],
+		[Rect2i(63, 11, 8, 59), FloorLayout.ROOM_COMBAT, "Dunes de l'est", "dunes"],
+		[Rect2i(55, 25, 16, 3), FloorLayout.ROOM_EXTRACTION, "Campement des pilleurs", "camp"],
+		[Rect2i(1, 24, 7, 7), FloorLayout.ROOM_REST, "Oasis", "oasis"],
+		[Rect2i(19, 11, 8, 12), FloorLayout.ROOM_TRAP, "Allée des obélisques", "desert"],
+		[Rect2i(45, 11, 8, 12), FloorLayout.ROOM_COMBAT, "Ruines de l'est", "desert"],
+		[Rect2i(19, 24, 2, 29), FloorLayout.ROOM_CORRIDOR, "Passage ouest", "desert"],
+		[Rect2i(51, 24, 2, 29), FloorLayout.ROOM_CORRIDOR, "Passage est", "desert"],
+		[Rect2i(19, 53, 12, 13), FloorLayout.ROOM_COMBAT, "Parvis ouest", "desert"],
+		[Rect2i(41, 53, 12, 13), FloorLayout.ROOM_COMBAT, "Parvis est", "desert"],
+		[Rect2i(1, 67, 29, 20), FloorLayout.ROOM_COMBAT, "Nécropole sud-ouest", "desert"],
+		[Rect2i(42, 67, 29, 20), FloorLayout.ROOM_LOOT, "Nécropole sud-est", "desert"],
 		[AVENUE, FloorLayout.ROOM_SPAWN, "Avenue des Sphinx", "avenue"],
 	]
 	for o: Array in outs:
@@ -293,7 +295,7 @@ static func _court_of(mods: Array[Mod], slot: String) -> Rect2i:
 ## à ciel ouvert ; `gate_sides` : portails de 2 cases de la cour au bord de l'emprise (couloirs
 ## ajoutés à `gates`). band = 0 : grille de chambres. `roof_p` : probabilité de toit par chambre.
 static func _module(L: FloorLayout, R: Rect2i, rng: RandomNumberGenerator, slot: String, band: int, gate_sides: Array,
-		used: Dictionary, gates: Array[Rect2i], roof_p: float) -> Array[Mod]:
+		used: Dictionary, gates: Array[Rect2i], roof_p: float, seg_len: float = 6.0) -> Array[Mod]:
 	var out: Array[Mod] = []
 	L.fill_rect(R, T.WALL)
 	var inner := R.grow(-1)
@@ -324,7 +326,7 @@ static func _module(L: FloorLayout, R: Rect2i, rng: RandomNumberGenerator, slot:
 				var length: int = pa[1] - pa[0]
 				if length < 2:
 					continue
-				var n := clampi(int(round(float(length) / 6.0)), 1, 4)
+				var n := clampi(int(round(float(length) / seg_len)), 1, 4)
 				for seg: Vector2i in _split(pa[0], pa[1], n, 3, rng):
 					chambers.append(Rect2i(seg.x, r.position.y, seg.y, band) if horiz else Rect2i(r.position.x, seg.x, band, seg.y))
 		for side2: Vector2i in gate_sides:
@@ -382,7 +384,7 @@ static func _module(L: FloorLayout, R: Rect2i, rng: RandomNumberGenerator, slot:
 			k += 1
 		used[nm] = true
 		m.name = nm
-		m.roof = rng.randf() < roof_p * 0.6
+		m.roof = rng.randf() < roof_p * 0.4
 		out.append(m)
 	return out
 
@@ -448,7 +450,7 @@ static func _split(a: int, b: int, n: int, wmin: int, rng: RandomNumberGenerator
 ## jamais près des bâtiments, de l'avenue, de l'arrivée ni des extractions.
 static func _scatter(L: FloorLayout, rng: RandomNumberGenerator, landmarks: Array, smalls: Array, mods: Array[Mod]) -> void:
 	var forbidden := {}
-	var protect: Array[Rect2i] = [AVENUE.grow(1), Rect2i(64, 17, 7, 8), Rect2i(1, 57, 7, 8), OASIS_POOL.grow(1)]
+	var protect: Array[Rect2i] = [AVENUE.grow(1), Rect2i(63, 24, 8, 6), Rect2i(1, 44, 7, 6), OASIS_POOL.grow(1)]
 	for r: Rect2i in [ENCLOSURE, NORTH, WING_W, WING_E, GATEHOUSE]:
 		protect.append(r.grow(1))
 	for k: StringName in PAV:
@@ -462,15 +464,15 @@ static func _scatter(L: FloorLayout, rng: RandomNumberGenerator, landmarks: Arra
 	for pr in protect:
 		_forbid(forbidden, pr)
 	# Obélisques fixes (angles du grand temple côté nord, entrée de l'avenue).
-	for c: Vector2i in [Vector2i(21, 23), Vector2i(50, 23), Vector2i(29, 61), Vector2i(42, 61)]:
+	for c: Vector2i in [Vector2i(20, 22), Vector2i(51, 22), Vector2i(29, 61), Vector2i(42, 61)]:
 		var r0 := Rect2i(c, Vector2i.ONE)
 		if L.get_tile(c) == T.STREET:
 			L.fill_rect(r0, T.WALL)
 			landmarks.append({"kind": &"obelisk", "rect": r0})
 			_forbid(forbidden, r0.grow(1))
 	# Palmiers en bosquets (oasis, abords des pavillons, nécropoles).
-	var groves: Array[Vector2i] = [Vector2i(3, 24), Vector2i(8, 11), Vector2i(21, 4), Vector2i(50, 4), Vector2i(64, 11),
-		Vector2i(68, 44), Vector2i(3, 47), Vector2i(19, 68), Vector2i(50, 68), Vector2i(68, 66), Vector2i(26, 14), Vector2i(46, 14)]
+	var groves: Array[Vector2i] = [Vector2i(22, 14), Vector2i(49, 14), Vector2i(17, 3), Vector2i(54, 3), Vector2i(3, 40),
+		Vector2i(68, 41), Vector2i(4, 62), Vector2i(23, 79), Vector2i(48, 79), Vector2i(68, 66), Vector2i(24, 56), Vector2i(48, 56)]
 	for g: Vector2i in groves:
 		var n := rng.randi_range(2, 4)
 		for t in 14:
@@ -483,7 +485,7 @@ static func _scatter(L: FloorLayout, rng: RandomNumberGenerator, landmarks: Arra
 				landmarks.append({"kind": &"palm", "rect": r2})
 				_forbid(forbidden, Rect2i(p2 - Vector2i.ONE, Vector2i(3, 3)))
 				n -= 1
-	var kinds := [[&"rock", Vector2i(2, 2), 9], [&"rock_small", Vector2i(1, 1), 12], [&"ruin", Vector2i(3, 2), 6], [&"dune", Vector2i(3, 2), 6]]
+	var kinds := [[&"rock", Vector2i(2, 2), 9], [&"rock_small", Vector2i(1, 1), 12], [&"ruin", Vector2i(3, 2), 10], [&"dune", Vector2i(3, 2), 6]]
 	for kd: Array in kinds:
 		var n2: int = kd[2]
 		var tries := 80
@@ -794,7 +796,7 @@ static func _contract(L: FloorLayout, mods: Array[Mod], columns: Array[Vector2i]
 				q += Vector2i(1 if q.x == cr.position.x else -1, 1 if q.y == cr.position.y else -1)
 			if L.get_tile(q) == T.FLOOR:
 				torches.append(q)
-	for p2 in [Vector2i(34, 43), Vector2i(37, 43), Vector2i(34, 59), Vector2i(37, 59), Vector2i(31, 74), Vector2i(40, 74)]:
+	for p2 in [Vector2i(34, 44), Vector2i(37, 44), Vector2i(34, 60), Vector2i(37, 60), Vector2i(31, 75), Vector2i(40, 75)]:
 		if FloorLayout.is_walkable_tile(L.get_tile(p2)):
 			torches.append(p2)
 	var gl: Array = []
@@ -813,7 +815,7 @@ static func _contract(L: FloorLayout, mods: Array[Mod], columns: Array[Vector2i]
 					if L.get_tile(Vector2i(x, y) + d) == T.STREET:
 						outside = true
 		if outside:
-			paths.append([g3.get_center(), Vector2i(36, 62)])
+			paths.append([g3.get_center(), Vector2i(36, 63)])
 	L.set_meta(&"render_contract", {"kind": "egypt_surface", "modules": ml, "columns": cols, "torches": torches,
 		"enclosure": ENCLOSURE, "inner": _court_of(mods, "central"), "sanctuary": SANCTUARY, "pylons": PYLONS,
 		"gatehouse": GATEHOUSE, "hypostyle": _court_of(mods, "north"), "avenue": AVENUE, "stairs": STAIRS,

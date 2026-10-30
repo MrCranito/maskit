@@ -257,7 +257,10 @@ static func _ring_table() -> PackedByteArray:
 
 
 static func _passable(c: Ctx, p: Vector2i) -> bool:
-	return FloorLayout.is_walkable_tile(c.L.get_tile(p)) and not c.blocked.has(p)
+	if p.x < 0 or p.y < 0 or p.x >= c.L.size.x or p.y >= c.L.size.y:
+		return false
+	var t := c.L.tiles[p.y * c.L.size.x + p.x]
+	return (t == T.STREET or t == T.FLOOR or t == T.DOOR or t == T.STAIRS_UP or t == T.STAIRS_DOWN) and not c.blocked.has(p)
 
 
 ## Poser un bloc en p laisse ses voisins praticables connexes entre eux (pas de coupure locale)
@@ -273,6 +276,8 @@ static func _keeps(c: Ctx, p: Vector2i) -> bool:
 		i += 1
 	if mask == 0 or _ring_table()[mask] == 0:
 		return false
+	if c.access.is_empty():
+		return true
 	for d2: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
 		var a := p + d2
 		if c.access.has(a):
@@ -281,6 +286,7 @@ static func _keeps(c: Ctx, p: Vector2i) -> bool:
 				var b := a + d3
 				if b != p and _passable(c, b):
 					free = true
+					break
 			if not free:
 				return false
 	return true

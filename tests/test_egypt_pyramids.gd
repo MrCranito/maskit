@@ -118,9 +118,13 @@ func test_composition_de_la_surface() -> void:
 			if not r.outdoor:
 				chambers += 1
 		assert_gte(chambers, 30, "chambres des temples")
-		# Plan en croix : bâtiments accolés (murs partagés) autour du grand temple.
-		for r0: Rect2i in [Plan.NORTH, Plan.WING_W, Plan.WING_E, Plan.GATEHOUSE]:
-			assert_true(r0.grow(1).intersects(Plan.ENCLOSURE.grow(-1)) or r0.intersects(Plan.ENCLOSURE), "accolé au grand temple : %s" % r0)
+		# Plan en croix : temple nord et porte-pylône accolés au grand temple ; ailes et pavillons
+		# détachés par des passages de sable.
+		for r0: Rect2i in [Plan.NORTH, Plan.GATEHOUSE]:
+			assert_true(r0.intersects(Plan.ENCLOSURE), "accolé au grand temple : %s" % r0)
+		for r1: Rect2i in [Plan.WING_W, Plan.WING_E]:
+			assert_false(r1.grow(1).intersects(Plan.ENCLOSURE), "aile détachée : %s" % r1)
+		assert_gte(Plan.SANCTUARY.size.x, 12, "grand sanctuaire")
 		assert_gte(f.extraction_cells.size(), 4, "extraction (campement + dunes)")
 		var c: Dictionary = f.get_meta(&"render_contract", {})
 		assert_true(c.has("modules") and c.has("columns") and c.has("torches") and c.has("landmarks"), "contrat de rendu")

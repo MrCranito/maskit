@@ -780,10 +780,17 @@ def mat_sand(name, base=(0.78, 0.6, 0.34)):
     ripple = s.noise(s.comb(s.mul(s.sep(o)[0], 0.22), s.mul(s.sep(o)[1], 1.4), 0.0), 2.6, 3, 0.5)
     grain = s.noise(o, 60.0, 4, 0.7)
     big = s.noise(o, 0.12, 4, 0.55)
-    col = s.mix(s.mul(s.smooth(ripple, 0.3, 0.75), 0.7), tuple(x * 0.82 for x in base), tuple(min(1.0, x * 1.14) for x in base))
+    col = s.mix(s.mul(s.smooth(ripple, 0.3, 0.75), 0.85), tuple(x * 0.72 for x in base), tuple(min(1.0, x * 1.16) for x in base))
     col = s.mix(s.mul(grain, 0.25), col, tuple(x * 0.85 for x in base))
-    col = s.mix(s.smooth(big, 0.55, 0.8, 0.0, 0.5), col, tuple(x * 0.8 for x in base))
-    col = s.mix(s.smooth(big, 0.45, 0.2, 0.0, 0.4), col, (base[0] * 1.1, base[1] * 1.0, base[2] * 0.85))
+    mid = s.noise(o, 0.55, 5, 0.6)
+    col = s.mix(s.smooth(big, 0.52, 0.78, 0.0, 0.75), col, tuple(x * 0.68 for x in base))
+    col = s.mix(s.smooth(mid, 0.58, 0.75, 0.0, 0.55), col, tuple(x * 0.78 for x in base))
+    col = s.mix(s.smooth(big, 0.45, 0.2, 0.0, 0.5), col, (min(1.0, base[0] * 1.14), base[1] * 1.04, base[2] * 0.85))
+    # cailloux et graviers (points sombres / clairs)
+    peb = s.voronoi(s.vmul(o, 2.6), 1.0)
+    pebw = s.white(s.m_("FLOOR", s.vmul(o, 2.6)))
+    col = s.mix(s.mul(s.smooth(peb, 0.16, 0.08), s.smooth(pebw, 0.7, 0.75)), col, tuple(x * 0.45 for x in base))
+    col = s.mix(s.mul(s.smooth(peb, 0.12, 0.05), s.smooth(pebw, 0.3, 0.25)), col, tuple(min(1.0, x * 1.25) for x in base))
     h = s.add(s.mul(ripple, 0.5), s.mul(grain, 0.08))
     s.done(col, normal=s.bump(h, 0.8, 0.06), metal=0.0, rough_sock=s.add(0.9, s.mul(grain, 0.1)))
     return s.m
@@ -820,7 +827,7 @@ def mat_ashlar(name, base, dark, pw=1.0, ph=0.5, var=0.12, rough=0.8, grime=0.3,
         glyph = s.smooth(gl, 0.18, 0.1)
         fcol = s.mix(s.mul(glyph, 0.8), fc, (0.2, 0.12, 0.06))
         col = s.mix(band, col, fcol)
-    col = s.mix(s.mul(joint, 0.8), col, dark)
+    col = s.mix(s.mul(joint, 0.45), col, dark)
     sc_ = s.noise(s.comb(s.mul(u, 30.0), s.mul(v, 3.0), 0.0), 8.0, 3, 0.5)
     h = s.add(s.mul(joint, -1.0), s.mul(sc_, 0.08))
     s.done(col, normal=s.bump(h, 0.4, 0.02), metal=0.0, rough_sock=s.add(rough, s.mul(s.sub(r, 0.5), 0.15)))
@@ -848,7 +855,7 @@ def mat_slabs(name, c1, c2, size=1.0, rough=0.75, grout=(0.3, 0.2, 0.12), sand=0
     n2 = s.noise(s.obj(), 14.0, 4, 0.6)
     col = s.mix(s.smooth(n, 0.5, 0.85, 0.0, sand), col, (0.82, 0.66, 0.42))
     col = s.mix(s.mul(n2, 0.2), col, tuple(x * 0.85 for x in c1))
-    col = s.mix(joint, col, grout)
+    col = s.mix(s.mul(joint, 0.6), col, grout)
     rg = s.add(rough, s.mul(s.smooth(n, 0.45, 0.8), 0.2))
     s.done(col, normal=s.bump(s.add(s.mul(joint, -1.0), s.mul(n2, 0.1)), 0.3, 0.02), metal=0.0, rough_sock=rg)
     return s.m
@@ -922,33 +929,33 @@ def mat_sky(name):
     return m
 
 
-SAND = (0.8, 0.6, 0.36)
-STONE = (0.62, 0.45, 0.28)
-STONE_DARK = (0.22, 0.13, 0.07)
+SAND = (0.76, 0.6, 0.42)
+STONE = (0.5, 0.42, 0.34)
+STONE_DARK = (0.17, 0.13, 0.1)
 
 
 def build_materials():
     mat_sand("sand", SAND)
     mat_sand("sand_dark", (0.5, 0.35, 0.18))
-    mat_slabs("slabs", (0.38, 0.27, 0.16), (0.3, 0.21, 0.12), 1.0, grout=(0.12, 0.07, 0.04), sand=0.2)
-    mat_slabs("slabs_big", (0.62, 0.48, 0.31), (0.52, 0.4, 0.26), 2.0, grout=(0.22, 0.14, 0.08))
-    mat_slabs("slabs_dark", (0.36, 0.27, 0.17), (0.3, 0.22, 0.14), 1.0, grout=(0.12, 0.08, 0.05), sand=0.15)
+    mat_slabs("slabs", (0.4, 0.34, 0.28), (0.34, 0.29, 0.24), 1.0, grout=(0.14, 0.11, 0.09), sand=0.3)
+    mat_slabs("slabs_big", (0.52, 0.44, 0.35), (0.45, 0.38, 0.3), 2.0, grout=(0.2, 0.15, 0.11), sand=0.5)
+    mat_slabs("slabs_dark", (0.3, 0.25, 0.21), (0.25, 0.21, 0.18), 1.0, grout=(0.1, 0.08, 0.07), sand=0.15)
     mat_slabs("slabs_gold", (0.7, 0.54, 0.3), (0.58, 0.44, 0.24), 0.5, grout=(0.3, 0.2, 0.08), sand=0.1)
-    mat_ashlar("wall", STONE, STONE_DARK, pw=1.0, ph=0.45)
-    mat_ashlar("wall_ext", (0.6, 0.44, 0.27), STONE_DARK, pw=1.4, ph=0.5, grime=0.4)
+    mat_ashlar("wall", (0.37, 0.31, 0.25), STONE_DARK, pw=1.0, ph=0.45, var=0.18, grime=0.75)
+    mat_ashlar("wall_ext", (0.41, 0.34, 0.27), STONE_DARK, pw=1.2, ph=0.5, var=0.18, grime=0.75)
     mat_ashlar("wall_frieze", STONE, STONE_DARK, pw=1.0, ph=0.45, frieze=((0.95, 0.75, 0.3), 0.85, 1.15))
     mat_ashlar("wall_sanct", (0.82, 0.64, 0.38), STONE_DARK, pw=0.8, ph=0.4, frieze=((1.0, 0.8, 0.32), 0.7, 1.2))
-    mat_ashlar("wall_top", (0.76, 0.6, 0.4), STONE_DARK, pw=1.0, ph=1.0, var=0.1, grime=0.25)
+    mat_ashlar("wall_top", (0.43, 0.37, 0.3), STONE_DARK, pw=0.9, ph=0.65, var=0.26, grime=0.85)
     mat_decal("sand_drift", (0.8, 0.65, 0.44), 0.75, 2.0)
-    mat_decal("sand_shade", (0.6, 0.45, 0.28), 0.4, 1.2)
-    mat_slabs("roof_slab", (0.5, 0.37, 0.23), (0.42, 0.31, 0.19), 1.0, grout=(0.2, 0.12, 0.07), sand=0.35)
+    mat_decal("sand_shade", (0.52, 0.38, 0.22), 0.5, 1.2)
+    mat_slabs("roof_slab", (0.4, 0.34, 0.28), (0.33, 0.28, 0.23), 1.0, grout=(0.12, 0.09, 0.07), sand=0.6)
     mat_simple("crack", (0.18, 0.11, 0.06), 0.9, 0.0, 0.1)
     mat_simple("granite", (0.42, 0.36, 0.3), 0.7, 0.0, 0.2, 5.0, c2=(0.24, 0.2, 0.16))
     mat_simple("granite_lit", (0.6, 0.52, 0.42), 0.7, 0.0, 0.2, 5.0, c2=(0.34, 0.28, 0.22))
-    mat_pyramid("pyramid", (0.7, 0.52, 0.31))
-    mat_pyramid("pyramid_dark", (0.42, 0.29, 0.15))
+    mat_pyramid("pyramid", (0.72, 0.58, 0.4))
+    mat_pyramid("pyramid_dark", (0.66, 0.5, 0.33))
     mat_simple("basalt", (0.16, 0.14, 0.14), 0.6, 0.0, 0.2)
-    mat_simple("stone_lit", (0.72, 0.56, 0.34), 0.7, 0.0, 0.2)
+    mat_simple("stone_lit", (0.64, 0.54, 0.42), 0.7, 0.0, 0.2)
     mat_simple("limestone", (0.68, 0.6, 0.44), 0.7, 0.0, 0.15)
     mat_simple("clay", (0.62, 0.34, 0.18), 0.75, 0.0, 0.25)
     mat_simple("clay_dark", (0.4, 0.2, 0.1), 0.8, 0.0, 0.2)
@@ -972,8 +979,8 @@ def build_materials():
     mat_decal("stain", (0.3, 0.2, 0.1), 0.35)
     mat_decal("scorch", (0.08, 0.05, 0.03), 0.5)
     mat_sky("_sky")
-    mat_emit("flame", (1.0, 0.62, 0.2), 14.0)
-    mat_emit("flame_core", (1.0, 0.9, 0.6), 20.0)
+    mat_emit("flame", (1.0, 0.42, 0.1), 4.5)
+    mat_emit("flame_core", (1.0, 0.62, 0.25), 6.0)
     mat_emit("ember", (1.0, 0.35, 0.08), 4.0)
 
 # ======================================================================= analyse du layout
@@ -1149,7 +1156,7 @@ def build_floors():
         else:
             cx, cy = rng.uniform(W + 1.5, W + m), rng.uniform(-m, H + m)
         r_ = rng.uniform(2.0, 5.0)
-        dn.sphere(cx, Y(cy), -r_ * 0.78, r_, "sand", 2, 1.6, 1.0, 1.0, nscale=0.6, rng=rng)
+        dn.sphere(cx, Y(cy), -r_ * 0.2, r_ * 1.3, "sand", 3, 1.6, 1.0, 0.26, nscale=0.35, rng=rng)
     dn.to_object("_dunes", "world")
     mk = MB()
     for (ex, ey) in EXTRACT:
@@ -1249,6 +1256,15 @@ def build_walls():
             else:
                 tg2.poly([(x, Y(y + 1), h), (x + 1, Y(y + 1), h), (x + 1, Y(y), h), (x, Y(y), h)], "wall_top",
                          [(x, Y(y + 1)), (x + 1, Y(y + 1)), (x + 1, Y(y)), (x, Y(y))])
+                # sommet érodé : blocs déchaussés / gravats sur l'arase (lecture « ruine » de la planche)
+                hr = random.Random(x * 7919 + y * 104729 + SEED)
+                if hr.random() < 0.3:
+                    for _q in range(hr.randint(1, 3)):
+                        bx = x + hr.uniform(0.05, 0.6)
+                        by = y + hr.uniform(0.05, 0.6)
+                        sz = hr.uniform(0.18, 0.38)
+                        tg2.box(bx, Y(by + sz), h + 0.004, bx + sz, Y(by), h + hr.uniform(0.06, 0.18),
+                                hr.choice(("wall", "wall_ext", "granite")), rot=hr.uniform(-0.4, 0.4))
     # pylônes : faces inclinées (talus) — un prisme par bloc de pylône
     for p in PYLONS:
         x, y, w, h = p
@@ -1319,17 +1335,15 @@ def extra_torches():
     cours des temples (angles), salle hypostyle."""
     out = []
     for (cx_, cy_, cw_, ch_) in COURTS:
-        for xx in range(cx_ + 2, cx_ + cw_ - 2, 4):
+        for xx in range(cx_ + 3, cx_ + cw_ - 3, 6):
             out.append((xx, cy_))
-            out.append((xx, cy_ + ch_ - 1))
     # une torche par chambre (coin nord-ouest du sol)
     for m in MODS:
         ix, iy, iw, ih = m["inner"]
         if m["role"] in ("sanctuary", "hypostyle"):
             continue
-        out.append((ix, iy))
-        if iw >= 5:
-            out.append((ix + iw - 1, iy))
+        if iw * ih >= 8:
+            out.append((ix, iy))
     return [c for c in out if walk(*c) and c not in GAME_CELLS]
 
 
@@ -1435,7 +1449,7 @@ def lm_pyramid(mb, rect, rng, big):
             x -= 2
         w += 2
     cx, cy = x + w / 2, Y(y + h / 2)
-    hp = w * (0.8 if big else 0.9)
+    hp = w * (0.62 if big else 0.75)
     apex = (cx, cy, hp)
     bl, br = (x, Y(y + h), 0.0), (x + w, Y(y + h), 0.0)
     tl, tr = (x, Y(y), 0.0), (x + w, Y(y), 0.0)
@@ -1471,6 +1485,7 @@ def lm_sphinx(mb, rect, rng):
     mb.box(x + 0.02, yS + 0.02, 0.0, x + w - 0.02, yN - 0.02, 0.8, "wall_ext")
     mb.box(x + 0.1, yS + 0.1, 0.8, x + w - 0.1, yN - 0.1, 0.95, "wall_top")
     bw = w / 2 - 0.45
+    v0 = len(mb.V)
     # trône (dossier au nord)
     mb.box(cx - bw - 0.1, yN - 2.6, 0.95, cx + bw + 0.1, yN - 0.15, 4.6, G)
     # cuisses et genoux (vers le sud), tibias, pieds
@@ -1495,6 +1510,11 @@ def lm_sphinx(mb, rect, rng):
         mb.box(sx_, yN - 2.25, hz + 1.7, sx_ + 0.2, yN - 0.75, hz + 1.95, "lapis")
     mb.box(cx - 0.16, yN - 2.95, hz - 0.15, cx + 0.16, yN - 2.6, hz + 0.6, GL)
     mb.box(cx - 0.12, yN - 2.85, hz + 1.75, cx + 0.12, yN - 2.45, hz + 2.3, "gold")
+    # colosse agrandi (le socle garde sa taille) : lecture monumentale comme la planche
+    cy_ = (yS + yN) / 2
+    for i in range(v0, len(mb.V)):
+        vx, vy, vz = mb.V[i]
+        mb.V[i] = (cx + (vx - cx) * 1.25, cy_ + (vy - cy_) * 1.12, 0.95 + (vz - 0.95) * 1.3)
 
 
 def lm_obelisk(mb, rect, rng):
@@ -1568,12 +1588,12 @@ def lm_ruin(mb, rect, rng):
         cx = x + rng.uniform(0.4, w - 0.4)
         cy = y + rng.uniform(0.4, h - 0.4)
         mb.cyl(cx, Y(cy), 0.0, rng.uniform(0.3, 0.9), 0.25, "stone_lit", 10)
-    mb.sphere(x + w / 2, Y(y + h / 2), -0.35, max(w, h) * 0.7, "sand", 1, 1.2, 1.0, 0.8)
+    mb.sphere(x + w / 2, Y(y + h / 2), -0.2, max(w, h) * 0.7, "sand", 1, 1.2, 1.0, 0.3)
 
 
 def lm_dune(mb, rect, rng):
     x, y, w, h = rect
-    mb.sphere(x + w / 2, Y(y + h / 2), -0.5 * w * 0.3, w * 0.75, "sand", 3, 1.0, h / w * 1.1, 0.42, nscale=0.25, rng=rng)
+    mb.sphere(x + w / 2, Y(y + h / 2), -0.5 * w * 0.12, w * 0.9, "sand", 3, 1.0, h / w * 1.1, 0.16, nscale=0.35, rng=rng)
 
 
 def build_landmarks():
@@ -1837,7 +1857,7 @@ def build_details():
                 continue
             role = role_at(x, y)
             r_ = rng.random()
-            if tile(x, y) == 2 and r_ < 0.06:
+            if tile(x, y) == 2 and r_ < 0.15:
                 decal(det, x + rng.uniform(0.3, 0.7), y + rng.uniform(0.3, 0.7), rng.uniform(0.5, 1.2), "stain")
             elif tile(x, y) == 1 and r_ < 0.2:
                 # pierres / tessons sur le sable
@@ -1845,9 +1865,9 @@ def build_details():
                     s = rng.uniform(0.06, 0.16)
                     kx, ky = x + rng.uniform(0.1, 0.9), y + rng.uniform(0.1, 0.9)
                     det.box(kx, Y(ky + s), 0.0, kx + s, Y(ky), s * 0.5, rng.choice(["rock", "clay", "bone"]), rot=rng.uniform(0, 1))
-            elif tile(x, y) == 2 and role in ("tomb", "scribe", "offering", "guard_hall", "treasury") and r_ < 0.4:
+            elif tile(x, y) == 2 and role in ("tomb", "scribe", "offering", "treasury") and r_ < 0.18:
                 # tapis / nattes colorés dans les chambres
-                det.box(x + 0.12, Y(y + 0.88), 0.003, x + 0.88, Y(y + 0.12), 0.012, rng.choice(["linen_red", "lapis", "linen", "turquoise"]))
+                det.box(x + 0.12, Y(y + 0.88), 0.003 + rng.random() * 0.004, x + 0.88, Y(y + 0.12), 0.012, rng.choice(["linen_red", "linen", "clay_dark"]))
             elif role in ("inner_court", "court", "avenue", "gate", "hypostyle") and r_ < 0.14:
                 # sable soufflé sur le dallage (plaque plate) ou fissure
                 if r_ < 0.09:
@@ -1855,12 +1875,55 @@ def build_details():
                 else:
                     kx, ky = x + rng.uniform(0.1, 0.5), y + rng.uniform(0.2, 0.8)
                     det.box(kx, Y(ky + 0.04), 0.0, kx + rng.uniform(0.3, 0.6), Y(ky), 0.006, "crack", rot=rng.uniform(-0.6, 0.6))
+    # petit mobilier des chambres contre les murs (bas : ne bloque pas) : jarres, vases, or
+    for y in range(H):
+        for x in range(W):
+            if tile(x, y) != 2 or (x, y) in GAME_CELLS:
+                continue
+            role = role_at(x, y)
+            if role in ("inner_court", "court", "hypostyle", "gate", "sanctuary"):
+                continue
+            nwall = [(dx, dy) for _, dx, dy in SIDES if tile(x + dx, y + dy) == 3]
+            if not nwall or rng.random() > (0.72 if role in ("treasury", "tomb", "offering") else 0.45):
+                continue
+            dx, dy = nwall[0]
+            bx, by = x + 0.5 + dx * 0.3, y + 0.5 + dy * 0.3
+            for j in range(rng.randint(1, 3)):
+                qx, qy = bx + rng.uniform(-0.3, 0.3), by + rng.uniform(-0.3, 0.3)
+                if role in ("treasury", "tomb") and rng.random() < 0.55:
+                    det.sphere(qx, Y(qy), 0.0, rng.uniform(0.1, 0.16), "gold", 1, 1.3, 1.0, 0.75)
+                elif role == "scribe" and rng.random() < 0.5:
+                    det.seg((qx - 0.15, Y(qy), 0.05), (qx + 0.15, Y(qy), 0.05), 0.045, "linen", 6)
+                else:
+                    r_ = rng.uniform(0.07, 0.1)
+                    det.cyl(qx, Y(qy), 0.0, 0.13, r_, rng.choice(["clay", "clay_dark", "limestone"]), 8, r2=r_ * 0.6)
     # sable : plaques plus sombres (sable tassé), dalles ensablées éparses
-    for k in range(90):
+    for k in range(160):
         cx, cy = rng.uniform(1, W - 1), rng.uniform(1, H - 1)
         if not walk(int(cx), int(cy)) or tile(int(cx), int(cy)) != 1:
             continue
         decal(det, cx, cy, rng.uniform(1.2, 3.0), "sand_shade")
+    # débris ensablés : grappes de blocs de grès cassés, tronçons de colonnes couchés (bas, non
+    # bloquants), éclats de poterie et pierres
+    for k in range(200):
+        cx, cy = rng.uniform(2, W - 2), rng.uniform(2, H - 2)
+        if tile(int(cx), int(cy)) != 1 or paving_of(int(cx), int(cy)) is not None or (int(cx), int(cy)) in GAME_CELLS:
+            continue
+        for j in range(rng.randint(3, 7)):
+            qx, qy = cx + rng.uniform(-1.2, 1.2), cy + rng.uniform(-1.2, 1.2)
+            if tile(int(qx), int(qy)) != 1 or (int(qx), int(qy)) in GAME_CELLS:
+                continue
+            r2 = rng.random()
+            if r2 < 0.25:
+                ln = rng.uniform(0.6, 1.2)
+                a_ = rng.uniform(0, math.pi)
+                det.seg((qx, Y(qy), 0.07), (qx + math.cos(a_) * ln, Y(qy) + math.sin(a_) * ln, 0.07), 0.08, "stone_lit", 8)
+            elif r2 < 0.7:
+                s_ = rng.uniform(0.15, 0.45)
+                det.box(qx - s_ / 2, Y(qy + s_ / 2), -0.01, qx + s_ / 2, Y(qy - s_ / 2), rng.uniform(0.05, 0.13), rng.choice(["wall_ext", "wall_top", "stone_lit"]), rot=rng.uniform(0, 1.5))
+            else:
+                det.sphere(qx, Y(qy), 0.0, rng.uniform(0.06, 0.14), rng.choice(["rock", "rock_dark", "clay"]), 1, 1.0, 1.0, 0.7)
+        decal(det, cx, cy, rng.uniform(1.0, 2.0), "sand_shade")
     for k in range(120):
         cx, cy = rng.uniform(1, W - 1), rng.uniform(1, H - 1)
         if not walk(int(cx), int(cy)) or tile(int(cx), int(cy)) != 1 or (int(cx), int(cy)) in GAME_CELLS:
@@ -1948,10 +2011,10 @@ def build_lights():
         for fx in (0.3, 0.7):
             L_ = bpy.data.lights.new("g%d" % n, "POINT")
             L_.color = (1.0, 0.5, 0.18)
-            L_.energy = LIGHT_E * 1.6 * max(1.0, cw_ * ch_ / 60.0)
+            L_.energy = LIGHT_E * 1.1 * max(1.0, cw_ * ch_ / 60.0)
             L_.shadow_soft_size = 0.6
             o = bpy.data.objects.new("g%d" % n, L_)
-            o.location = (cx_ + cw_ * fx, Y(cy_ + ch_ * 0.5), 1.2)
+            o.location = (cx_ + cw_ * fx, Y(cy_ + ch_ * 0.5), 2.4)
             scene.collection.objects.link(o)
             n += 1
     # chambres à toit : lampe chaude au plafond (intérieurs lisibles dans la passe int)
@@ -1982,13 +2045,13 @@ def build_world():
 
 
 # ======================================================================= rendu
-EXPOSURE = float(os.environ.get("EG_EXPOSURE", "-0.3"))
-SUN_E = float(os.environ.get("EG_SUN", "5.0"))
-SKY = float(os.environ.get("EG_SKY", "0.6"))
-SAT = float(os.environ.get("EG_SAT", "1.22"))
+EXPOSURE = float(os.environ.get("EG_EXPOSURE", "-0.95"))
+SUN_E = float(os.environ.get("EG_SUN", "6.5"))
+SKY = float(os.environ.get("EG_SKY", "0.45"))
+SAT = float(os.environ.get("EG_SAT", "0.94"))
 CON = float(os.environ.get("EG_CON", "1.28"))
-LIFT = float(os.environ.get("EG_LIFT", "10"))
-BLOOM = float(os.environ.get("EG_BLOOM", "0.5"))
+LIFT = float(os.environ.get("EG_LIFT", "5"))
+BLOOM = float(os.environ.get("EG_BLOOM", "0.8"))
 
 
 def setup_render():
@@ -2028,7 +2091,7 @@ def setup_render():
     # soleil bas à l'ouest-sud-ouest : façades sud éclairées, longues ombres vers l'est
     # soleil bas à l'ouest-nord-ouest : ombres portées vers le sud-est (lecture naturelle en vue de dessus)
     # (venant de l'ouest-sud-ouest : les faces sud vues par la caméra restent éclairées)
-    d = Vector((0.82, 0.25, -0.36)).normalized()
+    d = Vector((0.7, 0.35, -0.78)).normalized()
     so.rotation_euler = d.to_track_quat("-Z", "Y").to_euler()
     cam = bpy.data.cameras.new("cam")
     cam.type = "ORTHO"
@@ -2056,8 +2119,8 @@ def grade(path):
         im = ImageChops.add(im, glow)
     # teinte dorée du couchant (rouge/vert un peu relevés, bleu baissé)
     r_, g_, b_ = im.split()
-    r_ = r_.point(lambda v: min(255, int(v * 1.05 + 4)))
-    b_ = b_.point(lambda v: int(v * 0.86))
+    r_ = r_.point(lambda v: min(255, int(v * 1.03 + 3)))
+    b_ = b_.point(lambda v: int(v * 0.9))
     im = Image.merge("RGB", (r_, g_, b_))
     im = ImageEnhance.Color(im).enhance(SAT)
     im = ImageEnhance.Contrast(im).enhance(CON)

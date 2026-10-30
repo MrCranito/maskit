@@ -39,6 +39,7 @@ until grep -q "^INT" "$WORK/int.log" 2>/dev/null; do
 		2>&1 | grep -v "Saved\|Fra:\|Deprecation\|use_nodes" | tee "$WORK/int.log" || true
 	sleep 2
 done
+python3 tools/prerender/eg_grade.py "$WORK"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
 flock "$GL" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "$GL" godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/egypt_pyramids/$SEED/"

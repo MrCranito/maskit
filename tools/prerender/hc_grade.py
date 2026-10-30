@@ -41,12 +41,12 @@ def gpx(cx, cy):
 GLOWS = []
 t = C.get("tent", {"c": [36.5, 44.5], "r": [16.0, 12.0]})
 tx, ty = gpx(*t["c"])
-GLOWS.append((tx, ty, (t["r"][0] + 9) * PPC, (t["r"][1] + 8) * PPC, (1.0, 0.25, 0.85), 0.42))
+GLOWS.append((tx, ty, (t["r"][0] + 7) * PPC, (t["r"][1] + 6) * PPC, (1.0, 0.25, 0.85), 0.3))
 GLOWS.append((tx, ty, t["r"][0] * 0.75 * PPC, t["r"][1] * 0.75 * PPC, (0.65, 0.3, 1.0), 0.35))
-av = C.get("avenue", [33, 10, 6, 101])
-for k in range(av[1], av[1] + av[3], 6):
-    x, y = gpx(av[0] + av[2] / 2, k)
-    GLOWS.append((x, y, 7 * PPC, 5 * PPC, (0.75, 0.3, 1.0), 0.22))
+for pth in C.get("paths", []):
+    for (px_, py_) in pth["pts"]:
+        x, y = gpx(px_, py_)
+        GLOWS.append((x, y, 4.5 * PPC, 3.5 * PPC, (0.75, 0.3, 1.0), 0.18 if pth["role"] != "avenue" else 0.26))
 lot = C.get("lot", [22, 111, 28, 14])
 x, y = gpx(lot[0] + lot[2] / 2, lot[1] + 2)
 GLOWS.append((x, y, 12 * PPC, 9 * PPC, (1.0, 0.3, 0.8), 0.32))
@@ -80,6 +80,23 @@ def outside(x0, y0, w, h):
     return np.asarray(OUT_MASK.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0
 
 
+_HZ = None
+
+
+def haze(x0, y0, w, h):
+    """Champ de brume 0..1 : bruit de valeur lissé (grille de 6 cases), lu dans le rectangle."""
+    global _HZ
+    if _HZ is None:
+        rngh = np.random.default_rng(7)
+        gw, gh = (_TW + 2 * M) // 6 + 2, (_TH + 2 * M) // 6 + 2
+        base = Image.fromarray((rngh.random((gh, gw)) * 255).astype(np.uint8)).resize(((_TW + 2 * M) * 8, (_TH + 2 * M) * 8), Image.BICUBIC)
+        _HZ = base.filter(ImageFilter.GaussianBlur(14))
+    sx = _HZ.width / ((_TW + 2 * M) * PPC)
+    box = (x0 * sx, y0 * sx, (x0 + w) * sx, (y0 + h) * sx)
+    v = np.asarray(_HZ.resize((w, h), Image.BILINEAR, box=box), np.float32) / 255.0
+    return np.clip((v - 0.35) * 1.6, 0.0, 1.0)
+
+
 def glow_field(x0, y0, w, h):
     """Champ additif (h, w, 3) de toutes les lueurs qui recoupent le rectangle."""
     out = np.zeros((h, w, 3), np.float32)
@@ -109,6 +126,9 @@ def grade(a, x0, y0):
     # hors parc : assombri, teinté violet nuit
     o = outside(x0, y0, a.shape[1], a.shape[0])[:, :, None]
     f = f * (1.0 - o * (1.0 - OUT_K)) + o * np.array([0.02, 0.0, 0.03], np.float32)
+    # brume violette légère (bruit basse fréquence en coordonnées image, stable entre bandes)
+    hz = haze(x0, y0, a.shape[1], a.shape[0])[:, :, None]
+    f = f + hz * np.array([0.05, 0.015, 0.08], np.float32) * float(os.environ.get("HC_GRADE_HAZE", "1.0"))
     # lueurs au sol : ajout « screen » modulé (plus fort sur les zones sombres, garde les hautes lumières)
     g = glow_field(x0, y0, a.shape[1], a.shape[0])
     f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - g * (0.55 + 0.45 * (1.0 - np.clip(lum, 0, 1)))[:, :, None])

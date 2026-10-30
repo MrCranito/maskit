@@ -311,11 +311,8 @@ static func _try_place(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerato
 			cells.remove_at(i)
 			continue
 		if placement == &"center":
-			var crowded := false
-			for d: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
-				if c.blocked.has(p + d):
-					crowded = true
-			if crowded:
+			var bl := c.blocked
+			if bl.has(p + Vector2i.LEFT) or bl.has(p + Vector2i.RIGHT) or bl.has(p + Vector2i.UP) or bl.has(p + Vector2i.DOWN):
 				continue
 		if Fur.keeps(c.fur, p):
 			c.blocked[p] = true
