@@ -386,3 +386,27 @@ func test_ouverture_lance_l_effet_puis_le_libere() -> void:
 	assert_eq(rv.get_child_count(), 3, "faisceau + 2 icônes")
 	await wait_seconds(LootDB.getf("reveal_duration", 1.6) + 0.6)
 	assert_null(c.get_node_or_null(^"ChestReveal"), "effet libéré à la fin")
+
+
+# --- Rendus Blender des conteneurs (art/blender/build_containers.py) -----------------------
+
+func test_conteneurs_far_west_rendus_blender() -> void:
+	for k: StringName in CONTAINER_KINDS:
+		for opened: bool in [false, true]:
+			var tex := LootContainer.get_texture(k, opened)
+			assert_not_null(tex, "%s%s : image" % [k, "_open" if opened else ""])
+			assert_true(tex.resource_path.ends_with(".png"), "%s : rendu Blender (png) prioritaire" % k)
+			var m := LootContainer.render_meta(tex)
+			assert_false(m.is_empty(), "%s : point d'appui dans containers.json" % k)
+	var c := LootContainer.create(&"chest", Vector2.ZERO)
+	add_child_autofree(c)
+	await wait_frames(1)
+	var sp := c.get_node(^"Sprite") as Sprite2D
+	assert_almost_eq(sp.scale.x, 1.0 / LootContainer.RENDER_PX_PER_WORLD, 0.001, "2 px par unité monde")
+	var m2 := LootContainer.render_meta(sp.texture)
+	var feet := Vector2(float(m2["feet"][0]), float(m2["feet"][1]))
+	# le point d'appui du rendu tombe sur l'origine du conteneur
+	assert_almost_eq((feet - sp.texture.get_size() * 0.5 + sp.offset).length(), 0.0, 0.01)
+	assert_gt(c.get_visual_height(), 10.0, "hauteur visuelle (anneau de fouille, effet d'ouverture)")
+	c.force_open()
+	assert_true(sp.texture.resource_path.ends_with("chest_open.png"), "image ouverte après la fouille")
