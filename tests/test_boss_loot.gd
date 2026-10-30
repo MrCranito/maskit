@@ -49,6 +49,10 @@ func test_chaque_boss_a_sa_table() -> void:
 		assert_true(rar.has(3) and rar.has(4), "%s : Épiques et Légendaires possibles" % t.kind)
 	for k: StringName in [&"fw_sheriff", &"ss_architect", &"mall_omnistore"]:
 		assert_true(kinds.has(k), "%s est un boss" % k)
+	# Le mirage de l'Omnistore partage son kind : il ne doit pas hériter de la table du boss.
+	var mirage := load("res://data/enemies/mall_omnistore_illusion.tres") as EnemyData
+	assert_false(mirage.boss)
+	assert_ne(LootManager.corpse_table_for(mirage, &"enemy_mall").kind, &"enemy_mall_omnistore", "mirage : pas de butin de boss")
 
 
 func test_boss_exemptes_du_plafond() -> void:
