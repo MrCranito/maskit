@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_card"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"perm_pyramides_egypte"
+display_name = "Les Pyramides d'Égypte"
+description = "Au cœur du désert, des pyramides millénaires abritent des trésors oubliés. Des tombes, des pièges et des légendes ancestrales protègent ce qui ne devrait jamais être réveillé."
+world_path = "res://data/worlds/world_06_egypt_pyramids.tres"
+accent_color = Color(1, 0.78, 0.3, 1)
+tags = PackedStringArray("Classique", "Pyramides", "Trésors")
+difficulty = 2
+reward_text = "Trésors du Pharaon"

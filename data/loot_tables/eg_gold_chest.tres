@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"eg_gold_chest"
+display_name = "Coffre doré du Pharaon"
+rolls_min = 2
+rolls_max = 4
+empty_chance = 0.0
+search_time = 2.4
+entries = {
+&"eg_ankh": 4.0,
+&"eg_bronze_dagger": 2.0,
+&"eg_emerald_eye": 2.5,
+&"eg_gold_scarab": 5.0,
+&"eg_lapis_necklace": 3.0,
+&"eg_pharaoh_scepter": 0.6,
+&"wpn_gadget_c4": 0.336,
+&"wpn_gadget_decoy": 2.24,
+&"wpn_gadget_drone": 0.09,
+&"wpn_gadget_frag": 2.24,
+&"wpn_gadget_mine": 0.336,
+&"wpn_gadget_smoke": 0.896,
+&"wpn_pistol_deagle": 0.21,
+&"wpn_pistol_glock18": 0.56,
+&"wpn_pistol_p320": 0.056,
+&"wpn_rifle_ak47": 1.4,
+&"wpn_rifle_aug": 0.056,
+&"wpn_rifle_m4a1": 0.56,
+&"wpn_rifle_scarh": 0.21,
+&"wpn_rocket_javelin": 0.056,
+&"wpn_rocket_m202": 0.21,
+&"wpn_rocket_rpg7": 0.56,
+&"wpn_smg_mp5": 1.4,
+&"wpn_smg_p90": 0.21,
+&"wpn_smg_uzi": 0.056,
+&"wpn_smg_vector": 0.56,
+&"wpn_sniper_ax50": 0.56,
+&"wpn_sniper_m24": 1.4,
+&"wpn_sniper_m82": 0.21
+}

@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"fl_frozen_corpse"
+display_name = "Soldat gelé"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.15
+search_time = 1.0
+entries = {
+&"bandage": 2,
+&"fl_dog_tags": 5,
+&"fl_flare": 1,
+&"fl_officer_watch": 0.012145,
+&"fl_ration": 2,
+&"revolver_ammo": 2,
+&"wpn_gadget_c4": 0.012145,
+&"wpn_gadget_decoy": 0.163,
+&"wpn_gadget_drone": 0.001621,
+&"wpn_gadget_frag": 0.163,
+&"wpn_gadget_mine": 0.012145,
+&"wpn_gadget_smoke": 0.052,
+&"wpn_pistol_deagle": 0.012145,
+&"wpn_pistol_glock18": 0.104,
+&"wpn_pistol_p320": 0.001621,
+&"wpn_rifle_ak47": 0.325,
+&"wpn_rifle_aug": 0.001621,
+&"wpn_rifle_m4a1": 0.104,
+&"wpn_rifle_scarh": 0.012145,
+&"wpn_rocket_javelin": 0.001621,
+&"wpn_rocket_m202": 0.012145,
+&"wpn_rocket_rpg7": 0.104,
+&"wpn_smg_mp5": 0.325,
+&"wpn_smg_p90": 0.012145,
+&"wpn_smg_uzi": 0.001621,
+&"wpn_smg_vector": 0.104,
+&"wpn_sniper_ax50": 0.104,
+&"wpn_sniper_m24": 0.325,
+&"wpn_sniper_m82": 0.012145
+}
