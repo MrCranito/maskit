@@ -1,0 +1,135 @@
+{
+  "kind": "cv_fairground_being",
+  "name": "L'Être forain",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 152,
+  "head_px": 32,
+  "fps": {
+    "idle": 7,
+    "run": 13,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      200.3,
+      107.7
+    ],
+    "se": [
+      162.9,
+      150.6
+    ],
+    "s": [
+      95.8,
+      161.3
+    ],
+    "sw": [
+      38.1,
+      133.5
+    ],
+    "w": [
+      23.7,
+      83.6
+    ],
+    "nw": [
+      61.1,
+      40.7
+    ],
+    "n": [
+      128.2,
+      30.0
+    ],
+    "ne": [
+      185.9,
+      57.8
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      0,
+      103,
+      177,
+      191
+    ],
+    "se": [
+      0,
+      103,
+      177,
+      191
+    ],
+    "s": [
+      46,
+      76,
+      219,
+      197
+    ],
+    "sw": [
+      46,
+      76,
+      219,
+      197
+    ],
+    "w": [
+      46,
+      76,
+      219,
+      197
+    ],
+    "nw": [
+      47,
+      106,
+      224,
+      204
+    ],
+    "n": [
+      47,
+      106,
+      224,
+      204
+    ],
+    "ne": [
+      4,
+      115,
+      178,
+      224
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/cv_fairground_being/cv_fairground_being_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

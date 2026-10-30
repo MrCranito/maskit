@@ -1,0 +1,135 @@
+{
+  "kind": "ice_titan",
+  "name": "Le Titan de glace",
+  "frame_size": [
+    276,
+    276
+  ],
+  "feet_offset": [
+    138,
+    196
+  ],
+  "display_height": 221.5,
+  "world_per_px": 0.802609,
+  "height_px": 158,
+  "head_px": 54,
+  "fps": {
+    "idle": 6,
+    "run": 9,
+    "attack": 12,
+    "hit": 14,
+    "death": 9
+  },
+  "frames": {
+    "idle": 4,
+    "run": 6,
+    "attack": 6,
+    "hit": 3,
+    "death": 6
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      176.1,
+      183.8
+    ],
+    "se": [
+      147.0,
+      198.2
+    ],
+    "s": [
+      112.7,
+      193.2
+    ],
+    "sw": [
+      93.2,
+      171.6
+    ],
+    "w": [
+      99.9,
+      146.1
+    ],
+    "nw": [
+      129.0,
+      131.6
+    ],
+    "n": [
+      163.3,
+      136.6
+    ],
+    "ne": [
+      182.8,
+      158.2
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      15,
+      106,
+      232,
+      238
+    ],
+    "se": [
+      15,
+      106,
+      232,
+      238
+    ],
+    "s": [
+      46,
+      92,
+      259,
+      247
+    ],
+    "sw": [
+      46,
+      92,
+      259,
+      247
+    ],
+    "w": [
+      46,
+      92,
+      259,
+      247
+    ],
+    "nw": [
+      44,
+      120,
+      261,
+      276
+    ],
+    "n": [
+      44,
+      120,
+      261,
+      276
+    ],
+    "ne": [
+      17,
+      135,
+      230,
+      276
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_titan/ice_titan_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

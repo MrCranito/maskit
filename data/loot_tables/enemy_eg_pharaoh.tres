@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_eg_pharaoh"
+display_name = "Trésor funéraire du Pharaon éternel"
+rolls_min = 4
+rolls_max = 6
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"bandage": 4,
+&"gold_bar": 0.03,
+&"gold_nugget": 5,
+&"medkit": 2,
+&"pearl_necklace": 0.00832,
+&"raw_diamond": 0.006,
+&"treasure_map": 0.00832,
+&"wpn_pistol_deagle": 0.03,
+&"wpn_pistol_p320": 0.001113,
+&"wpn_rifle_aug": 0.001113,
+&"wpn_rifle_scarh": 0.02
+}

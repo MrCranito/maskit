@@ -1,0 +1,49 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"eg_shadow_warrior"
+display_name = "Guerrier de l'ombre"
+max_hp = 560.0
+move_speed = 168.0
+body_radius = 24.0
+detection_radius = 480.0
+detection_angle_deg = 160.0
+lose_sight_time = 8.0
+alert_duration = 0.5
+alert_neighbors_radius = 520.0
+patrol_radius = 90.0
+sight_gain = 2.0
+hearing_radius = 560.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 72.0
+attack_damage = 13.0
+attack_cooldown = 1.3
+attack_windup = 0.45
+projectile_speed = 0.0
+tactic = &"elite"
+can_flank = true
+zigzag_amplitude = 20.0
+zigzag_period = 0.6
+strafe_ratio = 0.6
+attack_pattern = &"lunge"
+lunge_distance = 120.0
+lunge_speed = 620.0
+combo_hits = 3
+combo_interval = 0.24
+elite = true
+phase2_hp_ratio = 0.5
+phase2_speed_mult = 1.25
+phase2_cooldown_mult = 0.7
+stagger_ratio = 0.2
+stagger_time = 0.35
+knockback = 30.0
+ground_drop_chance = 1.0
+corpse_name = "Guerrier de l'ombre abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"eg_shadow_veil", "cooldown": 11.0, "initial_cooldown": 2.5, "windup": 0.35, "min_range": 120.0, "max_range": 620.0, "duration": 4.0, "alpha": 0.07, "speed_mult": 1.4, "ambush_mult": 1.6, "priority": 1.5}, {"id": &"rush", "status": "", "cooldown": 7.0, "windup": 0.5, "min_range": 140.0, "max_range": 380.0, "speed": 640.0, "damage": 16.0, "overshoot": 40.0, "self_stun": 0.3, "priority": 1.2}, {"id": &"dodge_roll", "cooldown": 4.0, "chance": 0.5, "distance": 140.0}]

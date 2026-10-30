@@ -1,0 +1,135 @@
+{
+  "kind": "ice_bear",
+  "name": "Ours des neiges muté",
+  "frame_size": [
+    256,
+    256
+  ],
+  "feet_offset": [
+    128,
+    181
+  ],
+  "display_height": 147.7,
+  "world_per_px": 0.576875,
+  "height_px": 152,
+  "head_px": 75,
+  "fps": {
+    "idle": 7,
+    "run": 11,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      252.4,
+      146.0
+    ],
+    "se": [
+      216.0,
+      211.4
+    ],
+    "s": [
+      128.0,
+      238.5
+    ],
+    "sw": [
+      40.0,
+      211.4
+    ],
+    "w": [
+      3.6,
+      146.0
+    ],
+    "nw": [
+      40.0,
+      80.6
+    ],
+    "n": [
+      128.0,
+      53.5
+    ],
+    "ne": [
+      216.0,
+      80.6
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      49,
+      57,
+      245,
+      197
+    ],
+    "se": [
+      49,
+      57,
+      245,
+      197
+    ],
+    "s": [
+      48,
+      126,
+      227,
+      255
+    ],
+    "sw": [
+      48,
+      126,
+      227,
+      255
+    ],
+    "w": [
+      48,
+      126,
+      227,
+      255
+    ],
+    "nw": [
+      11,
+      122,
+      207,
+      251
+    ],
+    "n": [
+      11,
+      122,
+      207,
+      251
+    ],
+    "ne": [
+      29,
+      56,
+      208,
+      192
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/ice_bear/ice_bear_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

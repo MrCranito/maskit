@@ -1,0 +1,135 @@
+{
+  "kind": "eg_pharaoh",
+  "name": "Le Pharaon éternel",
+  "frame_size": [
+    276,
+    276
+  ],
+  "feet_offset": [
+    138,
+    196
+  ],
+  "display_height": 258.4,
+  "world_per_px": 0.936377,
+  "height_px": 193,
+  "head_px": 17,
+  "fps": {
+    "idle": 6,
+    "run": 10,
+    "attack": 12,
+    "hit": 14,
+    "death": 9
+  },
+  "frames": {
+    "idle": 4,
+    "run": 6,
+    "attack": 6,
+    "hit": 3,
+    "death": 6
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      305.0,
+      154.4
+    ],
+    "se": [
+      242.0,
+      237.8
+    ],
+    "s": [
+      118.0,
+      263.7
+    ],
+    "sw": [
+      5.8,
+      216.8
+    ],
+    "w": [
+      -29.0,
+      124.7
+    ],
+    "nw": [
+      34.0,
+      41.3
+    ],
+    "n": [
+      158.0,
+      15.5
+    ],
+    "ne": [
+      270.2,
+      62.3
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      0,
+      73,
+      220,
+      272
+    ],
+    "se": [
+      0,
+      73,
+      220,
+      272
+    ],
+    "s": [
+      57,
+      58,
+      268,
+      251
+    ],
+    "sw": [
+      57,
+      58,
+      268,
+      251
+    ],
+    "w": [
+      57,
+      58,
+      268,
+      251
+    ],
+    "nw": [
+      56,
+      103,
+      276,
+      268
+    ],
+    "n": [
+      56,
+      103,
+      276,
+      268
+    ],
+    "ne": [
+      8,
+      119,
+      219,
+      276
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_pharaoh/eg_pharaoh_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

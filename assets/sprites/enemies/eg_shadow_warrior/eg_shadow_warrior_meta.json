@@ -1,0 +1,135 @@
+{
+  "kind": "eg_shadow_warrior",
+  "name": "Guerrier de l'ombre",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 125,
+  "head_px": 54,
+  "fps": {
+    "idle": 7,
+    "run": 15,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      153.9,
+      96.2
+    ],
+    "se": [
+      179.4,
+      129.8
+    ],
+    "s": [
+      165.4,
+      167.1
+    ],
+    "sw": [
+      120.2,
+      186.0
+    ],
+    "w": [
+      70.1,
+      175.6
+    ],
+    "nw": [
+      44.6,
+      142.0
+    ],
+    "n": [
+      58.6,
+      104.8
+    ],
+    "ne": [
+      103.8,
+      85.8
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      23,
+      103,
+      177,
+      205
+    ],
+    "se": [
+      23,
+      103,
+      177,
+      205
+    ],
+    "s": [
+      48,
+      86,
+      201,
+      196
+    ],
+    "sw": [
+      48,
+      86,
+      201,
+      196
+    ],
+    "w": [
+      48,
+      86,
+      201,
+      196
+    ],
+    "nw": [
+      47,
+      94,
+      201,
+      205
+    ],
+    "n": [
+      47,
+      94,
+      201,
+      205
+    ],
+    "ne": [
+      23,
+      121,
+      176,
+      210
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_shadow_warrior/eg_shadow_warrior_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

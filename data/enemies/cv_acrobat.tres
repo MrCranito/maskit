@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_acrobat"
+display_name = "Acrobate sanguinaire"
+max_hp = 75.0
+move_speed = 205.0
+body_radius = 16.0
+detection_radius = 420.0
+detection_angle_deg = 170.0
+lose_sight_time = 3.5
+alert_duration = 0.3
+alert_neighbors_radius = 340.0
+patrol_radius = 150.0
+sight_gain = 2.0
+hearing_radius = 420.0
+hearing_gain = 2.2
+awareness_decay = 0.12
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 60.0
+attack_damage = 9.0
+attack_cooldown = 1.4
+attack_windup = 0.4
+tactic = &"rusher"
+use_cover = false
+can_flank = true
+zigzag_amplitude = 44.0
+zigzag_period = 0.5
+strafe_ratio = 0.9
+attack_pattern = &"lunge"
+lunge_distance = 110.0
+lunge_speed = 540.0
+combo_hits = 2
+combo_interval = 0.22
+stagger_ratio = 0.3
+stagger_time = 0.4
+knockback = 90.0
+ground_drop_chance = 0.3
+corpse_name = "Acrobate abattu"
+sfx_hurt = &"hit_flesh"
+skills = [{"id": &"cv_vault", "mode": "behind", "over_obstacles": true}, {"id": &"dodge_roll", "cooldown": 4.0, "chance": 0.45, "distance": 150.0}]

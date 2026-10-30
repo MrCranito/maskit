@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_ice_hunter"
+display_name = "Chasseur arctique abattu"
+rolls_min = 2
+rolls_max = 3
+empty_chance = 0.05
+search_time = 1.1
+entries = {
+&"bandage": 4.0,
+&"mat_cloth": 3.0,
+&"mat_gears": 2.0,
+&"medkit": 1.0,
+&"rifle_ammo": 6.0,
+&"wpn_rifle_aug": 0.2,
+&"wpn_smg_p90": 0.15,
+&"wpn_sniper_m24": 0.1
+}

@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+kind = &"cv_ghost_carousel"
+display_name = "Manège fantôme"
+max_hp = 190.0
+move_speed = 108.0
+body_radius = 26.0
+detection_radius = 400.0
+detection_angle_deg = 360.0
+lose_sight_time = 5.0
+alert_duration = 0.5
+alert_neighbors_radius = 480.0
+patrol_radius = 60.0
+sight_gain = 1.6
+hearing_radius = 460.0
+hearing_gain = 2.0
+awareness_decay = 0.1
+awareness_alert_threshold = 1.0
+attack_type = 0
+attack_range = 76.0
+attack_damage = 14.0
+attack_cooldown = 1.9
+attack_windup = 0.75
+aoe_radius = 85.0
+tactic = &"heavy"
+use_cover = false
+can_flank = false
+strafe_ratio = 0.3
+attack_pattern = &"slam"
+stagger_ratio = 0.3
+stagger_time = 0.35
+knockback = 40.0
+ground_drop_chance = 0.45
+corpse_name = "Manège fantôme brisé"
+sfx_hurt = &"hit_heavy"
+sfx_death = &"golem_crumble"
+skills = [{"id": &"cv_waltz"}, {"id": &"cv_call", "kinds": ["cv_lost_clown", "cv_circus_dog", "cv_acrobat"], "shout": "♪ VENEZ JOUER ! ♪"}]
