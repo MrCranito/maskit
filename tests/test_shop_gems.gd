@@ -137,7 +137,10 @@ func test_bouton_prix_choisit_puis_achete() -> void:
 	pb = s.offers.cards[0].find_child("PriceButton", false, false) as Button
 	var expected := Store.pack_gems_now(0)
 	pb.pressed.emit()
-	assert_eq(Profile.gems, expected, "Toucher le prix de la carte choisie achète (paiement simulé)")
+	assert_eq(Profile.gems, 0, "Toucher le prix de la carte choisie demande d'abord confirmation")
+	assert_not_null(s.offers.last_confirm, "Fenêtre de confirmation ouverte")
+	s.offers.last_confirm.confirmed.emit()
+	assert_eq(Profile.gems, expected, "Confirmé : achat (paiement simulé)")
 
 
 # --- Tient à l'écran --------------------------------------------------------------------------

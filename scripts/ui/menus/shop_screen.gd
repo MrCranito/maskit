@@ -13,9 +13,10 @@ extends Control
 ##    achat doublé (paiement SIMULÉ, badge visible).
 ## Message permanent : « Purement cosmétique : aucun avantage en jeu ».
 
-const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"packs", &"chests", &"gems"]
-const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"packs": "Packs", &"chests": "Coffres", &"gems": "Gemmes"}
-const OFFER_TABS: Array[StringName] = [&"packs", &"chests", &"gems"]
+const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"packs", &"chests", &"gold", &"gems"]
+const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"packs": "Packs", &"chests": "Coffres",
+	&"gold": "Or", &"gems": "Gemmes"}
+const OFFER_TABS: Array[StringName] = [&"packs", &"chests", &"gold", &"gems"]
 
 static var last_tab: StringName = &"character"
 ## Skin à mettre en avant à l'ouverture (ex. clic sur un skin ailleurs) ; vidé à l'ouverture.
@@ -105,7 +106,7 @@ func _build() -> void:
 	head.add_child(tab_row)
 	var group := ButtonGroup.new()
 	for tab: StringName in tabs:
-		var b := MenuKit.chip(String(TAB_TITLES[tab]), MenuKit.GEM if tab == &"gems" else MenuKit.GOLD, group)
+		var b := MenuKit.chip(String(TAB_TITLES[tab]), MenuKit.GEM if tab == &"gems" else (MenuKit.COIN if tab == &"gold" else MenuKit.GOLD), group)
 		b.custom_minimum_size = Vector2(Balance.get_float("menu", "shop_tab_width", 124.0), 54)
 		b.add_theme_font_size_override("font_size", 18)
 		b.toggled.connect(func(on: bool) -> void:
@@ -275,6 +276,7 @@ func show_tab(tab: StringName) -> void:
 			pack_buttons = offers.cards
 		_note.text = {&"packs": "Un skin déjà possédé est remboursé en gemmes.",
 			&"chests": "Coffres gagnés en jouant, jamais vendus. Taux affichés.",
+			&"gold": "L'or achète des armes à l'armurerie : de quoi bien démarrer tes parties.",
 			&"gems": "Les gemmes s'achètent ici ou se gagnent à chaque extraction réussie."}[tab]
 		_refresh_states()
 		return
