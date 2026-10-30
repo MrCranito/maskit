@@ -35,6 +35,14 @@ func _run() -> void:
 	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
 	await _sleep(2.0)
 	await _shot("menu")
+	if ResourceLoader.exists("res://scenes/ui/menus/shop.tscn"):
+		get_tree().change_scene_to_file("res://scenes/ui/menus/shop.tscn")
+		await _sleep(1.5)
+		await _shot("boutique")
+		for tab: StringName in [&"gems", &"packs"]:
+			get_tree().current_scene.call(&"show_tab", tab)
+			await _sleep(0.8)
+			await _shot("boutique_" + String(tab))
 	for ok: bool in [false, true]:
 		var s := RaidEndScreen.create(ok, _summary(ok))
 		get_tree().root.add_child(s)
