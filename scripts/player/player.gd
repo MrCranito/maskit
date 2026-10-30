@@ -786,9 +786,12 @@ func fire(dir: Vector2) -> void:
 		_salvo_timer = _salvo_interval
 		_salvo_dir = d0
 		count = 1
+	# Imprécision tirée UNE fois par tir (toute la gerbe d'un fusil à pompe tourne ensemble),
+	# puis plombs répartis régulièrement sur l'éventail (pellet_direction).
+	var center: Vector2 = d0.rotated(spread_offset(inacc))
 	for i: int in count:
 		var p: Projectile = projectile_pool.spawn(origin,
-			spread_direction(d0, i, count, w.spread_degrees, inacc), w, self, height)
+			pellet_direction(center, i, count, w.spread_degrees), w, self, height)
 		if p != null and homing != null:
 			p.set_homing(homing, weapon_homing(w))
 	_on_fired_feel(w, d0)
@@ -882,15 +885,35 @@ func _tick_salvo(delta: float) -> void:
 
 
 ## Logique pure : direction du projectile `i` sur `count` (éventail régulier de
-## `spread_deg` au total) + imprécision aléatoire ±`inaccuracy_deg`.
+## `spread_deg` au total) + imprécision aléatoire ±`inaccuracy_deg` (centrée, voir spread_offset).
 static func spread_direction(dir: Vector2, i: int, count: int, spread_deg: float, inaccuracy_deg: float) -> Vector2:
-	var offset: float = 0.0
-	if count > 1:
-		var spread: float = deg_to_rad(spread_deg)
-		offset = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
-	if inaccuracy_deg > 0.0:
-		offset += deg_to_rad(randf_range(-inaccuracy_deg, inaccuracy_deg))
-	return dir.rotated(offset)
+	return pellet_direction(dir.rotated(spread_offset(inaccuracy_deg)), i, count, spread_deg)
+
+
+## Écart aléatoire (radians) d'un tir d'imprécision ±`inaccuracy_deg` : loi triangulaire
+## (somme de deux tirages, [player] spread_center_weight = 1) — la plupart des balles partent
+## près du centre, jamais au-delà du cône affiché ; 0 = loi uniforme (ancien comportement).
+static func spread_offset(inaccuracy_deg: float) -> float:
+	if inaccuracy_deg <= 0.0:
+		return 0.0
+	var u: float = randf_range(-1.0, 1.0)
+	var tri: float = randf() + randf() - 1.0
+	var k: float = clampf(Balance.get_float("player", "spread_center_weight", 1.0), 0.0, 1.0)
+	return deg_to_rad(inaccuracy_deg * lerpf(u, tri, k))
+
+
+## Plomb `i` sur `count` : éventail régulier de `spread_deg` autour de `center`, avec un léger
+## décalage aléatoire limité à [player] pellet_jitter × l'écart entre deux plombs (motif
+## réparti, jamais de trous ni d'amas).
+static func pellet_direction(center: Vector2, i: int, count: int, spread_deg: float) -> Vector2:
+	if count <= 1 or spread_deg <= 0.0:
+		return center
+	var spread: float = deg_to_rad(spread_deg)
+	var gap: float = spread / float(count - 1)
+	var offset: float = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
+	var j: float = clampf(Balance.get_float("player", "pellet_jitter", 0.3), 0.0, 0.5)
+	offset += randf_range(-j, j) * gap
+	return center.rotated(offset)
 
 
 ## Position monde du bout du canon pour une visée `dir` (calcul logique, non interpolé).
