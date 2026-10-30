@@ -1,0 +1,602 @@
+[
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9000,
+  "max_time": 480,
+  "id": "boss_000_boss_dust_creek_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9001,
+  "max_time": 480,
+  "id": "boss_001_boss_dust_creek_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9002,
+  "max_time": 480,
+  "id": "boss_002_boss_dust_creek_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9003,
+  "max_time": 480,
+  "id": "boss_003_boss_dust_creek_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9004,
+  "max_time": 480,
+  "id": "boss_004_boss_dust_creek_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9005,
+  "max_time": 480,
+  "id": "boss_005_boss_dust_creek_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9006,
+  "max_time": 480,
+  "id": "boss_006_boss_dust_creek_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9007,
+  "max_time": 480,
+  "id": "boss_007_boss_dust_creek_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9008,
+  "max_time": 480,
+  "id": "boss_008_boss_dust_creek_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9009,
+  "max_time": 480,
+  "id": "boss_009_boss_dust_creek_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9010,
+  "max_time": 480,
+  "id": "boss_010_boss_dust_creek_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9011,
+  "max_time": 480,
+  "id": "boss_011_boss_dust_creek_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9012,
+  "max_time": 480,
+  "id": "boss_012_boss_dust_creek_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9013,
+  "max_time": 480,
+  "id": "boss_013_boss_dust_creek_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9014,
+  "max_time": 480,
+  "id": "boss_014_boss_dust_creek_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9015,
+  "max_time": 480,
+  "id": "boss_015_boss_dust_creek_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9016,
+  "max_time": 480,
+  "id": "boss_016_boss_dust_creek_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9017,
+  "max_time": 480,
+  "id": "boss_017_boss_dust_creek_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9018,
+  "max_time": 480,
+  "id": "boss_018_boss_dust_creek_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_dust_creek",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9019,
+  "max_time": 480,
+  "id": "boss_019_boss_dust_creek_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9020,
+  "max_time": 480,
+  "id": "boss_020_boss_station_kagami_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9021,
+  "max_time": 480,
+  "id": "boss_021_boss_station_kagami_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9022,
+  "max_time": 480,
+  "id": "boss_022_boss_station_kagami_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9023,
+  "max_time": 480,
+  "id": "boss_023_boss_station_kagami_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9024,
+  "max_time": 480,
+  "id": "boss_024_boss_station_kagami_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9025,
+  "max_time": 480,
+  "id": "boss_025_boss_station_kagami_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9026,
+  "max_time": 480,
+  "id": "boss_026_boss_station_kagami_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9027,
+  "max_time": 480,
+  "id": "boss_027_boss_station_kagami_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9028,
+  "max_time": 480,
+  "id": "boss_028_boss_station_kagami_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9029,
+  "max_time": 480,
+  "id": "boss_029_boss_station_kagami_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9030,
+  "max_time": 480,
+  "id": "boss_030_boss_station_kagami_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9031,
+  "max_time": 480,
+  "id": "boss_031_boss_station_kagami_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9032,
+  "max_time": 480,
+  "id": "boss_032_boss_station_kagami_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9033,
+  "max_time": 480,
+  "id": "boss_033_boss_station_kagami_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9034,
+  "max_time": 480,
+  "id": "boss_034_boss_station_kagami_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9035,
+  "max_time": 480,
+  "id": "boss_035_boss_station_kagami_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9036,
+  "max_time": 480,
+  "id": "boss_036_boss_station_kagami_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9037,
+  "max_time": 480,
+  "id": "boss_037_boss_station_kagami_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9038,
+  "max_time": 480,
+  "id": "boss_038_boss_station_kagami_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_station_kagami",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9039,
+  "max_time": 480,
+  "id": "boss_039_boss_station_kagami_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9040,
+  "max_time": 480,
+  "id": "boss_040_boss_galeries_lumiere_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9041,
+  "max_time": 480,
+  "id": "boss_041_boss_galeries_lumiere_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9042,
+  "max_time": 480,
+  "id": "boss_042_boss_galeries_lumiere_d1_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9043,
+  "max_time": 480,
+  "id": "boss_043_boss_galeries_lumiere_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9044,
+  "max_time": 480,
+  "id": "boss_044_boss_galeries_lumiere_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9045,
+  "max_time": 480,
+  "id": "boss_045_boss_galeries_lumiere_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9046,
+  "max_time": 480,
+  "id": "boss_046_boss_galeries_lumiere_d1_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9047,
+  "max_time": 480,
+  "id": "boss_047_boss_galeries_lumiere_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9048,
+  "max_time": 480,
+  "id": "boss_048_boss_galeries_lumiere_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9049,
+  "max_time": 480,
+  "id": "boss_049_boss_galeries_lumiere_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 1,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9050,
+  "max_time": 480,
+  "id": "boss_050_boss_galeries_lumiere_d1_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9051,
+  "max_time": 480,
+  "id": "boss_051_boss_galeries_lumiere_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9052,
+  "max_time": 480,
+  "id": "boss_052_boss_galeries_lumiere_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "debutant",
+  "profile": "agressif",
+  "seed": 9053,
+  "max_time": 480,
+  "id": "boss_053_boss_galeries_lumiere_d2_debutant"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9054,
+  "max_time": 480,
+  "id": "boss_054_boss_galeries_lumiere_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9055,
+  "max_time": 480,
+  "id": "boss_055_boss_galeries_lumiere_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "moyen",
+  "profile": "agressif",
+  "seed": 9056,
+  "max_time": 480,
+  "id": "boss_056_boss_galeries_lumiere_d2_moyen"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9057,
+  "max_time": 480,
+  "id": "boss_057_boss_galeries_lumiere_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9058,
+  "max_time": 480,
+  "id": "boss_058_boss_galeries_lumiere_d2_equipe"
+ },
+ {
+  "mode": "boss",
+  "map": "perm_galeries_lumiere",
+  "difficulty": 2,
+  "tier": "equipe",
+  "profile": "agressif",
+  "seed": 9059,
+  "max_time": 480,
+  "id": "boss_059_boss_galeries_lumiere_d2_equipe"
+ }
+]
