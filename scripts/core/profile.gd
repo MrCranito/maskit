@@ -178,9 +178,11 @@ func raider_level() -> int:
 
 
 ## Ajoute de l'XP de raider. Donne les récompenses uniques (gemmes, or) des niveaux franchis et
-## émet raider_level_up pour chacun. Renvoie {xp, level_before, level_after, unlocks: Array}.
+## émet raider_level_up pour chacun. Renvoie {xp, level_before, level_after, unlocks: Array,
+## total_before, total_after} (XP cumulée avant/après : barre de l'écran de fin).
 func add_raider_xp(amount: int) -> Dictionary:
 	var before := raider_level()
+	var total_before := raider_xp
 	raider_xp += maxi(amount, 0)
 	var after := raider_level()
 	var gained: Array = []
@@ -196,7 +198,8 @@ func add_raider_xp(amount: int) -> Dictionary:
 		raider_level_up.emit(lv, ul)
 	save()
 	changed.emit()
-	return {"xp": maxi(amount, 0), "level_before": before, "level_after": after, "unlocks": gained}
+	return {"xp": maxi(amount, 0), "level_before": before, "level_after": after, "unlocks": gained,
+		"total_before": total_before, "total_after": raider_xp}
 
 
 ## Fixe l'arsenal de départ : uids inconnus ignorés, au plus loadout_slots() armes et

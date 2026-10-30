@@ -123,13 +123,16 @@ func tier_progress() -> Vector2i:
 	return Vector2i(xp - s.xp_total_for(t), s.xp_for_tier(t + 1))
 
 
-## Ajoute de l'XP. Renvoie {xp, tier_before, tier_after}.
+## Ajoute de l'XP. Renvoie {xp, tier_before, tier_after, total_before, total_after} (XP cumulée de
+## la saison avant/après : barres de progression de l'écran de fin).
 func add_xp(amount: int) -> Dictionary:
 	var before := tier()
+	var total_before := xp
 	var cap := get_season().xp_total_for(max_tier())
 	xp = clampi(xp + maxi(amount, 0), 0, cap)
 	var after := tier()
-	last_gain = {"xp": maxi(amount, 0), "tier_before": before, "tier_after": after}
+	last_gain = {"xp": maxi(amount, 0), "tier_before": before, "tier_after": after,
+		"total_before": total_before, "total_after": xp}
 	save()
 	xp_gained.emit(maxi(amount, 0), before, after)
 	return last_gain.duplicate()
@@ -141,23 +144,52 @@ func add_xp(amount: int) -> Dictionary:
 ## ou mort (un peu d'XP), + kills, + minutes survécues ; plafonnée.
 ## summary : {success: bool, value: int, kills: int, time: float (s)}.
 static func raid_xp(summary: Dictionary) -> int:
+	var x := 0.0
+	for line: Dictionary in _raid_xp_lines(summary):
+		x += float(line["xp"])
+	return mini(roundi(x), int(Balance.get_value("battle_pass", "xp_raid_max", 1500)))
+
+
+## Détail de raid_xp pour l'écran de fin : [{id, label, xp (arrondi)}] (lignes à 0 omises), plus
+## une ligne « cap » négative si le plafond par raid s'applique. La somme vaut raid_xp(summary).
+static func raid_xp_breakdown(summary: Dictionary) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var sum := 0
+	for line: Dictionary in _raid_xp_lines(summary):
+		var v := roundi(float(line["xp"]))
+		if v != 0:
+			out.append({"id": line["id"], "label": line["label"], "xp": v})
+			sum += v
+	var total := raid_xp(summary)
+	if sum != total and not out.is_empty():
+		if total < sum and sum - total > out.size():
+			out.append({"id": &"cap", "label": "Plafond du raid", "xp": total - sum})
+		else:
+			out[0]["xp"] = int(out[0]["xp"]) + total - sum   # écart d'arrondi
+	return out
+
+
+static func _raid_xp_lines(summary: Dictionary) -> Array[Dictionary]:
 	var success := bool(summary.get("success", false))
 	var kills := maxi(int(summary.get("kills", 0)), 0)
 	var minutes := clampf(float(summary.get("time", 0.0)) / 60.0, 0.0, Balance.get_float("battle_pass", "xp_max_minutes", 20.0))
 	var factor := 1.0 if success else Balance.get_float("battle_pass", "xp_death_factor", 0.5)
-	var x := 0.0
+	var out: Array[Dictionary] = []
 	if success:
-		x += Balance.get_float("battle_pass", "xp_extraction", 250.0)
-		x += maxf(float(summary.get("loot_value", summary.get("value", 0))), 0.0) * Balance.get_float("battle_pass", "xp_per_value", 0.08)
+		out.append({"id": &"extraction", "label": "Extraction", "xp": Balance.get_float("battle_pass", "xp_extraction", 250.0)})
+		out.append({"id": &"loot", "label": "Butin extrait",
+			"xp": maxf(float(summary.get("loot_value", summary.get("value", 0))), 0.0) * Balance.get_float("battle_pass", "xp_per_value", 0.08)})
 	else:
-		x += Balance.get_float("battle_pass", "xp_death", 60.0)
-	x += kills * Balance.get_float("battle_pass", "xp_per_kill", 12.0) * factor
-	x += minutes * Balance.get_float("battle_pass", "xp_per_minute", 15.0) * factor
-	return mini(roundi(x), int(Balance.get_value("battle_pass", "xp_raid_max", 1500)))
+		out.append({"id": &"death", "label": "Participation", "xp": Balance.get_float("battle_pass", "xp_death", 60.0)})
+	out.append({"id": &"kills", "label": "%d élimination%s" % [kills, "s" if kills > 1 else ""],
+		"xp": kills * Balance.get_float("battle_pass", "xp_per_kill", 12.0) * factor})
+	out.append({"id": &"time", "label": "%d min de raid" % floori(minutes),
+		"xp": minutes * Balance.get_float("battle_pass", "xp_per_minute", 15.0) * factor})
+	return out
 
 
 ## Fin de raid (appelée par raid.gd). Complète kills / temps avec les compteurs du raid.
-## Renvoie {xp, tier_before, tier_after}.
+## Renvoie le résultat de add_xp + {kills, time (s), breakdown (raid_xp_breakdown)}.
 func add_raid_xp(summary: Dictionary) -> Dictionary:
 	var s := summary.duplicate()
 	if not s.has("kills"):
@@ -166,7 +198,12 @@ func add_raid_xp(summary: Dictionary) -> Dictionary:
 		s["time"] = (Time.get_ticks_msec() - _raid_start_ms) / 1000.0
 	_raid_kills = 0
 	_raid_start_ms = -1
-	return add_xp(raid_xp(s))
+	var r := add_xp(raid_xp(s))
+	r["kills"] = int(s.get("kills", 0))
+	r["time"] = float(s.get("time", 0.0))
+	r["breakdown"] = raid_xp_breakdown(s)
+	last_gain = r.duplicate()
+	return r
 
 
 func _on_raid_started(_seed: int) -> void:
