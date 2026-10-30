@@ -1,12 +1,13 @@
 class_name Hud
 extends Control
-## HUD paysage (1280x720) : vie compacte en haut à gauche (maquette Hud, direction D) : boîte
+## HUD paysage (1280x720) : vie compacte et fine en haut à gauche (direction D) : boîte
 ## encre à coin coupé, PV en Anton puis 10 crans inclinés (rose sous 30 %), lisible sur mobile. Mise à jour par signaux uniquement
 ## (EventBus.player_spawned / player_damaged / player_died) : aucun traitement par frame.
 ## Zones laissées libres pour les autres modules : haut centre = bandeau monde/salle
 ## (Raid), haut droite = bouton sac (inventaire), bas droite au-dessus du stick de visée
-## = bouton « action ». Armes tenues (bas centre) + bouton de changement d'arme :
-## WeaponHud (scripts/ui/weapon_hud.gd), enfant de ce HUD.
+## = bouton « action ». Arme tenue, autres armes, équipement, Recharger (autour du stick de
+## visée) et emplacements rapides (au-dessus du stick de déplacement) : WeaponHud
+## (scripts/ui/weapon_hud.gd), enfant de ce HUD.
 
 const NIGHT_BLUE := Color(0.024, 0.027, 0.05, 0.72)  # encre translucide (direction D)
 const BORDER_LIGHT := Color(1.0, 1.0, 1.0, 0.45)
@@ -60,14 +61,14 @@ func _build_ui() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 	_panel.position = Vector2(m, m)
-	var panel_style := CutBox.make(NIGHT_BLUE, 12.0, Color(0, 0, 0, 0), 0.0, 12.0, 8.0)
+	var panel_style := CutBox.make(NIGHT_BLUE, 10.0, Color(0, 0, 0, 0), 0.0, 12.0, 3.0)
 	panel_style.corners = CutBox.CUT_TOP_RIGHT
 	_panel.add_theme_stylebox_override("panel", panel_style)
 	add_child(_panel)
 
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 14)
+	row.add_theme_constant_override("separation", 10)
 	_panel.add_child(row)
 
 	# PV en gros chiffre (Anton), blanc ; rose sous 30 %
@@ -75,7 +76,7 @@ func _build_ui() -> void:
 	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hp_label.custom_minimum_size = Vector2(56, 0)
+	_hp_label.custom_minimum_size = Vector2(44, 0)
 	var settings := LabelSettings.new()
 	settings.font = MenuKit.display()
 	settings.font_size = int(Balance.get_value("hud", "hp_font_size", 36))
@@ -87,7 +88,7 @@ func _build_ui() -> void:
 	# n'est pas dessinée, les crans sont dessinés par-dessus.
 	_bar = ProgressBar.new()
 	_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bar.custom_minimum_size = Vector2(w, 20)
+	_bar.custom_minimum_size = Vector2(w, 14)
 	_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_bar.show_percentage = false
 	_bar.min_value = 0.0

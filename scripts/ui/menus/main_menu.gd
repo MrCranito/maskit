@@ -44,6 +44,13 @@ var progression_button: NavButton = null
 ## Carte du pass de combat (bas gauche). Pas d'entrée « Pass » dans le menu : la carte la remplace.
 var pass_card: PassCard = null
 var coop_button: Button = null
+## Emplacement du coéquipier, à droite du héros (repère du décor) : gros « + » (→ coop) tant que
+## personne n'a rejoint le salon, puis le coéquipier avec son skin et son pseudo (tap → salon).
+var mate_slot: Control = null
+var mate_plus: Button = null
+var mate_tag: Label = null
+var mate_status: Label = null
+var _mate_caption: Label = null
 ## Haut du bandeau : carte en cours (→ choix des cartes).
 var map_link: Button = null
 var map_name_label: Label = null
@@ -79,8 +86,10 @@ func _ready() -> void:
 	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(ui)
 	_build()
+	_build_mate_slot()
 	Profile.changed.connect(_refresh_profile)
 	_refresh_profile()
+	_connect_session()
 	_connect_cloud()
 	MenuKit.fade_in(self, 0.45)
 	lobby.play_intro()
@@ -673,13 +682,26 @@ func _intro() -> void:
 	if hero != null:
 		hero.modulate.a = 0.0
 		hero.create_tween().tween_property(hero, "modulate:a", 1.0, 0.6).set_delay(0.2)
+	if mate_slot != null:
+		mate_slot.modulate.a = 0.0
+		mate_slot.create_tween().tween_property(mate_slot, "modulate:a", 1.0, 0.6).set_delay(0.35)
 
 
 # --- Navigation ---------------------------------------------------------------------
 
 func _on_play() -> void:
 	MenuKit.sfx(&"confirm")
+	# Dans un salon coop : DÉPLOYER ramène au salon (raid à deux), jamais en solo par erreur.
+	if in_coop_room():
+		MenuKit.go_to(self, MenuKit.COOP_SCENE)
+		return
 	MenuKit.go_to(self, MenuKit.MAP_SELECT_SCENE)
+
+
+## Un salon coop est ouvert (retour au menu sans le quitter) ?
+static func in_coop_room() -> bool:
+	var s := NetSession.current()
+	return s != null and s.in_room()
 
 
 func _on_arsenal() -> void:
@@ -734,6 +756,159 @@ func _open_modal(m: ModalPanel, return_focus: Control) -> ModalPanel:
 		if is_instance_valid(return_focus):
 			return_focus.grab_focus())
 	return m
+
+
+# --- Coéquipier (coop) ----------------------------------------------------------------
+
+## Emplacement posé dans le décor (repère de l'image : suit le zoom et le cadrage du lobby).
+func _build_mate_slot() -> void:
+	if lobby == null or lobby.hero == null:
+		return
+	var feet: Vector2 = lobby.mate_feet()
+	var h: float = lobby.mate_height()
+	var w: float = h * 0.5
+	var slot := Control.new()
+	slot.name = "MateSlot"
+	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.position = feet - Vector2(w * 0.5, h)
+	slot.size = Vector2(w, h)
+	lobby.add_overlay_control(slot)
+	mate_slot = slot
+	# Gros « + » encre à bordure violette, à hauteur de poitrine (cible tactile ~110 px à l'écran).
+	var px: float = Balance.get_float("menu", "lobby_mate_plus_size", 150.0)
+	var b := Button.new()
+	b.name = "MatePlus"
+	b.focus_mode = Control.FOCUS_ALL
+	b.tooltip_text = "Jouer en coop"
+	b.custom_minimum_size = Vector2(px, px)
+	b.size = Vector2(px, px)
+	b.position = Vector2((w - px) * 0.5, h * 0.42 - px * 0.5)
+	b.add_theme_stylebox_override("normal", CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.72), px * 0.2, MenuKit.VIOLET, 3.0, 0.0, 0.0))
+	b.add_theme_stylebox_override("hover", CutBox.make(Color(MenuKit.VIOLET, 0.55), px * 0.2, MenuKit.GOLD, 3.0, 0.0, 0.0))
+	b.add_theme_stylebox_override("pressed", CutBox.make(Color(MenuKit.VIOLET, 0.8), px * 0.2, MenuKit.GOLD, 3.0, 0.0, 0.0))
+	b.add_theme_stylebox_override("hover_pressed", CutBox.make(Color(MenuKit.VIOLET, 0.8), px * 0.2, MenuKit.GOLD, 3.0, 0.0, 0.0))
+	var f := CutBox.make(Color(0, 0, 0, 0), px * 0.2, MenuKit.TEXT, 3.0, 0.0, 0.0)
+	f.grow = 4.0
+	b.add_theme_stylebox_override("focus", f)
+	var g := PlusMark.new()
+	g.name = "Plus"
+	g.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for side: String in ["offset_left", "offset_top"]:
+		g.set(side, px * 0.25)
+	for side: String in ["offset_right", "offset_bottom"]:
+		g.set(side, -px * 0.25)
+	b.add_child(g)
+	b.pressed.connect(_on_mate_pressed)
+	MenuKit.add_feedback(b, 1.06)
+	slot.add_child(b)
+	mate_plus = b
+	var cap := MenuKit.label("Coéquipier", 30, MenuKit.TEXT, MenuKit.display(), 0)
+	cap.name = "MateCaption"
+	cap.uppercase = true
+	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cap.add_theme_color_override("font_shadow_color", Color(0, 0, 0.03, 0.8))
+	cap.add_theme_constant_override("shadow_offset_y", 3)
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cap.position = Vector2(-w * 0.5, b.position.y + px + 10.0)
+	cap.size = Vector2(w * 2.0, 40)
+	slot.add_child(cap)
+	_mate_caption = cap
+	# Coéquipier présent : pseudo + état au-dessus de sa tête ; toute la silhouette est cliquable.
+	var hit := Button.new()
+	hit.name = "MateHit"
+	hit.flat = true
+	hit.focus_mode = Control.FOCUS_NONE
+	hit.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		hit.add_theme_stylebox_override(k, StyleBoxEmpty.new())
+	hit.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hit.pressed.connect(_on_mate_pressed)
+	hit.visible = false
+	slot.add_child(hit)
+	var tag_box := VBoxContainer.new()
+	tag_box.name = "MateTag"
+	tag_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag_box.add_theme_constant_override("separation", 2)
+	tag_box.position = Vector2(-w * 0.5, -h * 0.02)
+	tag_box.size = Vector2(w * 2.0, 70)
+	slot.add_child(tag_box)
+	var tag_panel := PanelContainer.new()
+	tag_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var tb := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.82), 12.0, Color(0, 0, 0, 0), 0.0, 16.0, 4.0)
+	tb.accent_width = 5.0
+	tb.accent_color = MenuKit.VIOLET
+	tag_panel.add_theme_stylebox_override("panel", tb)
+	tag_box.add_child(tag_panel)
+	mate_tag = MenuKit.label("", 30, MenuKit.TEXT, MenuKit.display(), 0)
+	mate_tag.uppercase = true
+	tag_panel.add_child(mate_tag)
+	mate_status = MenuKit.label("", 22, Color(1, 1, 1, 0.8), MenuKit.nunito(700), 0)
+	mate_status.uppercase = true
+	mate_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mate_status.add_theme_color_override("font_shadow_color", Color(0, 0, 0.03, 0.85))
+	mate_status.add_theme_constant_override("shadow_offset_y", 2)
+	tag_box.add_child(mate_status)
+	_refresh_mate()
+
+
+func _on_mate_pressed() -> void:
+	_go_optional(mate_plus, MenuKit.COOP_SCENE)
+
+
+## État du coéquipier : « + » seul, salon sans coéquipier, ou coéquipier affiché.
+func _refresh_mate() -> void:
+	if mate_slot == null:
+		return
+	var s := NetSession.current()
+	var room := s != null and s.in_room()
+	var has_mate := room and s.peer_present
+	var hit := mate_slot.get_node("MateHit") as Control
+	var tag := mate_slot.get_node("MateTag") as Control
+	mate_plus.visible = not has_mate
+	_mate_caption.visible = not has_mate
+	hit.visible = has_mate
+	tag.visible = has_mate
+	if room and not has_mate:
+		_mate_caption.text = "Salon %s" % LobbyCode.pretty(s.room_code)
+	else:
+		_mate_caption.text = "Coéquipier"
+	if not has_mate:
+		lobby.set_mate(null, false)
+		return
+	var info: Dictionary = s.peer_info
+	var skin := SkinData.get_skin(StringName(String(info.get("skin", ""))))
+	lobby.set_mate(skin, true)
+	var nm := String(info.get("name", s.peer_name))
+	mate_tag.text = nm if nm != "" else "Coéquipier"
+	mate_status.text = CoopLobby.status_text(info, s.peer_connected, s.peer_where())
+
+
+## La session réseau survit aux écrans : nos connexions sont retirées en sortant (_exit_tree).
+func _connect_session() -> void:
+	var s := NetSession.current()
+	if s == null:
+		return
+	for sig: Signal in [s.peer_joined, s.peer_left, s.room_closed, s.lobby_message, s.peer_lost]:
+		sig.connect(_on_session_event.unbind(1))
+	s.peer_back.connect(_on_session_event)
+	s.status_changed.connect(_on_session_event.unbind(1))
+
+
+func _on_session_event() -> void:
+	_refresh_mate.call_deferred()
+
+
+func _exit_tree() -> void:
+	var s := NetSession.current()
+	if s == null:
+		return
+	for sig: Dictionary in s.get_signal_list():
+		var sname := StringName(sig["name"])
+		for c: Dictionary in s.get_signal_connection_list(sname):
+			var cb: Callable = c["callable"]
+			if cb.get_object() == self:
+				s.disconnect(sname, cb)
 
 
 ## Libellé lisible d'un bouton du menu (les boutons dessinés n'ont pas de `text`).

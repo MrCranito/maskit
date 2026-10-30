@@ -29,6 +29,8 @@ signal reload_started
 signal reload_finished(completed: bool)
 ## Équipement (grenade, mine, C4, drone) ou ses charges changés.
 signal gadget_changed
+## Emplacement rapide utilisé (HUD, touches quick_1..n) : message vide = succès, sinon raison du refus.
+signal quick_used(index: int, message: String)
 
 const LAYER_PLAYER := 2
 const MASK_WORLD := 1
@@ -458,6 +460,20 @@ func _on_reload_started() -> void:
 			fx.shell(ground, visual.hand_height, aim_direction, false)
 
 
+## Emplacement rapide `i` du sac de raid (soin utilisé, équipement équipé). "" = succès.
+func use_quick(i: int) -> String:
+	if not _alive or net_downed:
+		return "Impossible pour l'instant."
+	var msg := ItemUse.use_quick(GameState.raid_inventory, i, self)
+	if msg.is_empty():
+		var it := GameState.raid_inventory.quick_item(i) if GameState.raid_inventory != null else null
+		_play_sfx(&"heal" if it == null or it.is_usable() else &"click")
+	else:
+		_play_sfx(&"error")
+	quick_used.emit(i, msg)
+	return msg
+
+
 ## Vitesse max effective (vitesse de base × arme tenue).
 func get_effective_speed() -> float:
 	var w: WeaponData = weapon
@@ -629,6 +645,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		switch_to(1)
 	elif event.is_action_pressed("weapon_3"):
 		switch_to(2)
+	elif event.is_action_pressed("quick_1"):
+		use_quick(0)
+	elif event.is_action_pressed("quick_2"):
+		use_quick(1)
 
 
 func _input(event: InputEvent) -> void:
@@ -1164,6 +1184,8 @@ func heal(amount: float) -> void:
 		hp = minf(hp + amount, max_hp)
 		if visual != null:
 			visual.hp_dirty()
+		# Montant 0 : mise à jour des PV du HUD sans effet de coup reçu.
+		EventBus.player_damaged.emit(0.0, hp, max_hp)
 
 
 func _die() -> void:

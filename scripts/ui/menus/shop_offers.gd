@@ -15,6 +15,7 @@ signal open_tab(tab: StringName)
 const MODE_GEMS := &"gems"
 const MODE_PACKS := &"packs"
 const MODE_CHESTS := &"chests"
+const MODE_GOLD := &"gold"
 
 var mode: StringName = MODE_GEMS
 var selected: int = 0
@@ -24,6 +25,8 @@ var cards: Array[Button] = []
 var action_button: Button = null
 ## Fenêtre de révélation du dernier coffre ouvert (null si fermée).
 var reveal: Control = null
+## Dernière fenêtre de confirmation ouverte (tests).
+var last_confirm: ConfirmPanel = null
 ## Dernier résultat de Store.open_chest / purchase_bundle (tests).
 var last_result: Dictionary = {}
 
@@ -43,6 +46,8 @@ func _init(p_mode: StringName = MODE_GEMS) -> void:
 func _ready() -> void:
 	if mode == MODE_GEMS:
 		selected = maxi(Store.popular_pack(), 0)
+	elif mode == MODE_GOLD:
+		selected = clampi(int(Balance.get_value("shop", "gold_pack_default", 1)), 0, maxi(Store.gold_packs().size() - 1, 0))
 	elif mode == MODE_PACKS:
 		selected = 0
 		var list := Store.bundles()
@@ -88,6 +93,8 @@ func rebuild() -> void:
 			_build_bundles()
 		MODE_CHESTS:
 			_build_chests()
+		MODE_GOLD:
+			_build_gold()
 		_:
 			_build_gems()
 	_fill_slab()
@@ -437,7 +444,7 @@ func _build_gems() -> void:
 			bl.name = "FirstBonus"
 			bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			info.add_child(bl)
-		_price_button(card, i, str(p["price"]), "", on, func() -> void: buy_pack(i))
+		_price_button(card, i, str(p["price"]), "", on, func() -> void: ask_pack(i))
 
 
 ## Ruban en haut d'une carte (« Meilleure offre », « Populaire ») ; s'arrête avant le coin coupé.
@@ -560,7 +567,7 @@ func _fill_gems_slab() -> void:
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_right(l)
 	action_button = _slab_button("Acheter · %s" % packs[i]["price"])
-	action_button.pressed.connect(func() -> void: buy_pack(selected))
+	action_button.pressed.connect(func() -> void: ask_pack(selected))
 	_slab_col.add_child(action_button)
 	_right(_kicker("Aucun avantage en jeu"))
 
@@ -598,6 +605,56 @@ static func _weapon_name(s: SkinData) -> String:
 	return w.display_name if w != null else "Arme"
 
 
+# --- Confirmations d'achat ----------------------------------------------------------------
+
+## Fenêtre de confirmation par-dessus la boutique (ShopScreen._open_modal), `on_ok` si confirmé.
+func _confirm(title: String, message: String, ok_text: String, on_ok: Callable) -> ConfirmPanel:
+	var m := ConfirmPanel.new(title, message, ok_text)
+	m.confirmed.connect(on_ok)
+	last_confirm = m
+	var n: Node = get_parent()
+	while n != null and not (n is ShopScreen):
+		n = n.get_parent()
+	if n is ShopScreen:
+		(n as ShopScreen)._open_modal(m)
+	else:
+		add_child(m)
+	MenuKit.sfx(&"tick")
+	return m
+
+
+## Pack de gemmes : confirmation (prix, gemmes créditées), puis achat.
+func ask_pack(i: int) -> ConfirmPanel:
+	var packs := Store.packs()
+	if i < 0 or i >= packs.size():
+		return null
+	return _confirm("Acheter ce pack ?", "%s gemmes pour %s.\nPaiement simulé (test)." % [
+		fmt(Store.pack_gems_now(i)), str(packs[i]["price"])], "Acheter", func() -> void: buy_pack(i))
+
+
+## Pack à contenu : confirmation, puis achat.
+func ask_bundle(id: StringName) -> ConfirmPanel:
+	for b: Dictionary in Store.bundles():
+		if StringName(str(b["id"])) == id:
+			return _confirm("Acheter ce pack ?", "Pack « %s » pour %s.\nPaiement simulé (test)." % [
+				str(b["name"]), str(b["price"])], "Acheter", func() -> void: buy_bundle(id))
+	return null
+
+
+## Pack d'or : confirmation (ou « pas assez de gemmes » → onglet Gemmes), puis achat.
+func ask_gold_pack(i: int) -> ConfirmPanel:
+	var list := Store.gold_packs()
+	if i < 0 or i >= list.size():
+		return null
+	var cost := int(list[i]["gems"])
+	if not Profile.can_afford(&"gems", cost):
+		MenuKit.sfx(&"error")
+		return _confirm("Pas assez de gemmes", "Il te manque %s gemmes pour ce pack d'or." % fmt(cost - Profile.gems),
+			"Voir les gemmes", func() -> void: open_tab.emit(&"gems"))
+	return _confirm("Acheter de l'or ?", "%s pièces d'or pour %s gemmes." % [fmt(int(list[i]["gold"])), fmt(cost)],
+		"Acheter", func() -> void: buy_gold_pack(i))
+
+
 func buy_pack(i: int) -> bool:
 	var ok := Store.purchase_pack(i)
 	MenuKit.sfx(&"gold_pickup" if ok else &"error")
@@ -605,6 +662,177 @@ func buy_pack(i: int) -> bool:
 		changed.emit()
 		rebuild()
 	return ok
+
+
+# --- Or contre gemmes -------------------------------------------------------------------
+
+## Cartes des packs d'or : pile de pièces qui grossit, montant, prix en gemmes.
+func _build_gold() -> void:
+	var col := VBoxContainer.new()
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.add_theme_constant_override("separation", 10)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_left.add_child(col)
+	var grid := HBoxContainer.new()
+	grid.add_theme_constant_override("separation", 10)
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(grid)
+	var list := Store.gold_packs()
+	var art_ratio := clampf(Balance.get_float("menu", "shop_gem_art_ratio", 0.5), 0.2, 0.7)
+	for i: int in list.size():
+		var p: Dictionary = list[i]
+		var t := clampf(float(i) / maxf(1.0, list.size() - 1.0), 0.0, 1.0)
+		var on := i == selected
+		var card := _card(i, MenuKit.COIN.lerp(MenuKit.VIOLET, 0.35 * t))
+		grid.add_child(card)
+		var glow := PackGlow.new()
+		glow.name = "Glow"
+		glow.color = MenuKit.COIN
+		glow.strength = lerpf(0.16, 0.5, t) * (1.25 if on else 1.0)
+		glow.rays = 0 if i == 0 else 10 + 2 * i
+		glow.anchor_right = 1.0
+		glow.anchor_bottom = art_ratio + 0.08
+		card.add_child(glow)
+		var art := GoldPile.new()
+		art.name = "Art"
+		art.coins = gold_pile_size(i)
+		art.anchor_left = 0.08
+		art.anchor_right = 0.92
+		art.anchor_top = 0.08
+		art.anchor_bottom = art_ratio + 0.04
+		card.add_child(art)
+		var info := VBoxContainer.new()
+		info.name = "Info"
+		info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		info.anchor_top = art_ratio + 0.04
+		info.anchor_right = 1.0
+		info.anchor_bottom = 1.0
+		info.offset_bottom = -72
+		info.alignment = BoxContainer.ALIGNMENT_CENTER
+		info.add_theme_constant_override("separation", -4)
+		card.add_child(info)
+		var n := _big(fmt(int(p["gold"])), 52, MenuKit.COIN)
+		n.name = "Amount"
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(n)
+		card.resized.connect(func() -> void:
+			n.add_theme_font_size_override("font_size", int(clampf(card.size.x * 0.21, 32.0, 60.0))))
+		var u := _kicker("Pièces d'or", Color(1, 1, 1, 0.65))
+		u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(u)
+		_price_button(card, i, "%s gemmes" % fmt(int(p["gems"])), "", on, func() -> void: ask_gold_pack(i))
+
+
+## Nombre de pièces dessinées pour le pack `i` (pile qui grossit).
+static func gold_pile_size(i: int) -> int:
+	return [1, 3, 6, 10][clampi(i, 0, 3)] if i < 4 else 10 + 2 * (i - 3)
+
+
+## Arme de l'armurerie la plus chère qu'un montant d'or permet d'acheter (null si aucune).
+static func best_weapon_for(gold: int) -> WeaponData:
+	var best: WeaponData = null
+	for w: WeaponData in WeaponCatalog.all():
+		if w.is_gadget() or w.unlock_mode != WeaponData.UNLOCK_SHOP or w.price_gold <= 0 or w.price_gold > gold:
+			continue
+		if best == null or w.price_gold > best.price_gold:
+			best = w
+	return best
+
+
+func _fill_gold_slab() -> void:
+	var list := Store.gold_packs()
+	if list.is_empty():
+		return
+	var i := clampi(selected, 0, list.size() - 1)
+	var p: Dictionary = list[i]
+	_right(_kicker("Or pour l'armurerie"))
+	var stage := Control.new()
+	stage.name = "SlabArt"
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.custom_minimum_size = Vector2(0, 120)
+	_slab_col.add_child(stage)
+	var glow := PackGlow.new()
+	glow.color = MenuKit.COIN
+	glow.strength = 0.5
+	glow.rays = 14
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glow.offset_bottom = -40
+	stage.add_child(glow)
+	var art := GoldPile.new()
+	art.coins = gold_pile_size(i)
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_bottom = -52
+	stage.add_child(art)
+	var amount := MenuKit.label(fmt(int(p["gold"])), 84, MenuKit.COIN, MenuKit.display(), 10)
+	amount.name = "Amount"
+	amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	amount.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	amount.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	amount.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	amount.offset_bottom = 8
+	stage.add_child(amount)
+	_right(_kicker("Pièces d'or"))
+	var w := best_weapon_for(int(p["gold"]))
+	if w != null:
+		_right(_kicker("De quoi acheter"))
+		var row := _txt("%s · %s (%s or)" % [w.display_name, w.get_rarity_name(), fmt(w.price_gold)], 17, MenuKit.TEXT, 600)
+		row.name = "WeaponHint"
+		_right(row)
+	_right(_txt("Ton solde : %s gemmes" % (DevMode.SYMBOL if DevMode.is_unlimited() else fmt(Profile.gems)), 16, Color(1, 1, 1, 0.75)))
+	action_button = _slab_button("Acheter · %s gemmes" % fmt(int(p["gems"])))
+	action_button.pressed.connect(func() -> void: ask_gold_pack(selected))
+	_slab_col.add_child(action_button)
+
+
+func buy_gold_pack(i: int) -> bool:
+	var ok := Store.purchase_gold_pack(i)
+	MenuKit.sfx(&"coin_spend" if ok else &"error")
+	if ok:
+		changed.emit()
+		rebuild()
+	return ok
+
+
+## Pile de pièces d'or (CurrencyArt.coin, repli : disque doré) : `coins` pièces en pyramide.
+class GoldPile extends Control:
+	var coins: int = 1:
+		set(v):
+			coins = maxi(v, 1)
+			queue_redraw()
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var tex := CurrencyArt.coin()
+		# Rangées de bas en haut : 4, 3, 2, 1 pièces au plus (pyramide), on remplit jusqu'à `coins`.
+		var rows: Array[int] = []
+		var left := coins
+		var width := 1
+		while width * (width + 1) / 2 < coins:
+			width += 1
+		for r in range(width, 0, -1):
+			var n := mini(r, left)
+			if n <= 0:
+				break
+			rows.append(n)
+			left -= n
+		var s := minf(size.x / float(width) * 0.95, size.y / (0.62 * rows.size() + 0.5))
+		var base_y := size.y - s * 0.5
+		for ri in rows.size():
+			var n: int = rows[ri]
+			var y := base_y - ri * s * 0.62
+			var x0 := size.x * 0.5 - (n - 1) * s * 0.5
+			for k in n:
+				var c := Vector2(x0 + k * s, y)
+				var r := Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s))
+				if tex != null:
+					draw_texture_rect(tex, r, false)
+				else:
+					draw_circle(c, s * 0.45, MenuKit.COIN)
 
 
 # --- Packs à contenu -------------------------------------------------------------------
@@ -674,7 +902,7 @@ func _build_bundles() -> void:
 		foot.add_child(ct)
 		var bid: StringName = b["id"]
 		_price_button(card, i, str(b["price"]), "Valeur %s" % fmt(Store.bundle_value(b)), i == selected,
-			func() -> void: buy_bundle(bid))
+			func() -> void: ask_bundle(bid))
 		if not avail:
 			card.modulate = Color(1, 1, 1, 0.55)
 
@@ -728,7 +956,7 @@ func _fill_bundles_slab() -> void:
 	var avail := Store.bundle_available(b["id"])
 	action_button = _slab_button("Acheter · %s" % b["price"] if avail else "Déjà acheté")
 	action_button.disabled = not avail
-	action_button.pressed.connect(func() -> void: buy_bundle(b["id"]))
+	action_button.pressed.connect(func() -> void: ask_bundle(b["id"]))
 	_slab_col.add_child(action_button)
 	_right(_kicker("Aucun avantage en jeu"))
 
@@ -978,6 +1206,8 @@ func _fill_slab() -> void:
 			_fill_bundles_slab()
 		MODE_CHESTS:
 			_fill_chests_slab()
+		MODE_GOLD:
+			_fill_gold_slab()
 		_:
 			_fill_gems_slab()
 

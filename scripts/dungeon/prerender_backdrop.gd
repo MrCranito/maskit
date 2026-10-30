@@ -23,6 +23,12 @@ extends Node2D
 ##   shader prerender_occluder) triée en Y à la limite sud de sa rangée avec les personnages
 ##   (z 10) : derrière un wagon / rocher / maison, le personnage est masqué. Tranches d'un
 ##   bâtiment effacées avec son toit (joueur dedans) ; tranche devant le joueur semi-transparente.
+## - (Correctif bâtiments qui masquent) Quand le joueur, un allié ou un ennemi VISIBLE (pas
+##   caché par le brouillard) passe derrière un volume haut, tout le bâtiment (ou la tranche de
+##   décor) passe en fondu doux à [prerender] occluder_fade_alpha : ce qui est derrière (unités,
+##   tirs, effets) reste lisible. Test espacé (10 Hz) indexé par rangée, fondu par image
+##   seulement pendant la transition. Le fond pré-rendu ne contient pas le sol sous la partie
+##   haute du bâtiment : on voit les unités à travers, pas le sol.
 
 const PACK_ROOT := "res://assets/prerender/far_west/"
 ## (Ajout générique, station) Paquets par biome : res://assets/prerender/<biome>/<seed>/.
@@ -46,6 +52,20 @@ var _occ_interval := 0.1
 var _occ_left := 0.0
 var _occ_enabled := true
 var _player: Node2D = null
+## Fondu « unité derrière » (voir en-tête) : réglages [prerender] occluder_fade_*.
+var _fade_enabled := true
+var _fade_alpha := 0.3
+var _fade_duration := 0.25
+var _fade_radius := 28.0
+var _fade_height := 88.0
+var _fade_enemies := true
+var _fade: Dictionary = {}          ## clé de groupe → opacité courante (1 = opaque)
+var _fade_target: Dictionary = {}   ## clé de groupe → opacité visée
+var _rows: Dictionary = {}          ## rangée → tranches chargées
+var _by_key: Dictionary = {}        ## clé de groupe → tranches chargées
+var _rows_up := 0                   ## dépassement maximal d'une tranche vers le nord (rangées)
+var _index_dirty := true
+var _slice_serial := 0
 
 
 ## Dossier des paquets d'un biome (far_west → PACK_ROOT).
@@ -132,6 +152,12 @@ func _setup() -> void:
 	_occ_enabled = bool(_bal("occluders", true))
 	_occ_alpha_player = float(_bal("occluder_player_alpha", 0.55))
 	_occ_interval = float(_bal("occluder_check_interval", 0.1))
+	_fade_enabled = bool(_bal("occluder_fade", true))
+	_fade_alpha = clampf(float(_bal("occluder_fade_alpha", 0.3)), 0.0, 1.0)
+	_fade_duration = maxf(float(_bal("occluder_fade_duration", 0.25)), 0.0)
+	_fade_radius = float(_bal("occluder_fade_radius", 28.0))
+	_fade_height = float(_bal("occluder_fade_height", 88.0))
+	_fade_enemies = bool(_bal("occluder_fade_enemies", true))
 	for e: Dictionary in meta.get("occluders", []):
 		_occ_by_tile[pack_dir + String(e["tile"])] = e
 
@@ -207,11 +233,7 @@ func attach_to(builder: Node2D) -> void:
 		by_id[id] = r
 	_roof_by_id = by_id
 	_build_collision()
-	_occ_holder = Node2D.new()
-	_occ_holder.name = "Occluders"
-	_occ_holder.y_sort_enabled = true
-	_occ_holder.z_index = 10
-	add_child(_occ_holder)
+	ensure_occluder_holder()
 	var holder := Node2D.new()
 	holder.name = "Interiors"
 	holder.z_index = 1  # au-dessus des tuiles (z 0) malgré le tri en Y du fond
@@ -233,6 +255,17 @@ func attach_to(builder: Node2D) -> void:
 	add_to_group(&"prerender_backdrop")
 
 
+## Parent des tranches d'occultation (trié en Y avec les personnages, z 10).
+func ensure_occluder_holder() -> void:
+	if _occ_holder != null:
+		return
+	_occ_holder = Node2D.new()
+	_occ_holder.name = "Occluders"
+	_occ_holder.y_sort_enabled = true
+	_occ_holder.z_index = 10
+	add_child(_occ_holder)
+
+
 func _process(delta: float) -> void:
 	_stream()
 	_update_player_feet()
@@ -240,6 +273,7 @@ func _process(delta: float) -> void:
 	if _occ_left <= 0.0:
 		_occ_left = _occ_interval
 		_update_occluders()
+	_step_fades(delta)
 	for e: Dictionary in _interiors:
 		var roof: Node2D = e["roof"]
 		var s: Sprite2D = e["sprite"]
@@ -294,6 +328,12 @@ func _stream() -> void:
 			t["pending"] = false
 			for sl: Dictionary in t["slices"]:
 				(sl["sprite"] as Node).queue_free()
+				var k: int = sl["key"]
+				if k < 0:  # tranche de décor isolée : son état de fondu disparaît avec elle
+					_fade.erase(k)
+					_fade_target.erase(k)
+			if not (t["slices"] as Array).is_empty():
+				_index_dirty = true
 			t["slices"] = []
 
 
@@ -345,8 +385,12 @@ func _make_slices(t: Dictionary, tex: Texture2D) -> void:
 		sp.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sp.modulate = Color(float(row + 1) / 255.0, float(bid + 1) / 255.0, 1.0, 1.0)
 		_occ_holder.add_child(sp)
-		(t["slices"] as Array).append({"sprite": sp, "bid": bid, "row": row,
+		# Groupe de fondu : tout le bâtiment (id ≥ 0), sinon la tranche de décor seule (clé < 0).
+		_slice_serial += 1
+		var key := bid if bid >= 0 else -_slice_serial
+		(t["slices"] as Array).append({"sprite": sp, "bid": bid, "row": row, "key": key, "roof_a": 1.0,
 			"rect": Rect2(tl, Vector2(float(sl[4]), float(sl[5])) * px_scale), "sort_y": sort_y})
+	_index_dirty = true
 
 
 ## Opacité des tranches : bâtiment dont le toit s'efface (joueur dedans) → tranches effacées.
@@ -357,6 +401,9 @@ func _update_occluders() -> void:
 		return
 	if _player == null or not is_instance_valid(_player):
 		_player = get_tree().get_first_node_in_group(&"player") as Node2D
+	if _index_dirty:
+		_rebuild_index()
+	_update_fade_targets()
 	for t: Dictionary in _tiles:
 		for sl: Dictionary in t["slices"]:
 			var a := 1.0
@@ -366,10 +413,101 @@ func _update_occluders() -> void:
 				if roof != null and is_instance_valid(roof):
 					var ha := float(roof.get("hidden_alpha"))
 					a = 1.0 - clampf((1.0 - roof.modulate.a) / maxf(1.0 - ha, 0.01), 0.0, 1.0)
-			var sp: Sprite2D = sl["sprite"]
-			if absf(sp.modulate.b - a) > 0.01:
-				sp.modulate.b = a
-			sp.visible = a > 0.01
+			sl["roof_a"] = a
+			_apply_slice(sl)
+
+
+## Opacité finale d'une tranche : toit (joueur dedans) × fondu « unité derrière ».
+func _apply_slice(sl: Dictionary) -> void:
+	var a: float = float(sl["roof_a"]) * float(_fade.get(sl["key"], 1.0))
+	var sp: Sprite2D = sl["sprite"]
+	if absf(sp.modulate.b - a) > 0.005:
+		sp.modulate.b = a
+	sp.visible = a > 0.01
+
+
+## Index des tranches chargées par rangée et par groupe de fondu (après chargement/libération).
+func _rebuild_index() -> void:
+	_index_dirty = false
+	_rows.clear()
+	_by_key.clear()
+	_rows_up = 0
+	for t: Dictionary in _tiles:
+		for sl: Dictionary in t["slices"]:
+			(_rows.get_or_add(int(sl["row"]), []) as Array).append(sl)
+			(_by_key.get_or_add(sl["key"], []) as Array).append(sl)
+			var r: Rect2 = sl["rect"]
+			_rows_up = maxi(_rows_up, ceili((float(sl["sort_y"]) - r.position.y) / TS))
+	for k: Variant in _by_key:
+		if not _fade.has(k):
+			_fade[k] = 1.0
+
+
+## Pieds des unités à dévoiler : joueur(s), alliés coop et ennemis visibles (un ennemi caché
+## par le brouillard est invisible → ignoré : le fondu ne trahit pas sa présence).
+func _reveal_points() -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	var groups: Array[StringName] = [&"player", NetHooks.GROUP_AVATAR]
+	if _fade_enemies:
+		groups.append(&"enemies")
+	for g in groups:
+		for n: Node in get_tree().get_nodes_in_group(g):
+			var u := n as Node2D
+			if u != null and u.is_visible_in_tree():
+				pts.append(u.global_position)
+	return pts
+
+
+## Groupes (bâtiment ou tranche de décor) dont une tranche triée au sud des pieds d'une unité
+## recouvre son corps → opacité visée occluder_fade_alpha, sinon 1.
+func _update_fade_targets() -> void:
+	for k: Variant in _fade_target:
+		_fade_target[k] = 1.0
+	if not _fade_enabled or _rows.is_empty():
+		return
+	for f: Vector2 in _reveal_points():
+		var body := Rect2(f.x - _fade_radius, f.y - _fade_height, _fade_radius * 2.0, _fade_height)
+		var frow := floori(f.y / TS)
+		for row in range(frow, frow + _rows_up + 1):
+			var arr: Variant = _rows.get(row)
+			if arr == null:
+				continue
+			for sl: Dictionary in arr:
+				if float(sl["sort_y"]) > f.y and (sl["rect"] as Rect2).intersects(body):
+					_fade_target[sl["key"]] = _fade_alpha
+
+
+## Fondu doux vers l'opacité visée : seuls les groupes en transition sont recalculés.
+func _step_fades(delta: float) -> void:
+	if _fade_target.is_empty():
+		return
+	var rate := (1.0 - _fade_alpha) / _fade_duration if _fade_duration > 0.0 else INF
+	for k: Variant in _fade_target:
+		var cur: float = _fade.get(k, 1.0)
+		var goal: float = _fade_target[k]
+		if is_equal_approx(cur, goal):
+			continue
+		cur = goal if is_inf(rate) else move_toward(cur, goal, rate * delta)
+		_fade[k] = cur
+		var arr: Variant = _by_key.get(k)
+		if arr != null:
+			for sl: Dictionary in arr:
+				if is_instance_valid(sl["sprite"]):
+					_apply_slice(sl)
+
+
+## Opacité de fondu courante d'un bâtiment (id) ou d'un groupe (tests, debug).
+func fade_of(key: int) -> float:
+	return float(_fade.get(key, 1.0))
+
+
+## Tranches chargées (tests, captures).
+func loaded_slices() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for t: Dictionary in _tiles:
+		for sl: Dictionary in t["slices"]:
+			out.append(sl)
+	return out
 
 
 ## Pieds du joueur → matériaux des tuiles (silhouette lisible derrière une tranche), chaque image.
