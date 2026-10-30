@@ -15,6 +15,7 @@ func _ready() -> void:
 	super._ready()
 	if validate_button != null:
 		validate_button.text = "Valider mon arsenal"
+		fit_validate_text()
 
 
 func validate_and_go() -> bool:

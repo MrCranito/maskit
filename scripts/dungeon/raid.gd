@@ -105,6 +105,8 @@ var _extraction_marker: Node2D = null
 ## Zones d'extraction de l'étage (ExtractionZone) et zone en cours de canalisation.
 var extraction_zones: Array[ExtractionZone] = []
 var _active_zone: ExtractionZone = null
+## Calque plein écran de la canalisation (vignette, compte à rebours, flash final).
+var extraction_overlay: ExtractionOverlay = null
 var end_screen: RaidEndScreen = null
 ## Tourelles de l'étage courant (nœud → case) et cases des tourelles détruites.
 var turrets_container: Node2D = null
@@ -138,6 +140,7 @@ func _ready() -> void:
 	_build_debug_world_draw()
 	_build_floor(current_floor)
 	_spawn_player(layout.player_spawn)
+	apply_camera_limits()
 	_build_ui()
 	_apply_map_player_modifiers()
 	_update_banner(true)
@@ -269,6 +272,30 @@ func _build_floor(index: int) -> void:
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_cancel_extraction(false)
+	apply_camera_limits()
+
+
+## Caméra bornée aux limites de l'étage : on ne voit jamais au-delà du bord de la carte (bande
+## de brouillard unie). [camera] edge_margin = marge (px monde) autorisée au-delà du bord.
+func apply_camera_limits() -> void:
+	if layout == null or not is_instance_valid(player):
+		return
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam == null:
+		return
+	var r := camera_bounds()
+	cam.limit_left = int(r.position.x)
+	cam.limit_top = int(r.position.y)
+	cam.limit_right = int(r.end.x)
+	cam.limit_bottom = int(r.end.y)
+	cam.limit_smoothed = true
+
+
+## Rectangle (monde) visible par la caméra : l'étage entier, plus [camera] edge_margin.
+func camera_bounds() -> Rect2:
+	var ts := float(FloorLayout.TILE_SIZE)
+	var m := Balance.get_float("camera", "edge_margin", 0.0)
+	return Rect2(Vector2.ZERO, Vector2(layout.size) * ts).grow(m)
 
 
 func _build_world_root() -> void:
@@ -707,11 +734,52 @@ func _finish_extraction() -> void:
 	if _raid_over or not is_inside_tree():
 		return
 	_raid_over = true
-	_cancel_extraction(false)
+	var zone := _active_zone
+	_active_zone = null   # garde la zone et le calque pour la séquence de sortie
+	_extraction_time = -1.0
 	# Exemplaires tenus (WeaponData) : leurs affixes rejoignent la réserve avec eux.
 	var summary: Dictionary = Profile.finish_extraction(get_carried_weapons(), GameState.raid_inventory)
 	_end_raid_state()
-	_show_end_screen(true, summary)
+	await _play_extraction_outro(zone)
+	if is_inside_tree():
+		_show_end_screen(true, summary)
+
+
+## Durée de la séquence de sortie avant l'écran de fin ([extraction] outro_time, 0 = aucune).
+static func extraction_outro_time() -> float:
+	return maxf(Balance.get_float("extraction", "outro_time", 1.4), 0.0)
+
+
+## Séquence de sortie : la zone s'illumine, le joueur est aspiré dans la colonne de lumière
+## (monte, rétrécit, s'efface), la caméra se rapproche, flash plein écran, puis écran de fin.
+func _play_extraction_outro(zone: ExtractionZone) -> void:
+	var d := extraction_outro_time()
+	if d <= 0.0 or not is_inside_tree():
+		_free_extraction_overlay()
+		return
+	if zone != null and is_instance_valid(zone):
+		zone.play_success(d)
+	if extraction_overlay == null:
+		extraction_overlay = ExtractionOverlay.new()
+		add_child(extraction_overlay)
+	extraction_overlay.play_success(d)
+	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	if is_instance_valid(player):
+		var vis: Node2D = player.get(&"visual") as Node2D if player.get(&"visual") is Node2D else player
+		tw.tween_property(vis, "position:y", vis.position.y - Balance.get_float("extraction", "outro_rise", 90.0), d * 0.75).set_delay(d * 0.15)
+		tw.tween_property(vis, "scale", vis.scale * 0.55, d * 0.75).set_delay(d * 0.15)
+		tw.tween_property(vis, "modulate", Color(2.0, 2.4, 2.0, 0.0), d * 0.75).set_delay(d * 0.15)
+	var cam := get_viewport().get_camera_2d()
+	if cam != null:
+		tw.tween_property(cam, "zoom", cam.zoom * Balance.get_float("extraction", "outro_zoom", 1.18), d).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(d, true).timeout
+	_free_extraction_overlay()
+
+
+func _free_extraction_overlay() -> void:
+	if extraction_overlay != null and is_instance_valid(extraction_overlay):
+		extraction_overlay.queue_free()
+	extraction_overlay = null
 
 
 ## Exemplaires tenus (affixes compris) : API joueur get_carried_weapons, sinon les ids
@@ -822,6 +890,8 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 	_extraction_time += delta
 	if _active_zone != null and is_instance_valid(_active_zone):
 		_active_zone.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
+	if extraction_overlay != null:
+		extraction_overlay.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
 	if _extraction_time >= extraction_channel_time():
 		_finish_extraction()
 
@@ -832,6 +902,10 @@ func _start_extraction() -> void:
 	_active_zone = get_extraction_zone_at(get_player_cell())
 	if _active_zone != null:
 		_active_zone.show_progress(true)
+	if extraction_overlay == null:
+		extraction_overlay = ExtractionOverlay.new()
+		add_child(extraction_overlay)
+	extraction_overlay.set_progress(0.0, extraction_channel_time())
 	var n := alert_enemies_near(player.global_position, Balance.get_float("extraction", "alert_radius", 520.0))
 	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
 
@@ -855,6 +929,7 @@ func _cancel_extraction(notify: bool) -> void:
 	if _active_zone != null and is_instance_valid(_active_zone):
 		_active_zone.show_progress(false)
 	_active_zone = null
+	_free_extraction_overlay()
 	if notify and was and not _raid_over:
 		show_toast("Extraction interrompue")
 

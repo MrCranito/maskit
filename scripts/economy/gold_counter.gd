@@ -81,14 +81,22 @@ func _gui_input(event: InputEvent) -> void:
 ## Pièce d'or dessinée (disque doré, liseré, reflet, étoile gravée). Statique.
 class CoinIcon extends Control:
 	var tint: Color = GOLD_COIN
+	## false : toujours le dessin en code (comparaisons, tests du repli).
+	var use_art: bool = true
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		resized.connect(queue_redraw)
 
 	func _draw() -> void:
 		var s: float = minf(size.x, size.y)
 		var c := size * 0.5
+		var tex := CurrencyArt.coin() if use_art else null
+		if tex != null:   # image peinte (rendu Blender) ; sinon le dessin en code ci-dessous
+			var k: float = s * CurrencyArt.ICON_ZOOM
+			CurrencyArt.draw_fit(self, tex, Rect2(c - Vector2(k, k) * 0.5, Vector2(k, k)))
+			return
 		var r := s * 0.46
 		draw_circle(c + Vector2(0, s * 0.04), r, tint.darkened(0.55), true, -1.0, true)
 		draw_circle(c, r, tint.darkened(0.15), true, -1.0, true)

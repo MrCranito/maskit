@@ -1,6 +1,7 @@
 extends Node
 ## Scénario des captures de menus (voir ui_capture.gd) : <out>/splash_<n>.png, menu.png,
-## mort.png, extraction.png (écrans de fin construits sur un résumé d'exemple).
+## boutique*.png (onglets, onglet Gemmes avec le dernier pack choisi), icones.png (gemme et pièce :
+## dessin en code puis images peintes), mort.png, extraction.png (écrans de fin sur un résumé d'exemple).
 
 var out: String = ""
 
@@ -35,6 +36,28 @@ func _run() -> void:
 	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
 	await _sleep(2.0)
 	await _shot("menu")
+	if ResourceLoader.exists("res://scenes/ui/menus/shop.tscn"):
+		get_tree().change_scene_to_file("res://scenes/ui/menus/shop.tscn")
+		await _sleep(1.5)
+		await _shot("boutique")
+		for tab: StringName in [&"gems", &"packs"]:
+			get_tree().current_scene.call(&"show_tab", tab)
+			await _sleep(0.8)
+			await _shot("boutique_" + String(tab))
+		get_tree().current_scene.call(&"show_tab", &"gems")
+		await _sleep(0.3)
+		var offers: Variant = get_tree().current_scene.get(&"offers")
+		if offers is ShopOffers:
+			(offers as ShopOffers).select(Store.packs().size() - 1)
+			await _sleep(0.6)
+			await _shot("boutique_gems_dernier")
+	await _icons()
+	var cl := CoopLoadout.new()
+	get_tree().root.add_child(cl)
+	await _sleep(1.0)
+	await _shot("arsenal_depart_coop")
+	cl.queue_free()
+	await _sleep(0.2)
 	for ok: bool in [false, true]:
 		var s := RaidEndScreen.create(ok, _summary(ok))
 		get_tree().root.add_child(s)
@@ -46,6 +69,34 @@ func _run() -> void:
 		get_tree().paused = false
 		await _sleep(0.3)
 	get_tree().quit(0)
+
+
+## icones.png : gemme et pièce d'or, dessin en code (en haut) puis images peintes (en bas), en grand
+## et aux tailles des compteurs (48, 32, 24 px).
+func _icons() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 100
+	get_tree().root.add_child(layer)
+	var bg := ColorRect.new()
+	bg.color = MenuKit.NIGHT
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
+	var y := 30.0
+	for painted: bool in [false, true]:
+		var x := 30.0
+		for kind: int in 2:
+			for px: float in [200.0, 48.0, 32.0, 24.0]:
+				var c: Control = GemIcon.new() if kind == 0 else GoldCounter.CoinIcon.new()
+				c.set(&"use_art", painted)
+				c.position = Vector2(x, y + (200.0 - px) * 0.5)
+				c.size = Vector2(px, px)
+				bg.add_child(c)
+				x += px + 30.0
+			x += 40.0
+		y += 260.0
+	await _sleep(0.3)
+	await _shot("icones")
+	layer.queue_free()
 
 
 func _summary(ok: bool) -> Dictionary:
