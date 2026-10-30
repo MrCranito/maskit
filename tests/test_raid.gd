@@ -386,6 +386,21 @@ func test_popups_de_butin_au_dessus_de_la_minimap() -> void:
 	assert_false(get_tree().paused)
 
 
+# --- Caméra bornée à la carte ------------------------------------------------------------
+
+func test_camera_bornee_aux_limites_de_l_etage() -> void:
+	var cam := _raid.player.get_node_or_null("Camera2D") as Camera2D
+	assert_not_null(cam)
+	var r := _raid.camera_bounds()
+	var ts := float(FloorLayout.TILE_SIZE)
+	assert_eq(cam.limit_left, int(r.position.x))
+	assert_eq(cam.limit_top, int(r.position.y))
+	assert_eq(cam.limit_right, int(r.end.x))
+	assert_eq(cam.limit_bottom, int(r.end.y))
+	assert_almost_eq(r.size.x, float(_raid.layout.size.x) * ts + 2.0 * Balance.get_float("camera", "edge_margin", 0.0), 0.5,
+		"largeur de l'étage")
+
+
 func test_sequence_de_sortie_avant_l_ecran_de_fin() -> void:
 	if _raid.layout.extraction_cells.is_empty():
 		pending("Pas de case d'extraction sur cet étage")

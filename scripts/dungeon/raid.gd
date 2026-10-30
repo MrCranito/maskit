@@ -140,6 +140,7 @@ func _ready() -> void:
 	_build_debug_world_draw()
 	_build_floor(current_floor)
 	_spawn_player(layout.player_spawn)
+	apply_camera_limits()
 	_build_ui()
 	_apply_map_player_modifiers()
 	_update_banner(true)
@@ -271,6 +272,30 @@ func _build_floor(index: int) -> void:
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_cancel_extraction(false)
+	apply_camera_limits()
+
+
+## Caméra bornée aux limites de l'étage : on ne voit jamais au-delà du bord de la carte (bande
+## de brouillard unie). [camera] edge_margin = marge (px monde) autorisée au-delà du bord.
+func apply_camera_limits() -> void:
+	if layout == null or not is_instance_valid(player):
+		return
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam == null:
+		return
+	var r := camera_bounds()
+	cam.limit_left = int(r.position.x)
+	cam.limit_top = int(r.position.y)
+	cam.limit_right = int(r.end.x)
+	cam.limit_bottom = int(r.end.y)
+	cam.limit_smoothed = true
+
+
+## Rectangle (monde) visible par la caméra : l'étage entier, plus [camera] edge_margin.
+func camera_bounds() -> Rect2:
+	var ts := float(FloorLayout.TILE_SIZE)
+	var m := Balance.get_float("camera", "edge_margin", 0.0)
+	return Rect2(Vector2.ZERO, Vector2(layout.size) * ts).grow(m)
 
 
 func _build_world_root() -> void:
