@@ -115,7 +115,8 @@ func _ready() -> void:
 
 
 ## URL du relais : --net-url=… (ligne de commande), variable RAIDERSGO_NET_URL, puis
-## balance.cfg [net] (url_prod si renseignée et build de production ou use_prod, sinon url_dev).
+## balance.cfg [net] : url_prod si renseignée, hors éditeur (APK de test compris) ou si use_prod ;
+## sinon url_dev (relais local de développement).
 static func server_url() -> String:
 	for a: String in OS.get_cmdline_user_args() + OS.get_cmdline_args():
 		if a.begins_with("--net-url="):
@@ -125,7 +126,7 @@ static func server_url() -> String:
 		return env
 	var dev := String(Balance.get_value("net", "url_dev", "ws://127.0.0.1:8787"))
 	var prod := String(Balance.get_value("net", "url_prod", ""))
-	var use_prod := bool(Balance.get_value("net", "use_prod", false)) or not OS.is_debug_build()
+	var use_prod := bool(Balance.get_value("net", "use_prod", false)) or not OS.has_feature("editor")
 	return prod if use_prod and prod != "" else dev
 
 
