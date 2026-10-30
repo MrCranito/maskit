@@ -38,6 +38,8 @@ var detail_weapon: WeaponData = null
 
 ## Arsenal de départ : « DÉPLOYER » (enregistre l'arsenal et lance le raid).
 var validate_button: Button = null
+## Largeur utile de la colonne du bandeau (px) : le libellé du bouton principal y est ajusté.
+var _slab_avail: float = 0.0
 ## Arsenal de départ : équiper / retirer l'arme affichée (bandeau de droite).
 var equip_button: Button = null
 ## Arsenal de départ : bandeau violet de droite (fiche de l'arme + DÉPLOYER).
@@ -399,6 +401,7 @@ func _build_loadout() -> void:
 	col.offset_left = sl.cut
 	col.offset_top = maxf(m.y, 36.0)
 	col.offset_right = -maxf(m.z, 44.0)
+	_slab_avail = slab_w - sl.cut - maxf(m.z, 44.0)
 	col.offset_bottom = -maxf(m.w, 40.0)
 	col.add_theme_constant_override("separation", 10)
 	sl.add_child(col)
@@ -419,7 +422,8 @@ func _build_loadout() -> void:
 	col.add_child(_d_rarity)
 	_d_bars = StatBars.new()
 	_d_bars.stacked = true
-	_d_bars.custom_minimum_size.x = Balance.get_float("menu", "loadout_detail_width", 300.0)
+	# Bornée à la colonne : à 1280×720 elle n'a que ~246 px (sinon la colonne déborde à droite).
+	_d_bars.custom_minimum_size.x = minf(Balance.get_float("menu", "loadout_detail_width", 300.0), _slab_avail)
 	_d_bars.size_flags_horizontal = Control.SIZE_SHRINK_END
 	col.add_child(_d_bars)
 	_d_affixes = VBoxContainer.new()
@@ -472,6 +476,7 @@ func _build_loadout() -> void:
 	validate_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	validate_button.pressed.connect(validate_and_go)
 	col.add_child(validate_button)
+	fit_validate_text()
 	# Restes de la fiche « consultation » : non affichés ici, gardés pour le code commun
 	_d_style = StyleBoxFlat.new()
 	_d_icon = WeaponIcon.new()
@@ -487,6 +492,20 @@ func _slab_label(px: int, font: Font) -> Label:
 	var l := MenuKit.label("", px, MenuKit.TEXT, font, 0)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	return l
+
+
+## Libellé du bouton principal : taille deploy_font_size, réduite pour tenir dans la colonne du
+## bandeau (sinon le bouton élargit la colonne et pousse toute la fiche hors de l'écran).
+## À rappeler après un changement de texte (CoopLoadout : « Valider mon arsenal »).
+func fit_validate_text() -> void:
+	if validate_button == null:
+		return
+	var fs := int(Balance.get_value("menu", "deploy_font_size", 84))
+	var avail := _slab_avail if _slab_avail > 0.0 else 300.0
+	var w := MenuKit.display().get_string_size(validate_button.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 16.0
+	if w > avail:
+		fs = int(floor(float(fs) * avail / w))
+	validate_button.add_theme_font_size_override("font_size", fs)
 
 
 ## « DÉPLOYER » en Anton, sans fond (comme au lobby) ; atténué tant qu'aucune arme n'est choisie.

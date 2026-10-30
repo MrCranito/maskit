@@ -384,8 +384,8 @@ func _level_badge() -> Button:
 	return b
 
 
-## Haut du bandeau : carte en cours (capitales espacées) + « DIFFICULTÉ · CHANGER › » ; tap →
-## choix des cartes.
+## Haut du bandeau : carte en cours (capitales espacées) ; tap → choix des cartes. La ligne
+## « difficulté · changer » est masquée (retour de Victor : elle encombrait le coin).
 func _map_link() -> Button:
 	var b := Button.new()
 	b.name = "MapLink"
@@ -407,6 +407,7 @@ func _map_link() -> Button:
 	map_sub_label = MenuKit.label("", 18, Color(1, 1, 1, 0.75), MenuKit.nunito(600), 0)
 	map_sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	map_sub_label.uppercase = true
+	map_sub_label.visible = false
 	col.add_child(map_sub_label)
 	b.pressed.connect(_on_play)
 	MenuKit.add_feedback(b, 1.03)
@@ -576,8 +577,7 @@ func _refresh_profile() -> void:
 	var card := PlayCard.displayed_card()
 	map_name_label.text = card.display_name if card != null else "Choisir une carte"
 	map_sub_label.text = ("%s · Changer ›" % card.difficulty_name()) if card != null else "Changer ›"
-	map_link.custom_minimum_size = Vector2(maxf(map_name_label.get_minimum_size().x, map_sub_label.get_minimum_size().x),
-		map_name_label.get_minimum_size().y + map_sub_label.get_minimum_size().y + 2.0)
+	map_link.custom_minimum_size = map_name_label.get_minimum_size()
 
 
 func _connect_cloud() -> void:

@@ -1,19 +1,28 @@
 class_name GemIcon
 extends Control
-## Gemme taillée dessinée en code (losange à facettes cyan). Dessin statique : redessiné
-## seulement au redimensionnement.
+## Gemme taillée : image peinte (CurrencyArt.gem, rendu Blender) si elle existe, sinon dessinée en code
+## (losange à facettes cyan). Dessin statique : redessiné seulement au redimensionnement.
 
 @export var tint: Color = MenuKit.GEM
+## false : toujours le dessin en code (comparaisons, tests du repli).
+@export var use_art: bool = true
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # image 256 px affichée en 24-60 px
 	resized.connect(queue_redraw)
 
 
 func _draw() -> void:
 	var s: float = minf(size.x, size.y)
 	var o := (size - Vector2(s, s)) * 0.5
+	var tex := CurrencyArt.gem() if use_art else null
+	if tex != null:
+		# L'image garde une marge pour sa lueur : légèrement agrandie pour occuper la même place.
+		var k: float = s * CurrencyArt.ICON_ZOOM
+		CurrencyArt.draw_fit(self, tex, Rect2(size * 0.5 - Vector2(k, k) * 0.5, Vector2(k, k)))
+		return
 	var p := func(x: float, y: float) -> Vector2: return o + Vector2(x, y) * s
 	var top_l: Vector2 = p.call(0.2, 0.3)
 	var top_r: Vector2 = p.call(0.8, 0.3)
