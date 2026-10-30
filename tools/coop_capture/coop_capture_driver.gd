@@ -47,8 +47,12 @@ func _want(group: String) -> bool:
 func _run() -> void:
 	if _want("fin"):
 		await _end_screens()
-	if _want("menu") and has_method(&"_menus"):
-		await call(&"_menus")
+	if _want("menu"):
+		await _menus()
+	if _want("salon"):
+		await _lobbies()
+	if _want("rejouer"):
+		await _replay()
 	get_tree().quit(0)
 
 
@@ -138,3 +142,68 @@ func _end_screens() -> void:
 	await _sleep(2.4)
 	await _shot("apres_fin_invite")
 	await _raid_stop()
+
+
+# --- Menus ------------------------------------------------------------------------------
+
+func _scene(path: String, wait: float = 2.2) -> Node:
+	get_tree().change_scene_to_file(path)
+	await _sleep(wait)
+	return get_tree().current_scene
+
+
+func _offline() -> void:
+	var s := NetSession.current()
+	if s != null:
+		s.status = NetSession.Status.OFFLINE
+		s.room_code = ""
+		s.role = &""
+		s.peer_present = false
+		s.peer_connected = false
+		s.peer_info = {}
+		s.local_info = {}
+
+
+func _menus() -> void:
+	_offline()
+	await _scene(MenuKit.MAIN_MENU_SCENE)
+	await _shot("menu_seul")
+	# Coéquipier dans le salon (joueur revenu au menu sans quitter le salon).
+	var s := _session_new(true)
+	s.peer_info["where"] = "menu"
+	await _scene(MenuKit.MAIN_MENU_SCENE)
+	await _shot("menu_avec_coequipier")
+	_offline()
+
+
+func _lobbies() -> void:
+	# Hôte seul, puis hôte + invité (invité prêt).
+	var s := _session_new(true)
+	s.peer_present = false
+	s.peer_connected = false
+	s.peer_name = ""
+	s.peer_info = {}
+	await _scene(MenuKit.COOP_SCENE, 1.6)
+	await _shot("salon_hote_seul")
+	s.peer_present = true
+	s.peer_connected = true
+	s.peer_name = "Moreau"
+	s.peer_info = {"k": "info", "name": "Moreau", "skin": "char_gign", "ready": true, "where": "lobby",
+		"loadout": ["rifle_m4a1", "smg_mp5"]}
+	var lobby := get_tree().current_scene
+	if lobby != null and lobby.has_method(&"_refresh_room"):
+		lobby.call(&"_refresh_room")
+	await _sleep(0.8)
+	await _shot("salon_hote_et_invite")
+	_offline()
+
+
+## Écran de fin coop quand les deux ont fini : bouton « Rejouer ensemble ».
+func _replay() -> void:
+	await _raid_start(true)
+	_evt(NetProtocol.PlayerOp.DEAD)
+	_raid._finish_extraction()
+	await _sleep(2.4)
+	await _shot("fin_coop_rejouer")
+	await _raid_stop()
+	_offline()

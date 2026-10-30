@@ -18,6 +18,8 @@ extends CanvasLayer
 ## vertical (1280×720 et téléphones larges) ; les armes défilent horizontalement.
 
 signal menu_requested
+## Coop : « Rejouer ensemble » (le bouton secondaire devient ce bouton, voir set_replay).
+signal replay_pressed
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
 const NIGHT := Color(0.024, 0.027, 0.05, 0.94)
@@ -265,6 +267,35 @@ func _ink_button(txt: String) -> Button:
 	f.grow = 3.0
 	b.add_theme_stylebox_override("focus", f)
 	return b
+
+
+## Coop : le bouton secondaire devient « REJOUER ENSEMBLE » (retour au salon avec la même
+## équipe) ; `enabled` = les deux joueurs ont fini et le coéquipier est encore dans le salon.
+func set_replay(enabled: bool) -> void:
+	if _second_btn == null:
+		return
+	if not _second_btn.has_meta(&"replay"):
+		_second_btn.set_meta(&"replay", true)
+		_second_btn.name = "ReplayButton"
+		_second_btn.text = "REJOUER ENSEMBLE"
+		for c: Dictionary in _second_btn.pressed.get_connections():
+			_second_btn.pressed.disconnect(c["callable"])
+		_second_btn.pressed.connect(func() -> void:
+			MenuKit.sfx(&"confirm")
+			replay_pressed.emit())
+		var mk := func(bg: Color) -> CutBox:
+			var c := CutBox.make(bg, 16.0, Color(0, 0, 0, 0), 0.0, 16.0, 0.0)
+			c.corners = CutBox.CUT_TOP_LEFT
+			return c
+		_second_btn.add_theme_stylebox_override("normal", mk.call(MenuKit.NIGHT_DEEP))
+		_second_btn.add_theme_stylebox_override("hover", mk.call(MenuKit.VIOLET.darkened(0.25)))
+		_second_btn.add_theme_stylebox_override("disabled", mk.call(Color(MenuKit.NIGHT_DEEP, 0.45)))
+		_second_btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.4))
+	_second_btn.disabled = not enabled
+
+
+func is_replay_enabled() -> bool:
+	return _second_btn != null and _second_btn.has_meta(&"replay") and not _second_btn.disabled
 
 
 ## Coop : texte d'information au-dessus des boutons du bandeau ("" = masqué).
