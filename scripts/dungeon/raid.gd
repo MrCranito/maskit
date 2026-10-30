@@ -127,6 +127,7 @@ func _ready() -> void:
 	NoiseSources.clear()
 	run_seed = GameState.run_seed
 	difficulty = GameState.difficulty
+	party_size = CoopRules.raid_party_size()
 	_load_world()
 	_generate_floors()
 	_apply_map_modifiers()
@@ -1306,6 +1307,8 @@ func get_toast_text() -> String:
 
 ## Carte jouée (null = aucune).
 var map_card: MapCard = null
+## Joueurs du raid (1 en solo, 2 en coop) : densité d'ennemis × [coop] enemy_density_<n>.
+var party_size: int = 1
 
 
 ## Au lancement, après la génération : bonus de butin (LootRoller) et densité d'ennemis
@@ -1313,11 +1316,13 @@ var map_card: MapCard = null
 func _apply_map_modifiers() -> void:
 	map_card = GameState.current_map as MapCard
 	LootRoller.reset_map_bonus()
-	if map_card == null:
-		return
-	LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
-	LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
-	var density: float = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	var density: float = 1.0
+	if map_card != null:
+		LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
+		LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
+		density = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	# Coop : plus d'ennemis à plusieurs (même tirage chez l'hôte et l'invité : seed + nombre de joueurs).
+	density *= CoopRules.party_mult("enemy_density", party_size)
 	if is_equal_approx(density, 1.0):
 		return
 	for idx: Variant in floors:

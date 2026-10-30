@@ -1069,17 +1069,21 @@ func _index_enemies() -> void:
 		i += 1
 
 
-## PV ennemis × [net] coop_enemy_hp_mult (une fois par ennemi ; étage restauré : PV déjà
-## mis à l'échelle lors de la visite précédente).
+## PV et dégâts ennemis selon le barème [coop] enemy_hp_<n> / enemy_damage_<n> (une fois par
+## ennemi ; étage restauré : PV déjà mis à l'échelle lors de la visite précédente). Le nombre
+## d'ennemis, lui, est ajusté à la génération (Raid._apply_map_modifiers, enemy_density_<n>).
 func _scale_enemies(restored: bool) -> void:
-	var m := CoopRules.coop_hp_mult()
-	if is_equal_approx(m, 1.0):
+	var n := raid.party_size if raid != null else 2
+	var m := CoopRules.party_mult("enemy_hp", n)
+	var dm := CoopRules.party_mult("enemy_damage", n)
+	if is_equal_approx(m, 1.0) and is_equal_approx(dm, 1.0):
 		return
 	for id: int in _enemies:
 		var e := _enemies[id] as Enemy
 		if e.has_meta(&"coop_scaled"):
 			continue
 		e.set_meta(&"coop_scaled", true)
+		e.diff_damage_mult *= dm
 		var ratio := e.hp / maxf(e.max_hp, 0.01)
 		e.max_hp *= m
 		e.hp = minf(e.hp, e.max_hp) if restored else e.max_hp * ratio
