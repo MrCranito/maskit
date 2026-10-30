@@ -19,6 +19,8 @@ func _init(p_kind: StringName = &"star", p_color: Color = MenuKit.TEXT, px: floa
 	color = p_color
 	custom_minimum_size = Vector2(px, px)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if kind == &"coin":
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS   # pièce peinte réduite
 
 
 func _ready() -> void:
@@ -103,6 +105,11 @@ func _draw() -> void:
 			_line(Vector2(0.5, 0.2), Vector2(0.5, 0.8), 0.16)
 			_line(Vector2(0.2, 0.5), Vector2(0.8, 0.5), 0.16)
 		&"coin":
+			var tex := CurrencyArt.coin()
+			if tex != null:   # pièce peinte (rendu Blender), sinon le dessin en aplats
+				var s: float = minf(size.x, size.y) * CurrencyArt.ICON_ZOOM
+				CurrencyArt.draw_fit(self, tex, Rect2(size * 0.5 - Vector2(s, s) * 0.5, Vector2(s, s)))
+				return
 			_circle(Vector2(0.5, 0.5), 0.4, Color(0.96, 0.74, 0.22))
 			_circle(Vector2(0.5, 0.5), 0.28, Color(0.86, 0.58, 0.12), false)
 			_line(Vector2(0.5, 0.3), Vector2(0.5, 0.7), 0.08, Color(1, 0.92, 0.6))
