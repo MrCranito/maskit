@@ -1,0 +1,16 @@
+# Réglages gdlint (gdtoolkit 4). Le job « lint » de la CI est en mode avertissement :
+# ces règles sont un objectif à atteindre progressivement, pas une barrière.
+# Conventions : GDScript typé, snake_case (un « _ » en tête est accepté : _floor, _src ; une lettre majuscule seule pour la géométrie : L, R, W, H),
+# PascalCase pour les classes.
+max-line-length: 120
+max-file-lines: 2000
+max-public-methods: 40
+max-returns: 10
+function-arguments-number: 12
+function-variable-name: (_?[a-z][a-z0-9]*(_[a-z0-9]+)*|_|[A-Z][0-9]?)
+function-argument-name: (_?[a-z][a-z0-9]*(_[a-z0-9]+)*|_|[A-Z][0-9]?)
+loop-variable-name: (_?[a-z][a-z0-9]*(_[a-z0-9]+)*|_|[A-Z][0-9]?)
+disable:
+  - no-elif-return
+  - no-else-return
+  - max-public-methods

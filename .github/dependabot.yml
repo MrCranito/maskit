@@ -1,0 +1,17 @@
+# Mises à jour automatiques des actions GitHub et des dépendances du serveur relais.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    labels: [ci]
+    commit-message:
+      prefix: "chore(ci)"
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: monthly
+    labels: [server]
+    commit-message:
+      prefix: "chore(server)"

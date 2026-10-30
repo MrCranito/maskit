@@ -96,7 +96,7 @@ Tourelles immobiles fixées à certains murs (cône de tir, télégraphe avant l
 
 ## GitHub
 - .gitignore Godot, .gitattributes (fins de ligne LF, binaires directement dans git, pas de LFS), README, LICENSE, ROADMAP.md.
-- GitHub Actions : export Windows, Linux, Web, Android à chaque tag `v*` (image godot-ci), + job qui lance les tests GUT sur chaque PR.
+- GitHub Actions : `ci.yml` sur chaque PR (compilation, lint gdlint en avertissement, tests GUT, tests serveur, export debug Linux/Web), `android.yml` (APK de test publié à chaque push sur `main`), `export.yml` (exports Windows, Linux, Web, Android à chaque tag `v*`, image godot-ci). Godot est installé par l'action composite `.github/actions/setup-godot`.
 
 ## ROADMAP
 1. Base : dépôt, structure, joueur (déplacement + tir auto), caméra, debug F3.

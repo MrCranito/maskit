@@ -26,6 +26,7 @@ concurrency:
 
 env:
   GODOT_VERSION: "4.7.2"
+  IMPORT_CACHE_KEY: godot-import-4.7.2-v1
 
 permissions:
   contents: write
@@ -45,28 +46,18 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Cache Godot + modèles d'export
-        id: cache-godot
+      - name: Installer Godot + modèle Android
+        uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          templates: android
+
+      - name: Cache des imports (.godot/)
         uses: actions/cache@v4
         with:
-          path: |
-            ~/godot-bin
-            ~/.local/share/godot/export_templates
-          key: godot-${{ env.GODOT_VERSION }}-android-v1
-
-      - name: Télécharger Godot et le modèle Android
-        if: steps.cache-godot.outputs.cache-hit != 'true'
-        run: |
-          set -e
-          mkdir -p ~/godot-bin && cd ~/godot-bin
-          curl -fsSL -o godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
-          unzip -q godot.zip && rm godot.zip
-          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
-          curl -fsSL -o tpl.tpz "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
-          unzip -q tpl.tpz "templates/android_*" "templates/version.txt" && rm tpl.tpz
-          D=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          mkdir -p "$D" && mv templates/* "$D/" && rmdir templates
-          ls -la "$D"
+          path: .godot
+          key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
+          restore-keys: ${{ env.IMPORT_CACHE_KEY }}-
 
       - name: Réglages Android (SDK, Java, keystore debug)
         env:
@@ -110,13 +101,13 @@ jobs:
           sed -i "s/^version\/name=.*/version\/name=\"0.1.${GITHUB_RUN_NUMBER}\"/" export_presets.cfg
 
       - name: Importer le projet
-        run: ~/godot-bin/godot --headless --path . --import 2>&1 | tail -20
+        run: godot --headless --path . --import 2>&1 | tail -20
 
       - name: Exporter l'APK
         run: |
           set -o pipefail
           mkdir -p build/android
-          ~/godot-bin/godot --headless --verbose --path . --export-debug "Android" build/android/RaidersGo.apk 2>&1 | tee export.log | tail -60
+          godot --headless --verbose --path . --export-debug "Android" build/android/RaidersGo.apk 2>&1 | tee export.log | tail -60
           ls -la build/android
           test -s build/android/RaidersGo.apk
 

@@ -1,0 +1,74 @@
+# Action composite : installe le binaire Godot officiel (Linux x86_64) et, à la demande,
+# les modèles d'export, avec cache. Utilisée par ci.yml et android.yml.
+#
+#   - uses: ./.github/actions/setup-godot
+#     with:
+#       version: "4.7.2"
+#       templates: "linux,web"     # vide = aucun modèle (tests, compilation)
+name: Installer Godot
+description: Télécharge Godot (binaire officiel) et les modèles d'export demandés, avec cache.
+
+inputs:
+  version:
+    description: Version de Godot (ex. 4.7.2)
+    required: true
+  templates:
+    description: Modèles d'export à installer, séparés par des virgules (linux, web, android, windows). Vide = aucun.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Clé de cache
+      id: key
+      shell: bash
+      env:
+        TEMPLATES: ${{ inputs.templates }}
+      run: |
+        # Les clés de cache n'acceptent pas les virgules.
+        echo "tpl=$(echo "${TEMPLATES:-none}" | tr -d '[:space:]' | tr ',' '-')" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Godot + modèles
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/godot-bin
+          ~/.local/share/godot/export_templates
+        key: godot-${{ inputs.version }}-tpl-${{ steps.key.outputs.tpl }}-v2
+
+    - name: Télécharger Godot
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GODOT_VERSION: ${{ inputs.version }}
+        TEMPLATES: ${{ inputs.templates }}
+      run: |
+        set -euo pipefail
+        BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+        mkdir -p ~/godot-bin && cd ~/godot-bin
+        curl -fsSL -o godot.zip "$BASE/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+        unzip -q godot.zip && rm godot.zip
+        mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot && chmod +x godot
+
+        if [ -n "$TEMPLATES" ]; then
+          # On n'extrait que les modèles demandés : l'archive complète fait > 1 Go.
+          PATTERNS=()
+          IFS=',' read -ra LIST <<< "$TEMPLATES"
+          for t in "${LIST[@]}"; do
+            t="$(echo "$t" | tr -d '[:space:]')"
+            [ -n "$t" ] && PATTERNS+=("templates/${t}_*")
+          done
+          curl -fsSL -o tpl.tpz "$BASE/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q tpl.tpz "${PATTERNS[@]}" "templates/version.txt" && rm tpl.tpz
+          D=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p "$D" && mv templates/* "$D/" && rmdir templates
+          ls -la "$D"
+        fi
+
+    - name: Ajouter Godot au PATH
+      shell: bash
+      run: |
+        echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+        "$HOME/godot-bin/godot" --version
