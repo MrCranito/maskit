@@ -9,7 +9,7 @@ extends RefCounted
 ##   roster du monde par type de salle, surchargé par rôle ; boss garanti dans la piste du
 ##   chapiteau (salle boss), gardes dans la roulotte du Directeur (super_loot).
 ## Ameublement choisi d'après Room.tags[0] (rôle posé par hc_plan.gd).
-## Roster provisoire = monstres mall_* (bestiaire propre du carnaval : phase 2).
+## Roster = bestiaire du carnaval (cv_*, data/bestiary/carnival.tres).
 
 const Cfg := preload("res://scripts/biomes/haunted_carnival/hc_config.gd")
 const Plan := preload("res://scripts/biomes/haunted_carnival/hc_plan.gd")
@@ -111,20 +111,20 @@ const HIDING := {
 	&"hall_arcade": {&"hc_photo_booth": 3.0},
 }
 
-## Rôle → roster d'ennemis prioritaire sur celui du monde (monstres mall_* provisoires) :
-## clones dans le palais des glaces, araignées sous les toiles, brutes au tape-fort…
+## Rôle → roster d'ennemis prioritaire sur celui du monde (bestiaire cv_*, data/bestiary/carnival.tres) :
+## pénombres dans le palais des glaces, peluches au tape-fort, manèges fantômes près des attractions…
 const ROLE_ROSTER := {
-	&"tent_mirrors": {&"mall_clone": 3.0, &"mall_night_spider": 1.0},
-	&"tent_freaks": {&"mall_night_spider": 2.0, &"mall_brute": 1.5, &"mall_zombie": 1.0},
-	&"stand_hammer": {&"mall_brute": 2.0, &"mall_zombie": 1.0},
-	&"ride_yard": {&"mall_zombie": 2.0, &"mall_flayer": 1.5, &"mall_night_spider": 1.0, &"mall_security_bot": 0.5},
-	&"wheel_yard": {&"mall_zombie": 2.0, &"mall_flayer": 1.5, &"mall_brute": 0.5},
-	&"plaza": {&"mall_zombie": 2.0, &"mall_flayer": 2.0, &"mall_clone": 1.0, &"mall_security_bot": 1.0},
-	&"hall_museum": {&"mall_clone": 2.0, &"mall_night_spider": 2.0},
-	&"hall_hangar": {&"mall_security_bot": 2.0, &"mall_zombie": 2.0, &"mall_brute": 1.0},
+	&"tent_mirrors": {&"cv_penumbra": 3.0, &"cv_lost_clown": 1.0},
+	&"tent_freaks": {&"cv_acrobat": 2.0, &"cv_big_plush": 1.5, &"cv_lost_clown": 1.0},
+	&"stand_hammer": {&"cv_big_plush": 2.0, &"cv_lost_clown": 1.0},
+	&"ride_yard": {&"cv_ghost_carousel": 2.0, &"cv_lost_clown": 2.0, &"cv_acrobat": 1.5, &"cv_circus_dog": 1.0},
+	&"wheel_yard": {&"cv_lost_clown": 2.0, &"cv_ghost_carousel": 1.5, &"cv_acrobat": 1.0},
+	&"plaza": {&"cv_lost_clown": 2.0, &"cv_circus_dog": 2.0, &"cv_acrobat": 1.5, &"cv_penumbra": 0.5},
+	&"hall_museum": {&"cv_penumbra": 2.0, &"cv_big_plush": 1.5},
+	&"hall_hangar": {&"cv_circus_dog": 2.0, &"cv_lost_clown": 2.0, &"cv_big_plush": 1.0},
 }
 
-const BESTIARY_SECTION := "bestiary_mall"
+const BESTIARY_SECTION := "bestiary_carnival"
 const SUPER_LOOT_CONTAINER := &"hc_caravan_chest"
 
 

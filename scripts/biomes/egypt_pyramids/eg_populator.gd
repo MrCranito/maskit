@@ -75,17 +75,17 @@ const HIDING := {
 	&"dunes": {&"eg_hay_cart": 1.0},
 }
 
-## Rôle → roster d'ennemis prioritaire sur celui du monde (roster provisoire fw_*).
+## Rôle → roster d'ennemis prioritaire sur celui du monde (bestiaire eg_*, data/bestiary/egypt.tres).
 const ROLE_ROSTER := {
-	&"tomb": {&"fw_bandit": 2.0, &"fw_raider": 2.0, &"fw_bruiser": 0.5},
-	&"trap_hall": {&"fw_raider": 3.0, &"fw_bandit": 1.0},
-	&"guard_hall": {&"fw_marauder": 2.0, &"fw_sharpshooter": 1.5, &"fw_bandit": 2.0},
-	&"camp": {&"fw_bandit": 3.0, &"fw_sharpshooter": 1.5, &"fw_guard_dog": 1.0},
-	&"dunes": {&"fw_guard_dog": 2.0, &"fw_bandit": 2.0, &"fw_raider": 1.0},
-	&"hypostyle": {&"fw_marauder": 1.5, &"fw_bandit": 2.0, &"fw_sharpshooter": 1.0},
+	&"tomb": {&"eg_mummy": 2.0, &"eg_skeleton": 2.0, &"eg_scarab": 0.5},
+	&"trap_hall": {&"eg_scarab": 2.0, &"eg_viper": 2.0, &"eg_skeleton": 1.0},
+	&"guard_hall": {&"eg_skeleton": 2.0, &"eg_archer": 1.5, &"eg_mummy": 1.0},
+	&"camp": {&"eg_lizard": 2.0, &"eg_archer": 1.5, &"eg_viper": 1.0},
+	&"dunes": {&"eg_viper": 2.0, &"eg_lizard": 2.0, &"eg_scarab": 1.0},
+	&"hypostyle": {&"eg_skeleton": 2.0, &"eg_mummy": 1.5, &"eg_archer": 1.0},
 }
 
-const BESTIARY_SECTION := "bestiary_egypt_pyramids"
+const BESTIARY_SECTION := "bestiary_egypt"
 const SUPER_LOOT_CONTAINER := &"eg_gold_chest"
 
 

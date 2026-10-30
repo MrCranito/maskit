@@ -68,7 +68,7 @@ func test_monde_charge() -> void:
 	for k: Variant in world.enemy_roster:
 		for kind: Variant in world.enemy_roster[k]:
 			assert_true(ResourceLoader.exists("res://data/enemies/%s.tres" % kind), "EnemyData %s" % kind)
-			assert_true(String(kind).begins_with("ss_"), "roster provisoire ss_* : %s" % kind)
+			assert_true(String(kind).begins_with("ice_"), "bestiaire ice_* : %s" % kind)
 	assert_true(ResourceLoader.exists("res://data/enemies/%s.tres" % world.boss_kind), "boss")
 	for e: StringName in world.elite_kinds:
 		assert_true(ResourceLoader.exists("res://data/enemies/%s.tres" % e), "élite %s" % e)

@@ -27,56 +27,56 @@ palette = {
 }
 enemy_roster = {
 &"boss": {
-&"fw_bandit": 2.0,
-&"fw_bruiser": 2.0,
-&"fw_marauder": 1.0,
-&"fw_raider": 1.5
+&"eg_archer": 1.5,
+&"eg_mummy": 1.0,
+&"eg_skeleton": 2.0
 },
 &"combat": {
-&"fw_bandit": 4.0,
-&"fw_bruiser": 1.0,
-&"fw_guard_dog": 1.0,
-&"fw_marauder": 1.5,
-&"fw_raider": 3.0,
-&"fw_sharpshooter": 1.5
+&"eg_archer": 1.5,
+&"eg_lizard": 2.0,
+&"eg_mummy": 1.0,
+&"eg_scarab": 2.5,
+&"eg_skeleton": 3.0,
+&"eg_viper": 1.2
 },
 &"corridor": {
-&"fw_bandit": 3.0,
-&"fw_guard_dog": 0.8,
-&"fw_raider": 2.0,
-&"fw_sharpshooter": 1.0
+&"eg_lizard": 2.0,
+&"eg_scarab": 2.0,
+&"eg_skeleton": 3.0,
+&"eg_viper": 0.8
 },
 &"extraction": {
-&"fw_bandit": 3.0,
-&"fw_bruiser": 1.0,
-&"fw_guard_dog": 1.5,
-&"fw_marauder": 1.5,
-&"fw_raider": 2.5,
-&"fw_sharpshooter": 1.5
+&"eg_archer": 1.5,
+&"eg_lizard": 1.5,
+&"eg_mummy": 1.2,
+&"eg_scarab": 2.0,
+&"eg_skeleton": 2.0,
+&"eg_viper": 1.2
 },
 &"loot": {
-&"fw_bandit": 3.0,
-&"fw_guard_dog": 0.5,
-&"fw_raider": 2.0,
-&"fw_sharpshooter": 1.0
+&"eg_lizard": 1.5,
+&"eg_scarab": 1.5,
+&"eg_skeleton": 3.0,
+&"eg_viper": 0.6
 },
 &"rest": {
-&"fw_bandit": 1.0,
-&"fw_raider": 0.5
+&"eg_scarab": 0.5,
+&"eg_skeleton": 1.0
 },
 &"spawn": {
-&"fw_bandit": 1.0
+&"eg_skeleton": 1.0
 },
 &"super_loot": {
-&"fw_bruiser": 3.0,
-&"fw_marauder": 1.5,
-&"fw_raider": 1.0,
-&"fw_sharpshooter": 1.0
+&"eg_archer": 2.0,
+&"eg_mummy": 2.0,
+&"eg_skeleton": 1.0,
+&"eg_viper": 1.0
 },
 &"trap": {
-&"fw_bandit": 2.0,
-&"fw_marauder": 1.0,
-&"fw_raider": 3.0
+&"eg_archer": 1.0,
+&"eg_lizard": 2.0,
+&"eg_skeleton": 2.0,
+&"eg_viper": 2.5
 }
 }
 building_archetypes = Array[StringName]([&"chamber", &"treasury", &"hypostyle", &"sanctuary"])
@@ -85,8 +85,8 @@ container_kinds = Array[StringName]([&"eg_jar", &"eg_sarcophagus", &"eg_chest", 
 prop_kinds = Array[StringName]([&"eg_brazier", &"eg_statue", &"eg_canopic_jars", &"eg_sarcophagus_big", &"eg_offering_table", &"eg_embalming_table", &"eg_weapon_rack", &"eg_bench", &"eg_scroll_shelf", &"eg_spikes", &"eg_rubble", &"eg_cactus", &"eg_bones", &"eg_tent"])
 floors_min = 0
 floors_max = 0
-boss_kind = &"fw_sheriff"
-elite_kinds = Array[StringName]([&"fw_deserter", &"fw_buffalo"])
+boss_kind = &"eg_pharaoh"
+elite_kinds = Array[StringName]([&"eg_shadow_warrior", &"eg_sun_priest"])
 generator_path = "res://scripts/biomes/egypt_pyramids/eg_generator.gd"
 builder_path = "res://scripts/biomes/egypt_pyramids/eg_builder.gd"
 containers_dir = "res://assets/sprites/egypt_pyramids/containers/"
