@@ -10,7 +10,8 @@ extends Resource
 ##   freeze    : slow = ralentissement (0..1, vitesse × (1 − slow)), duration (s)
 ##   ricochet  : count = rebonds, radius = portée de recherche d'un autre ennemi (px),
 ##               damage_mult = dégâts conservés à chaque rebond
-##   multishot : count = projectiles en plus par tir, spread_deg = éventail ajouté (°)
+##   multishot : count = projectiles en plus par tir, ratio = valeur d'un projectile en plus
+##               (part d'un projectile de base, ≤ 0 = 1), spread_deg = éventail ajouté (°)
 ##   lifesteal : ratio = part des dégâts infligés rendue en PV au tireur
 ##   shockwave : radius (px), ratio = dégâts de l'onde en part des dégâts du coup
 ## `chance` : probabilité de déclenchement par impact (1 = toujours ; sans objet pour multishot).

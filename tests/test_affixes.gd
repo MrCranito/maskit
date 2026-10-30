@@ -244,6 +244,11 @@ func test_multi_tir_ajoute_un_projectile_sans_toucher_au_catalogue() -> void:
 	var w := Affixes.make_weapon(base, [&"multishot"])
 	assert_eq(w.projectile_count, n0 + Affixes.get_affix(&"multishot").count)
 	assert_gt(w.spread_degrees, base.spread_degrees)
+	# Projectile en plus à `ratio` des dégâts : un tir vaut (n0 + count·ratio) projectiles de base.
+	var a := Affixes.get_affix(&"multishot")
+	assert_almost_eq(w.damage * w.projectile_count, base.damage * (n0 + a.count * a.ratio), 0.01,
+		"dégâts totaux d'un tir")
+	assert_almost_eq(a.ratio, 0.5, 0.0001, "projectile en plus à 50 %")
 	assert_eq(base.projectile_count, n0, "catalogue intact")
 	assert_same(Affixes.make_weapon(base, [&"multishot"]), w, "exemplaire partagé (cache)")
 	assert_same(Affixes.make_weapon(base, []), base, "sans affixe : la ressource du catalogue")

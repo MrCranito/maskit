@@ -185,7 +185,13 @@ static func make_weapon(base: WeaponData, ids: Array) -> WeaponData:
 	for id: StringName in n:
 		var a := get_affix(id)
 		if a != null and a.kind == AffixData.KIND_MULTISHOT:
-			w.projectile_count = maxi(w.projectile_count, 1) + maxi(a.count, 0)
+			# Chaque projectile en plus vaut `ratio` d'un projectile de base (1 si ratio ≤ 0) :
+			# dégâts répartis sur tous les projectiles du tir (total × (n + count·ratio) / n).
+			var n0 := maxi(w.projectile_count, 1)
+			var extra := maxi(a.count, 0)
+			var r := a.ratio if a.ratio > 0.0 else 1.0
+			w.projectile_count = n0 + extra
+			w.damage = w.damage * (float(n0) + float(extra) * r) / float(n0 + extra)
 			w.spread_degrees = maxf(w.spread_degrees, 0.0) + a.spread_deg
 	_weapons[key] = w
 	return w
