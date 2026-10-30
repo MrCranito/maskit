@@ -554,7 +554,7 @@ func _refresh_profile() -> void:
 	(stat_values[&"raids"] as Label).text = str(raids)
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"
-	gold_label.text = format_thousands(gold_amount())
+	gold_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else format_thousands(gold_amount())
 	var card := PlayCard.displayed_card()
 	map_name_label.text = card.display_name if card != null else "Choisir une carte"
 	map_sub_label.text = ("%s · Changer ›" % card.difficulty_name()) if card != null else "Changer ›"

@@ -668,7 +668,7 @@ func _refresh_button(b: Button, s: SkinData) -> void:
 		"buy":
 			b.text = "%d  gemmes" % s.price_gems if s.price_gems > 0 else "Obtenir"
 			b.disabled = false
-			b.modulate = Color.WHITE if Profile.gems >= s.price_gems else Color(1, 1, 1, 0.65)
+			b.modulate = Color.WHITE if Profile.can_afford(&"gems", s.price_gems) else Color(1, 1, 1, 0.65)
 			_style_action(b, MenuKit.Style.PRIMARY)
 		"pass":
 			b.text = "Dans le pass"
@@ -732,7 +732,7 @@ func ask_buy(s: SkinData) -> ModalPanel:
 		return null
 	if s.is_pass():
 		return open_pass(s)
-	if Profile.gems < s.price_gems:
+	if not Profile.can_afford(&"gems", s.price_gems):
 		var missing: int = s.price_gems - Profile.gems
 		var m := ConfirmPanel.new("Pas assez de gemmes",
 			"Il te manque %d gemmes pour « %s ». Gagne-en en t'extrayant, ou prends un pack." % [missing, s.display_name],

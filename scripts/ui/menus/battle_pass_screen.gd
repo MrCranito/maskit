@@ -742,7 +742,7 @@ func ask_premium() -> ModalPanel:
 	if bp.premium:
 		return null
 	var price := BattlePassSystem.premium_price()
-	if Profile.gems < price:
+	if not Profile.can_afford(&"gems", price):
 		var m := ConfirmPanel.new("Pas assez de gemmes",
 			"Le Premium coûte %d gemmes : il t'en manque %d. Gagne-en en t'extrayant ou prends un pack." % [price, price - Profile.gems],
 			"Voir les gemmes")
