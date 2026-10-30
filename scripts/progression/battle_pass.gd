@@ -191,9 +191,9 @@ func buy_premium() -> bool:
 	if premium or p == null:
 		return false
 	var price := premium_price()
-	if int(p.get("gems")) < price:
+	if not bool(p.call("debit", &"gems", price)):
 		return false
-	p.call("add_gems", -price)
+	p.call("save")
 	premium = true
 	save()
 	return true

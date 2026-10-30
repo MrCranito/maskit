@@ -8,6 +8,9 @@ cadavre d'ennemi, élite, butin au sol), la chance d'obtenir l'objet en une foui
   - sous LEGENDARY_MAX (1 %) pour un Légendaire,
   - sous EPIC_MAX (4 %) pour un Épique,
 en difficulté Normale au rez-de-chaussée (contexte de référence de la page des taux de drop).
+Plafonds lus dans data/balance.cfg ([loot] drop_cap_epic, drop_cap_legendary). Si
+[loot] drop_cap_exempt_bosses=true, la table propre de chaque boss (EnemyData boss = true :
+loot_table, sinon enemy_<kind>) est exemptée : ni vérifiée, ni modifiée (cf. DropCaps).
 Les difficultés et étages plus élevés augmentent ces chances ([loot] rarity_*_bonus).
 
 Le calcul reproduit LootRoller.roll (tirages pondérés sans remise, chance de vide, tirage en plus
@@ -21,8 +24,6 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LEGENDARY_MAX = 0.01
-EPIC_MAX = 0.04
 MARGIN = 0.92            # vise 92 % du plafond
 DIFF, FLOOR = 1, 0       # Normal, rez-de-chaussée
 
@@ -38,6 +39,12 @@ BAL = open(os.path.join(ROOT, "data", "balance.cfg"), encoding="utf-8").read()
 DB = cfg_list(BAL, "rarity_difficulty_bonus", [0.0, 0.05, 0.15, 0.3, 0.45])
 FB = cfg_list(BAL, "rarity_floor_bonus", [0.0, 0.05, 0.2, 0.35, 0.5])
 SL = cfg_list(BAL, "super_loot_rarity_mult", [0.3, 0.7, 2.0, 6.0, 10.0])
+m = re.search(r"^drop_cap_epic=([0-9.eE+-]+)", BAL, re.M)
+EPIC_MAX = float(m.group(1)) if m else 0.04
+m = re.search(r"^drop_cap_legendary=([0-9.eE+-]+)", BAL, re.M)
+LEGENDARY_MAX = float(m.group(1)) if m else 0.01
+m = re.search(r"^drop_cap_exempt_bosses=(\w+)", BAL, re.M)
+EXEMPT_BOSSES = (m.group(1).lower() == "true") if m else True
 m = re.search(r"^super_loot_extra_rolls=(\d+)", BAL, re.M)
 SL_EXTRA = int(m.group(1)) if m else 1
 m = re.search(r"^ground_drop_max=(\d+)", BAL, re.M)
@@ -55,6 +62,24 @@ RARITY: dict[str, int] = {}
 for p in glob.glob(os.path.join(ROOT, "data", "items", "*.tres")):
     t = open(p, encoding="utf-8").read()
     RARITY[val(t, "id").replace("&", "").strip('"')] = int(val(t, "rarity", "0"))
+
+
+def boss_tables() -> set[str]:
+    """Tables propres des boss (loot_table, sinon enemy_<kind> si elle existe)."""
+    out: set[str] = set()
+    for p in glob.glob(os.path.join(ROOT, "data", "enemies", "*.tres")):
+        t = open(p, encoding="utf-8").read()
+        if val(t, "boss") != "true":
+            continue
+        own = val(t, "loot_table").replace("&", "").strip('"')
+        if not own:
+            own = "enemy_" + val(t, "kind").replace("&", "").strip('"')
+        if os.path.exists(os.path.join(ROOT, "data", "loot_tables", own + ".tres")):
+            out.add(own)
+    return out
+
+
+EXEMPT = boss_tables() if EXEMPT_BOSSES else set()
 
 
 def mult(r: int, super_loot: bool) -> float:
@@ -139,6 +164,9 @@ def main() -> int:
     changed = 0
     for path in sorted(glob.glob(os.path.join(ROOT, "data", "loot_tables", "*.tres"))):
         name = os.path.basename(path)[:-5]
+        if name in EXEMPT:
+            print("  %-22s exemptée (boss, [loot] drop_cap_exempt_bosses)" % name)
+            continue
         t = load(path)
         if not t["entries"]:
             continue

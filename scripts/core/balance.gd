@@ -22,3 +22,10 @@ func get_value(section: String, key: String, default: Variant = null) -> Variant
 
 func get_float(section: String, key: String, default: float = 0.0) -> float:
 	return float(_config.get_value(section, key, default))
+
+
+## Clés d'une section (vide si la section n'existe pas).
+func get_section_keys(section: String) -> PackedStringArray:
+	if not _config.has_section(section):
+		return PackedStringArray()
+	return _config.get_section_keys(section)

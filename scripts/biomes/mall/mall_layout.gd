@@ -43,6 +43,20 @@ const SHOPS := [
 	[&"cafe", &"shop_cafe", "Café des Arcades", "Salon de thé Vermeil"],
 	[&"phones", &"shop_electronics", "Mobile Store", "Planète Portable"],
 ]
+## Noms de réserve par archétype, quand les noms de SHOPS sont déjà pris (grands plans) :
+## évite « Pharmacie de la Galerie 2 ».
+const EXTRA_NAMES := {
+	&"clothes": ["Maison Velours", "Fil d'Ariane", "Denim District"],
+	&"electronics": ["Circuit Lumière", "Pixel Planète", "Ondes & Cie"],
+	&"pharmacy": ["Pharmacie du Square", "Herboristerie Sauge", "Officine Saint-Roch"],
+	&"toys": ["Ludothèque Arc-en-Ciel", "Petit Pantin", "Comptoir des Jeux"],
+	&"shoes": ["Semelle de Vent", "Cordonnerie Brun", "Basket Factory"],
+	&"perfume": ["Ambre & Musc", "L'Essence Rare", "Jardin d'Hespéride"],
+	&"books": ["BD Planète", "La Bouquinerie", "Papeterie Encre Bleue"],
+	&"sports": ["Grimpe & Glisse", "Le Vestiaire", "Outdoor Horizon"],
+	&"cafe": ["Brasserie du Dôme", "Crêperie Bigoudène", "Comptoir Sucré"],
+	&"phones": ["Allô Réparation", "Hello Mobile", "Câbles & Coques"],
+}
 
 
 class Skeleton:
@@ -222,6 +236,12 @@ static func _shop_def(rng: RandomNumberGenerator, used: Dictionary) -> Array:
 			used[nm] = true
 			return [def[0], def[1], nm]
 	var d2: Array = _pick(SHOPS, rng)
+	# Noms de réserve de l'archétype (sans tirage : le plan, et donc le rendu pré-calculé, ne
+	# change pas), avant de numéroter en dernier recours.
+	for extra: String in d2.slice(2) + (EXTRA_NAMES.get(d2[0], []) as Array):
+		if not used.has(extra):
+			used[extra] = true
+			return [d2[0], d2[1], extra]
 	var base: String = d2[2]
 	var nm2 := base
 	var i := 2

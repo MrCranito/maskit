@@ -321,9 +321,23 @@ func _finish_search() -> void:
 	else:
 		_refresh_visual()
 		_save_state()
+		_play_reveal()
 	if NetHooks.active:
 		NetHooks.container_opened(self)
 	_announce_open()
+
+
+## Effet d'ouverture : faisceau de la meilleure rareté + objets qui jaillissent (ChestReveal) et
+## petit rebond du conteneur.
+func _play_reveal() -> void:
+	if not is_inside_tree() or not bool(LootDB.cfg().get_value(LootDB.SECTION, "reveal_enabled", true)):
+		return
+	add_child(ChestReveal.create(entries, get_visual_height()))
+	if _sprite != null:
+		var base := _sprite.scale
+		var tw := _sprite.create_tween()
+		tw.tween_property(_sprite, "scale", base * Vector2(1.12, 0.88), 0.06)
+		tw.tween_property(_sprite, "scale", base, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _announce_open() -> void:
@@ -503,16 +517,17 @@ func _draw_bag() -> void:
 	draw_rect(Rect2(c + Vector2(-8, -6), Vector2(16, 4)), Color(0.85, 0.66, 0.3))
 
 
+## Anneau de fouille (maquette « Fouille », direction D) : disque encre, piste sombre, progression
+## violet clair, loupe blanche au centre.
 func _draw_ring() -> void:
-	var rad := 17.0
-	_ring.draw_circle(Vector2.ZERO, rad + 5.0, Color(0.05, 0.07, 0.13, 0.85))
-	_ring.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(1, 1, 1, 0.18), 5.0, true)
+	var rad := 18.0
+	_ring.draw_circle(Vector2.ZERO, rad + 6.0, Color(MenuKit.NIGHT_DEEP, 0.85))
+	_ring.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(1, 1, 1, 0.14), 5.0, true)
 	var t := get_search_ratio()
 	if t > 0.0:
-		_ring.draw_arc(Vector2.ZERO, rad, -PI * 0.5, -PI * 0.5 + TAU * t, 40, Color(1.0, 0.78, 0.35), 5.0, true)
-	# Loupe stylisée au centre.
-	_ring.draw_arc(Vector2(-2, -2), 6.0, 0.0, TAU, 20, Color(1, 0.95, 0.85), 2.4, true)
-	_ring.draw_line(Vector2(2.5, 2.5), Vector2(8, 8), Color(1, 0.95, 0.85), 3.0, true)
+		_ring.draw_arc(Vector2.ZERO, rad, -PI * 0.5, -PI * 0.5 + TAU * t, 40, MenuKit.VIOLET_LIGHT, 5.0, true)
+	_ring.draw_arc(Vector2(-2, -2), 6.0, 0.0, TAU, 20, Color.WHITE, 2.4, true)
+	_ring.draw_line(Vector2(2.5, 2.5), Vector2(8, 8), Color.WHITE, 3.0, true)
 
 
 # --- Utilitaires ------------------------------------------------------------------

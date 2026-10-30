@@ -1010,7 +1010,7 @@ func get_world_display_name() -> String:
 
 func get_banner_text() -> String:
 	var title: String = map_card.display_name if map_card != null else get_world_display_name()
-	return "%s — %s" % [title, world_floor_name(current_floor)]
+	return "%s · %s" % [title, world_floor_name(current_floor)]
 
 
 func get_current_room_name() -> String:
@@ -1148,17 +1148,27 @@ func _build_banner() -> void:
 	center.offset_top = top
 	center.offset_bottom = top + 60
 	ui_layer.add_child(center)
+	# Maquette Hud (direction D) : barre encre translucide sans contour, capitales Space Grotesk.
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_theme_stylebox_override("panel", _make_panel_style(14))
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(MenuKit.NIGHT_DEEP, 0.72)
+	ps.content_margin_left = 20
+	ps.content_margin_right = 20
+	ps.content_margin_top = 6
+	ps.content_margin_bottom = 7
+	panel.add_theme_stylebox_override("panel", ps)
 	center.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-	_banner_title = _make_label(20, Color.WHITE, true)
+	_banner_title = _make_label(18, Color.WHITE, false)
+	_banner_title.label_settings.font = MenuKit.nunito(600)
+	_banner_title.uppercase = true
 	vbox.add_child(_banner_title)
-	_banner_room = _make_label(16, TEXT_SECONDARY, false)
+	_banner_room = _make_label(15, Color(1, 1, 1, 0.6), false)
+	_banner_room.label_settings.font = MenuKit.nunito(500)
 	vbox.add_child(_banner_room)
 
 
@@ -1324,9 +1334,13 @@ func _apply_map_player_modifiers() -> void:
 		vbox.add_child(row)
 		vbox.move_child(row, 0)
 		_banner_title.reparent(row)
-		var badge := MapTile.difficulty_badge(map_card.difficulty, true)
-		badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		row.add_child(badge)
+		# difficulté de la carte : texte violet clair (plus de pastille colorée)
+		var diff := _make_label(18, MenuKit.GOLD, false)
+		diff.name = "Difficulty"
+		diff.label_settings.font = MenuKit.nunito(600)
+		diff.uppercase = true
+		diff.text = "· " + map_card.difficulty_name()
+		row.add_child(diff)
 		var center := vbox.get_parent().get_parent() as Control
 		if center != null:
 			center.offset_left = -330

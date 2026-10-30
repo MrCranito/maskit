@@ -82,6 +82,8 @@ func build_text() -> String:
 	lines.append("DEBUG (F3)")
 	lines.append("FPS : %d" % Engine.get_frames_per_second())
 	lines.append("Seed : %d" % GameState.run_seed)
+	if DevMode.is_available():
+		lines.append("Ressources illimitées (F4) : %s" % ("oui" if DevMode.is_unlimited() else "non"))
 
 	var player: Node2D = GameState.player
 	if not is_instance_valid(player):
