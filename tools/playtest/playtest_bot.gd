@@ -384,10 +384,15 @@ func _watch_enemy(e: Node) -> void:
 	en.set_meta(&"pt_watched", true)
 	var id := en.get_instance_id()
 	var kind := String(en.data.kind) if en.data != null else "?"
-	en.damaged.connect(func(amount: float, _hp: float) -> void:
+	var is_boss := en.data != null and en.data.boss
+	en.damaged.connect(func(amount: float, hp_left: float) -> void:
 		dmg_dealt[kind] = float(dmg_dealt.get(kind, 0.0)) + amount
 		if not _first_hit.has(id):
-			_first_hit[id] = t)
+			_first_hit[id] = t
+		# PV les plus bas atteints par le boss (il peut se soigner ensuite).
+		if is_boss:
+			var r := snappedf(hp_left / maxf(en.max_hp, 1.0), 0.001)
+			boss_info["hp_ratio_min"] = minf(float(boss_info.get("hp_ratio_min", 1.0)), r))
 	if en.has_signal(&"phase_changed") and en.data != null and en.data.boss:
 		en.phase_changed.connect(func(p: int) -> void:
 			boss_info["max_phase"] = maxi(int(boss_info.get("max_phase", 1)), p))
@@ -566,6 +571,10 @@ func _physics_process(delta: float) -> void:
 		_sticks(Vector2.ZERO, Vector2.ZERO)
 		if _dead_wait == 0.0:
 			_death_t = t
+			# PV du boss à l'instant de la mort, avant l'écran de fin (il repart et peut se soigner).
+			var boss := _boss_node()
+			if boss != null:
+				boss_info["hp_ratio_at_death"] = snappedf(boss.hp / maxf(boss.max_hp, 1.0), 0.001)
 		_dead_wait += delta
 		if _dead_wait > 5.0:
 			_end_from_raid()
@@ -1296,7 +1305,8 @@ func _end_from_raid() -> void:
 		var boss := _boss_node()
 		if boss != null:
 			phase_deaths = int(boss.boss_phase) + 1 if boss.boss_phase >= 0 else int(boss.phase)
-			boss_info["hp_ratio_at_death"] = snappedf(boss.hp / maxf(boss.max_hp, 1.0), 0.001)
+			if not boss_info.has("hp_ratio_at_death"):
+				boss_info["hp_ratio_at_death"] = snappedf(boss.hp / maxf(boss.max_hp, 1.0), 0.001)
 			boss_info["death_skill"] = death_skill
 	elif outcome.is_empty():
 		outcome = "extraction"
