@@ -33,8 +33,10 @@ func test_decide_first_sync() -> void:
 	# Appareil neuf, compte neuf : rien sur le serveur → on pousse ce qu'on a.
 	assert_eq(CS.decide(0, false, true, false, 0), CS.Action.PUSH)
 	assert_eq(CS.decide(0, false, false, false, 0), CS.Action.NOTHING)
-	# Appareil jamais synchronisé mais compte connu du serveur (réinstallation, liaison) : le cloud fait foi.
-	assert_eq(CS.decide(0, true, true, true, 5), CS.Action.PULL)
+	# Jamais synchronisé avec ce compte mais le serveur en a une : le cloud fait foi…
+	assert_eq(CS.decide(0, false, true, true, 5), CS.Action.PULL)
+	# …sauf si l'appareil a vraiment progressé (changement de compte) : le joueur tranche.
+	assert_eq(CS.decide(0, true, true, true, 5), CS.Action.CONFLICT)
 
 
 func test_decide_same_version() -> void:
@@ -119,6 +121,38 @@ func test_conflict_panel_builds() -> void:
 	assert_false(p.close_button.visible, "pas de bouton Fermer : il faut choisir")
 	assert_eq(CloudConflictPanel.format_date(""), "Maintenant")
 	assert_true(CloudConflictPanel.format_date("2026-10-30T09:52:22+00:00").begins_with("30/10/2026"))
+
+
+func test_pkce_challenge() -> void:
+	# Vecteur RFC 7636 appendix B.
+	assert_eq(AccountLink.challenge_for("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"), "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")
+	var l := AccountLink.new()
+	var c := l.new_challenge()
+	assert_eq(l.code_verifier.length(), 43)
+	assert_eq(c, AccountLink.challenge_for(l.code_verifier))
+	assert_false(c.contains("=") or c.contains("+") or c.contains("/"))
+	l.free()
+
+
+func test_parse_callback() -> void:
+	var q := AccountLink.parse_callback("GET /cb?code=abc%2D1&state=x HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
+	assert_eq(q.get("code"), "abc-1")
+	assert_eq(q.get("state"), "x")
+	var e := AccountLink.parse_callback("GET /cb?error=access_denied&error_description=User+denied HTTP/1.1\r\n")
+	assert_eq(e.get("error_description"), "User denied")
+	assert_true(AccountLink.parse_callback("GET /favicon.ico HTTP/1.1\r\n").is_empty())
+
+
+func test_provider_of() -> void:
+	assert_eq(CS.provider_of({"identities": [{"provider": "google"}]}), "google")
+	assert_eq(CS.provider_of({"identities": [], "app_metadata": {"provider": "anonymous"}}), "")
+	assert_eq(CS.provider_of({}), "")
+
+
+func test_has_progress() -> void:
+	assert_false(CS.has_progress({"profile": {"gems": 0, "gold": 0, "weapons": [{}], "stats": {"raids": 0}}}))
+	assert_true(CS.has_progress({"profile": {"gems": 0, "gold": 0, "weapons": [{}], "stats": {"raids": 1}}}))
+	assert_true(CS.has_progress({"profile": {"gems": 5, "weapons": [{}]}}))
 
 
 func test_status_labels() -> void:

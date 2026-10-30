@@ -4,8 +4,11 @@ extends Node
 ## Principe « local d'abord » : SaveManager écrit toujours user://save.json ; CloudSync pousse
 ## ce fichier au serveur un peu après chaque écriture (regroupement), et le récupère à la
 ## connexion. Chaque joueur a un compte invité (connexion anonyme Supabase) créé au premier
-## lancement, dont le jeton est conservé dans user://cloud_session.json (chiffré). La liaison
-## Apple / Google (pour retrouver son compte sur un autre téléphone) viendra ensuite.
+## lancement, dont le jeton est conservé dans user://cloud_session.json (chiffré). Le joueur peut
+## ensuite LIER ce compte à Apple ou Google (link_account) : l'identité est rattachée au compte
+## invité (toute la progression suit) ; si l'identité est déjà rattachée à un autre compte
+## (nouveau téléphone), on BASCULE sur ce compte et la sauvegarde locale est réconciliée avec
+## la sienne (fenêtre de conflit si les deux ont progressé). Obtention des jetons : AccountLink.
 ##
 ## Version : SaveManager.data["_cloud"] = {"version": int, "dirty": bool}. `version` = version
 ## serveur de la dernière sauvegarde synchronisée, `dirty` = modifications locales pas encore
@@ -20,6 +23,8 @@ signal status_changed(status: StringName)
 signal conflict_detected(local_info: Dictionary, remote_info: Dictionary)
 ## La sauvegarde du cloud vient d'être appliquée localement (les écrans doivent se rafraîchir).
 signal remote_applied
+## Liaison de compte terminée (ok = succès ; message = libellé à afficher).
+signal link_finished(ok: bool, message: String)
 
 const CFG_PATH := "res://data/cloud.cfg"
 const SESSION_PATH := "user://cloud_session.json"
@@ -38,6 +43,10 @@ enum Action { NOTHING, PUSH, PULL, CONFLICT }
 var status: StringName = STATUS_DISABLED
 var user_id: String = ""
 var is_anonymous: bool = true
+## Fournisseur lié ("apple", "google") ou "" pour un compte invité.
+var provider: String = ""
+## Achats vérifiés par le serveur (achats en cours : purchase()).
+var purchase_busy: bool = false
 ## Gemmes créditées par le serveur (achats vérifiés) et droits (ex. "pass_premium_s1"), lecture seule.
 var gems_granted: int = 0
 var entitlements: Array[String] = []
@@ -57,6 +66,8 @@ var _applying: bool = false
 var _busy: bool = false
 var _booted: bool = false
 var _push_wanted: bool = false
+var _link: AccountLink = null
+var _link_provider: StringName = &""
 
 
 func _ready() -> void:
@@ -71,6 +82,16 @@ func _ready() -> void:
 	_retry_timer.one_shot = true
 	_retry_timer.timeout.connect(func() -> void: sync())
 	add_child(_retry_timer)
+	_link = AccountLink.new()
+	_link.name = "AccountLink"
+	_link.port = int(_cfg.get_value("auth", "pkce_port", 48791))
+	_link.google_web_client_id = str(_cfg.get_value("auth", "google_web_client_id", ""))
+	_link.token_ready.connect(_on_link_token)
+	_link.code_ready.connect(_on_link_code)
+	_link.failed.connect(func(msg: String) -> void:
+		_link_provider = &""
+		link_finished.emit(false, msg))
+	add_child(_link)
 	var sm: Node = get_node_or_null(^"/root/SaveManager")
 	if sm != null and sm.has_signal(&"saved"):
 		sm.connect(&"saved", _on_local_saved)
@@ -136,13 +157,15 @@ static func describe_save(save: Dictionary, updated_at: String = "", device: Str
 # --- Décision de synchronisation (pure, testée) ----------------------------------------------
 
 ## Que faire à la connexion, d'après la version locale, les modifications locales non envoyées,
-## et l'état du serveur. Voir l'en-tête : la version locale 0 = appareil jamais synchronisé.
+## et l'état du serveur. La version locale 0 = jamais synchronisé avec ce compte.
 static func decide(local_version: int, local_dirty: bool, local_has_data: bool,
 		remote_exists: bool, remote_version: int) -> Action:
 	if not remote_exists:
 		return Action.PUSH if local_has_data else Action.NOTHING
 	if local_version <= 0:
-		return Action.PULL
+		# Jamais synchronisé avec CE compte : le cloud fait foi, sauf si l'appareil a vraiment
+		# progressé (dirty), cas du changement de compte → le joueur tranche.
+		return Action.CONFLICT if local_dirty else Action.PULL
 	if local_version == remote_version:
 		return Action.PUSH if local_dirty else Action.NOTHING
 	if local_version < remote_version:
@@ -279,6 +302,8 @@ func forget_session() -> void:
 	_refresh_token = ""
 	_expires_at = 0
 	user_id = ""
+	provider = ""
+	is_anonymous = true
 	DirAccess.remove_absolute(SESSION_PATH)
 
 
@@ -414,8 +439,26 @@ func _store_session(body: Variant) -> bool:
 	if u is Dictionary:
 		user_id = str((u as Dictionary).get("id", user_id))
 		is_anonymous = bool((u as Dictionary).get("is_anonymous", true))
+		provider = provider_of(u)
 	_save_session()
 	return true
+
+
+## Premier fournisseur OAuth d'un objet utilisateur Supabase ("apple", "google"), "" sinon.
+static func provider_of(user: Dictionary) -> String:
+	var ids: Variant = user.get("identities", [])
+	if ids is Array:
+		for i: Variant in ids:
+			if i is Dictionary:
+				var p := str((i as Dictionary).get("provider", ""))
+				if p != "" and p != "anonymous" and p != "email":
+					return p
+	var meta: Variant = user.get("app_metadata", {})
+	if meta is Dictionary:
+		var p2 := str((meta as Dictionary).get("provider", ""))
+		if p2 != "" and p2 != "anonymous" and p2 != "email":
+			return p2
+	return ""
 
 
 func _session_key() -> String:
@@ -429,7 +472,7 @@ func _save_session() -> void:
 	if f == null:
 		return
 	f.store_string(JSON.stringify({"access_token": _access_token, "refresh_token": _refresh_token,
-		"expires_at": _expires_at, "user_id": user_id, "is_anonymous": is_anonymous}))
+		"expires_at": _expires_at, "user_id": user_id, "is_anonymous": is_anonymous, "provider": provider}))
 
 
 func _load_session() -> void:
@@ -449,6 +492,132 @@ func _load_session() -> void:
 	_expires_at = int(s.get("expires_at", 0))
 	user_id = str(s.get("user_id", ""))
 	is_anonymous = bool(s.get("is_anonymous", true))
+	provider = str(s.get("provider", ""))
+
+
+# --- Liaison Apple / Google ---------------------------------------------------------------------
+
+func link_available(p: StringName) -> bool:
+	return enabled() and AccountLink.provider_offered(p)
+
+
+func is_linking() -> bool:
+	return _link_provider != &""
+
+
+## Lie le compte invité à Apple ou Google (plugins natifs sur mobile, navigateur sur PC).
+## Résultat par le signal link_finished(ok, message).
+func link_account(p: StringName) -> void:
+	if not enabled():
+		link_finished.emit(false, "Sauvegarde cloud désactivée")
+		return
+	if is_linking() or _busy:
+		link_finished.emit(false, "Une opération est déjà en cours")
+		return
+	_link_provider = p
+	var ok := await _ensure_session()
+	if not ok:
+		_link_provider = &""
+		link_finished.emit(false, "Hors ligne : impossible de lier le compte")
+		return
+	if AccountLink.native_available(p):
+		_link.start(p, "")
+		return
+	# PKCE : demande au serveur l'URL d'autorisation de LIAISON (identité ajoutée au compte courant).
+	var challenge := _link.new_challenge()
+	var path := "/auth/v1/user/identities/authorize?provider=%s&redirect_to=%s&code_challenge=%s&code_challenge_method=s256&skip_http_redirect=true" % [
+		String(p), _link.redirect_uri().uri_encode(), challenge]
+	var res := await _request(path, HTTPClient.METHOD_GET, null, true)
+	var body: Variant = res.get("body")
+	if bool(res.get("ok", false)) and body is Dictionary and (body as Dictionary).has("url"):
+		_link.start_browser(str((body as Dictionary)["url"]))
+		return
+	# Liaison refusée (ex. liaison manuelle désactivée) : connexion classique, puis bascule de compte.
+	path = "/auth/v1/authorize?provider=%s&redirect_to=%s&code_challenge=%s&code_challenge_method=s256" % [
+		String(p), _link.redirect_uri().uri_encode(), challenge]
+	_link.start_browser(_url + path)
+
+
+func _on_link_token(p: StringName, id_token: String, access_token: String, nonce: String) -> void:
+	var body := {"provider": String(p), "id_token": id_token}
+	if not access_token.is_empty():
+		body["access_token"] = access_token
+	if not nonce.is_empty():
+		body["nonce"] = nonce
+	# 1) Liaison au compte courant (Authorization = jeton invité).
+	var res := await _request("/auth/v1/token?grant_type=id_token", HTTPClient.METHOD_POST, body, true)
+	if bool(res.get("ok", false)) and _same_user(res.get("body")):
+		_store_session(res.get("body"))
+		_finish_link(true, "Compte lié à %s" % provider_label(p))
+		return
+	# 2) Identité déjà rattachée à un autre compte (ou liaison manuelle désactivée) : connexion.
+	res = await _request("/auth/v1/token?grant_type=id_token", HTTPClient.METHOD_POST, body, false)
+	if not bool(res.get("ok", false)):
+		_finish_link(false, "Connexion %s refusée : %s" % [provider_label(p), last_error])
+		return
+	await _switch_account(res.get("body"))
+
+
+func _on_link_code(code: String) -> void:
+	var body := {"auth_code": code, "code_verifier": _link.code_verifier}
+	var res := await _request("/auth/v1/token?grant_type=pkce", HTTPClient.METHOD_POST, body, false)
+	if not bool(res.get("ok", false)):
+		_finish_link(false, "Échec de la connexion : %s" % last_error)
+		return
+	if _same_user(res.get("body")):
+		_store_session(res.get("body"))
+		_finish_link(true, "Compte lié à %s" % provider_label(_link_provider))
+		return
+	await _switch_account(res.get("body"))
+
+
+func _same_user(body: Variant) -> bool:
+	if not (body is Dictionary):
+		return false
+	var u: Variant = (body as Dictionary).get("user", {})
+	return u is Dictionary and str((u as Dictionary).get("id", "")) == user_id
+
+
+## Bascule sur un autre compte (identité déjà connue du serveur) : la sauvegarde locale repart
+## de la version 0 ; « dirty » = l'appareil a réellement progressé → conflit à trancher.
+func _switch_account(body: Variant) -> void:
+	var p := _link_provider
+	var had_progress := has_progress(payload_of(_save_data()))
+	_store_session(body)
+	_write_meta(0, had_progress)
+	pending_remote = {}
+	_set_status(STATUS_OFFLINE)
+	_busy = true
+	var ok := await _reconcile()
+	_busy = false
+	if not ok and status != STATUS_CONFLICT:
+		_set_status(STATUS_OFFLINE)
+		_retry_timer.start(float(_cfg.get_value("sync", "retry_delay", 20.0)))
+	_finish_link(ok, ("Compte %s retrouvé" % provider_label(p)) if ok else "Compte retrouvé, synchronisation à refaire")
+
+
+func _finish_link(ok: bool, message: String) -> void:
+	_link_provider = &""
+	if ok:
+		_write_meta(local_version(), true)
+		_push_timer.start(0.5)
+	link_finished.emit(ok, message)
+
+
+## L'appareil a-t-il une progression qui vaut la peine d'être défendue (pas un profil neuf) ?
+static func has_progress(save: Dictionary) -> bool:
+	var d := describe_save(save)
+	return int(d.get("raids", 0)) > 0 or int(d.get("gems", 0)) > 0 or int(d.get("weapons", 0)) > 1 \
+		or int(d.get("gold", 0)) > int(Balance.get_value("economy", "starting_gold", 0))
+
+
+static func provider_label(p: StringName) -> String:
+	match p:
+		&"apple":
+			return "Apple"
+		&"google":
+			return "Google"
+	return String(p)
 
 
 # --- HTTP --------------------------------------------------------------------------------------
@@ -463,13 +632,16 @@ func _rpc(fn: String, args: Dictionary) -> Dictionary:
 
 
 ## Retour : {"ok": bool, "code": int, "body": Variant (JSON décodé ou texte)}.
-func _request(path: String, method: HTTPClient.Method, body: Variant, auth: bool) -> Dictionary:
+func _request(path: String, method: HTTPClient.Method, body: Variant, auth: bool,
+		bearer: String = "") -> Dictionary:
 	var hr := HTTPRequest.new()
 	hr.timeout = float(_cfg.get_value("sync", "timeout", 15.0))
 	hr.accept_gzip = true
 	add_child(hr)
 	var headers := PackedStringArray(["Content-Type: application/json", "apikey: " + _key])
-	if auth and not _access_token.is_empty():
+	if not bearer.is_empty():
+		headers.append("Authorization: Bearer " + bearer)
+	elif auth and not _access_token.is_empty():
 		headers.append("Authorization: Bearer " + _access_token)
 	var err := hr.request(_url + path, headers, method, JSON.stringify(body) if body != null else "")
 	if err != OK:
