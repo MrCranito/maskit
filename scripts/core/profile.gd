@@ -54,6 +54,9 @@ var unlocked_weapons: Array[StringName] = []
 var bought_weapons: Array[StringName] = []
 ## Emporter les soins de la réserve dans le sac de raid au lancement.
 var pack_consumables: bool = true
+## Emporter les clefs de la réserve au prochain raid (choix de l'arsenal de départ). Elles
+## suivent la règle du sac : perdues à la mort, rendues à l'extraction si elles n'ont pas servi.
+var pack_keys: bool = false
 ## Consommables mis dans le sac au lancement du raid en cours (id → n).
 var raid_packed: Dictionary = {}
 var skins_owned: Array[StringName] = []
@@ -251,6 +254,7 @@ func start_raid() -> Array[WeaponData]:
 	stats["raids"] = int(stats.get("raids", 0)) + 1
 	var gs: Node = get_node_or_null(^"/root/GameState")
 	pack_consumables_into(gs.get("raid_inventory") as Inventory if gs != null else null)
+	pack_keys_into(gs.get("raid_inventory") as Inventory if gs != null else null)
 	save()
 	return out
 
@@ -566,6 +570,45 @@ func set_pack_consumables(on: bool) -> void:
 	save()
 
 
+# --- Clefs emportées ------------------------------------------------------------
+
+## Clefs de la réserve (toutes, triées par nom) : [{item: ItemData, count}].
+func keys_in_reserve() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for k: Variant in items:
+		var it := LootDB.get_item(StringName(str(k)))
+		if it != null and it.is_key() and int(items[k]) > 0:
+			out.append({"item": it, "count": int(items[k])})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return (a["item"] as ItemData).display_name < (b["item"] as ItemData).display_name)
+	return out
+
+
+## Clefs qui partiront dans le sac au prochain lancement (vide si pack_keys est désactivé).
+func keys_preview() -> Array[Dictionary]:
+	return keys_in_reserve() if pack_keys else ([] as Array[Dictionary])
+
+
+## Met les clefs prévues dans le sac de raid (elles quittent la réserve). Ajoute à raid_packed.
+func pack_keys_into(bag: Inventory) -> Dictionary:
+	var packed := {}
+	if bag == null:
+		return packed
+	for e: Dictionary in keys_preview():
+		var it: ItemData = e["item"]
+		var added := bag.add_item(it, int(e["count"]))
+		if added > 0:
+			remove_item(it.id, added)
+			packed[String(it.id)] = added
+			raid_packed[String(it.id)] = int(raid_packed.get(String(it.id), 0)) + added
+	return packed
+
+
+func set_pack_keys(on: bool) -> void:
+	pack_keys = on
+	save()
+
+
 # --- Monnaie et skins -----------------------------------------------------------
 
 ## Solde dépensable (&"gems" ou &"gold") : le vrai solde, ou DevMode.UNLIMITED en mode développeur.
@@ -684,7 +727,7 @@ func to_dict() -> Dictionary:
 		"weapons": weapons.duplicate(true), "loadout": loadout.duplicate(), "items": items.duplicate(),
 		"gems": gems, "gold": gold, "kills_by_kind": kills_by_kind.duplicate(),
 		"unlocked_weapons": _names_to_array(unlocked_weapons), "bought_weapons": _names_to_array(bought_weapons),
-		"pack_consumables": pack_consumables,
+		"pack_consumables": pack_consumables, "pack_keys": pack_keys,
 		"skins_owned": sk, "skin_character": String(skin_character),
 		"skin_weapons": skin_weapons.duplicate(), "stats": stats.duplicate(),
 		"raid_in_progress": raid_in_progress, "raid_weapon_ids": rw, "next_uid": _next_uid,
@@ -718,6 +761,7 @@ func from_dict(d: Dictionary) -> void:
 	for s3: Variant in d.get("bought_weapons", []):
 		bought_weapons.append(StringName(str(s3)))
 	pack_consumables = bool(d.get("pack_consumables", Balance.get_value("crafting", "pack_consumables_default", true)))
+	pack_keys = bool(d.get("pack_keys", LootDB.cfg().get_value(LootDB.SECTION, "pack_keys_default", false)))
 	raid_kills.clear()
 	raid_packed.clear()
 	skins_owned.clear()
