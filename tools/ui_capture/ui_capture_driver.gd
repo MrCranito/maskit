@@ -29,10 +29,14 @@ func _shot(n: String) -> void:
 
 func _run() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/menus/splash.tscn")
-	await _sleep(0.4)
-	await _shot("splash_1")
-	await _sleep(1.2)
-	await _shot("splash_2")
+	# splash_0..4 : première image (= boot.png), ouverture, composition, fin ; instants en temps
+	# de jeu (les captures ralentissent l'horloge murale)
+	var t: float = 0.0
+	for step: Array in [["splash_0", 0.0], ["splash_1", 0.45], ["splash_2", 0.7], ["splash_3", 1.2], ["splash_4", 2.4]]:
+		if float(step[1]) > t:
+			await _sleep(float(step[1]) - t)
+			t = float(step[1])
+		await _shot(step[0])
 	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
 	await _sleep(2.0)
 	await _shot("menu")
