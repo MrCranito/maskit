@@ -18,6 +18,7 @@ var out: String = ""
 var prefix: String = "shot"
 var map_key: String = "dust"
 var no_fade := false
+var no_ground := false  ## état de la PR #56 : bâtiment estompé à 0,3 sur son toit, sans sol
 var _ids: Dictionary = {}  ## fichier de tuile → Image d'ids
 
 
@@ -31,6 +32,8 @@ func _ready() -> void:
 			map_key = a.substr(6)
 		elif a == "--no-fade":
 			no_fade = true
+		elif a == "--no-ground":
+			no_ground = true
 	_run.call_deferred()
 
 
@@ -65,6 +68,10 @@ func _run() -> void:
 	if no_fade:
 		var cfg: ConfigFile = Balance.get(&"_config")
 		cfg.set_value("prerender", "occluder_fade", false)
+	if no_ground:
+		var cfg2: ConfigFile = Balance.get(&"_config")
+		cfg2.set_value("prerender", "occluder_ground", false)
+		cfg2.set_value("prerender", "occluder_fade_alpha", 0.3)
 	GameState.set_current_map(load(MAPS.get(map_key, MAPS["dust"])) as Resource, false)
 	GameState.run_seed = SEED
 	get_tree().change_scene_to_file(RAID_SCENE)

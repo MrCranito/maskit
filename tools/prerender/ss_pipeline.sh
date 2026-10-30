@@ -23,7 +23,7 @@ cd "$ROOT"
 godot --headless --path . --import > /dev/null 2>&1 || true
 godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_02_space_station.tres
-python3 tools/prerender/ss_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+python3 tools/prerender/ss_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,gnd,int "$MARGIN"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
 godot --headless --path . --import > /dev/null 2>&1 || true
 godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/space_station/$SEED/"
