@@ -1,0 +1,73 @@
+# Déploiement du relais coop sur Cloudflare Workers (server/cloudflare, voir son README).
+# Déclenché par un push sur main qui touche server/, ou à la main (onglet Actions).
+# Secrets du dépôt : CLOUDFLARE_API_TOKEN (modèle « Edit Cloudflare Workers ») et
+# CLOUDFLARE_ACCOUNT_ID. Les tests (Node puis Worker sous wrangler dev) passent avant tout déploiement.
+name: Relais Cloudflare
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - '.github/workflows/relay-cloudflare.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: relay-cloudflare
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Tester et déployer le relais
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Tests du relais Node
+        working-directory: server
+        run: |
+          npm ci
+          npm test
+      - name: Tests du relais Cloudflare (wrangler dev)
+        working-directory: server/cloudflare
+        run: |
+          npm ci
+          npm test
+      - name: Déployer sur Cloudflare
+        id: deploy
+        working-directory: server/cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          npx wrangler deploy 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+      - name: Vérifier /health et noter l'URL du jeu
+        working-directory: server/cloudflare
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          test -n "$URL" || { echo "::error::URL du Worker introuvable dans le journal de déploiement."; exit 1; }
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$URL/health"; then break; fi
+            sleep 5
+          done
+          echo
+          WSS="${URL/https:/wss:}"
+          {
+            echo "### Relais coop déployé"
+            echo
+            echo "- Santé : $URL/health"
+            echo "- À mettre dans \`data/balance.cfg\`, section \`[net]\` : \`url_prod=\"$WSS\"\`"
+          } >> "$GITHUB_STEP_SUMMARY"

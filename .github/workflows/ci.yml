@@ -3,7 +3,8 @@
 #   compile       le projet charge sans erreur de parsing (`godot --headless --quit`)
 #   lint          gdlint + gdformat --check sur scripts/ et tests/ (avertissement, non bloquant pour l'instant)
 #   tests         suite GUT headless, rapport JUnit annoté dans la PR
-#   server        tests Node du relais multijoueur (seulement si server/ change)
+#   server        tests Node du relais multijoueur, puis les mêmes contre la version Cloudflare
+#                 sous `wrangler dev` (seulement si server/ change)
 #   export-smoke  export debug Linux + Web pour détecter une casse d'export avant le tag
 #
 # Le dossier .godot/ (imports) est mis en cache, clé = hash des fichiers *.import :
@@ -195,6 +196,12 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - run: npm ci
       - run: npm test
+      # Même suite contre la version Cloudflare (Worker + Durable Object sous `wrangler dev`, local).
+      - name: Tests du relais Cloudflare (wrangler dev)
+        working-directory: server/cloudflare
+        run: |
+          npm ci
+          npm test
 
   export-smoke:
     name: Export ${{ matrix.preset }} (debug)
