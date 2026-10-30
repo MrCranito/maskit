@@ -19,7 +19,7 @@ audit des animations et captures en jeu.** Godot 4.7.2, `main` du 29/10 (bestiai
 ### Les 10 constats les plus importants, par priorité
 
 1. **Les boss sont injustes, pas seulement difficiles : 0 victoire sur 58 combats valides.**
-   On meurt en 19 s en moyenne, et presque jamais du boss. Face au Shérif, 17 morts sur 19
+   On meurt en 19 s en moyenne, et presque jamais du boss. Face au Shérif, 18 morts sur 20
    viennent de son escorte et des monstres de l'arène ; face à l'Omnistore, 17 sur 18. Le boss
    finit le combat avec 90 à 100 % de ses PV. L'Architecte fait exception : il tue lui-même
    (12 morts sur 20, laser orbital et attaque). **La cible « possible mais coûteux pour un

@@ -64,7 +64,8 @@ def enemy_names() -> dict[str, str]:
         t = open(p, encoding="utf-8").read()
         k = re.search(r'^kind = &"([^"]+)"', t, re.M)
         n = re.search(r'^display_name = "([^"]+)"', t, re.M)
-        if k:
+        # Un fichier dont le nom est le kind l'emporte (variantes : illusions, mirages).
+        if k and (k.group(1) not in out or os.path.basename(p)[:-5] == k.group(1)):
             out[k.group(1)] = n.group(1) if n else k.group(1)
     return out
 
@@ -362,7 +363,7 @@ def _style(ax, title):
         ax.spines[sp].set_visible(False)
 
 
-def charts(out: str, sA: dict, sB: dict | None, boss: dict, duels: list, enemies: list):
+def charts(out: str, sA: dict, sB: dict | None, boss_games: list, duels: list, enemies: list):
     gdir = os.path.join(out, "graphiques")
     os.makedirs(gdir, exist_ok=True)
     # Extraction par difficulté et carte.
@@ -388,18 +389,27 @@ def charts(out: str, sA: dict, sB: dict | None, boss: dict, duels: list, enemies
         fig.tight_layout()
         fig.savefig(os.path.join(gdir, "dangerosite_ennemis.png"), dpi=130)
         plt.close(fig)
-    # Boss.
-    if boss:
-        fig, ax = plt.subplots(figsize=(7, 3.4))
-        labels, vals = [], []
-        for k, rows2 in boss.items():
-            for r in rows2:
-                labels.append("%s\n%s %s" % (ENAMES.get(k, k).split(" ")[-1], DIFF[r["difficulty"]][:4], r["tier"][:3]))
-                vals.append(r["taux"])
-        ax.bar(range(len(vals)), vals, color=VIOLET)
-        ax.set_xticks(range(len(vals)), labels, fontsize=6)
-        ax.set_ylabel("% de victoires")
-        _style(ax, "Boss : taux de victoire (difficulté, arsenal)")
+    # Boss : qui tue le joueur (le boss ou la salle) et PV du boss au dernier coup reçu.
+    if boss_games:
+        bosses = sorted({g.get("boss_kind") or g.get("boss", {}).get("kind") for g in boss_games} - {None})
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3.4))
+        lab = [ENAMES.get(k, k) for k in bosses]
+        by_boss, by_room, hp = [], [], []
+        for k in bosses:
+            deaths = [g for g in boss_games if (g.get("boss_kind") or g.get("boss", {}).get("kind")) == k and g["outcome"] == "mort"]
+            by_boss.append(sum(1 for g in deaths if g.get("killer") == k))
+            by_room.append(len(deaths) - by_boss[-1])
+            hp.append(100 * (mean([g.get("boss", {}).get("hp_ratio_at_last_hit", 1.0) for g in deaths]) or 1.0))
+        ax1.bar(lab, by_boss, color=VIOLET, label="tué par le boss")
+        ax1.bar(lab, by_room, bottom=by_boss, color=VIOLET_L, label="tué par l'escorte / la salle")
+        ax1.legend(frameon=False, fontsize=7)
+        ax1.tick_params(axis="x", labelsize=7)
+        _style(ax1, "Morts du joueur (0 victoire sur 58)")
+        ax2.bar(lab, hp, color=VIOLET)
+        ax2.set_ylim(0, 100)
+        ax2.set_ylabel("% de PV")
+        ax2.tick_params(axis="x", labelsize=7)
+        _style(ax2, "PV du boss au dernier coup reçu")
         fig.tight_layout()
         fig.savefig(os.path.join(gdir, "boss_victoires.png"), dpi=130)
         plt.close(fig)
@@ -475,7 +485,7 @@ def main():
             res["drops"]["observe_vs_simule"] = observed_vs_sim(A + B, drops)
     json.dump(res, open(os.path.join(a.out, "resume.json"), "w"), indent=1, ensure_ascii=False)
     if A:
-        charts(a.out, res["A"], res.get("B"), res.get("boss", {}), res.get("duel", []), res["A"]["enemies"])
+        charts(a.out, res["A"], res.get("B"), BO, res.get("duel", []), res["A"]["enemies"])
     print("analyse écrite dans", a.out)
 
 
