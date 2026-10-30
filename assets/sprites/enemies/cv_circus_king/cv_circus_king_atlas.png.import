@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drnr6s0mq26p1"
-path.bptc="res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.bptc.ctex"
-path.astc="res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.astc.ctex"
+path="res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/cv_circus_king/cv_circus_king_atlas.png"
-dest_files=["res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.bptc.ctex", "res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.astc.ctex"]
+dest_files=["res://.godot/imported/cv_circus_king_atlas.png-d067890ec5a6a27e8022b07cf884a795.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

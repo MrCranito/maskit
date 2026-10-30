@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bhf3yk2wrey4t"
-path.bptc="res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.bptc.ctex"
-path.astc="res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.astc.ctex"
+path="res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/eg_pharaoh/eg_pharaoh_atlas.png"
-dest_files=["res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.bptc.ctex", "res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.astc.ctex"]
+dest_files=["res://.godot/imported/eg_pharaoh_atlas.png-23a5c1750a7996ae45fe34577b1c2fbc.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://w1t3gmrnjxsc"
-path.s3tc="res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.s3tc.ctex"
-path.etc2="res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.etc2.ctex"
+path="res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/mall/containers/mall_register_open.png"
-dest_files=["res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.s3tc.ctex", "res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.etc2.ctex"]
+dest_files=["res://.godot/imported/mall_register_open.png-62670b72dde41ea1ac6dca17a0af9cdd.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

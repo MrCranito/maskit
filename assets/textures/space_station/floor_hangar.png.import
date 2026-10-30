@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvxyrf2wpj60n"
-path.s3tc="res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.s3tc.ctex"
-path.etc2="res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.etc2.ctex"
+path="res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/textures/space_station/floor_hangar.png"
-dest_files=["res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.s3tc.ctex", "res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.etc2.ctex"]
+dest_files=["res://.godot/imported/floor_hangar.png-fc1fbb58e62f716624689ff94018be6d.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
