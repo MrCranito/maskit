@@ -9,12 +9,14 @@ const CS := preload("res://scripts/net/cloud_sync.gd")
 var _saved_data: Dictionary = {}
 var _saved_profile: Dictionary = {}
 var _saved_pass: Dictionary = {}
+var _saved_volumes: Array = []
 
 
 func before_each() -> void:
 	_saved_data = SaveManager.data.duplicate(true)
 	_saved_profile = Profile.to_dict()
 	_saved_pass = BattlePassSystem.get_instance().to_dict()
+	_saved_volumes = [AudioManager.music_volume, AudioManager.sfx_volume]
 
 
 func after_each() -> void:
@@ -22,6 +24,9 @@ func after_each() -> void:
 	Profile.from_dict(_saved_profile)
 	SaveManager.data = _saved_data
 	SaveManager.save()
+	# replace_data applique les réglages restaurés à l'AudioManager : on remet les volumes.
+	AudioManager.music_volume = _saved_volumes[0]
+	AudioManager.sfx_volume = _saved_volumes[1]
 
 
 func test_disabled_in_headless() -> void:

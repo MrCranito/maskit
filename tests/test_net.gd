@@ -32,9 +32,10 @@ func test_lobby_code_generate() -> void:
 
 
 func test_alphabet_matches_server() -> void:
-	var js := FileAccess.get_file_as_string("res://server/relay.js")
+	# Constantes du protocole dans le cœur commun aux relais Node et Cloudflare.
+	var js := FileAccess.get_file_as_string("res://server/relay_core.js")
 	if js.is_empty():
-		pass_test("server/relay.js absent de l'export")
+		pass_test("server/relay_core.js absent de l'export")
 		return
 	assert_true(js.contains("const CODE_ALPHABET = '%s'" % LobbyCode.ALPHABET), "même alphabet que le serveur")
 	assert_true(js.contains("const PROTOCOL_VERSION = %d;" % NetProtocol.VERSION), "même version de protocole que le serveur")
