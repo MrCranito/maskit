@@ -3,14 +3,54 @@ extends Node
 ## boutique*.png (onglets, onglet Gemmes avec le dernier pack choisi), icones.png (gemme et pièce :
 ## dessin en code puis images peintes), mort.png, extraction.png (écrans de fin sur un résumé d'exemple).
 
+## Options : --only=menu (seulement le menu principal, <prefix>menu.png), --prefix=xxx,
+## --insets=g,h,d,b (encoche simulée, px de fenêtre : HudSafeArea.debug_insets),
+## --pass_tier=N (pass de combat au palier N + moitié du suivant, en mémoire), --dev=0|1 (ressources illimitées),
+## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire).
+
 var out: String = ""
+var only: String = ""
+var prefix: String = ""
 
 
 func _ready() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--out="):
 			out = a.substr(6)
+		elif a.begins_with("--only="):
+			only = a.substr(7)
+		elif a.begins_with("--prefix="):
+			prefix = a.substr(9)
+		elif a.begins_with("--insets="):
+			var v := a.substr(9).split_floats(",")
+			if v.size() == 4:
+				HudSafeArea.debug_insets = Vector4(v[0], v[1], v[2], v[3])
+		elif a.begins_with("--pass_tier="):
+			var bp := BattlePassSystem.get_instance()
+			var s := bp.get_season()
+			var t := int(a.substr(12))
+			bp.from_dict({"xp": s.xp_total_for(t) + s.xp_for_tier(t + 1) / 2})
+		elif a.begins_with("--dev="):
+			DevMode.set_unlimited(a.substr(6) == "1")
+		elif a.begins_with("--online="):
+			# réglage en mémoire seulement (la sauvegarde n'est pas réécrite)
+			var sm: Node = get_node_or_null(^"/root/SaveManager")
+			if sm != null:
+				var data: Dictionary = sm.get("data")
+				if not (data.get("settings") is Dictionary):
+					data["settings"] = {}
+				(data["settings"] as Dictionary)[String(OnlineMode.SETTING)] = a.substr(9) == "1"
+	if only == "menu":
+		_run_menu.call_deferred()
+		return
 	_run.call_deferred()
+
+
+func _run_menu() -> void:
+	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
+	await _sleep(2.5)
+	await _shot(prefix + "menu")
+	get_tree().quit(0)
 
 
 func _sleep(s: float) -> void:

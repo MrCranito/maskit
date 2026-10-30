@@ -6,15 +6,16 @@ extends Control
 ##    avec son skin porté (LobbyHero ; tap = Personnages) ; voile sombre à gauche pour la lisibilité ;
 ##  Disposition = maquette « Lobby » (https://claude.ai/artifact/FTXHPHfN5wZRxSQDW8oaDq), ×1,67 :
 ##  - barre du haut : logotype RAIDERSGO, niveau de raider (carré violet → Progression),
-##    statistiques (raids, extraits, réussite) ; or, gemmes (+ → onglet Gemmes), réglages ;
+##    statistiques (raids, extraits, réussite) ; or, gemmes (+ → onglet Gemmes), réglages (LobbyWallet) ;
 ##    elle s'arrête avant le bandeau ;
 ##  - gauche : menu texte en Anton (Progression, Arsenal, Inventaire, Atelier, Boutique), blanc
 ##    atténué, l'entrée active en blanc avec barre violette ; un écran pas encore livré (scène
 ##    absente) affiche « Bientôt » sans rien ouvrir ;
 ##  - bas gauche : carte du pass de combat (PassCard → écran du pass) ;
-##  - droite : bandeau violet translucide en biais (verre dépoli), pleine hauteur : carte en
-##    cours en haut (→ choix des cartes), « DÉPLOYER » (PlayCard → choix des cartes → arsenal de
-##    départ → raid) puis Solo / Coop en bas ;
+##  - droite : bandeau violet translucide en biais (verre dépoli), pleine hauteur, réservé à
+##    l'action principale : « DÉPLOYER » (PlayCard → choix des cartes → arsenal de départ → raid ;
+##    salon coop ouvert → retour au salon) et dessous l'interrupteur En ligne / Hors ligne
+##    (OnlineSwitch). La coop passe par le « + Coéquipier » à côté du héros ;
 ##  - bas centré : version + lien Crédits.
 ##    L'arsenal emporté n'est plus résumé ici : il se choisit à l'étape 2.
 ## Animations d'entrée (glissements, fondus), retours tactiles et sons MenuKit, marges de
@@ -43,18 +44,19 @@ var shop_button: NavButton = null
 var progression_button: NavButton = null
 ## Carte du pass de combat (bas gauche). Pas d'entrée « Pass » dans le menu : la carte la remplace.
 var pass_card: PassCard = null
-var coop_button: Button = null
 ## Emplacement du coéquipier, à droite du héros (repère du décor) : gros « + » (→ coop) tant que
 ## personne n'a rejoint le salon, puis le coéquipier avec son skin et son pseudo (tap → salon).
 var mate_slot: Control = null
 var mate_plus: Button = null
+## Message du « + Coéquipier » grisé en mode hors ligne (infobulle sur PC, bandeau d'info au tap).
+const OFFLINE_COOP_HINT := "Passe en ligne pour jouer à plusieurs"
 var mate_tag: Label = null
 var mate_status: Label = null
 var _mate_caption: Label = null
-## Haut du bandeau : carte en cours (→ choix des cartes).
-var map_link: Button = null
-var map_name_label: Label = null
-var map_sub_label: Label = null
+## Coin haut droit : or, gemmes (+), réglages.
+var wallet: LobbyWallet = null
+## Sous DÉPLOYER : interrupteur En ligne / Hors ligne (OnlineMode).
+var online_switch: OnlineSwitch = null
 ## Compatibilité : Options = bouton réglages, Crédits = bouton étoile de la barre du haut.
 var options_button: Button = null
 var credits_button: Button = null
@@ -91,6 +93,7 @@ func _ready() -> void:
 	_refresh_profile()
 	_connect_session()
 	_connect_cloud()
+	_refresh_online()
 	MenuKit.fade_in(self, 0.45)
 	lobby.play_intro()
 	_intro.call_deferred()
@@ -98,7 +101,7 @@ func _ready() -> void:
 
 # --- Construction -------------------------------------------------------------------
 
-## Bandeau violet translucide en biais (bord gauche biseauté) : porte l'info du jour, Coop et DÉPLOYER.
+## Bandeau violet translucide en biais (bord gauche biseauté) : porte DÉPLOYER et le mode en ligne.
 class LobbySlab extends Control:
 	var cut: float = 64.0
 	var color: Color = Color(MenuKit.VIOLET, 0.62)
@@ -118,6 +121,8 @@ func _build() -> void:
 	var vp: Vector2 = get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
 	var slab_w: float = clampf(vp.x * Balance.get_float("menu", "lobby_slab_ratio", 0.3),
 		Balance.get_float("menu", "lobby_slab_min", 370.0), Balance.get_float("menu", "lobby_slab_max", 440.0))
+	# Encoche à droite : le bandeau s'élargit d'autant, DÉPLOYER garde toute sa place.
+	slab_w += maxf(0.0, m.z - 44.0)
 
 	# Voile à gauche : lisibilité du menu texte sur le décor
 	var g := Gradient.new()
@@ -201,16 +206,7 @@ func _build() -> void:
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(fill)
-	var gold := _gold_pill()
-	gold.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	top.add_child(gold)
-	top.add_child(_gem_pill())
-	gear_button = _round_button(&"gear", Color(MenuKit.NIGHT_DEEP, 0.6), 66)
-	gear_button.tooltip_text = "Réglages"
-	gear_button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	gear_button.pressed.connect(open_options)
-	top.add_child(gear_button)
-	options_button = gear_button
+	_build_wallet(top)
 
 	# Gauche : menu texte (l'arsenal de départ se choisit à l'étape 2, plus de résumé ici)
 	var nav := VBoxContainer.new()
@@ -248,49 +244,8 @@ func _build() -> void:
 	pass_card.pressed.connect(func() -> void: _go_optional(pass_card, MenuKit.BATTLE_PASS_SCENE))
 	ui.add_child(pass_card)
 
-	# Dans le bandeau : carte en cours en haut (→ choix des cartes), DÉPLOYER puis Solo / Coop en bas
-	var inner := VBoxContainer.new()
-	inner.name = "SlabContent"
-	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	inner.offset_left = 16.0   # le bas du bandeau est pleine largeur : DÉPLOYER peut mordre sur le biais
-	inner.offset_top = m.y + 10.0
-	inner.offset_right = -maxf(m.z, 44.0)
-	inner.offset_bottom = -maxf(m.w, 40.0)
-	inner.add_theme_constant_override("separation", 14)
-	sl.add_child(inner)
-	map_link = _map_link()
-	map_link.size_flags_horizontal = Control.SIZE_SHRINK_END
-	inner.add_child(map_link)
-	# Info ponctuelle (« Bientôt disponible ») : masquée hors message
-	info_banner = InfoBanner.new()
-	info_banner.name = "InfoBanner"
-	info_banner.visible = false
-	info_banner.custom_minimum_size.x = slab_w - sl.cut - maxf(m.z, 44.0)
-	info_banner.text_label.custom_minimum_size.x = info_banner.custom_minimum_size.x - 54.0
-	info_banner.add_theme_stylebox_override("panel", MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.7), Color(0, 0, 0, 0), 0, 0, 10))
-	info_banner.icon.modulate = Color(1, 1, 1)
-	info_banner.title_label.add_theme_color_override("font_color", MenuKit.TEXT)
-	inner.add_child(info_banner)
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	inner.add_child(spacer)
-	play_button = PlayCard.new()
-	play_button.name = "PlayButton"
-	play_button.size_flags_horizontal = Control.SIZE_SHRINK_END
-	play_button.pressed.connect(_on_play)
-	inner.add_child(play_button)
-	var modes := HBoxContainer.new()
-	modes.name = "Modes"
-	modes.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	modes.alignment = BoxContainer.ALIGNMENT_END
-	modes.add_theme_constant_override("separation", 10)
-	inner.add_child(modes)
-	modes.add_child(_solo_chip())
-	coop_button = _coop_button(52.0)
-	modes.add_child(coop_button)
-	buttons = [play_button, coop_button, pass_card, progression_button, arsenal_button, crafting_button, merchant_button, shop_button]
+	_build_slab_content(sl, m, slab_w)
+	buttons = [play_button, pass_card, progression_button, arsenal_button, crafting_button, merchant_button, shop_button]
 
 	# Bas, centré : version + lien Crédits (discrets)
 	var foot := HBoxContainer.new()
@@ -393,52 +348,6 @@ func _level_badge() -> Button:
 	return b
 
 
-## Haut du bandeau : carte en cours (capitales espacées) ; tap → choix des cartes. La ligne
-## « difficulté · changer » est masquée (retour de Victor : elle encombrait le coin).
-func _map_link() -> Button:
-	var b := Button.new()
-	b.name = "MapLink"
-	b.flat = true
-	b.focus_mode = Control.FOCUS_ALL
-	b.tooltip_text = "Changer de carte"
-	for k: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
-		b.add_theme_stylebox_override(k, StyleBoxEmpty.new())
-	var col := VBoxContainer.new()
-	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	col.add_theme_constant_override("separation", 2)
-	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	b.add_child(col)
-	map_name_label = MenuKit.label("", 18, MenuKit.TEXT, MenuKit.nunito(600), 0)
-	map_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	map_name_label.uppercase = true
-	map_name_label.add_theme_constant_override("outline_size", 0)
-	col.add_child(map_name_label)
-	map_sub_label = MenuKit.label("", 18, Color(1, 1, 1, 0.75), MenuKit.nunito(600), 0)
-	map_sub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	map_sub_label.uppercase = true
-	map_sub_label.visible = false
-	col.add_child(map_sub_label)
-	b.pressed.connect(_on_play)
-	MenuKit.add_feedback(b, 1.03)
-	return b
-
-
-## Mode en cours (Solo) : pastille encre pleine à coin coupé, à gauche de Coop.
-func _solo_chip() -> PanelContainer:
-	var p := PanelContainer.new()
-	p.name = "SoloChip"
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var box := CutBox.make(MenuKit.NIGHT_DEEP, 13.0, Color(0, 0, 0, 0), 0.0, 18.0, 0.0)
-	box.corners = CutBox.CUT_TOP_LEFT
-	p.add_theme_stylebox_override("panel", box)
-	p.custom_minimum_size = Vector2(0, 52)
-	var l := MenuKit.label("Solo", 18, MenuKit.TEXT, MenuKit.nunito(600), 0)
-	l.uppercase = true
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	p.add_child(l)
-	return p
-
-
 ## Statistique du profil : gros chiffre (Anton) + libellé discret en minuscules.
 func _stat_chip(key: StringName, _glyph: StringName, caption: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
@@ -454,122 +363,114 @@ func _stat_chip(key: StringName, _glyph: StringName, caption: String) -> HBoxCon
 	return row
 
 
-## Bouton « Coop » (sous DÉPLOYER, à droite de Solo) : contour blanc à coin coupé, libellé en
-## capitales ; « Bientôt » (atténué) si la scène manque.
-func _coop_button(h: float) -> Button:
-	var b := Button.new()
-	b.name = "CoopButton"
-	b.text = "COOP"
-	b.focus_mode = Control.FOCUS_ALL
-	b.tooltip_text = "Jouer en coopération"
-	b.custom_minimum_size = Vector2(0, h)
-	b.add_theme_font_override("font", MenuKit.nunito(600))
-	b.add_theme_font_size_override("font_size", 18)
-	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
-		b.add_theme_color_override(k, MenuKit.TEXT)
-	var mk := func(bg: Color) -> CutBox:
-		var c := CutBox.make(bg, 13.0, Color(1, 1, 1, 0.95), 2.0, 18.0, 0.0)
-		c.corners = CutBox.CUT_TOP_LEFT
-		return c
-	var f := CutBox.new()
-	f.draw_center = false
-	f.border_color = MenuKit.TEXT
-	f.border_width = 2.0
-	f.cut = 15.0
-	f.corners = CutBox.CUT_TOP_LEFT
-	f.grow = 4.0
-	b.add_theme_stylebox_override("normal", mk.call(Color(0, 0, 0, 0)))
-	b.add_theme_stylebox_override("hover", mk.call(Color(1, 1, 1, 0.14)))
-	b.add_theme_stylebox_override("pressed", mk.call(Color(0, 0, 0, 0.25)))
-	b.add_theme_stylebox_override("hover_pressed", mk.call(Color(0, 0, 0, 0.25)))
-	b.add_theme_stylebox_override("focus", f)
-	var soon := not scene_exists(MenuKit.COOP_SCENE)
-	b.set_meta(&"soon", soon)
-	if soon:
-		b.modulate.a = 0.6
-	b.pressed.connect(func() -> void: _go_optional(b, MenuKit.COOP_SCENE))
-	MenuKit.add_feedback(b, 1.05)
-	return b
+# --- Monnaies, bandeau DÉPLOYER, mode en ligne (PR accueil : pass, monnaies) ---------------
 
-
-## Or : pastille encre soulignée de la couleur de la pièce (maquette : Space Grotesk gras).
-func _gold_pill() -> PanelContainer:
-	var p := PanelContainer.new()
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.tooltip_text = "Or : vends ton butin au marchand"
-	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.COIN, 16))
-	p.custom_minimum_size = Vector2(0, 66)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 12)
-	p.add_child(row)
-	var g := MenuGlyph.new(&"coin", MenuKit.COIN, 30)
-	g.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(g)
-	gold_label = MenuKit.label("0", 25, MenuKit.TEXT, MenuKit.nunito(700), 0)
-	gold_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(gold_label)
+## Coin haut droit : or, gemmes (+ → onglet Gemmes) et réglages (LobbyWallet). Les champs
+## historiques (gold_label, gem_counter, gem_plus, gear_button, options_button) pointent dedans.
+func _build_wallet(top: HBoxContainer) -> void:
+	wallet = LobbyWallet.new()
+	top.add_child(wallet)
+	gem_counter = wallet.gem_counter
+	gem_plus = wallet.gem_plus
+	gear_button = wallet.gear_button
+	options_button = gear_button
+	gold_label = wallet.gold_counter.value_label
 	dollar_label = gold_label
-	return p
+	wallet.gems_pressed.connect(func() -> void: _go_shop(&"gems"))
+	wallet.gold_pressed.connect(func() -> void: _go_optional(null, MenuKit.MERCHANT_SCENE))
+	wallet.settings_pressed.connect(open_options)
 
 
-## Gemmes : même pastille soulignée cyan, compteur (tap → onglet Gemmes) + bouton « + » violet.
-func _gem_pill() -> PanelContainer:
-	var p := PanelContainer.new()
-	p.name = "GemPill"
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	p.add_theme_stylebox_override("panel", MenuKit.currency_style(MenuKit.GEM, 6))
-	p.custom_minimum_size = Vector2(0, 66)
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 10)
-	p.add_child(row)
-	gem_counter = GemCounter.new(25)
-	gem_counter.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	gem_counter.value_label.add_theme_font_override("font", MenuKit.nunito(700))
-	gem_counter.value_label.add_theme_constant_override("outline_size", 0)
-	gem_counter.custom_minimum_size = Vector2.ZERO
-	gem_counter.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gem_counter.pressed.connect(func() -> void: _go_shop(&"gems"))
-	row.add_child(gem_counter)
-	gem_plus = _round_button(&"plus", MenuKit.VIOLET, 52)
-	gem_plus.tooltip_text = "Acheter des gemmes"
-	gem_plus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	gem_plus.pressed.connect(func() -> void: _go_shop(&"gems"))
-	row.add_child(gem_plus)
-	return p
+## Bandeau de droite : uniquement l'action principale (retour de Victor : « le bandeau doit être
+## uniquement Déployer »). « DÉPLOYER » en bas (PlayCard → choix des cartes → arsenal de départ,
+## ou retour au salon coop s'il est ouvert), et dessous le petit interrupteur En ligne / Hors
+## ligne. La carte se choisit à l'étape suivante, la coop par le « + Coéquipier ».
+func _build_slab_content(sl: Control, m: Vector4, slab_w: float) -> void:
+	var inner := VBoxContainer.new()
+	inner.name = "SlabContent"
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	inner.offset_left = 16.0   # le bas du bandeau est pleine largeur : DÉPLOYER peut mordre sur le biais
+	inner.offset_top = m.y + 10.0
+	inner.offset_right = -maxf(m.z, 44.0)
+	inner.offset_bottom = -maxf(m.w, 40.0)
+	# Si DÉPLOYER est plus large que la place (encoche à droite), il déborde vers la gauche (sur le
+	# biais), jamais sous l'encoche.
+	inner.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	inner.add_theme_constant_override("separation", 10)
+	sl.add_child(inner)
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(spacer)
+	play_button = PlayCard.new()
+	play_button.name = "PlayButton"
+	play_button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	play_button.pressed.connect(_on_play)
+	inner.add_child(play_button)
+	# Respiration entre DÉPLOYER et l'interrupteur (retour de Victor : ils se collaient).
+	var gap := Control.new()
+	gap.name = "DeploySwitchGap"
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gap.custom_minimum_size.y = Balance.get_float("menu", "lobby_deploy_switch_gap", 9.0)
+	inner.add_child(gap)
+	online_switch = OnlineSwitch.new()
+	online_switch.size_flags_horizontal = Control.SIZE_SHRINK_END
+	online_switch.changed.connect(func(_on: bool) -> void: _refresh_online())
+	online_switch.refused.connect(func() -> void: _show_info("Quitte le salon coop pour passer hors ligne"))
+	inner.add_child(online_switch)
+	# Info ponctuelle (« Bientôt disponible », coop hors ligne) : hors du bandeau, sous la barre du
+	# haut côté droit ; masquée hors message.
+	info_banner = InfoBanner.new()
+	info_banner.name = "InfoBanner"
+	info_banner.visible = false
+	info_banner.anchor_left = 1.0
+	info_banner.anchor_right = 1.0
+	info_banner.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	var w: float = Balance.get_float("menu", "lobby_info_width", 380.0)
+	info_banner.offset_right = -slab_w - 20.0
+	info_banner.offset_left = info_banner.offset_right - w
+	info_banner.offset_top = m.y + Balance.get_float("menu", "lobby_wallet_height", 56.0) + 14.0
+	info_banner.custom_minimum_size.x = w
+	info_banner.text_label.custom_minimum_size.x = w - 54.0
+	info_banner.add_theme_stylebox_override("panel", MenuKit.panel_style(Color(MenuKit.NIGHT_DEEP, 0.82), Color(0, 0, 0, 0), 0, 0, 10))
+	info_banner.icon.modulate = Color(1, 1, 1)
+	info_banner.title_label.add_theme_color_override("font_color", MenuKit.TEXT)
+	ui.add_child(info_banner)
 
 
-## Petit bouton carré à coins coupés avec pictogramme (réglages, crédits, +).
-func _round_button(glyph: StringName, bg: Color, px: float) -> Button:
-	var b := Button.new()
-	b.focus_mode = Control.FOCUS_ALL
-	b.custom_minimum_size = Vector2(px, px)
-	var edge := Color(1, 1, 1, 0.35) if bg.a < 0.9 else Color(0, 0, 0, 0)
-	var n := CutBox.make(bg, px * 0.22, edge, 1.0, 0.0, 0.0)
-	var h := CutBox.make(bg.lightened(0.15), px * 0.22, edge, 1.0, 0.0, 0.0)
-	var pr := CutBox.make(bg.darkened(0.2), px * 0.22, edge, 1.0, 0.0, 0.0)
-	var f := CutBox.new()
-	f.draw_center = false
-	f.border_color = MenuKit.GOLD
-	f.border_width = 2.0
-	f.cut = px * 0.22
-	f.grow = 3.0
-	b.add_theme_stylebox_override("normal", n)
-	b.add_theme_stylebox_override("hover", h)
-	b.add_theme_stylebox_override("pressed", pr)
-	b.add_theme_stylebox_override("hover_pressed", pr)
-	b.add_theme_stylebox_override("focus", f)
-	var g := MenuGlyph.new(glyph, MenuKit.TEXT, px * 0.56)
-	g.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	g.offset_left = px * 0.22
-	g.offset_top = px * 0.22
-	g.offset_right = -px * 0.22
-	g.offset_bottom = -px * 0.22
-	b.add_child(g)
-	MenuKit.add_feedback(b, 1.08)
-	return b
+## Message court sous la barre du haut (2,5 s).
+func _show_info(msg: String) -> void:
+	if info_banner == null:
+		return
+	info_banner.visible = true
+	info_banner.show_message(msg)
+	get_tree().create_timer(2.5).timeout.connect(func() -> void:
+		if is_instance_valid(info_banner):
+			info_banner.visible = false)
+
+
+## Mode en ligne / hors ligne : interrupteur verrouillé en ligne dans un salon coop ; hors ligne,
+## « + Coéquipier » grisé (tap → « Passe en ligne pour jouer à plusieurs »).
+func _refresh_online() -> void:
+	if online_switch != null:
+		online_switch.locked = in_coop_room()
+	_refresh_mate()
+	# libellé du pied de page (« Mode hors ligne : sauvegarde locale ») même si l'état ne change pas
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	if cs != null and cloud_label != null:
+		_refresh_cloud(cs.get("status"))
+
+
+## « + Coéquipier » hors ligne : grisé, légende explicative (pas d'infobulle sur téléphone).
+func _apply_mate_offline(offline: bool) -> void:
+	if mate_plus == null:
+		return
+	mate_plus.modulate = Color(1, 1, 1, 0.4) if offline else Color.WHITE
+	if not MenuKit.is_touch_ui():   # pas d'infobulle sur téléphone (voir MenuKit.install_touch_tooltip_guard)
+		mate_plus.tooltip_text = OFFLINE_COOP_HINT if offline else "Jouer en coop"
+	if offline:
+		_mate_caption.text = "Hors ligne"
 
 
 # --- Données ------------------------------------------------------------------------
@@ -582,11 +483,7 @@ func _refresh_profile() -> void:
 	(stat_values[&"raids"] as Label).text = str(raids)
 	(stat_values[&"extractions"] as Label).text = str(ext)
 	(stat_values[&"rate"] as Label).text = ("%d %%" % roundi(100.0 * ext / raids)) if raids > 0 else "–"
-	gold_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else format_thousands(gold_amount())
-	var card := PlayCard.displayed_card()
-	map_name_label.text = card.display_name if card != null else "Choisir une carte"
-	map_sub_label.text = ("%s · Changer ›" % card.difficulty_name()) if card != null else "Changer ›"
-	map_link.custom_minimum_size = map_name_label.get_minimum_size()
+	# L'or et les gemmes se tiennent à jour seuls (GoldCounter / GemCounter, LobbyWallet).
 
 
 func _connect_cloud() -> void:
@@ -774,8 +671,9 @@ func _build_mate_slot() -> void:
 	slot.size = Vector2(w, h)
 	lobby.add_overlay_control(slot)
 	mate_slot = slot
-	# Gros « + » encre à bordure violette, à hauteur de poitrine (cible tactile ~110 px à l'écran).
-	var px: float = Balance.get_float("menu", "lobby_mate_plus_size", 150.0)
+	# « + » encre à bordure violette, à hauteur de poitrine (réduit à la demande de Victor : ~80 px
+	# à l'écran en 1280 × 720, cible tactile toujours confortable).
+	var px: float = Balance.get_float("menu", "lobby_mate_plus_size", 108.0)
 	var b := Button.new()
 	b.name = "MatePlus"
 	b.focus_mode = Control.FOCUS_ALL
@@ -802,14 +700,14 @@ func _build_mate_slot() -> void:
 	MenuKit.add_feedback(b, 1.06)
 	slot.add_child(b)
 	mate_plus = b
-	var cap := MenuKit.label("Coéquipier", 30, MenuKit.TEXT, MenuKit.display(), 0)
+	var cap := MenuKit.label("Coéquipier", int(Balance.get_value("menu", "lobby_mate_caption_size", 24)), MenuKit.TEXT, MenuKit.display(), 0)
 	cap.name = "MateCaption"
 	cap.uppercase = true
 	cap.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cap.add_theme_color_override("font_shadow_color", Color(0, 0, 0.03, 0.8))
 	cap.add_theme_constant_override("shadow_offset_y", 3)
 	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cap.position = Vector2(-w * 0.5, b.position.y + px + 10.0)
+	cap.position = Vector2(-w * 0.5, b.position.y + px + 8.0)
 	cap.size = Vector2(w * 2.0, 40)
 	slot.add_child(cap)
 	_mate_caption = cap
@@ -853,6 +751,11 @@ func _build_mate_slot() -> void:
 
 
 func _on_mate_pressed() -> void:
+	# Hors ligne (et pas déjà dans un salon) : pas de relais coop, on explique comment jouer à deux.
+	if not OnlineMode.is_online() and not in_coop_room():
+		MenuKit.sfx(&"error")
+		_show_info(OFFLINE_COOP_HINT)
+		return
 	_go_optional(mate_plus, MenuKit.COOP_SCENE)
 
 
@@ -873,6 +776,7 @@ func _refresh_mate() -> void:
 		_mate_caption.text = "Salon %s" % LobbyCode.pretty(s.room_code)
 	else:
 		_mate_caption.text = "Coéquipier"
+	_apply_mate_offline(not OnlineMode.is_online() and not room)
 	if not has_mate:
 		lobby.set_mate(null, false)
 		return
@@ -897,7 +801,7 @@ func _connect_session() -> void:
 
 
 func _on_session_event() -> void:
-	_refresh_mate.call_deferred()
+	_refresh_online.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -918,8 +822,6 @@ static func button_label(b: Button) -> String:
 		return (b as NavButton).caption.text
 	if b is PassCard:
 		return "Pass"
-	if b.name == "CoopButton":
-		return "Coop"
 	if b is PlayCard:
 		return (b as PlayCard).title_label.text
 	return b.text

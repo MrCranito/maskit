@@ -174,11 +174,11 @@ func test_main_menu_buttons() -> void:
 	var labels: Array[String] = []
 	for b: Button in m.buttons:
 		labels.append(MainMenu.button_label(b))
-		# pastilles Solo / Coop de la maquette : 52 px (au-dessus du minimum tactile de 48)
-		assert_gte(b.custom_minimum_size.y, 48.0 if b == m.coop_button else 64.0, "Bouton tactile assez grand")
+		assert_gte(b.custom_minimum_size.y, 64.0, "Bouton tactile assez grand")
 		assert_eq(b.focus_mode, Control.FOCUS_ALL, "Navigation manette/clavier")
 		assert_gt(b.pressed.get_connections().size(), 0, "Bouton relié : " + MainMenu.button_label(b))
-	assert_eq(labels, ["DÉPLOYER", "Coop", "Pass", "Progression", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
+	# Bandeau = uniquement DÉPLOYER (retour de Victor) : plus de Solo / Coop, la coop passe par « + Coéquipier ».
+	assert_eq(labels, ["DÉPLOYER", "Pass", "Progression", "Arsenal", "Atelier", "Inventaire", "Boutique"] as Array[String])
 	assert_not_null(m.gem_counter, "Compteur de gemmes")
 	assert_eq(m.gem_counter.value_label.text, "42")
 	assert_gt(m.gem_plus.pressed.get_connections().size(), 0, "Bouton + des gemmes")
@@ -226,7 +226,7 @@ func test_main_menu_stats_and_currencies() -> void:
 	assert_eq((m.stat_values[&"raids"] as Label).text, "8")
 	assert_eq((m.stat_values[&"extractions"] as Label).text, "6")
 	assert_eq((m.stat_values[&"rate"] as Label).text, "75 %")
-	assert_eq(m.gold_label.text, MainMenu.format_thousands(12345), "Or affiché en haut")
+	assert_eq(m.gold_label.text, Economy.fmt(12345), "Or affiché en haut (GoldCounter partagé)")
 	assert_eq(MainMenu.gold_amount(), 12345)
 	assert_eq(MainMenu.format_thousands(1234567), "1\u202f234\u202f567")
 
@@ -256,7 +256,7 @@ func test_lobby_hero_reflects_skin() -> void:
 
 func test_lobby_layout_nav_and_loadout() -> void:
 	# Direction D (maquette Lobby) : menu texte à gauche sous la barre du haut, carte du pass en
-	# bas à gauche, bandeau violet à droite : carte en cours en haut, DÉPLOYER puis Solo / Coop.
+	# bas à gauche, bandeau violet à droite réservé à DÉPLOYER (+ interrupteur En ligne / Hors ligne).
 	_test_profile(0)
 	for vp: Vector2 in [Vector2(1280, 720), Vector2(1560, 720)]:   # 16:9 et téléphone large (19,5:9)
 		await _check_lobby_layout(vp)
@@ -284,20 +284,23 @@ func _check_lobby_layout(vp: Vector2) -> void:
 	var slab: Rect2 = (m.get("slab") as Control).get_global_rect()
 	assert_almost_eq(slab.end.x, vp.x, 1.0, "Bandeau collé au bord droit")
 	assert_false(top.intersects(slab), "La barre du haut s'arrête avant le bandeau")
-	var coop: Rect2 = m.coop_button.get_global_rect()
 	var play: Rect2 = m.play_button.get_global_rect()
-	assert_gte(coop.position.y, play.end.y - 1.0, "Coop sous DÉPLOYER (maquette : Solo / Coop)")
-	assert_almost_eq(coop.end.x, play.end.x, 24.0, "Coop aligné à droite avec DÉPLOYER")
-	var ml: Rect2 = m.map_link.get_global_rect()
-	assert_lt(ml.end.y, play.position.y, "Carte en cours en haut du bandeau")
-	assert_true(slab.encloses(ml.grow(-1.0)), "Carte en cours dans le bandeau")
+	var sw: Rect2 = m.online_switch.get_global_rect()
+	assert_gte(sw.position.y, play.end.y - 1.0, "Interrupteur En ligne / Hors ligne sous DÉPLOYER")
+	assert_almost_eq(sw.end.x, play.end.x, 24.0, "Interrupteur aligné à droite avec DÉPLOYER")
 	assert_false(m.info_banner.visible, "Bandeau d'info masqué hors message")
 	assert_true(slab.encloses(play.grow(-1.0)), "DÉPLOYER dans le bandeau")
-	assert_true(slab.encloses(coop.grow(-1.0)), "Coop dans le bandeau")
+	assert_true(slab.encloses(sw.grow(-1.0)), "Interrupteur dans le bandeau")
+	var slab_buttons := (m.get("slab") as Control).find_children("*", "BaseButton", true, false)
+	for b: Node in slab_buttons:
+		assert_true(b == m.play_button or m.online_switch.is_ancestor_of(b),
+			"Le bandeau ne porte que DÉPLOYER et l'interrupteur : " + String(b.name))
+	assert_null(m.find_child("CoopButton", true, false), "Plus de bouton Coop dans le bandeau")
+	assert_null(m.find_child("SoloChip", true, false), "Plus de pastille Solo")
+	assert_null(m.find_child("MapLink", true, false), "Plus de carte en cours dans le bandeau")
 	assert_eq(m.merchant_button.caption.text, "Inventaire", "Marchand renommé Inventaire")
 	assert_eq(m.merchant_button.soon, not ResourceLoader.exists(MenuKit.MERCHANT_SCENE), "Inventaire : « Bientôt » si absent")
 	assert_eq(m.crafting_button.soon, not ResourceLoader.exists(MenuKit.CRAFTING_SCENE))
-	assert_eq(bool(m.coop_button.get_meta(&"soon")), not ResourceLoader.exists(MenuKit.COOP_SCENE))
 	# Un écran absent ne plante pas : aucun départ
 	m.call("_go_optional", m.merchant_button, "res://scenes/ui/menus/__absent__.tscn")
 	assert_false(bool(m.get_meta(&"_leaving", false)), "« Bientôt » : on reste au lobby")
@@ -340,6 +343,9 @@ func test_pass_card_on_lobby() -> void:
 	assert_true(c.claim_pill.visible)
 	assert_string_contains((c.claim_pill.get_node("Text") as Label).text, "%d à récupérer" % bp.claimable_count())
 	assert_eq(c.next_label.text, "Palier 5")
+	var prog := bp.tier_progress()
+	assert_eq(c.xp_label.text, "%s / %s XP" % [Economy.fmt(prog.x), Economy.fmt(prog.y)], "La barre dit combien d'XP")
+	assert_true(c.next_icon.visible, "Icône de la prochaine récompense")
 	assert_false(c.next_value.text.is_empty(), "Récompense du prochain palier")
 	assert_false(c.premium_pill.visible)
 	bp.premium = true
