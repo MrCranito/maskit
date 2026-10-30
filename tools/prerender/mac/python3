@@ -5,11 +5,12 @@
 BL=${BLENDER_BIN:-/Applications/Blender.app/Contents/MacOS/Blender}
 BP=$(ls "$(dirname "$BL")"/../Resources/*/python/bin/python3.* 2>/dev/null | grep -v config | head -1)
 export PYTHONPATH="${MASKIT_PYLIB:-$HOME/.cache/maskit/pylib}${PYTHONPATH:+:$PYTHONPATH}"
-case "$1" in
-	*_scene.py)
-		s=$1
-		shift
-		exec "$BL" -b --factory-startup --python-use-system-env --python-exit-code 1 --python "$s" -- "$@"
-		;;
-esac
+# Script Blender : une scène de pré-rendu (*_scene.py), un script de art/blender/ ou tout script
+# qui importe bpy ; son dossier est ajouté au PYTHONPATH comme le ferait python3.
+if [ -f "$1" ] && { case "$1" in *_scene.py | */art/blender/* | art/blender/*) true ;; *) grep -qE '^(import|from) bpy|^import .*\bbpy\b' "$1" ;; esac; }; then
+	s=$1
+	shift
+	export PYTHONPATH="$(cd "$(dirname "$s")" && pwd):$PYTHONPATH"
+	exec "$BL" -b --factory-startup --python-use-system-env --python-exit-code 1 --python "$s" -- "$@"
+fi
 exec "$BP" "$@"

@@ -2056,7 +2056,7 @@ def presentation_sheet(kinds) -> None:
 
 
 def main() -> None:
-    args = sys.argv[1:]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     kinds = args[args.index("--kinds") + 1].split(",") if "--kinds" in args else KINDS
     os.makedirs(TMP_DIR, exist_ok=True)
     if "--sheet" in args:
