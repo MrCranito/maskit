@@ -218,10 +218,19 @@ func test_extraction_canalisee_puis_ecran_de_fin() -> void:
 	_raid._update_extraction(_raid.layout.player_spawn, 0.1)
 	assert_false(_raid.is_extracting(), "interrompue hors zone")
 	assert_eq(_raid.get_toast_text(), "Extraction interrompue")
+	assert_null(_raid.extraction_overlay, "calque retiré à l'interruption")
 	# Canalisation complète.
 	_raid._update_extraction(cell, 0.01)
+	assert_not_null(_raid.extraction_overlay, "calque d'extraction (compte à rebours)")
+	assert_eq(_raid.extraction_overlay.get_count_text(), str(ceili(t - 0.01)), "compte à rebours")
+	# Séquence de sortie coupée ([extraction] outro_time = 0) : l'écran de fin met le jeu en
+	# pause, ce qui figerait l'attente de GUT ; la séquence elle-même est testée à part.
+	var saved: Variant = Balance.get_value("extraction", "outro_time", 1.4)
+	Balance._config.set_value("extraction", "outro_time", 0.0)
 	_raid._update_extraction(cell, t + 0.1)
+	Balance._config.set_value("extraction", "outro_time", saved)
 	assert_true(_raid.is_raid_over(), "raid terminé")
+	assert_null(_raid.extraction_overlay, "calque retiré à la fin")
 	assert_not_null(_raid.end_screen, "écran de fin affiché")
 	assert_true(_raid.end_screen.success)
 	assert_eq(_raid.end_screen.get_title_text(), "Extraction réussie")
@@ -375,3 +384,22 @@ func test_popups_de_butin_au_dessus_de_la_minimap() -> void:
 	assert_false(mm.is_full_map_open(), "ouvrir l'inventaire ferme la carte plein écran")
 	lh.inventory_screen.close()
 	assert_false(get_tree().paused)
+
+
+func test_sequence_de_sortie_avant_l_ecran_de_fin() -> void:
+	if _raid.layout.extraction_cells.is_empty():
+		pending("Pas de case d'extraction sur cet étage")
+		return
+	assert_gt(Raid.extraction_outro_time(), 0.0, "séquence de sortie réglée")
+	var cell: Vector2i = _raid.layout.extraction_cells[0]
+	_raid.place_player(cell)
+	_raid._update_extraction(cell, 0.01)
+	var zone := _raid.get_extraction_zone_at(cell)
+	assert_not_null(zone)
+	_raid._update_extraction(cell, Raid.extraction_channel_time() * 0.5)
+	assert_gt(zone.get_beam_alpha(), 0.0, "colonne de lumière pendant la canalisation")
+	_raid._update_extraction(cell, Raid.extraction_channel_time())
+	assert_true(_raid.is_raid_over())
+	assert_null(_raid.end_screen, "pas encore d'écran de fin : séquence de sortie en cours")
+	assert_not_null(_raid.extraction_overlay, "flash et « EXTRAIT » à l'écran")
+	assert_eq(_raid.extraction_overlay.get_count_text(), "EXTRAIT")
