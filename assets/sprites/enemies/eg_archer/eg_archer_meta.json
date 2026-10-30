@@ -1,0 +1,135 @@
+{
+  "kind": "eg_archer",
+  "name": "Archer sable",
+  "frame_size": [
+    192,
+    192
+  ],
+  "feet_offset": [
+    96,
+    136
+  ],
+  "display_height": 110.8,
+  "world_per_px": 0.576875,
+  "height_px": 93,
+  "head_px": 52,
+  "fps": {
+    "idle": 7,
+    "run": 12,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      140.7,
+      83.0
+    ],
+    "se": [
+      127.8,
+      106.6
+    ],
+    "s": [
+      96.3,
+      116.4
+    ],
+    "sw": [
+      64.6,
+      106.9
+    ],
+    "w": [
+      51.3,
+      83.4
+    ],
+    "nw": [
+      64.2,
+      59.9
+    ],
+    "n": [
+      95.7,
+      50.0
+    ],
+    "ne": [
+      127.4,
+      59.6
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      31,
+      64,
+      148,
+      157
+    ],
+    "se": [
+      31,
+      64,
+      148,
+      157
+    ],
+    "s": [
+      46,
+      89,
+      167,
+      162
+    ],
+    "sw": [
+      46,
+      89,
+      167,
+      162
+    ],
+    "w": [
+      46,
+      89,
+      167,
+      162
+    ],
+    "nw": [
+      44,
+      95,
+      161,
+      175
+    ],
+    "n": [
+      44,
+      95,
+      161,
+      175
+    ],
+    "ne": [
+      25,
+      92,
+      146,
+      164
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/eg_archer/eg_archer_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

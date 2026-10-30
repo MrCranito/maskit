@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://3a7yr4jwx1xq"
+path.bptc="res://.godot/imported/cv_circus_dog_atlas.png-ecbd23e3e3714142c6d2acf0df5f79fc.bptc.ctex"
+path.astc="res://.godot/imported/cv_circus_dog_atlas.png-ecbd23e3e3714142c6d2acf0df5f79fc.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/cv_circus_dog/cv_circus_dog_atlas.png"
+dest_files=["res://.godot/imported/cv_circus_dog_atlas.png-ecbd23e3e3714142c6d2acf0df5f79fc.bptc.ctex", "res://.godot/imported/cv_circus_dog_atlas.png-ecbd23e3e3714142c6d2acf0df5f79fc.astc.ctex"]
 
 [params]
 

@@ -89,8 +89,11 @@ Valeurs par défaut : `[bestiary_egypt]` de `data/balance.cfg` (clé `<id>_<para
   en embuscade) ; peu ou pas en fouille et en repos. `[bestiary_egypt] row2_kinds` pour un éventuel
   multiplicateur par étage.
 - Élites / boss : `elite_kinds = [eg_shadow_warrior, eg_sun_priest]`, `boss_kind = eg_pharaoh`.
-- Pas de tables `enemy_eg_*.tres` : il n'existe pas encore d'objets du monde Égypte ; le butin retombe
-  sur la table du biome / la table générique (à créer avec la carte).
+- Butin : `data/loot_tables/enemy_eg_pharaoh.tres` (table propre du boss, exigée par
+  `tests/test_boss_loot.gd` : 4 à 6 objets, jamais vide, Épiques et Légendaires possibles ; objets
+  génériques — or, diamant, bandages, carte au trésor, armes — faute d'objets propres au monde). Les
+  autres ennemis retombent sur la table du biome / la table générique (tables à créer avec la carte et
+  ses objets).
 
 ## Changements partagés
 - `data/balance.cfg` : ajout de la section `[bestiary_egypt]` en fin de fichier (additif).
@@ -111,5 +114,11 @@ voile d'ombre, bénédiction, éruption solaire, phases du boss (réveil des mor
 
 ## Captures (`docs/bestiaire/captures/egypt/`)
 - `planche_modeles_egypt.png` — les 9 modèles (idle, attaque, cadavre).
-- `en_jeu_*.png`, `competences_*.png`, `momie_*.png`, `boss_*.png` — arène de test dans un raid de Dust
-  Creek (le monde n'a pas de carte) : brouillard levé, interface masquée.
+- `en_jeu_classiques_repos.png`, `en_jeu_classiques_combat_0..3.png` — les 6 communs ;
+  `competences_telegraphes.png`, `competences_effets.png` — piège, pluie de flèches, bandelette,
+  crachat de venin, embuscade sous le sable ; `momie_effondree.png`, `momie_relevee.png` — résurrection ;
+  `en_jeu_elites_repos.png`, `en_jeu_elites_benediction_voile.png`, `en_jeu_elites_eruption_solaire.png` ;
+  `boss_repos.png`, `boss_phase1_malediction.png`, `boss_phase2_reveil_des_morts.png`,
+  `boss_phase2_tempete.png`, `boss_phase3_rayons_telegraphe.png`, `boss_phase3_rayons.png`.
+  Arène de test dans un raid de Dust Creek (le monde n'a pas de carte) : brouillard levé, interface
+  masquée, joueur invulnérable. Script de capture (hors dépôt) : scène lancée par `--script` sous xvfb.

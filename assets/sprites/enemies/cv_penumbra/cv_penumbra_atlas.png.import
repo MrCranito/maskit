@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://cs3yutf1acokq"
+path.bptc="res://.godot/imported/cv_penumbra_atlas.png-6efa5ce0797ac5d46bacbef622cb506d.bptc.ctex"
+path.astc="res://.godot/imported/cv_penumbra_atlas.png-6efa5ce0797ac5d46bacbef622cb506d.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/cv_penumbra/cv_penumbra_atlas.png"
+dest_files=["res://.godot/imported/cv_penumbra_atlas.png-6efa5ce0797ac5d46bacbef622cb506d.bptc.ctex", "res://.godot/imported/cv_penumbra_atlas.png-6efa5ce0797ac5d46bacbef622cb506d.astc.ctex"]
 
 [params]
 

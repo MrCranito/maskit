@@ -1,0 +1,135 @@
+{
+  "kind": "cv_fire_clown",
+  "name": "Le Clown de feu",
+  "frame_size": [
+    224,
+    224
+  ],
+  "feet_offset": [
+    112,
+    159
+  ],
+  "display_height": 129.2,
+  "world_per_px": 0.576875,
+  "height_px": 110,
+  "head_px": 60,
+  "fps": {
+    "idle": 7,
+    "run": 12,
+    "attack": 12,
+    "hit": 14,
+    "death": 12
+  },
+  "frames": {
+    "idle": 6,
+    "run": 8,
+    "attack": 6,
+    "hit": 3,
+    "death": 8
+  },
+  "loop": {
+    "idle": true,
+    "run": true,
+    "attack": false,
+    "hit": false,
+    "death": false
+  },
+  "directions": [
+    "e",
+    "se",
+    "s",
+    "sw",
+    "w",
+    "nw",
+    "n",
+    "ne"
+  ],
+  "attack_hold_frame": 2,
+  "attack_strike_frame": 3,
+  "muzzle_px": {
+    "e": [
+      165.4,
+      109.0
+    ],
+    "se": [
+      154.7,
+      138.6
+    ],
+    "s": [
+      119.0,
+      153.9
+    ],
+    "sw": [
+      79.2,
+      146.0
+    ],
+    "w": [
+      58.6,
+      119.5
+    ],
+    "nw": [
+      69.3,
+      89.9
+    ],
+    "n": [
+      105.0,
+      74.6
+    ],
+    "ne": [
+      144.8,
+      82.5
+    ]
+  },
+  "corpse_bbox_px": {
+    "e": [
+      36,
+      107,
+      175,
+      187
+    ],
+    "se": [
+      36,
+      107,
+      175,
+      187
+    ],
+    "s": [
+      50,
+      98,
+      189,
+      193
+    ],
+    "sw": [
+      50,
+      98,
+      189,
+      193
+    ],
+    "w": [
+      50,
+      98,
+      189,
+      193
+    ],
+    "nw": [
+      49,
+      109,
+      188,
+      201
+    ],
+    "n": [
+      49,
+      109,
+      188,
+      201
+    ],
+    "ne": [
+      35,
+      122,
+      174,
+      197
+    ]
+  },
+  "atlas": "res://assets/sprites/enemies/cv_fire_clown/cv_fire_clown_atlas.png",
+  "notes": "display_height = hauteur du cadre (frame_size.y px) en unités monde ; scale = display_height / frame_size.y. feet_offset = pieds (px depuis le coin haut-gauche du cadre). attack : 0-2 élan (2 tenue pendant le télégraphe), 3 coup/tir, 4-5 retour. death : la dernière image est le cadavre au sol. muzzle_px = bout du canon / de la griffe (image attack 3)."
+}

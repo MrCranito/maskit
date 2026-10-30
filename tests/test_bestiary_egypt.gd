@@ -121,8 +121,13 @@ func test_donnees_et_planches() -> void:
 		assert_not_null(EnemyArt.corpse_texture(k, "s"), "cadavre %s" % k)
 		var meta: Dictionary = e["meta"]
 		assert_eq((meta.get("muzzle_px", {}) as Dictionary).size(), 8, "point d'impact %s" % k)
-		# Même échelle monde que le héros et les autres ennemis (0,577 unité par pixel).
-		assert_almost_eq(float(e["scale"]), 92.3 / 160.0, 0.01, "échelle %s" % k)
+		# Même échelle monde que le héros et les autres ennemis (0,577 unité par pixel de rendu) ; le
+		# boss est stocké à 72 % de sa résolution de rendu (échelle compensée dans la méta).
+		var stored := float((meta.get("frame_size", [1, 1]) as Array)[0]) * float(meta.get("world_per_px", 0.0))
+		assert_almost_eq(stored / float(meta.get("display_height", 1.0)), 1.0, 0.02, "échelle %s" % k)
+		assert_almost_eq(float(e["scale"]), float(meta.get("world_per_px", 0.0)), 0.01, "échelle appliquée %s" % k)
+		if k != BOSS:
+			assert_almost_eq(float(e["scale"]), 92.3 / 160.0, 0.01, "échelle du héros %s" % k)
 
 
 func test_noms_de_la_planche() -> void:

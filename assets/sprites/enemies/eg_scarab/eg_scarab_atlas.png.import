@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://cboaeeqgpi8ka"
+path.bptc="res://.godot/imported/eg_scarab_atlas.png-c5285ba812604f4fdd17169f8a294808.bptc.ctex"
+path.astc="res://.godot/imported/eg_scarab_atlas.png-c5285ba812604f4fdd17169f8a294808.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/eg_scarab/eg_scarab_atlas.png"
+dest_files=["res://.godot/imported/eg_scarab_atlas.png-c5285ba812604f4fdd17169f8a294808.bptc.ctex", "res://.godot/imported/eg_scarab_atlas.png-c5285ba812604f4fdd17169f8a294808.astc.ctex"]
 
 [params]
 

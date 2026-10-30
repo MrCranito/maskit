@@ -223,7 +223,7 @@ SPEC: dict[str, dict] = {
         },
     },
     "cv_circus_king": {
-        "name": "Le Roi du cirque", "rig": "human", "frame": 384, "scale": 2.05, "head": 1.26, "leg": 0.82,
+        "name": "Le Roi du cirque", "rig": "human", "frame": 384, "scale": 2.05, "head": 1.45, "leg": 0.82,
         "torso": (1.34, 1.14), "arm": 1.30, "arm_len": 1.10, "hunch": 0.10, "belly": 0.5, "fps_run": 10,
         "stride": 0.6, "cam_dz": 0.15, "out_scale": 0.72,
         "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
@@ -837,11 +837,11 @@ class FairgroundBeing(CvHuman):
         # canne à pommeau doré (main droite)
         fa = self.j["faR"]
         g = joint("w_cane", fa, (0, 0, -self.ll))
-        self.part("cane", C.bm_xform(C.bm_cyl(8, 0.02, 0.016, 0.86), loc=(0, 0, -0.38)), "cane", g, grp="cane")
-        self.part("knob", C.bm_xform(C.bm_sphere(12, 8, 0.05), loc=(0, 0, 0.06)), "gold", g, grp="cane")
-        self.part("tip", C.bm_xform(C.bm_cyl(8, 0.02, 0.0, 0.06), loc=(0, 0, -0.84)), "gold", g, grp="cane")
+        self.part("cane", C.bm_xform(C.bm_cyl(8, 0.022, 0.018, 0.64), loc=(0, 0, -0.27)), "cane", g, grp="cane")
+        self.part("knob", C.bm_xform(C.bm_sphere(12, 8, 0.055), loc=(0, 0, 0.07)), "gold", g, grp="cane")
+        self.part("tip", C.bm_xform(C.bm_cyl(8, 0.022, 0.0, 0.06), loc=(0, 0, -0.62)), "gold", g, grp="cane")
         self.cane = g
-        self.muzzle_ref = ("tip", (0, 0, -0.84))
+        self.muzzle_ref = ("tip", (0, 0, -0.62))
 
     def set_cane(self, rot) -> None:
         self.cane.rotation_euler = rot
@@ -991,11 +991,7 @@ class CircusKing(CvHuman):
         self.ruff(sp, 0.45, 0.17 * tw, n=18, size=0.075, tilt=0.03)
         # longue robe (taille → chevilles)
         rob = C.bm_loft([C.ellipse(0, 0.0, z, r * tw, r * 0.85 * td, 22)
-                         for z, r in ((0.08, 0.24), (-0.20, 0.28), (-0.50, 0.33), (-0.68, 0.35))], cap_start=False, cap_end=False)
-        for f in list(rob.faces):
-            c = f.calc_center_median()
-            if c.y < -0.10 * td and abs(c.x) < 0.07 * tw and c.z < -0.2:
-                rob.faces.remove(f)
+                         for z, r in ((0.08, 0.24), (-0.20, 0.28), (-0.50, 0.33), (-0.68, 0.35))], cap_start=False, cap_end=True)
         self.part("robeSkirt", rob, "robe", pel, thick=0.016)
         self.part("hem", C.bm_xform(C.bm_torus(24, 6, 0.345 * tw, 0.03), loc=(0, 0, -0.67), scale=(1, 0.85 * td / tw, 1)),
                   "gold", pel)
@@ -1022,16 +1018,16 @@ class CircusKing(CvHuman):
                   "gold", sp)
         self.part("medalJ", C.bm_xform(C.bm_sphere(8, 6, 0.022), loc=(0, -0.215 * td, 0.30)), "jewel", sp, nofs=True)
         # grande roue de néon dans le dos (auréole) : jante, rayons, nacelles lumineuses
-        g = joint("wheel", sp, (0, 0.30 * td, 0.62))
+        g = joint("wheel", sp, (0, 0.30 * td, 0.72))
         self.wheel = g
-        rim = C.bm_torus(32, 6, 0.50, 0.022)
+        rim = C.bm_torus(32, 6, 0.60, 0.028)
         self.part("rim", C.bm_xform(rim, rot=(math.pi / 2, 0, 0)), "wheel", g, nofs=True)
-        self.part("rimFrame", C.bm_xform(C.bm_torus(32, 6, 0.44, 0.016), rot=(math.pi / 2, 0, 0)), "wheel_frame", g)
+        self.part("rimFrame", C.bm_xform(C.bm_torus(32, 6, 0.53, 0.02), rot=(math.pi / 2, 0, 0)), "wheel_frame", g)
         for k in range(12):
             a = 2 * math.pi * k / 12
-            x, z = math.cos(a) * 0.47, math.sin(a) * 0.47
+            x, z = math.cos(a) * 0.57, math.sin(a) * 0.57
             self.part("spoke", C.bm_tube([(0, 0, 0), (x, 0, z)], [0.012, 0.012], seg=4), "wheel_frame", g)
-            self.part("bulb", C.bm_xform(C.bm_sphere(8, 6, 0.032), loc=(x * 1.07, 0, z * 1.07)),
+            self.part("bulb", C.bm_xform(C.bm_sphere(8, 6, 0.042), loc=(x * 1.07, 0, z * 1.07)),
                       "wheel_b" if k % 2 else "wheel", g, nofs=True)
         self.part("hub", C.bm_xform(C.bm_cyl(12, 0.06, 0.06, 0.05), rot=(math.pi / 2, 0, 0)), "gold", g)
         # sceptre (main droite) à orbe rougeoyante

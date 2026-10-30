@@ -2,10 +2,18 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://dgkj0thvcmw7s"
+path.bptc="res://.godot/imported/cv_ghost_carousel_atlas.png-0cc022b57cad901008b572df571a1b8a.bptc.ctex"
+path.astc="res://.godot/imported/cv_ghost_carousel_atlas.png-0cc022b57cad901008b572df571a1b8a.astc.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
 
 [deps]
 
 source_file="res://assets/sprites/enemies/cv_ghost_carousel/cv_ghost_carousel_atlas.png"
+dest_files=["res://.godot/imported/cv_ghost_carousel_atlas.png-0cc022b57cad901008b572df571a1b8a.bptc.ctex", "res://.godot/imported/cv_ghost_carousel_atlas.png-0cc022b57cad901008b572df571a1b8a.astc.ctex"]
 
 [params]
 
