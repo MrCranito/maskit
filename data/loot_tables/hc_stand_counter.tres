@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"hc_stand_counter"
+display_name = "Comptoir de stand"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.1
+search_time = 1.2
+entries = {
+&"hc_caramel_apple": 2,
+&"hc_clown_grin": 0.6,
+&"hc_cotton_candy": 4,
+&"hc_plush_bear": 2,
+&"hc_popcorn_box": 4,
+&"hc_prize_coins": 6,
+&"hc_ticket_roll": 3,
+&"mall_batteries": 1,
+&"mat_cloth": 2,
+&"wpn_gadget_c4": 0.01,
+&"wpn_gadget_decoy": 0.1,
+&"wpn_gadget_frag": 0.1,
+&"wpn_gadget_mine": 0.01,
+&"wpn_gadget_smoke": 0.032,
+&"wpn_pistol_deagle": 0.02,
+&"wpn_pistol_glock18": 0.064,
+&"wpn_rifle_ak47": 0.2,
+&"wpn_rifle_m4a1": 0.064,
+&"wpn_rifle_scarh": 0.02,
+&"wpn_smg_mp5": 0.2,
+&"wpn_smg_vector": 0.064,
+&"wpn_sniper_m24": 0.2,
+&"wpn_sniper_ax50": 0.064
+}

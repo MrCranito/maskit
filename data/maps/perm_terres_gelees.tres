@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MapCard" format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_card"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"perm_terres_gelees"
+display_name = "Les Terres gelées"
+description = "Un continent prisonnier des glaces. Des bases abandonnées, des laboratoires enfouis et des tempêtes perpétuelles cachent des secrets que la glace n'a pas oubliés."
+world_path = "res://data/worlds/world_05_frozen_lands.tres"
+accent_color = Color(0.5, 0.85, 1, 1)
+tags = PackedStringArray("Classique", "Glace")
+reward_text = "Butin standard"
