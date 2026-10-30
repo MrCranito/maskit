@@ -9,6 +9,9 @@ var weapon: WeaponData = null
 var skin: SkinData = null
 ## Utilise le skin équipé du profil (sinon `skin` tel quel).
 var use_equipped_skin: bool = true
+## Repli dessiné en aplat blanc, sans contour (pictogramme de section de l'arsenal).
+var silhouette: bool = false
+const SILHOUETTE_COLOR := Color(0.95, 0.96, 1.0)
 var tex_rect: TextureRect = null
 
 ## Silhouettes de repli (coordonnées normalisées dans une boîte 2:1, canon vers la droite) :
@@ -96,6 +99,10 @@ func _draw() -> void:
 	if weapon.is_gadget():
 		box = Vector2(size.y * 1.2, size.y)
 	var o := (size - box) * 0.5
+	if silhouette:
+		for r: Array in shapes:
+			draw_rect(Rect2(o + Vector2(r[0], r[1]) * box, Vector2(r[2], r[3]) * box), SILHOUETTE_COLOR)
+		return
 	var sk := current_skin()
 	var body: Color = sk.color_primary if sk != null else Color(0.62, 0.66, 0.74)
 	var dark: Color = sk.color_secondary.darkened(0.3) if sk != null else Color(0.3, 0.33, 0.4)
