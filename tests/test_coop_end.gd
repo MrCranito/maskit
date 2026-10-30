@@ -195,10 +195,41 @@ func test_guest_downed_bleeds_out_then_host_extracts() -> void:
 	p.take_damage(99999.0, null)
 	NetHooks.applying_remote = false
 	assert_true(p.net_downed, "invité à terre (l'hôte peut le relever)")
+	# Séquence de mort coupée ([death] outro_time = 0), testée à part (test suivant).
+	var saved: Variant = Balance.get_value("death", "outro_time", 2.4)
+	Balance._config.set_value("death", "outro_time", 0.0)
 	_coop._bleed_out()
-	await wait_seconds(Balance.get_float("raid", "death_screen_delay", 2.0) + 0.5)
+	Balance._config.set_value("death", "outro_time", saved)
+	await wait_process_frames(3)
 	assert_true(_raid.is_raid_over())
 	assert_true(_coop.spectating)
+	_inject_evt(NetProtocol.PlayerOp.EXTRACTED)
+	await wait_process_frames(2)
+	assert_true(_end_screen_shown())
+
+
+## Séquence de mort en coop : pas de ralenti, puis spectateur ; le calque s'efface et la caméra
+## retrouve son zoom (on regarde le coéquipier).
+func test_guest_dies_death_sequence_then_spectates() -> void:
+	await _start(false)
+	var saved: Variant = Balance.get_value("death", "outro_time", 2.4)
+	Balance._config.set_value("death", "outro_time", 0.4)
+	var p := _raid.player as Player
+	var cam := get_viewport().get_camera_2d()
+	var zoom0: Vector2 = cam.zoom if cam != null else Vector2.ONE
+	p.net_downed = true
+	_coop._bleed_out()
+	Balance._config.set_value("death", "outro_time", saved)
+	var overlay := _raid.get_node_or_null(^"DeathOverlay") as DeathOverlay
+	assert_not_null(overlay, "séquence de mort jouée")
+	assert_eq(Engine.time_scale, 1.0, "aucun ralenti en coop")
+	assert_false(_raid.is_raid_over(), "écran de fin après la séquence")
+	await wait_seconds(0.4 + 0.5 + 0.4)
+	assert_true(_raid.is_raid_over())
+	assert_true(_coop.spectating, "spectateur du coéquipier")
+	assert_false(is_instance_valid(overlay), "calque effacé pour regarder le coéquipier")
+	if cam != null and is_instance_valid(cam):
+		assert_almost_eq(cam.zoom.x, zoom0.x, 0.01, "zoom de la caméra rendu")
 	_inject_evt(NetProtocol.PlayerOp.EXTRACTED)
 	await wait_process_frames(2)
 	assert_true(_end_screen_shown())
