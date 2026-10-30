@@ -27,8 +27,13 @@ extends Node2D
 ##   caché par le brouillard) passe derrière un volume haut, tout le bâtiment (ou la tranche de
 ##   décor) passe en fondu doux à [prerender] occluder_fade_alpha : ce qui est derrière (unités,
 ##   tirs, effets) reste lisible. Test espacé (10 Hz) indexé par rangée, fondu par image
-##   seulement pendant la transition. Le fond pré-rendu ne contient pas le sol sous la partie
-##   haute du bâtiment : on voit les unités à travers, pas le sol.
+##   seulement pendant la transition.
+## - (Correctif sol sous les bâtiments) map.json « grounds » : par bâtiment, patch « sol seul »
+##   gr_<id>.webp (passe gnd de tools/prerender : même caméra, bâtiment retiré ; alpha = ses
+##   surfaces hautes). Affiché sous les personnages (z 1) en fondu inverse du bâtiment : quand il
+##   s'estompe, on voit le VRAI sol (ou plancher) derrière / sous lui, pas le toit estompé (la
+##   tuile du fond contient le bâtiment). Textures chargées seulement près de la vue (avec les
+##   tranches du bâtiment), libérées au loin ; patch invisible (pas dessiné) au repos.
 
 const PACK_ROOT := "res://assets/prerender/far_west/"
 ## (Ajout générique, station) Paquets par biome : res://assets/prerender/<biome>/<seed>/.
@@ -54,7 +59,7 @@ var _occ_enabled := true
 var _player: Node2D = null
 ## Fondu « unité derrière » (voir en-tête) : réglages [prerender] occluder_fade_*.
 var _fade_enabled := true
-var _fade_alpha := 0.3
+var _fade_alpha := 0.2
 var _fade_duration := 0.25
 var _fade_radius := 28.0
 var _fade_height := 88.0
@@ -66,6 +71,10 @@ var _by_key: Dictionary = {}        ## clé de groupe → tranches chargées
 var _rows_up := 0                   ## dépassement maximal d'une tranche vers le nord (rangées)
 var _index_dirty := true
 var _slice_serial := 0
+## Patchs « sol seul » : id de bâtiment → {file, pos (monde), sprite, pending}.
+var _grounds: Dictionary = {}
+var _ground_holder: Node2D = null
+var _ground_enabled := true
 
 
 ## Dossier des paquets d'un biome (far_west → PACK_ROOT).
@@ -153,13 +162,18 @@ func _setup() -> void:
 	_occ_alpha_player = float(_bal("occluder_player_alpha", 0.55))
 	_occ_interval = float(_bal("occluder_check_interval", 0.1))
 	_fade_enabled = bool(_bal("occluder_fade", true))
-	_fade_alpha = clampf(float(_bal("occluder_fade_alpha", 0.3)), 0.0, 1.0)
+	_fade_alpha = clampf(float(_bal("occluder_fade_alpha", 0.2)), 0.0, 1.0)
 	_fade_duration = maxf(float(_bal("occluder_fade_duration", 0.25)), 0.0)
 	_fade_radius = float(_bal("occluder_fade_radius", 28.0))
 	_fade_height = float(_bal("occluder_fade_height", 88.0))
 	_fade_enemies = bool(_bal("occluder_fade_enemies", true))
 	for e: Dictionary in meta.get("occluders", []):
 		_occ_by_tile[pack_dir + String(e["tile"])] = e
+	_ground_enabled = bool(_bal("occluder_ground", true))
+	for e: Dictionary in meta.get("grounds", []):
+		var gp: Array = e["px"]
+		_grounds[int(e["id"])] = {"file": pack_dir + String(e["file"]), "sprite": null, "pending": false,
+			"pos": origin + Vector2(float(gp[0]), float(gp[1])) * px_scale}
 
 
 func _bal(key: String, def: Variant) -> Variant:
@@ -236,6 +250,8 @@ func attach_to(builder: Node2D) -> void:
 	ensure_occluder_holder()
 	var holder := Node2D.new()
 	holder.name = "Interiors"
+	# Patchs « sol seul » (z 1, avant les intérieurs : l'intérieur d'un bâtiment où l'on entre
+	# reste par-dessus).
 	holder.z_index = 1  # au-dessus des tuiles (z 0) malgré le tri en Y du fond
 	add_child(holder)
 	for e: Dictionary in meta["interiors"]:
@@ -264,6 +280,11 @@ func ensure_occluder_holder() -> void:
 	_occ_holder.y_sort_enabled = true
 	_occ_holder.z_index = 10
 	add_child(_occ_holder)
+	if _ground_holder == null:
+		_ground_holder = Node2D.new()
+		_ground_holder.name = "Grounds"
+		_ground_holder.z_index = 1  # au-dessus des tuiles (z 0), sous les personnages (z 10)
+		add_child(_ground_holder)
 
 
 func _process(delta: float) -> void:
@@ -403,6 +424,7 @@ func _update_occluders() -> void:
 		_player = get_tree().get_first_node_in_group(&"player") as Node2D
 	if _index_dirty:
 		_rebuild_index()
+	_sync_grounds()
 	_update_fade_targets()
 	for t: Dictionary in _tiles:
 		for sl: Dictionary in t["slices"]:
@@ -415,6 +437,77 @@ func _update_occluders() -> void:
 					a = 1.0 - clampf((1.0 - roof.modulate.a) / maxf(1.0 - ha, 0.01), 0.0, 1.0)
 			sl["roof_a"] = a
 			_apply_slice(sl)
+	for k: int in _grounds:
+		_apply_ground(k)
+
+
+## Patchs « sol seul » : chargés tant qu'une tranche du bâtiment est chargée (près de la vue),
+## libérés sinon. Chargement en arrière-plan comme les tuiles (synchrone sous le rendu factice).
+func _sync_grounds() -> void:
+	if _grounds.is_empty() or _ground_holder == null or not _ground_enabled:
+		return
+	for k: int in _grounds:
+		var g: Dictionary = _grounds[k]
+		var want := _by_key.has(k)
+		var spr: Sprite2D = g["sprite"]
+		if want and spr == null:
+			if not threaded_loading_safe():
+				_make_ground(k, load(g["file"]) as Texture2D)
+			elif not g["pending"]:
+				ResourceLoader.load_threaded_request(g["file"])
+				g["pending"] = true
+			elif ResourceLoader.load_threaded_get_status(g["file"]) == ResourceLoader.THREAD_LOAD_LOADED:
+				_make_ground(k, ResourceLoader.load_threaded_get(g["file"]) as Texture2D)
+		elif not want and spr != null:
+			spr.queue_free()
+			g["sprite"] = null
+			g["pending"] = false
+
+
+func _make_ground(k: int, tex: Texture2D) -> void:
+	var g: Dictionary = _grounds[k]
+	g["pending"] = false
+	if tex == null:
+		return
+	var s := Sprite2D.new()
+	s.name = "Ground_%d" % k
+	s.texture = tex
+	s.centered = false
+	s.position = g["pos"]
+	s.scale = px_scale
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	s.visible = false
+	_ground_holder.add_child(s)
+	g["sprite"] = s
+	_apply_ground(k)
+
+
+## Opacité du patch « sol seul » : inverse du fondu du bâtiment (0 au repos → non dessiné,
+## 1 quand le bâtiment est au plus transparent).
+func _apply_ground(k: int) -> void:
+	var g: Variant = _grounds.get(k)
+	if g == null:
+		return
+	var s: Sprite2D = (g as Dictionary)["sprite"]
+	if s == null or not is_instance_valid(s):
+		return
+	var f := float(_fade.get(k, 1.0))
+	var a := clampf((1.0 - f) / maxf(1.0 - _fade_alpha, 0.01), 0.0, 1.0)
+	s.modulate.a = a
+	s.visible = a > 0.005
+
+
+## Opacité courante du patch « sol seul » d'un bâtiment (-1 : pas de patch chargé ; tests).
+func ground_alpha(k: int) -> float:
+	var g: Variant = _grounds.get(k)
+	if g == null or (g as Dictionary)["sprite"] == null:
+		return -1.0
+	var s: Sprite2D = (g as Dictionary)["sprite"]
+	return s.modulate.a if s.visible else 0.0
+
+
+func has_ground(k: int) -> bool:
+	return _grounds.has(k)
 
 
 ## Opacité finale d'une tranche : toit (joueur dedans) × fondu « unité derrière ».
@@ -494,6 +587,8 @@ func _step_fades(delta: float) -> void:
 			for sl: Dictionary in arr:
 				if is_instance_valid(sl["sprite"]):
 					_apply_slice(sl)
+		if k is int and int(k) >= 0:
+			_apply_ground(int(k))
 
 
 ## Opacité de fondu courante d'un bâtiment (id) ou d'un groupe (tests, debug).

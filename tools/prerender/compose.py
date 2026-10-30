@@ -212,6 +212,12 @@ if coll is not None:
     meta["collision_stats"] = cstats
 if occl is not None:
     meta["occluders"] = occl
+# Patchs « sol seul » (passe gnd, compose_ground.py) : vrai sol derrière / sous chaque bâtiment.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import compose_ground
+grounds = compose_ground.build(src, dst, Q)
+if grounds is not None:
+    meta["grounds"] = grounds
 json.dump(meta, open(os.path.join(dst, "map.json"), "w"), indent=1)
 tot = sum(os.path.getsize(os.path.join(dst, f)) for f in os.listdir(dst))
 print("PACK", dst, len(tiles), "tiles", len(interiors), "interiors", round(tot / 1e6, 2), "MB",
