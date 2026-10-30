@@ -32,6 +32,8 @@ func _ready() -> void:
 	EventBus.player_spawned.connect(func(p: Node2D) -> void: player = p)
 	# SaveManager est un autoload enregistré après GameState : lecture différée.
 	_load_settings.call_deferred()
+	# Mode développeur (gemmes et or illimités) : builds debug uniquement, voir DevMode.
+	DevPanel.attach(self)
 
 
 ## Lance le raid côté profil : l'arsenal de départ quitte la réserve (perdu en cas de mort).

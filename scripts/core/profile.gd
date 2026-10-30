@@ -75,6 +75,7 @@ func _ready() -> void:
 	var eb: Node = get_node_or_null(^"/root/EventBus")
 	if eb != null and eb.has_signal(&"enemy_died"):
 		eb.connect(&"enemy_died", _on_enemy_died)
+	DevMode.notifier.changed.connect(_on_dev_mode_changed)
 
 
 # --- Réserve d'armes ------------------------------------------------------------
@@ -450,15 +451,14 @@ func is_weapon_buyable(id: StringName) -> bool:
 ## insuffisant. L'arme rejoint la réserve.
 func buy_weapon(id: StringName) -> bool:
 	var w := WeaponCatalog.get_weapon(id)
-	if w == null or not is_weapon_buyable(id) or gold < w.price_gold:
+	if w == null or not is_weapon_buyable(id) or not can_afford(&"gold", w.price_gold):
 		return false
 	if add_weapon(id) <= 0:
 		return false
-	gold -= w.price_gold
+	debit(&"gold", w.price_gold)
 	if not bought_weapons.has(id):
 		bought_weapons.append(id)
 	save()
-	gold_changed.emit(gold)
 	return true
 
 
@@ -491,21 +491,21 @@ func _on_enemy_died(enemy: Node, _pos: Vector2 = Vector2.ZERO) -> void:
 # --- Artisanat ------------------------------------------------------------------
 
 func can_craft(recipe_id: StringName) -> bool:
-	return RecipeBook.can_craft(RecipeBook.get_recipe(recipe_id), items, gold)
+	return RecipeBook.can_craft(RecipeBook.get_recipe(recipe_id), items, balance_of(&"gold"))
 
 
 ## Fabrique une recette : consomme ingrédients + or ; le résultat va dans la réserve
 ## (objet → items, équipement → réserve d'armes). Renvoie false si impossible.
 func craft(recipe_id: StringName) -> bool:
 	var r := RecipeBook.get_recipe(recipe_id)
-	if not RecipeBook.can_craft(r, items, gold):
+	if not RecipeBook.can_craft(r, items, balance_of(&"gold")):
 		return false
 	var use := RecipeBook.plan(r, items)
 	if use.is_empty() and not r.ingredients.is_empty():
 		return false
 	for id: Variant in use:
 		remove_item(StringName(str(id)), int(use[id]))
-	gold -= r.gold_cost
+	debit(&"gold", r.gold_cost)
 	for _k in maxi(r.result_count, 1):
 		if r.is_weapon_result():
 			add_weapon(r.result_weapon_id)
@@ -513,8 +513,6 @@ func craft(recipe_id: StringName) -> bool:
 		items[String(r.result_item_id)] = item_count(r.result_item_id) + maxi(r.result_count, 1)
 	stats["crafted"] = int(stats.get("crafted", 0)) + 1
 	save()
-	if r.gold_cost > 0:
-		gold_changed.emit(gold)
 	crafted.emit(recipe_id)
 	return true
 
@@ -570,6 +568,54 @@ func set_pack_consumables(on: bool) -> void:
 
 # --- Monnaie et skins -----------------------------------------------------------
 
+## Solde dépensable (&"gems" ou &"gold") : le vrai solde, ou DevMode.UNLIMITED en mode développeur.
+## Les écrans testent « assez de … ? » avec can_afford() / balance_of(), jamais gems / gold.
+func balance_of(currency: StringName) -> int:
+	if DevMode.is_unlimited():
+		return DevMode.UNLIMITED
+	match currency:
+		&"gems":
+			return gems
+		&"gold":
+			return gold
+	return 0
+
+
+func can_afford(currency: StringName, amount: int) -> bool:
+	return amount <= 0 or balance_of(currency) >= amount
+
+
+## SEUL point de débit des monnaies (gemmes, or). Mode développeur actif : rien n'est débité
+## (le solde réel, seul sauvegardé, reste intact). false si solde insuffisant ou monnaie inconnue.
+## Pas de sauvegarde ici : l'appelant sauvegarde l'achat complet.
+func debit(currency: StringName, amount: int) -> bool:
+	if amount <= 0:
+		return true
+	if DevMode.is_unlimited():
+		return true
+	match currency:
+		&"gems":
+			if gems < amount:
+				return false
+			gems -= amount
+			gems_changed.emit(gems)
+		&"gold":
+			if gold < amount:
+				return false
+			gold -= amount
+			gold_changed.emit(gold)
+		_:
+			return false
+	return true
+
+
+## Bascule du mode développeur : les compteurs se redessinent (∞ ou vrai solde).
+func _on_dev_mode_changed(_on: bool) -> void:
+	gems_changed.emit(gems)
+	gold_changed.emit(gold)
+	changed.emit()
+
+
 func add_gems(n: int) -> void:
 	gems = maxi(gems + n, 0)
 	save()
@@ -585,12 +631,11 @@ func owns_skin(id: StringName) -> bool:
 func buy_skin(id: StringName) -> bool:
 	var s := SkinData.get_skin(id)
 	# Skins du pass de combat : jamais achetables en gemmes (récompenses de palier).
-	if s == null or s.is_pass() or owns_skin(id) or gems < s.price_gems:
+	if s == null or s.is_pass() or owns_skin(id) or not can_afford(&"gems", s.price_gems):
 		return false
-	gems -= s.price_gems
+	debit(&"gems", s.price_gems)
 	skins_owned.append(id)
 	save()
-	gems_changed.emit(gems)
 	return true
 
 

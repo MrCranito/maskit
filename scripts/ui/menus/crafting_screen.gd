@@ -298,7 +298,7 @@ func _recipe_row(r: RecipeData) -> Button:
 	ncol.add_child(MenuKit.label(effect_text(r), 14, MenuKit.TEXT_DIM, MenuKit.nunito(800)))
 	if r.gold_cost > 0:
 		ncol.add_child(MenuKit.label("%s or" % Economy.fmt(r.gold_cost), 15,
-			GoldCounter.GOLD_COIN if Profile.gold >= r.gold_cost else MenuKit.BAD, MenuKit.nunito(1000), 3))
+			GoldCounter.GOLD_COIN if Profile.can_afford(&"gold", r.gold_cost) else MenuKit.BAD, MenuKit.nunito(1000), 3))
 	var ings := HBoxContainer.new()
 	ings.add_theme_constant_override("separation", 6)
 	ings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -394,8 +394,8 @@ func select(r: RecipeData) -> void:
 	for k: Variant in r.ingredients:
 		_d_ings.add_child(_ingredient_line(str(k), int(r.ingredients[k])))
 	_d_cost.text = ("Coût : %s or" % Economy.fmt(r.gold_cost)) if r.gold_cost > 0 else "Sans frais"
-	_d_cost.add_theme_color_override("font_color", GoldCounter.GOLD_COIN if Profile.gold >= r.gold_cost else MenuKit.BAD)
-	var can := RecipeBook.max_crafts(r, Profile.items, Profile.gold)
+	_d_cost.add_theme_color_override("font_color", GoldCounter.GOLD_COIN if Profile.can_afford(&"gold", r.gold_cost) else MenuKit.BAD)
+	var can := RecipeBook.max_crafts(r, Profile.items, Profile.balance_of(&"gold"))
 	_d_possible.text = ("Possible ×%d" % can) if can > 0 else _missing_text(r)
 	craft_button.disabled = can <= 0
 
@@ -407,7 +407,7 @@ func _missing_text(r: RecipeData) -> String:
 		for k: Variant in miss:
 			parts.append("%d %s" % [int(miss[k]), RecipeBook.key_name(str(k)).to_lower()])
 		return "Manque : " + ", ".join(parts)
-	if Profile.gold < r.gold_cost:
+	if not Profile.can_afford(&"gold", r.gold_cost):
 		return "Il te manque %s or" % Economy.fmt(r.gold_cost - Profile.gold)
 	return ""
 

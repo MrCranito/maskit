@@ -1098,10 +1098,10 @@ func _refresh_shop_box(w: WeaponData) -> void:
 				("   ·   " + str(st["text"])) if st["mode"] == WeaponData.UNLOCK_KILL else "")
 			_d_shop_text.add_theme_color_override("font_color", GoldCounter.GOLD_COIN)
 			buy_button.visible = true
-			buy_button.disabled = Profile.gold < price
+			buy_button.disabled = not Profile.can_afford(&"gold", price)
 			buy_button.text = "Acheter · %s or" % Economy.fmt(price)
 			_d_shop_hint.text = ("Il te manque %s or : vends ton butin au marchand." % Economy.fmt(price - Profile.gold)) \
-				if Profile.gold < price else ("Tu en as ×%d." % owned_count(w.id) if owned_count(w.id) > 0 else "")
+				if not Profile.can_afford(&"gold", price) else ("Tu en as ×%d." % owned_count(w.id) if owned_count(w.id) > 0 else "")
 		Economy.STATE_LOCKED:
 			_d_shop_text.text = str(st["text"])
 			_d_shop_text.add_theme_color_override("font_color", Color(1.0, 0.62, 0.56))
