@@ -200,13 +200,6 @@ class BotLogger extends Logger:
 		pass
 
 
-## Les joysticks virtuels du bot ne sont jamais dans l'arbre : on les libère avec lui.
-func _exit_tree() -> void:
-	for stick: TouchJoystick in [move_stick, aim_stick]:
-		if is_instance_valid(stick):
-			stick.queue_free()
-
-
 func _install_logger() -> void:
 	var lg := BotLogger.new()
 	lg.bot = self
@@ -1359,9 +1352,9 @@ func _finish() -> void:
 	# Joysticks virtuels (hors de l'arbre) libérés dès la fin : aucun nœud orphelin.
 	if is_instance_valid(player):
 		player.set_joysticks(null, null)
-	for stick: TouchJoystick in [move_stick, aim_stick]:
+	for stick: Variant in [move_stick, aim_stick]:
 		if is_instance_valid(stick):
-			stick.free()
+			(stick as Node).free()
 	finished.emit(log)
 	if not embedded:
 		get_tree().quit(0 if outcome != "erreur" else 2)
