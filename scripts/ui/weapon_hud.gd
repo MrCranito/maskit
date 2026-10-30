@@ -672,7 +672,7 @@ class HudRound extends HudButton:
 					var tex := LootVisuals.item_icon(item)
 					var ia := 1.0 if count > 0 else 0.35
 					if tex != null:
-						draw_texture_rect(tex, inner, false, Color(item.tint, ia))
+						draw_texture_rect(tex, inner.grow(r * 0.12), false, Color(LootVisuals.item_tint(item), ia))
 					elif item.is_weapon():
 						LootVisuals.draw_weapon(self, inner, WeaponCatalog.get_weapon(item.weapon_id), Color(1, 1, 1, ia))
 					_badge("×%d" % count, count > 0)

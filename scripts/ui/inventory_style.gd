@@ -131,8 +131,9 @@ static func draw_item_tile(ci: CanvasItem, rect: Rect2, item: ItemData, count: i
 	else:
 		var tex := LootVisuals.item_icon(item)
 		if tex != null:
-			var pad := rect.size.x * 0.17
-			ci.draw_texture_rect(tex, Rect2(rect.position + Vector2(pad, pad * 0.8), rect.size - Vector2(pad, pad) * 2.0), false, item.tint)
+			# Icône peinte : plus grande (elle porte son propre contour) ; SVG blanc : teinté.
+			var pad := rect.size.x * (0.1 if LootVisuals.item_art(item) != null else 0.17)
+			ci.draw_texture_rect(tex, Rect2(rect.position + Vector2(pad, pad * 0.8), rect.size - Vector2(pad, pad) * 2.0), false, LootVisuals.item_tint(item))
 	if count > 1:
 		var txt := "×%d" % count
 		var fs := int(rect.size.y * 0.2)
