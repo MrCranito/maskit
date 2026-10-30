@@ -1,0 +1,116 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 2.77,
+  "bag_value": 190,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 3,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "fw_bandit": 320.0,
+    "fw_raider": 216.0,
+    "fw_sharpshooter": 76.0
+  },
+  "damage_taken": {
+    "fw_bandit": 98.0,
+    "fw_raider": 77.0
+  },
+  "difficulty": 1,
+  "dodges": 63,
+  "duration": 67.4,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 95,
+  "heals_used": 3,
+  "hits_taken": {
+    "fw_bandit": 13,
+    "fw_raider": 5
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 2,
+    "mat_cloth": 2,
+    "playing_cards": 1,
+    "pocket_watch": 1,
+    "rifle_ammo": 9,
+    "silver_dollars": 19,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 12,
+      "1": 9
+    },
+    "conteneur": {
+      "0": 10
+    },
+    "sol": {
+      "0": 2,
+      "1": 1,
+      "2": 1
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 6,
+    "fw_raider": 3,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 20500,
+  "seen": {
+    "fw_bandit": 7,
+    "fw_raider": 3,
+    "fw_sharpshooter": 1
+  },
+  "shots": {
+    "pistol_p9": 49,
+    "smg_mp5": 60
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      1.8,
+      6.28,
+      19.03,
+      21.25,
+      11.98,
+      0.98
+    ],
+    "fw_raider": [
+      1.83,
+      2.87,
+      2.35
+    ],
+    "fw_sharpshooter": [
+      3.25
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 10.22,
+    "fw_raider": 2.35,
+    "fw_sharpshooter": 3.25
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 365.35,
+  "xp": 121
+}

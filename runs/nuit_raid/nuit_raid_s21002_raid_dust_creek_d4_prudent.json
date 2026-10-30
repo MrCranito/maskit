@@ -1,0 +1,116 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.65,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_bandit": 553.0,
+    "fw_guard_dog": 120.0,
+    "fw_marauder": 324.0,
+    "fw_raider": 319.0,
+    "fw_sharpshooter": 52.0
+  },
+  "damage_taken": {
+    "fw_bandit": 11.2,
+    "fw_marauder": 66.4,
+    "fw_raider": 22.4
+  },
+  "difficulty": 4,
+  "dodges": 15,
+  "duration": 68.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 1,
+    "fw_marauder": 5,
+    "fw_raider": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "fw_marauder",
+  "kills": {
+    "fw_bandit": 6,
+    "fw_guard_dog": 1,
+    "fw_marauder": 5,
+    "fw_raider": 3,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21002,
+  "seen": {
+    "fw_bandit": 6,
+    "fw_guard_dog": 1,
+    "fw_marauder": 9,
+    "fw_raider": 4,
+    "fw_sharpshooter": 4
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      0.72,
+      1.6,
+      8.62,
+      0.0,
+      0.73,
+      11.18
+    ],
+    "fw_guard_dog": [
+      0.0
+    ],
+    "fw_marauder": [
+      2.03,
+      0.0,
+      1.27,
+      0.42
+    ],
+    "fw_raider": [
+      2.85,
+      0.48,
+      0.98
+    ],
+    "fw_sharpshooter": [
+      1.78
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 3.81,
+    "fw_guard_dog": 0.0,
+    "fw_marauder": 0.93,
+    "fw_raider": 1.44,
+    "fw_sharpshooter": 1.78
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 280.33,
+  "xp": 158
+}

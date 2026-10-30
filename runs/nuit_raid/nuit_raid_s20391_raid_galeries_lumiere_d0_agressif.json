@@ -1,0 +1,169 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 2.51,
+  "bag_value": 2797,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 6,
+  "containers_opened": 19,
+  "corpses_searched": 16,
+  "damage_dealt": {
+    "mall_clone": 522.5,
+    "mall_flayer": 316.0,
+    "mall_night_spider": 384.8,
+    "mall_security_bot": 150.4,
+    "mall_zombie": 928.0
+  },
+  "damage_taken": {
+    "mall_clone": 48.0,
+    "mall_flayer": 24.8,
+    "mall_night_spider": 75.0,
+    "mall_security_bot": 15.8,
+    "tourelle": 3.5
+  },
+  "difficulty": 0,
+  "dodges": 57,
+  "duration": 420.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 1431,
+  "heals_used": 2,
+  "hits_taken": {
+    "mall_clone": 6,
+    "mall_flayer": 3,
+    "mall_night_spider": 8,
+    "mall_security_bot": 3,
+    "tourelle": 1
+  },
+  "hp_end": 43.0,
+  "hp_min": 29.5,
+  "item_ids": {
+    "bandage": 4,
+    "canned_beans": 3,
+    "gold_nugget": 1,
+    "mall_batteries": 12,
+    "mall_canned_food": 7,
+    "mall_cash_bundle": 15,
+    "mall_energy_drink": 2,
+    "mall_first_aid": 2,
+    "mall_game_console": 2,
+    "mall_gift_card": 4,
+    "mall_headphones": 1,
+    "mall_painkillers": 8,
+    "mall_perfume": 4,
+    "mall_smartphone": 2,
+    "mat_chemicals": 2,
+    "mat_cloth": 8,
+    "mat_scrap": 5,
+    "revolver_ammo": 45,
+    "silver_dollars": 13,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 18,
+      "1": 10,
+      "2": 2
+    },
+    "conteneur": {
+      "0": 15,
+      "1": 22,
+      "2": 2
+    },
+    "sol": {
+      "0": 70,
+      "1": 2
+    }
+  },
+  "killer": "",
+  "kills": {
+    "mall_clone": 6,
+    "mall_flayer": 4,
+    "mall_night_spider": 4,
+    "mall_security_bot": 1,
+    "mall_zombie": 15
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "temps",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 2,
+  "seed": 20391,
+  "seen": {
+    "mall_clone": 18,
+    "mall_flayer": 7,
+    "mall_night_spider": 5,
+    "mall_security_bot": 3,
+    "mall_zombie": 15
+  },
+  "shots": {
+    "pistol_p9": 226,
+    "smg_mp5": 180
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "mall_clone": [
+      2.1,
+      4.1,
+      9.9,
+      8.4,
+      5.55,
+      5.17
+    ],
+    "mall_flayer": [
+      2.42,
+      4.68,
+      16.47,
+      4.77
+    ],
+    "mall_night_spider": [
+      5.75,
+      5.72,
+      4.55,
+      2.0
+    ],
+    "mall_security_bot": [
+      35.42
+    ],
+    "mall_zombie": [
+      3.37,
+      4.73,
+      5.58,
+      1.87,
+      2.85,
+      2.38,
+      9.32,
+      1.07,
+      3.0,
+      6.72,
+      2.08,
+      2.92,
+      2.35,
+      7.13,
+      14.98
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 5.87,
+    "mall_flayer": 7.09,
+    "mall_night_spider": 4.51,
+    "mall_security_bot": 35.42,
+    "mall_zombie": 4.69
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 793.09,
+  "xp": 0
+}

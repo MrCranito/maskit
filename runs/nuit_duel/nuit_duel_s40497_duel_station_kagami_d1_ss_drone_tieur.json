@@ -1,0 +1,75 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 3.12,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_drone_tieur": 198.0
+  },
+  "damage_taken": {},
+  "difficulty": 1,
+  "dodges": 5,
+  "duration": 6.3,
+  "elites": {
+    "ss_drone_tieur": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "ss_drone_tieur",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {},
+  "hp_end": 100.0,
+  "hp_min": 100.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "ss_drone_tieur": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40497,
+  "seen": {
+    "ss_drone_tieur": 1
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "sniper_m82": 4
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_drone_tieur": [
+      5.97
+    ]
+  },
+  "ttk_avg": {
+    "ss_drone_tieur": 5.97
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 329.09,
+  "xp": 0
+}

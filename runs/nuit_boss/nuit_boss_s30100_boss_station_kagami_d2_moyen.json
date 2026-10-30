@@ -1,0 +1,118 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.86,
+  "bag_value": 95,
+  "boss": {
+    "death_skill": "ss_orbital_laser",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.847333333333333,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "ss_architect",
+    "met_t": 1.0
+  },
+  "boss_floor": -1,
+  "boss_kind": "ss_architect",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_architect": 458.0,
+    "ss_drone_tieur": 151.0,
+    "ss_spectre": 45.5
+  },
+  "damage_taken": {
+    "ss_architect": 49.6,
+    "ss_atlas": 4.5,
+    "ss_drone_tieur": 5.6,
+    "ss_spectre": 40.3
+  },
+  "difficulty": 2,
+  "dodges": 38,
+  "duration": 31.5,
+  "elites": {
+    "ss_atlas": {
+      "killed": 0,
+      "met": 1
+    },
+    "ss_drone_tieur": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 49,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_architect": 5,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 1,
+    "ss_spectre": 9
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "gold_nugget": 3,
+    "silver_dollars": 10
+  },
+  "items": {
+    "sol": {
+      "0": 10,
+      "1": 3
+    }
+  },
+  "killer": "ss_architect",
+  "kills": {
+    "ss_drone_tieur": 1,
+    "ss_spectre": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30100,
+  "seen": {
+    "ss_architect": 1,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 1,
+    "ss_spectre": 2
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_drone_tieur": [
+      4.2
+    ],
+    "ss_spectre": [
+      0.0
+    ]
+  },
+  "ttk_avg": {
+    "ss_drone_tieur": 4.2,
+    "ss_spectre": 0.0
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 257.65,
+  "xp": 73
+}

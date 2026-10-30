@@ -1,0 +1,79 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 1.32,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 8,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_deserter": 382.5
+  },
+  "damage_taken": {
+    "fw_deserter": 21.0
+  },
+  "difficulty": 1,
+  "dodges": 9,
+  "duration": 240.0,
+  "elites": {
+    "fw_deserter": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "fw_deserter",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_deserter": 3
+  },
+  "hp_end": 79.0,
+  "hp_min": 79.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "fw_deserter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "duel",
+  "outcome": "temps",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40060,
+  "seen": {
+    "fw_deserter": 1
+  },
+  "shots": {
+    "pistol_glock18": 11,
+    "rifle_m4a1": 48
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_deserter": [
+      9.58
+    ]
+  },
+  "ttk_avg": {
+    "fw_deserter": 9.58
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 273.35,
+  "xp": 0
+}

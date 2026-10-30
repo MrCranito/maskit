@@ -1,0 +1,127 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.07,
+  "bag_value": 968,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 2,
+  "corpses_searched": 7,
+  "damage_dealt": {
+    "ss_detector": 172.5,
+    "ss_security_droid": 276.5,
+    "ss_spectre": 26.0,
+    "ss_teleporter": 323.5
+  },
+  "damage_taken": {
+    "ss_security_droid": 14.0,
+    "ss_spectre": 5.6,
+    "ss_teleporter": 65.9,
+    "tourelle": 14.5
+  },
+  "difficulty": 4,
+  "dodges": 13,
+  "duration": 57.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 506,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 5,
+    "tourelle": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "key_space_armory": 1,
+    "mat_chemicals": 4,
+    "rifle_ammo": 11,
+    "space_circuit": 3,
+    "space_energy_cell": 5,
+    "space_iridium": 2,
+    "space_plasma_cells": 40
+  },
+  "items": {
+    "cadavre": {
+      "0": 41
+    },
+    "conteneur": {
+      "0": 7,
+      "1": 4,
+      "2": 2
+    },
+    "sol": {
+      "1": 11,
+      "3": 1
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 2,
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 4
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21109,
+  "seen": {
+    "ss_detector": 4,
+    "ss_security_droid": 8,
+    "ss_spectre": 7,
+    "ss_teleporter": 9
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      0.0,
+      1.05
+    ],
+    "ss_security_droid": [
+      0.1,
+      0.0
+    ],
+    "ss_spectre": [
+      0.0
+    ],
+    "ss_teleporter": [
+      1.0,
+      0.0,
+      1.7,
+      1.25
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.53,
+    "ss_security_droid": 0.05,
+    "ss_spectre": 0.0,
+    "ss_teleporter": 0.99
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 290.19,
+  "xp": 116
+}

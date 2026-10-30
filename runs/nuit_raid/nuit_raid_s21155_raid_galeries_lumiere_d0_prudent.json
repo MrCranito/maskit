@@ -1,0 +1,138 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 1.63,
+  "bag_value": 1310,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 2,
+  "containers_opened": 11,
+  "corpses_searched": 9,
+  "damage_dealt": {
+    "mall_clone": 248.0,
+    "mall_flayer": 228.0,
+    "mall_night_spider": 204.0,
+    "mall_zombie": 192.0
+  },
+  "damage_taken": {
+    "mall_clone": 66.0,
+    "mall_flayer": 38.3,
+    "mall_night_spider": 45.0,
+    "mall_zombie": 8.3,
+    "tourelle": 24.5
+  },
+  "difficulty": 0,
+  "dodges": 32,
+  "duration": 215.2,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 679,
+  "heals_used": 4,
+  "hits_taken": {
+    "mall_clone": 7,
+    "mall_flayer": 5,
+    "mall_night_spider": 5,
+    "mall_zombie": 1,
+    "tourelle": 7
+  },
+  "hp_end": 63.8,
+  "hp_min": 47.0,
+  "item_ids": {
+    "bandage": 2,
+    "canned_beans": 2,
+    "mall_batteries": 15,
+    "mall_canned_food": 2,
+    "mall_cash_bundle": 8,
+    "mall_energy_drink": 3,
+    "mall_first_aid": 2,
+    "mall_gift_card": 4,
+    "mall_painkillers": 6,
+    "mat_cloth": 13,
+    "mat_scrap": 9,
+    "rifle_ammo": 21,
+    "silver_dollars": 18,
+    "wpn_gadget_decoy": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 16,
+      "1": 4,
+      "2": 1
+    },
+    "conteneur": {
+      "0": 25,
+      "1": 10,
+      "2": 1
+    },
+    "sol": {
+      "0": 28,
+      "1": 21
+    }
+  },
+  "killer": "",
+  "kills": {
+    "mall_clone": 3,
+    "mall_flayer": 3,
+    "mall_night_spider": 2,
+    "mall_zombie": 3
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "extraction",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21155,
+  "seen": {
+    "mall_clone": 11,
+    "mall_flayer": 3,
+    "mall_night_spider": 2,
+    "mall_zombie": 4
+  },
+  "shots": {
+    "pistol_p9": 93,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "mall_clone": [
+      3.07,
+      10.42,
+      21.6
+    ],
+    "mall_flayer": [
+      3.02,
+      13.5,
+      6.88
+    ],
+    "mall_night_spider": [
+      9.95,
+      24.87
+    ],
+    "mall_zombie": [
+      5.07,
+      22.45,
+      1.22
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 11.7,
+    "mall_flayer": 7.8,
+    "mall_night_spider": 17.41,
+    "mall_zombie": 9.58
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 268.53,
+  "xp": 492
+}

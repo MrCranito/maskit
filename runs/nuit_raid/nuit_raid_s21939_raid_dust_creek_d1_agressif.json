@@ -1,0 +1,113 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.61,
+  "bag_value": 160,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 3,
+  "corpses_searched": 5,
+  "damage_dealt": {
+    "fw_bandit": 242.8,
+    "fw_marauder": 12.0,
+    "fw_raider": 236.0
+  },
+  "damage_taken": {
+    "fw_bandit": 16.0,
+    "fw_raider": 76.0,
+    "fw_sharpshooter": 20.0
+  },
+  "difficulty": 1,
+  "dodges": 25,
+  "duration": 47.9,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 107,
+  "heals_used": 1,
+  "hits_taken": {
+    "fw_bandit": 2,
+    "fw_raider": 5,
+    "fw_sharpshooter": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "black_powder": 3,
+    "canned_beans": 1,
+    "mat_chemicals": 2,
+    "mat_scrap": 3,
+    "playing_cards": 1,
+    "revolver_ammo": 46,
+    "rifle_ammo": 8,
+    "silver_dollars": 22
+  },
+  "items": {
+    "cadavre": {
+      "0": 53,
+      "1": 8
+    },
+    "conteneur": {
+      "0": 20,
+      "1": 2
+    },
+    "sol": {
+      "0": 3
+    }
+  },
+  "killer": "fw_sharpshooter",
+  "kills": {
+    "fw_bandit": 5,
+    "fw_raider": 3
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 4,
+  "seed": 21939,
+  "seen": {
+    "fw_bandit": 9,
+    "fw_marauder": 5,
+    "fw_raider": 5,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "pistol_p9": 36,
+    "smg_mp5": 60
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      0.92,
+      0.95,
+      2.98,
+      3.33,
+      1.15
+    ],
+    "fw_raider": [
+      6.62,
+      3.4,
+      3.4
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 1.87,
+    "fw_raider": 4.47
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 377.65,
+  "xp": 109
+}

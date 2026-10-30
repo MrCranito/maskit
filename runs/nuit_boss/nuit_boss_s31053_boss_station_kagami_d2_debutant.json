@@ -1,0 +1,105 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.93,
+  "bag_value": 0,
+  "boss": {
+    "death_skill": "ss_orbital_laser",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.908755943979054,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "ss_architect",
+    "met_t": 1.0
+  },
+  "boss_floor": -1,
+  "boss_kind": "ss_architect",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_architect": 285.7,
+    "ss_atlas": 2.4,
+    "ss_drone_tieur": 92.0,
+    "ss_spectre": 80.5
+  },
+  "damage_taken": {
+    "ss_architect": 57.4,
+    "ss_atlas": 6.7,
+    "ss_drone_tieur": 31.4,
+    "ss_spectre": 4.5
+  },
+  "difficulty": 2,
+  "dodges": 23,
+  "duration": 17.4,
+  "elites": {
+    "ss_atlas": {
+      "killed": 0,
+      "met": 1
+    },
+    "ss_drone_tieur": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_architect": 6,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 2,
+    "ss_spectre": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "ss_architect",
+  "kills": {
+    "ss_spectre": 2
+  },
+  "map": "perm_station_kagami",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 31053,
+  "seen": {
+    "ss_architect": 1,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 1,
+    "ss_spectre": 2
+  },
+  "shots": {
+    "pistol_p9": 19,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "ss_spectre": [
+      0.0,
+      0.32
+    ]
+  },
+  "ttk_avg": {
+    "ss_spectre": 0.16
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 292.24,
+  "xp": 73
+}

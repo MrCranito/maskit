@@ -1,0 +1,117 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.23,
+  "bag_value": 534,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 4,
+  "corpses_searched": 6,
+  "damage_dealt": {
+    "fw_bandit": 226.0,
+    "fw_raider": 189.0,
+    "fw_sharpshooter": 48.0
+  },
+  "damage_taken": {
+    "fw_bandit": 34.8,
+    "fw_raider": 135.5,
+    "fw_sharpshooter": 24.6
+  },
+  "difficulty": 2,
+  "dodges": 39,
+  "duration": 75.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 1,
+  "gold_estimate": 287,
+  "heals_used": 4,
+  "hits_taken": {
+    "fw_bandit": 4,
+    "fw_raider": 8,
+    "fw_sharpshooter": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "leather_holster": 1,
+    "mat_scrap": 4,
+    "revolver_ammo": 36,
+    "rifle_ammo": 19,
+    "sheriff_badge": 1,
+    "silver_dollars": 23,
+    "whisky": 1,
+    "wpn_smg_vector": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 41,
+      "1": 20
+    },
+    "conteneur": {
+      "0": 16,
+      "2": 2
+    },
+    "sol": {
+      "0": 10
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_raider": 2,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 22573,
+  "seen": {
+    "fw_bandit": 10,
+    "fw_raider": 4,
+    "fw_sharpshooter": 4
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 60
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.43,
+      0.55,
+      10.7,
+      0.33
+    ],
+    "fw_raider": [
+      0.43,
+      1.83
+    ],
+    "fw_sharpshooter": [
+      3.18
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 3.0,
+    "fw_raider": 1.13,
+    "fw_sharpshooter": 3.18
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 286.58,
+  "xp": 104
+}

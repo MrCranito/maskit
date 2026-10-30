@@ -1,0 +1,107 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.61,
+  "bag_value": 324,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 38.8,
+    "ss_security_droid": 149.6,
+    "ss_spectre": 48.0,
+    "ss_teleporter": 103.0
+  },
+  "damage_taken": {
+    "ss_security_droid": 6.3,
+    "ss_spectre": 16.4,
+    "ss_teleporter": 77.4
+  },
+  "difficulty": 3,
+  "dodges": 16,
+  "duration": 23.4,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 166,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_security_droid": 1,
+    "ss_spectre": 1,
+    "ss_teleporter": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "space_plasma_cells": 8,
+    "wpn_smg_vector": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 8,
+      "2": 1
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 20925,
+  "seen": {
+    "ss_detector": 1,
+    "ss_security_droid": 3,
+    "ss_spectre": 1,
+    "ss_teleporter": 2
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_detector": [
+      0.0
+    ],
+    "ss_security_droid": [
+      1.8,
+      0.0
+    ],
+    "ss_spectre": [
+      3.3
+    ],
+    "ss_teleporter": [
+      1.75
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.0,
+    "ss_security_droid": 0.9,
+    "ss_spectre": 3.3,
+    "ss_teleporter": 1.75
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 288.2,
+  "xp": 91
+}

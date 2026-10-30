@@ -1,0 +1,120 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.29,
+  "bag_value": 1512,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 1,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_brute": 66.6,
+    "mall_clone": 84.0,
+    "mall_flayer": 360.0,
+    "mall_security_bot": 136.8,
+    "mall_zombie": 432.0
+  },
+  "damage_taken": {
+    "mall_brute": 22.0,
+    "mall_clone": 14.0,
+    "mall_flayer": 57.0,
+    "mall_security_bot": 35.0
+  },
+  "difficulty": 1,
+  "dodges": 35,
+  "duration": 120.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 356,
+  "heals_used": 3,
+  "hits_taken": {
+    "mall_brute": 2,
+    "mall_clone": 1,
+    "mall_flayer": 5,
+    "mall_security_bot": 5
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "canned_beans": 1,
+    "mall_energy_drink": 2,
+    "rifle_ammo": 6,
+    "wpn_gadget_c4": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 2,
+      "3": 1
+    },
+    "sol": {
+      "0": 1,
+      "1": 6
+    }
+  },
+  "killer": "mall_brute",
+  "kills": {
+    "mall_clone": 1,
+    "mall_flayer": 5,
+    "mall_zombie": 7
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22150,
+  "seen": {
+    "mall_brute": 1,
+    "mall_clone": 3,
+    "mall_flayer": 5,
+    "mall_security_bot": 1,
+    "mall_zombie": 7
+  },
+  "shots": {
+    "pistol_p9": 120,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "mall_clone": [
+      7.97
+    ],
+    "mall_flayer": [
+      2.07,
+      1.27,
+      3.25,
+      16.5,
+      9.62
+    ],
+    "mall_zombie": [
+      2.12,
+      2.6,
+      2.63,
+      5.15,
+      2.43,
+      7.13,
+      4.83
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 7.97,
+    "mall_flayer": 6.54,
+    "mall_zombie": 3.84
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 338.61,
+  "xp": 141
+}

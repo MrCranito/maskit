@@ -1,0 +1,118 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 4.3,
+  "bag_value": 748,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 4,
+  "corpses_searched": 5,
+  "damage_dealt": {
+    "mall_clone": 205.0,
+    "mall_flayer": 295.8,
+    "mall_zombie": 141.0
+  },
+  "damage_taken": {
+    "mall_clone": 250.7,
+    "mall_zombie": 12.3
+  },
+  "difficulty": 2,
+  "dodges": 32,
+  "duration": 126.5,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 383,
+  "heals_used": 7,
+  "hits_taken": {
+    "mall_clone": 19,
+    "mall_zombie": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 1,
+    "mall_cash_bundle": 7,
+    "mall_energy_drink": 1,
+    "mall_gift_card": 2,
+    "mall_painkillers": 4,
+    "revolver_ammo": 8,
+    "whisky": 1,
+    "wpn_smg_mp5": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 1,
+      "1": 5
+    },
+    "conteneur": {
+      "0": 3,
+      "1": 6
+    },
+    "sol": {
+      "0": 9,
+      "1": 1
+    }
+  },
+  "killer": "mall_clone",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 4,
+    "mall_zombie": 2
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21746,
+  "seen": {
+    "mall_clone": 17,
+    "mall_flayer": 4,
+    "mall_night_spider": 1,
+    "mall_zombie": 1
+  },
+  "shots": {
+    "pistol_glock18": 114,
+    "rifle_m4a1": 30,
+    "sniper_m24": 4
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      3.0,
+      0.0
+    ],
+    "mall_flayer": [
+      0.0,
+      3.9,
+      8.98,
+      2.37
+    ],
+    "mall_zombie": [
+      0.0,
+      7.37
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 1.5,
+    "mall_flayer": 3.81,
+    "mall_zombie": 3.69
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 338.09,
+  "xp": 112
+}

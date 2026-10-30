@@ -1,0 +1,111 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.78,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 1,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_clone": 153.0,
+    "mall_flayer": 446.0,
+    "mall_night_spider": 130.0,
+    "mall_zombie": 75.0
+  },
+  "damage_taken": {
+    "mall_brute": 15.0,
+    "mall_clone": 82.9,
+    "mall_flayer": 10.1
+  },
+  "difficulty": 2,
+  "dodges": 8,
+  "duration": 97.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 1,
+  "hits_taken": {
+    "mall_brute": 1,
+    "mall_clone": 6,
+    "mall_flayer": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mall_energy_drink": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 1
+    }
+  },
+  "killer": "mall_brute",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 5,
+    "mall_night_spider": 1,
+    "mall_zombie": 1
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22601,
+  "seen": {
+    "mall_brute": 1,
+    "mall_clone": 8,
+    "mall_flayer": 5,
+    "mall_night_spider": 2,
+    "mall_zombie": 2
+  },
+  "shots": {
+    "pistol_glock18": 73,
+    "rifle_m4a1": 60,
+    "sniper_m24": 5
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      2.77,
+      0.58
+    ],
+    "mall_flayer": [
+      2.13,
+      5.77,
+      0.75,
+      44.18,
+      8.82
+    ],
+    "mall_night_spider": [
+      3.42
+    ],
+    "mall_zombie": [
+      0.0
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 1.68,
+    "mall_flayer": 12.33,
+    "mall_night_spider": 3.42,
+    "mall_zombie": 0.0
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 276.1,
+  "xp": 116
+}

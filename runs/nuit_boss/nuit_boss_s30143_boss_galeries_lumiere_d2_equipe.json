@@ -1,0 +1,134 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 3.39,
+  "bag_value": 22,
+  "boss": {
+    "death_skill": "attaque",
+    "hp_ratio_at_death": 0.948,
+    "hp_ratio_at_last_hit": 0.873125,
+    "hp_ratio_end": 0.948,
+    "killed": false,
+    "kind": "mall_omnistore",
+    "met_t": 1.2
+  },
+  "boss_floor": 2,
+  "boss_kind": "mall_omnistore",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_flayer": 78.0,
+    "mall_omnistore": 406.0,
+    "mall_security_bot": 166.4,
+    "mall_violent": 622.5,
+    "mall_zombie": 538.0
+  },
+  "damage_taken": {
+    "mall_omnistore": 38.1,
+    "mall_security_bot": 7.8,
+    "mall_violent": 54.1
+  },
+  "difficulty": 2,
+  "dodges": 15,
+  "duration": 12.8,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    },
+    "mall_violent": {
+      "killed": 1,
+      "met": 2
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "2"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 11,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_omnistore": 3,
+    "mall_security_bot": 1,
+    "mall_violent": 4
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "silver_dollars": 11
+  },
+  "items": {
+    "sol": {
+      "0": 11
+    }
+  },
+  "killer": "mall_violent",
+  "kills": {
+    "mall_flayer": 1,
+    "mall_security_bot": 1,
+    "mall_violent": 1,
+    "mall_zombie": 5
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30143,
+  "seen": {
+    "mall_flayer": 1,
+    "mall_omnistore": 3,
+    "mall_security_bot": 1,
+    "mall_store_warden": 1,
+    "mall_violent": 2,
+    "mall_zombie": 6
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50,
+    "sniper_m82": 2
+  },
+  "stuck_enemies": {
+    "mall_zombie": 1
+  },
+  "tier": "equipe",
+  "ttk": {
+    "mall_flayer": [
+      0.7
+    ],
+    "mall_security_bot": [
+      2.13
+    ],
+    "mall_violent": [
+      4.82
+    ],
+    "mall_zombie": [
+      0.27,
+      1.22,
+      0.0,
+      0.43,
+      2.53
+    ]
+  },
+  "ttk_avg": {
+    "mall_flayer": 0.7,
+    "mall_security_bot": 2.13,
+    "mall_violent": 4.82,
+    "mall_zombie": 0.89
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 27.75,
+  "xp": 108
+}

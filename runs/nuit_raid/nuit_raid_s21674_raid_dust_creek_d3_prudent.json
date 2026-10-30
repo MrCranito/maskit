@@ -1,0 +1,113 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 13.83,
+  "bag_value": 204,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 3,
+  "damage_dealt": {
+    "fw_bandit": 311.7,
+    "fw_raider": 319.0,
+    "fw_sharpshooter": 96.0
+  },
+  "damage_taken": {
+    "fw_bandit": 20.0,
+    "fw_raider": 152.0
+  },
+  "difficulty": 3,
+  "dodges": 40,
+  "duration": 57.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 112,
+  "heals_used": 4,
+  "hits_taken": {
+    "fw_bandit": 2,
+    "fw_raider": 8
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "canned_beans": 2,
+    "gold_nugget": 3,
+    "mat_scrap": 2,
+    "revolver_ammo": 15,
+    "rifle_ammo": 40,
+    "silver_dollars": 12
+  },
+  "items": {
+    "cadavre": {
+      "0": 17,
+      "1": 20
+    },
+    "sol": {
+      "0": 17,
+      "1": 23
+    }
+  },
+  "killer": "fw_raider",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_raider": 3,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 9,
+  "seed": 21674,
+  "seen": {
+    "fw_bandit": 9,
+    "fw_raider": 4,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 60,
+    "sniper_m24": 5
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.0,
+      1.07,
+      0.0,
+      9.15
+    ],
+    "fw_raider": [
+      1.57,
+      2.47,
+      4.08
+    ],
+    "fw_sharpshooter": [
+      1.78,
+      0.95
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 2.56,
+    "fw_raider": 2.71,
+    "fw_sharpshooter": 1.37
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 799.24,
+  "xp": 120
+}

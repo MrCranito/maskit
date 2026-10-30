@@ -1,0 +1,103 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.55,
+  "bag_value": 10,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_bandit": 308.0,
+    "fw_raider": 73.5,
+    "fw_sharpshooter": 42.0
+  },
+  "damage_taken": {
+    "fw_bandit": 78.4,
+    "fw_raider": 96.6
+  },
+  "difficulty": 4,
+  "dodges": 43,
+  "duration": 36.2,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 5,
+  "heals_used": 3,
+  "hits_taken": {
+    "fw_bandit": 7,
+    "fw_raider": 5
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 2,
+    "rifle_ammo": 5,
+    "whisky": 1
+  },
+  "items": {
+    "sol": {
+      "0": 2,
+      "1": 6
+    }
+  },
+  "killer": "fw_raider",
+  "kills": {
+    "fw_bandit": 6,
+    "fw_raider": 1,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22173,
+  "seen": {
+    "fw_bandit": 9,
+    "fw_raider": 2,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      2.6,
+      1.32,
+      0.22,
+      1.65,
+      0.78,
+      0.37
+    ],
+    "fw_raider": [
+      0.57
+    ],
+    "fw_sharpshooter": [
+      0.75
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 1.16,
+    "fw_raider": 0.57,
+    "fw_sharpshooter": 0.75
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 319.93,
+  "xp": 109
+}

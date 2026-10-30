@@ -1,0 +1,129 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 7.16,
+  "bag_value": 27,
+  "boss": {
+    "death_skill": "mall_panic_wave",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.939996471161156,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "mall_omnistore",
+    "met_t": 1.0
+  },
+  "boss_floor": 2,
+  "boss_kind": "mall_omnistore",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_flayer": 77.0,
+    "mall_omnistore": 192.0,
+    "mall_store_warden": 134.6,
+    "mall_violent": 463.6,
+    "mall_zombie": 104.7
+  },
+  "damage_taken": {
+    "mall_flayer": 9.0,
+    "mall_omnistore": 1.1,
+    "mall_security_bot": 14.0,
+    "mall_violent": 46.0,
+    "mall_zombie": 21.0,
+    "player": 8.9
+  },
+  "difficulty": 1,
+  "dodges": 18,
+  "duration": 12.3,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    },
+    "mall_violent": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "2"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 16,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_flayer": 1,
+    "mall_omnistore": 1,
+    "mall_security_bot": 2,
+    "mall_violent": 3,
+    "mall_zombie": 2,
+    "player": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_scrap": 5,
+    "silver_dollars": 6
+  },
+  "items": {
+    "sol": {
+      "0": 11
+    }
+  },
+  "killer": "mall_omnistore",
+  "kills": {
+    "mall_flayer": 1,
+    "mall_violent": 1,
+    "mall_zombie": 1
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30679,
+  "seen": {
+    "mall_flayer": 1,
+    "mall_omnistore": 3,
+    "mall_security_bot": 2,
+    "mall_store_warden": 1,
+    "mall_violent": 1,
+    "mall_zombie": 7
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_flayer": [
+      1.67
+    ],
+    "mall_violent": [
+      4.25
+    ],
+    "mall_zombie": [
+      0.58
+    ]
+  },
+  "ttk_avg": {
+    "mall_flayer": 1.67,
+    "mall_violent": 4.25,
+    "mall_zombie": 0.58
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 530.18,
+  "xp": 79
+}

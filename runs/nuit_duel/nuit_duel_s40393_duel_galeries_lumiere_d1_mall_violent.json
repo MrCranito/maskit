@@ -1,0 +1,75 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.18,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_violent": 542.0
+  },
+  "damage_taken": {},
+  "difficulty": 1,
+  "dodges": 0,
+  "duration": 6.2,
+  "elites": {
+    "mall_violent": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "mall_violent",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {},
+  "hp_end": 100.0,
+  "hp_min": 100.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "mall_violent": 1
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40393,
+  "seen": {
+    "mall_violent": 1
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "sniper_m82": 4
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "mall_violent": [
+      4.9
+    ]
+  },
+  "ttk_avg": {
+    "mall_violent": 4.9
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 457.97,
+  "xp": 0
+}

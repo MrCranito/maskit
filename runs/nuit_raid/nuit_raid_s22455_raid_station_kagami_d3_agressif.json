@@ -1,0 +1,107 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 4.24,
+  "bag_value": 140,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 32.0,
+    "ss_security_droid": 171.0,
+    "ss_spectre": 11.0,
+    "ss_teleporter": 128.0
+  },
+  "damage_taken": {
+    "enemy_hazard": 5.0,
+    "ss_security_droid": 18.8,
+    "ss_teleporter": 76.3
+  },
+  "difficulty": 3,
+  "dodges": 28,
+  "duration": 22.8,
+  "elites": {},
+  "errors": [
+    "texture_storage.h:85 Parameter \"t\" is null. "
+  ],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 60,
+  "heals_used": 0,
+  "hits_taken": {
+    "enemy_hazard": 1,
+    "ss_security_droid": 3,
+    "ss_teleporter": 6
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_scrap": 3,
+    "space_plasma_cells": 7,
+    "wpn_sniper_m24": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 11
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 3,
+    "ss_teleporter": 2
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22455,
+  "seen": {
+    "ss_detector": 2,
+    "ss_security_droid": 4,
+    "ss_spectre": 5,
+    "ss_teleporter": 5
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_detector": [
+      1.55
+    ],
+    "ss_security_droid": [
+      0.48,
+      2.05,
+      0.0
+    ],
+    "ss_teleporter": [
+      0.4,
+      0.63
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 1.55,
+    "ss_security_droid": 0.84,
+    "ss_teleporter": 0.52
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 284.99,
+  "xp": 97
+}

@@ -1,0 +1,75 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 2.11,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_atlas": 409.6
+  },
+  "damage_taken": {},
+  "difficulty": 1,
+  "dodges": 3,
+  "duration": 11.0,
+  "elites": {
+    "ss_atlas": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "ss_atlas",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {},
+  "hp_end": 100.0,
+  "hp_min": 100.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "ss_atlas": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40367,
+  "seen": {
+    "ss_atlas": 1
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_atlas": [
+      10.58
+    ]
+  },
+  "ttk_avg": {
+    "ss_atlas": 10.58
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 295.15,
+  "xp": 0
+}

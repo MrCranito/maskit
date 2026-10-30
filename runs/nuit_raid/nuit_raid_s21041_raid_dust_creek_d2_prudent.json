@@ -1,0 +1,121 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 4.03,
+  "bag_value": 278,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 2,
+  "corpses_searched": 4,
+  "damage_dealt": {
+    "fw_bandit": 194.0,
+    "fw_raider": 196.0,
+    "fw_sharpshooter": 150.0
+  },
+  "damage_taken": {
+    "fw_bandit": 9.0,
+    "fw_marauder": 57.4,
+    "fw_raider": 33.6
+  },
+  "difficulty": 2,
+  "dodges": 24,
+  "duration": 45.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 146,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 1,
+    "fw_marauder": 5,
+    "fw_raider": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "black_powder": 6,
+    "cavalry_medal": 1,
+    "dynamite": 1,
+    "mat_cloth": 3,
+    "mat_scrap": 7,
+    "playing_cards": 1,
+    "rifle_ammo": 19,
+    "silver_dollars": 19
+  },
+  "items": {
+    "cadavre": {
+      "0": 20,
+      "1": 10,
+      "2": 1
+    },
+    "conteneur": {
+      "0": 8,
+      "1": 1
+    },
+    "sol": {
+      "0": 8,
+      "1": 9
+    }
+  },
+  "killer": "fw_marauder",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_raider": 2,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 3,
+  "seed": 21041,
+  "seen": {
+    "fw_bandit": 8,
+    "fw_guard_dog": 1,
+    "fw_marauder": 5,
+    "fw_raider": 3,
+    "fw_sharpshooter": 4
+  },
+  "shots": {
+    "pistol_glock18": 38,
+    "rifle_m4a1": 60
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.27,
+      0.65,
+      0.23,
+      1.83
+    ],
+    "fw_raider": [
+      1.85,
+      2.1
+    ],
+    "fw_sharpshooter": [
+      0.9,
+      0.28
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.75,
+    "fw_raider": 1.98,
+    "fw_sharpshooter": 0.59
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 257.61,
+  "xp": 109
+}

@@ -1,0 +1,108 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 4.0,
+  "bag_value": 0,
+  "boss": {
+    "death_skill": "attaque",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.91,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "ss_architect",
+    "met_t": 1.0
+  },
+  "boss_floor": -1,
+  "boss_kind": "ss_architect",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_architect": 270.0,
+    "ss_drone_tieur": 156.0,
+    "ss_spectre": 33.0
+  },
+  "damage_taken": {
+    "ss_architect": 59.0,
+    "ss_atlas": 22.0,
+    "ss_drone_tieur": 19.0
+  },
+  "difficulty": 1,
+  "dodges": 36,
+  "duration": 25.9,
+  "elites": {
+    "ss_atlas": {
+      "killed": 0,
+      "met": 1
+    },
+    "ss_drone_tieur": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_architect": 7,
+    "ss_atlas": 4,
+    "ss_drone_tieur": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "ss_architect",
+  "kills": {
+    "ss_drone_tieur": 1,
+    "ss_spectre": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30583,
+  "seen": {
+    "ss_architect": 1,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 1
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_drone_tieur": [
+      6.53
+    ],
+    "ss_spectre": [
+      0.25
+    ]
+  },
+  "ttk_avg": {
+    "ss_drone_tieur": 6.53,
+    "ss_spectre": 0.25
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 381.08,
+  "xp": 73
+}

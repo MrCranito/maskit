@@ -1,0 +1,119 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.23,
+  "bag_value": 84,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "ss_detector": 70.0,
+    "ss_security_droid": 98.7,
+    "ss_spectre": 147.6,
+    "ss_teleporter": 121.6
+  },
+  "damage_taken": {
+    "ss_teleporter": 130.0,
+    "tourelle": 37.0
+  },
+  "difficulty": 2,
+  "dodges": 15,
+  "duration": 52.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 56,
+  "heals_used": 5,
+  "hits_taken": {
+    "ss_teleporter": 12,
+    "tourelle": 4
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "black_powder": 5,
+    "canned_beans": 1,
+    "mat_scrap": 5,
+    "revolver_ammo": 18,
+    "space_energy_cell": 2,
+    "space_medigel": 1,
+    "space_ration": 3
+  },
+  "items": {
+    "cadavre": {
+      "0": 4
+    },
+    "conteneur": {
+      "0": 7
+    },
+    "sol": {
+      "0": 24
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 2,
+    "ss_security_droid": 1,
+    "ss_spectre": 3,
+    "ss_teleporter": 2
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 20246,
+  "seen": {
+    "ss_detector": 2,
+    "ss_security_droid": 1,
+    "ss_spectre": 2,
+    "ss_teleporter": 4
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_detector": [
+      0.13,
+      1.07
+    ],
+    "ss_security_droid": [
+      6.7
+    ],
+    "ss_spectre": [
+      0.33,
+      0.0,
+      0.0
+    ],
+    "ss_teleporter": [
+      2.15,
+      0.0
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.6,
+    "ss_security_droid": 6.7,
+    "ss_spectre": 0.11,
+    "ss_teleporter": 1.08
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 263.32,
+  "xp": 109
+}

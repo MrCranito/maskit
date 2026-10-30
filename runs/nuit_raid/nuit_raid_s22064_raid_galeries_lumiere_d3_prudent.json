@@ -1,0 +1,105 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 18.83,
+  "bag_value": 16,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_clone": 80.0,
+    "mall_flayer": 375.0,
+    "mall_security_bot": 90.4,
+    "mall_zombie": 238.0
+  },
+  "damage_taken": {
+    "mall_flayer": 113.8,
+    "mall_security_bot": 26.3
+  },
+  "difficulty": 3,
+  "dodges": 35,
+  "duration": 102.1,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 16,
+  "heals_used": 2,
+  "hits_taken": {
+    "mall_flayer": 11,
+    "mall_security_bot": 3
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 2,
+    "revolver_ammo": 16
+  },
+  "items": {
+    "sol": {
+      "0": 18
+    }
+  },
+  "killer": "mall_flayer",
+  "kills": {
+    "mall_clone": 1,
+    "mall_flayer": 5,
+    "mall_zombie": 3
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22064,
+  "seen": {
+    "mall_clone": 1,
+    "mall_flayer": 6,
+    "mall_security_bot": 1,
+    "mall_zombie": 5
+  },
+  "shots": {
+    "pistol_glock18": 76,
+    "rifle_m4a1": 60,
+    "sniper_m24": 5
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      1.57
+    ],
+    "mall_flayer": [
+      2.07,
+      2.08,
+      0.0,
+      0.67,
+      1.85
+    ],
+    "mall_zombie": [
+      38.42,
+      1.38,
+      43.77
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 1.57,
+    "mall_flayer": 1.33,
+    "mall_zombie": 27.86
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 1706.24,
+  "xp": 129
+}

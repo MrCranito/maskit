@@ -1,0 +1,92 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.56,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_bandit": 63.1,
+    "fw_deserter": 307.9,
+    "fw_raider": 70.3
+  },
+  "damage_taken": {
+    "fw_bandit": 8.0,
+    "fw_deserter": 56.0,
+    "fw_raider": 36.0
+  },
+  "difficulty": 1,
+  "dodges": 42,
+  "duration": 41.8,
+  "elites": {
+    "fw_deserter": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "enemy": "fw_deserter",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 1,
+    "fw_deserter": 8,
+    "fw_raider": 3
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "fw_raider",
+  "kills": {
+    "fw_bandit": 1,
+    "fw_raider": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "duel",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40480,
+  "seen": {
+    "fw_bandit": 2,
+    "fw_deserter": 1,
+    "fw_raider": 2
+  },
+  "shots": {
+    "pistol_glock18": 38,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.0
+    ],
+    "fw_raider": [
+      1.72
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.0,
+    "fw_raider": 1.72
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 509.39,
+  "xp": 73
+}

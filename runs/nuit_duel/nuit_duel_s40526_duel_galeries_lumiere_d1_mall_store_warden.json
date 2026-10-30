@@ -1,0 +1,106 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 1.73,
+  "bag_value": 16,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_flayer": 65.0,
+    "mall_security_bot": 234.4,
+    "mall_store_warden": 279.5,
+    "mall_zombie": 126.9
+  },
+  "damage_taken": {
+    "mall_flayer": 15.0,
+    "mall_security_bot": 35.0,
+    "mall_store_warden": 100.0,
+    "mall_zombie": 10.0
+  },
+  "difficulty": 1,
+  "dodges": 56,
+  "duration": 68.7,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "enemy": "mall_store_warden",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 8,
+  "heals_used": 1,
+  "hits_taken": {
+    "mall_flayer": 1,
+    "mall_security_bot": 5,
+    "mall_store_warden": 5,
+    "mall_zombie": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_cloth": 4,
+    "snake_oil": 1
+  },
+  "items": {
+    "sol": {
+      "0": 4,
+      "2": 1
+    }
+  },
+  "killer": "mall_store_warden",
+  "kills": {
+    "mall_flayer": 1,
+    "mall_zombie": 2
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "duel",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40526,
+  "seen": {
+    "mall_flayer": 1,
+    "mall_security_bot": 1,
+    "mall_store_warden": 1,
+    "mall_zombie": 4
+  },
+  "shots": {
+    "pistol_glock18": 57,
+    "rifle_m4a1": 60,
+    "sniper_m24": 3
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_flayer": [
+      9.12
+    ],
+    "mall_zombie": [
+      9.17,
+      2.72
+    ]
+  },
+  "ttk_avg": {
+    "mall_flayer": 9.12,
+    "mall_zombie": 5.95
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 284.94,
+  "xp": 79
+}

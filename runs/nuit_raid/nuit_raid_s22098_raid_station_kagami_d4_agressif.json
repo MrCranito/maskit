@@ -1,0 +1,114 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 22.32,
+  "bag_value": 434,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 2,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "ss_detector": 42.0,
+    "ss_security_droid": 104.5,
+    "ss_teleporter": 245.5
+  },
+  "damage_taken": {
+    "ss_spectre": 16.8,
+    "ss_teleporter": 45.5,
+    "tourelle": 37.7
+  },
+  "difficulty": 4,
+  "dodges": 14,
+  "duration": 27.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 227,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_spectre": 3,
+    "ss_teleporter": 3,
+    "tourelle": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_cloth": 3,
+    "mat_scrap": 2,
+    "revolver_ammo": 6,
+    "space_circuit": 3,
+    "space_energy_cell": 1,
+    "space_iridium": 2,
+    "space_plasma_cells": 12
+  },
+  "items": {
+    "cadavre": {
+      "0": 4
+    },
+    "conteneur": {
+      "0": 14,
+      "2": 2
+    },
+    "sol": {
+      "0": 9
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_teleporter": 3
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22098,
+  "seen": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 2,
+    "ss_teleporter": 4
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      0.73
+    ],
+    "ss_security_droid": [
+      0.37,
+      1.45
+    ],
+    "ss_teleporter": [
+      1.52,
+      1.37,
+      1.58
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.73,
+    "ss_security_droid": 0.91,
+    "ss_teleporter": 1.49
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 2147.89,
+  "xp": 101
+}

@@ -1,0 +1,103 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 6.99,
+  "bag_value": 0,
+  "boss": {
+    "death_skill": "attaque",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.865666913383567,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "mall_omnistore",
+    "met_t": 1.0
+  },
+  "boss_floor": 2,
+  "boss_kind": "mall_omnistore",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_omnistore": 429.9,
+    "mall_store_warden": 9.7,
+    "mall_violent": 29.6,
+    "mall_zombie": 212.8
+  },
+  "damage_taken": {
+    "mall_omnistore": 100.0
+  },
+  "difficulty": 1,
+  "dodges": 13,
+  "duration": 17.3,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    },
+    "mall_violent": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "2"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_omnistore": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "mall_omnistore",
+  "kills": {
+    "mall_zombie": 3
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30732,
+  "seen": {
+    "mall_brute": 1,
+    "mall_omnistore": 3,
+    "mall_store_warden": 1,
+    "mall_violent": 1,
+    "mall_zombie": 3
+  },
+  "shots": {
+    "pistol_p9": 15,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {
+    "mall_zombie": 1
+  },
+  "tier": "debutant",
+  "ttk": {
+    "mall_zombie": [
+      0.0,
+      0.0,
+      8.65
+    ]
+  },
+  "ttk_avg": {
+    "mall_zombie": 2.88
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 463.62,
+  "xp": 79
+}

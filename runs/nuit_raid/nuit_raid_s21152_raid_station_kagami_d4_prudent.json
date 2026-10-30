@@ -1,0 +1,115 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 3.86,
+  "bag_value": 346,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 240.0,
+    "ss_security_droid": 104.5,
+    "ss_spectre": 141.0,
+    "ss_teleporter": 465.5
+  },
+  "damage_taken": {
+    "ss_teleporter": 100.0
+  },
+  "difficulty": 4,
+  "dodges": 10,
+  "duration": 29.9,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 182,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_teleporter": 6
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "key_space_armory": 1,
+    "mat_cloth": 2,
+    "revolver_ammo": 18
+  },
+  "items": {
+    "sol": {
+      "0": 20,
+      "3": 1
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 2,
+    "ss_security_droid": 3,
+    "ss_spectre": 5,
+    "ss_teleporter": 5
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21152,
+  "seen": {
+    "ss_detector": 2,
+    "ss_security_droid": 3,
+    "ss_spectre": 7,
+    "ss_station_guardian": 1,
+    "ss_teleporter": 8
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 4
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      0.0,
+      0.0
+    ],
+    "ss_security_droid": [
+      1.53,
+      0.35
+    ],
+    "ss_spectre": [
+      0.18,
+      0.0,
+      0.0,
+      0.0,
+      0.32
+    ],
+    "ss_teleporter": [
+      1.05,
+      0.42,
+      0.95,
+      1.78,
+      0.9
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.0,
+    "ss_security_droid": 0.94,
+    "ss_spectre": 0.1,
+    "ss_teleporter": 1.02
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 249.07,
+  "xp": 151
+}

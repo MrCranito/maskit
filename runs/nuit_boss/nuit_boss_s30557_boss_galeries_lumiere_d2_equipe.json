@@ -1,0 +1,125 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.36,
+  "bag_value": 50,
+  "boss": {
+    "death_skill": "mall_panic_wave",
+    "hp_ratio_at_death": 0.853,
+    "hp_ratio_at_last_hit": 0.70265625,
+    "hp_ratio_end": 0.853,
+    "killed": false,
+    "kind": "mall_omnistore",
+    "met_t": 1.2
+  },
+  "boss_floor": 2,
+  "boss_kind": "mall_omnistore",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_flayer": 78.0,
+    "mall_omnistore": 951.5,
+    "mall_security_bot": 200.0,
+    "mall_violent": 120.0,
+    "mall_zombie": 496.5
+  },
+  "damage_taken": {
+    "mall_omnistore": 75.4,
+    "mall_zombie": 24.6
+  },
+  "difficulty": 2,
+  "dodges": 21,
+  "duration": 13.0,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    },
+    "mall_violent": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "2"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 26,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_omnistore": 5,
+    "mall_zombie": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "gold_nugget": 2
+  },
+  "items": {
+    "sol": {
+      "1": 2
+    }
+  },
+  "killer": "mall_omnistore",
+  "kills": {
+    "mall_flayer": 1,
+    "mall_security_bot": 1,
+    "mall_zombie": 5
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30557,
+  "seen": {
+    "mall_flayer": 1,
+    "mall_omnistore": 3,
+    "mall_security_bot": 1,
+    "mall_store_warden": 1,
+    "mall_violent": 1,
+    "mall_zombie": 6
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50,
+    "sniper_m82": 4
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "mall_flayer": [
+      1.73
+    ],
+    "mall_security_bot": [
+      2.07
+    ],
+    "mall_zombie": [
+      0.0,
+      0.0,
+      0.0,
+      1.13,
+      0.42
+    ]
+  },
+  "ttk_avg": {
+    "mall_flayer": 1.73,
+    "mall_security_bot": 2.07,
+    "mall_zombie": 0.31
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 378.28,
+  "xp": 103
+}

@@ -1,0 +1,114 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.19,
+  "bag_value": 59,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_clone": 157.0,
+    "mall_flayer": 365.5,
+    "mall_security_bot": 61.6,
+    "mall_zombie": 289.0
+  },
+  "damage_taken": {
+    "mall_flayer": 123.8,
+    "mall_security_bot": 61.3
+  },
+  "difficulty": 3,
+  "dodges": 43,
+  "duration": 125.4,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 40,
+  "heals_used": 2,
+  "hits_taken": {
+    "mall_flayer": 9,
+    "mall_security_bot": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mall_painkillers": 1,
+    "mat_cloth": 4,
+    "revolver_ammo": 21,
+    "silver_dollars": 11,
+    "snake_oil": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 4,
+      "1": 1
+    },
+    "sol": {
+      "0": 32,
+      "2": 1
+    }
+  },
+  "killer": "mall_flayer",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 4,
+    "mall_zombie": 4
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21931,
+  "seen": {
+    "mall_clone": 4,
+    "mall_flayer": 5,
+    "mall_security_bot": 1,
+    "mall_zombie": 6
+  },
+  "shots": {
+    "pistol_glock18": 95,
+    "rifle_m4a1": 30,
+    "sniper_m24": 5
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      0.65,
+      2.3
+    ],
+    "mall_flayer": [
+      1.32,
+      2.95,
+      13.57,
+      0.9
+    ],
+    "mall_zombie": [
+      28.67,
+      6.75,
+      2.48,
+      7.92
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 1.48,
+    "mall_flayer": 4.68,
+    "mall_zombie": 11.46
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 308.4,
+  "xp": 123
+}

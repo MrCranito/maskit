@@ -1,0 +1,115 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.35,
+  "bag_value": 448,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 5,
+  "corpses_searched": 9,
+  "damage_dealt": {
+    "fw_bandit": 342.4,
+    "fw_raider": 146.0,
+    "fw_sharpshooter": 93.9
+  },
+  "damage_taken": {
+    "fw_bandit": 17.9,
+    "fw_raider": 177.1
+  },
+  "difficulty": 2,
+  "dodges": 49,
+  "duration": 85.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 238,
+  "heals_used": 4,
+  "hits_taken": {
+    "fw_bandit": 2,
+    "fw_raider": 11
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "black_powder": 6,
+    "gold_nugget": 3,
+    "leather_holster": 1,
+    "revolver_ammo": 19,
+    "rifle_ammo": 18,
+    "silver_dollars": 19,
+    "treasure_map": 1,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 34,
+      "1": 21,
+      "3": 1
+    },
+    "conteneur": {
+      "0": 14,
+      "1": 1
+    }
+  },
+  "killer": "fw_raider",
+  "kills": {
+    "fw_bandit": 6,
+    "fw_raider": 1,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 8,
+  "seed": 21311,
+  "seen": {
+    "fw_bandit": 9,
+    "fw_raider": 2,
+    "fw_sharpshooter": 3
+  },
+  "shots": {
+    "pistol_glock18": 38,
+    "rifle_m4a1": 60
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.7,
+      2.13,
+      0.33,
+      0.32,
+      10.85,
+      0.0
+    ],
+    "fw_raider": [
+      0.78
+    ],
+    "fw_sharpshooter": [
+      0.15,
+      2.05
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 2.39,
+    "fw_raider": 0.78,
+    "fw_sharpshooter": 1.1
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 260.01,
+  "xp": 116
+}

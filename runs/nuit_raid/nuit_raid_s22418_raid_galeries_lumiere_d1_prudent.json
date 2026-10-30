@@ -1,0 +1,125 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 2.68,
+  "bag_value": 234,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 3,
+  "corpses_searched": 3,
+  "damage_dealt": {
+    "mall_brute": 582.8,
+    "mall_clone": 80.0,
+    "mall_flayer": 512.0,
+    "mall_security_bot": 140.8,
+    "mall_zombie": 248.0
+  },
+  "damage_taken": {
+    "mall_brute": 16.0,
+    "mall_flayer": 93.0,
+    "mall_security_bot": 28.0,
+    "mall_zombie": 39.0
+  },
+  "difficulty": 1,
+  "dodges": 41,
+  "duration": 181.7,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 126,
+  "heals_used": 5,
+  "hits_taken": {
+    "mall_brute": 1,
+    "mall_flayer": 9,
+    "mall_security_bot": 4,
+    "mall_zombie": 4
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "mall_batteries": 1,
+    "mall_cash_bundle": 2,
+    "mall_energy_drink": 2,
+    "mall_gift_card": 1,
+    "mat_scrap": 3,
+    "revolver_ammo": 15
+  },
+  "items": {
+    "cadavre": {
+      "0": 3,
+      "1": 1
+    },
+    "conteneur": {
+      "0": 1,
+      "1": 1
+    },
+    "sol": {
+      "0": 21
+    }
+  },
+  "killer": "mall_zombie",
+  "kills": {
+    "mall_clone": 1,
+    "mall_flayer": 7,
+    "mall_zombie": 4
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22418,
+  "seen": {
+    "mall_brute": 1,
+    "mall_clone": 3,
+    "mall_flayer": 7,
+    "mall_security_bot": 1,
+    "mall_zombie": 7
+  },
+  "shots": {
+    "pistol_p9": 165,
+    "smg_mp5": 90
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "mall_clone": [
+      8.22
+    ],
+    "mall_flayer": [
+      3.18,
+      6.48,
+      2.8,
+      2.78,
+      5.95,
+      4.62,
+      2.72
+    ],
+    "mall_zombie": [
+      4.42,
+      1.83,
+      5.82,
+      3.95
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 8.22,
+    "mall_flayer": 4.08,
+    "mall_zombie": 4.01
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 297.28,
+  "xp": 136
+}

@@ -1,0 +1,109 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 5.69,
+  "bag_value": 33,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 33.0,
+    "ss_security_droid": 241.9,
+    "ss_teleporter": 129.0
+  },
+  "damage_taken": {
+    "ss_detector": 7.5,
+    "ss_security_droid": 12.5,
+    "ss_spectre": 20.0,
+    "ss_teleporter": 95.0
+  },
+  "difficulty": 3,
+  "dodges": 38,
+  "duration": 26.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 19,
+  "heals_used": 1,
+  "hits_taken": {
+    "ss_detector": 2,
+    "ss_security_droid": 2,
+    "ss_spectre": 4,
+    "ss_teleporter": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "black_powder": 5,
+    "silver_dollars": 9,
+    "whisky": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 5
+    },
+    "sol": {
+      "0": 9,
+      "1": 1
+    }
+  },
+  "killer": "ss_detector",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 3,
+    "ss_teleporter": 2
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21780,
+  "seen": {
+    "ss_detector": 2,
+    "ss_security_droid": 4,
+    "ss_spectre": 3,
+    "ss_teleporter": 4
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_detector": [
+      0.4
+    ],
+    "ss_security_droid": [
+      1.1,
+      1.07,
+      4.35
+    ],
+    "ss_teleporter": [
+      0.65,
+      0.7
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.4,
+    "ss_security_droid": 2.17,
+    "ss_teleporter": 0.68
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 373.79,
+  "xp": 97
+}

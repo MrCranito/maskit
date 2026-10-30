@@ -1,0 +1,113 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 15.5,
+  "bag_value": 92,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 4,
+  "corpses_searched": 1,
+  "damage_dealt": {
+    "fw_bandit": 204.2,
+    "fw_marauder": 84.0,
+    "fw_raider": 104.0,
+    "fw_sharpshooter": 72.0
+  },
+  "damage_taken": {
+    "fw_marauder": 51.0,
+    "fw_raider": 108.0
+  },
+  "difficulty": 1,
+  "dodges": 32,
+  "duration": 42.7,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 48,
+  "heals_used": 3,
+  "hits_taken": {
+    "fw_marauder": 5,
+    "fw_raider": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "canned_beans": 2,
+    "gold_nugget": 2,
+    "mat_scrap": 2,
+    "rifle_ammo": 6,
+    "silver_dollars": 12,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "1": 6
+    },
+    "conteneur": {
+      "0": 16,
+      "1": 2
+    },
+    "sol": {
+      "1": 1
+    }
+  },
+  "killer": "fw_marauder",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_raider": 1,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 20678,
+  "seen": {
+    "fw_bandit": 8,
+    "fw_guard_dog": 1,
+    "fw_marauder": 6,
+    "fw_raider": 4,
+    "fw_sharpshooter": 3
+  },
+  "shots": {
+    "pistol_p9": 29,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      1.98,
+      10.07,
+      0.0,
+      1.53
+    ],
+    "fw_raider": [
+      19.25
+    ],
+    "fw_sharpshooter": [
+      0.6,
+      0.73
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 3.4,
+    "fw_raider": 19.25,
+    "fw_sharpshooter": 0.67
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 896.59,
+  "xp": 107
+}

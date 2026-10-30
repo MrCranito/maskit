@@ -1,0 +1,79 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.19,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_buffalo": 657.5
+  },
+  "damage_taken": {
+    "fw_buffalo": 78.0
+  },
+  "difficulty": 1,
+  "dodges": 5,
+  "duration": 25.7,
+  "elites": {
+    "fw_buffalo": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "fw_buffalo",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_buffalo": 3
+  },
+  "hp_end": 22.0,
+  "hp_min": 22.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "fw_buffalo": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40026,
+  "seen": {
+    "fw_buffalo": 1
+  },
+  "shots": {
+    "pistol_glock18": 28,
+    "rifle_m4a1": 60
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_buffalo": [
+      25.38
+    ]
+  },
+  "ttk_avg": {
+    "fw_buffalo": 25.38
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 433.63,
+  "xp": 0
+}

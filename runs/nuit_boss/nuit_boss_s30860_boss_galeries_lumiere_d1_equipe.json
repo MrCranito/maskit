@@ -1,0 +1,128 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.1,
+  "bag_value": 0,
+  "boss": {
+    "hp_ratio_at_last_hit": 0.8909375,
+    "killed": false,
+    "kind": "mall_omnistore",
+    "met_t": 1.0
+  },
+  "boss_floor": 2,
+  "boss_kind": "mall_omnistore",
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_night_spider": 120.0,
+    "mall_omnistore": 349.0,
+    "mall_security_bot": 288.0,
+    "mall_store_warden": 10.5,
+    "mall_violent": 465.0
+  },
+  "damage_taken": {
+    "mall_flayer": 5.0,
+    "mall_night_spider": 14.0,
+    "mall_omnistore": 34.0,
+    "mall_security_bot": 14.0,
+    "mall_store_warden": 40.0,
+    "mall_violent": 13.0
+  },
+  "difficulty": 1,
+  "dodges": 24,
+  "duration": 24.3,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    },
+    "mall_violent": {
+      "killed": 1,
+      "met": 2
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "2",
+    "1"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 0,
+  "heals_used": 1,
+  "hits_taken": {
+    "mall_flayer": 1,
+    "mall_night_spider": 1,
+    "mall_omnistore": 3,
+    "mall_security_bot": 2,
+    "mall_store_warden": 2,
+    "mall_violent": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 1
+  },
+  "items": {
+    "sol": {
+      "0": 1
+    }
+  },
+  "killer": "mall_flayer",
+  "kills": {
+    "mall_night_spider": 1,
+    "mall_security_bot": 1,
+    "mall_violent": 1
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30860,
+  "seen": {
+    "mall_flayer": 1,
+    "mall_night_spider": 1,
+    "mall_omnistore": 2,
+    "mall_security_bot": 6,
+    "mall_store_warden": 1,
+    "mall_violent": 2,
+    "mall_zombie": 12
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50,
+    "sniper_m82": 8
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "mall_night_spider": [
+      0.0
+    ],
+    "mall_security_bot": [
+      1.57
+    ],
+    "mall_violent": [
+      6.35
+    ]
+  },
+  "ttk_avg": {
+    "mall_night_spider": 0.0,
+    "mall_security_bot": 1.57,
+    "mall_violent": 6.35
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 521.15,
+  "xp": 79
+}

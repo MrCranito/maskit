@@ -1,0 +1,79 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.72,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_atlas": 400.9
+  },
+  "damage_taken": {
+    "ss_atlas": 28.0
+  },
+  "difficulty": 1,
+  "dodges": 14,
+  "duration": 16.9,
+  "elites": {
+    "ss_atlas": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "ss_atlas",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_atlas": 5
+  },
+  "hp_end": 72.0,
+  "hp_min": 72.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "ss_atlas": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40402,
+  "seen": {
+    "ss_atlas": 1
+  },
+  "shots": {
+    "pistol_glock18": 33,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_atlas": [
+      16.6
+    ]
+  },
+  "ttk_avg": {
+    "ss_atlas": 16.6
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 334.71,
+  "xp": 0
+}

@@ -1,0 +1,168 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 2.89,
+  "bag_value": 1130,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 32,
+  "containers_opened": 15,
+  "corpses_searched": 9,
+  "damage_dealt": {
+    "ss_alien": 352.0,
+    "ss_alien_brood": 240.0,
+    "ss_detector": 64.0,
+    "ss_security_droid": 224.0,
+    "ss_spectre": 48.0,
+    "ss_teleporter": 292.0
+  },
+  "damage_taken": {
+    "enemy_hazard": 6.0,
+    "player": 7.3,
+    "ss_alien": 133.5,
+    "ss_alien_brood": 27.0,
+    "ss_security_droid": 9.8,
+    "ss_spectre": 12.0,
+    "ss_teleporter": 24.8
+  },
+  "difficulty": 0,
+  "dodges": 75,
+  "duration": 420.0,
+  "elites": {},
+  "errors": [
+    "texture_storage.h:85 Parameter \"t\" is null. "
+  ],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 616,
+  "heals_used": 12,
+  "hits_taken": {
+    "enemy_hazard": 2,
+    "player": 1,
+    "ss_alien": 12,
+    "ss_alien_brood": 9,
+    "ss_security_droid": 3,
+    "ss_spectre": 4,
+    "ss_teleporter": 3
+  },
+  "hp_end": 69.7,
+  "hp_min": 4.7,
+  "item_ids": {
+    "black_powder": 15,
+    "mat_cloth": 7,
+    "mat_scrap": 20,
+    "revolver_ammo": 15,
+    "space_circuit": 7,
+    "space_data_chip": 2,
+    "space_energy_cell": 12,
+    "space_iridium": 2,
+    "space_medigel": 4,
+    "space_plasma_cells": 38,
+    "space_ration": 9,
+    "space_servo": 1,
+    "whisky": 1,
+    "wpn_smg_mp5": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 43,
+      "1": 1
+    },
+    "conteneur": {
+      "0": 62,
+      "1": 2,
+      "2": 2
+    },
+    "sol": {
+      "0": 23,
+      "1": 1
+    }
+  },
+  "killer": "",
+  "kills": {
+    "ss_alien": 1,
+    "ss_alien_brood": 10,
+    "ss_detector": 2,
+    "ss_security_droid": 4,
+    "ss_spectre": 2,
+    "ss_teleporter": 5
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "temps",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 22177,
+  "seen": {
+    "ss_alien": 2,
+    "ss_alien_brood": 10,
+    "ss_detector": 2,
+    "ss_security_droid": 4,
+    "ss_spectre": 3,
+    "ss_teleporter": 6
+  },
+  "shots": {
+    "pistol_p9": 95,
+    "smg_mp5": 120
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "ss_alien": [
+      62.62
+    ],
+    "ss_alien_brood": [
+      7.52,
+      4.77,
+      2.12,
+      7.2,
+      0.67,
+      6.03,
+      1.62,
+      2.57,
+      17.82,
+      0.32
+    ],
+    "ss_detector": [
+      1.02,
+      0.48
+    ],
+    "ss_security_droid": [
+      1.63,
+      1.52,
+      3.07,
+      14.08
+    ],
+    "ss_spectre": [
+      0.28,
+      9.75
+    ],
+    "ss_teleporter": [
+      12.28,
+      10.28,
+      0.6,
+      9.18,
+      9.88
+    ]
+  },
+  "ttk_avg": {
+    "ss_alien": 62.62,
+    "ss_alien_brood": 5.06,
+    "ss_detector": 0.75,
+    "ss_security_droid": 5.08,
+    "ss_spectre": 5.01,
+    "ss_teleporter": 8.44
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 293.34,
+  "xp": 0
+}

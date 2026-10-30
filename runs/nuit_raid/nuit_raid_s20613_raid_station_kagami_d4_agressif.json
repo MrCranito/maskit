@@ -1,0 +1,108 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.58,
+  "bag_value": 54,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 36.5,
+    "ss_security_droid": 109.5,
+    "ss_spectre": 48.0,
+    "ss_teleporter": 104.5
+  },
+  "damage_taken": {
+    "enemy_hazard": 11.2,
+    "ss_security_droid": 12.6,
+    "ss_spectre": 18.6,
+    "ss_teleporter": 67.6
+  },
+  "difficulty": 4,
+  "dodges": 14,
+  "duration": 16.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 27,
+  "heals_used": 1,
+  "hits_taken": {
+    "enemy_hazard": 2,
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 5
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "space_energy_cell": 3,
+    "space_ration": 1
+  },
+  "items": {
+    "conteneur": {
+      "0": 4
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 20613,
+  "seen": {
+    "ss_detector": 1,
+    "ss_security_droid": 3,
+    "ss_spectre": 3,
+    "ss_teleporter": 4
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      4.25
+    ],
+    "ss_security_droid": [
+      0.28,
+      0.85
+    ],
+    "ss_spectre": [
+      2.67
+    ],
+    "ss_teleporter": [
+      3.72
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 4.25,
+    "ss_security_droid": 0.56,
+    "ss_spectre": 2.67,
+    "ss_teleporter": 3.72
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 278.34,
+  "xp": 91
+}

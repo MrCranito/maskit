@@ -1,0 +1,114 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.8,
+  "bag_value": 219,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 3,
+  "damage_dealt": {
+    "fw_bandit": 343.4,
+    "fw_raider": 76.0,
+    "fw_sharpshooter": 33.0
+  },
+  "damage_taken": {
+    "fw_bandit": 50.0,
+    "fw_raider": 107.0,
+    "player": 13.0
+  },
+  "difficulty": 3,
+  "dodges": 23,
+  "duration": 39.2,
+  "elites": {},
+  "errors": [
+    "texture_storage.h:85 Parameter \"t\" is null. "
+  ],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 135,
+  "heals_used": 2,
+  "hits_taken": {
+    "fw_bandit": 5,
+    "fw_raider": 6,
+    "player": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "gold_nugget": 5,
+    "mat_scrap": 4,
+    "playing_cards": 1,
+    "revolver_ammo": 42,
+    "rifle_ammo": 9,
+    "silver_dollars": 8,
+    "whisky": 2
+  },
+  "items": {
+    "cadavre": {
+      "0": 41,
+      "1": 2
+    },
+    "conteneur": {
+      "0": 1,
+      "1": 1
+    },
+    "sol": {
+      "0": 13,
+      "1": 13
+    }
+  },
+  "killer": "fw_raider",
+  "kills": {
+    "fw_bandit": 6,
+    "fw_raider": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22484,
+  "seen": {
+    "fw_bandit": 11,
+    "fw_raider": 3,
+    "fw_sharpshooter": 1
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      2.3,
+      0.0,
+      1.42,
+      0.87,
+      0.35,
+      0.0
+    ],
+    "fw_raider": [
+      0.57
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.82,
+    "fw_raider": 0.57
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 260.26,
+  "xp": 103
+}

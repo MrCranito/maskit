@@ -1,0 +1,134 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 2.67,
+  "bag_value": 22,
+  "boss": {
+    "death_skill": "ss_orbital_laser",
+    "hp_ratio_at_death": 0.99,
+    "hp_ratio_at_last_hit": 0.648125,
+    "hp_ratio_end": 0.99,
+    "killed": false,
+    "kind": "ss_architect",
+    "max_phase": 2,
+    "met_t": 1.1,
+    "phases": [
+      {
+        "name": "Phase 2 — Drones et bouclier",
+        "phase": 2,
+        "t": 9.4
+      }
+    ]
+  },
+  "boss_floor": -1,
+  "boss_kind": "ss_architect",
+  "boss_phase_at_death": 2,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_architect": 1055.6,
+    "ss_drone_tieur": 151.5,
+    "ss_security_droid": 105.0,
+    "ss_spectre": 334.5
+  },
+  "damage_taken": {
+    "ss_architect": 93.0,
+    "ss_drone_tieur": 33.0,
+    "ss_security_droid": 5.0,
+    "ss_spectre": 4.0
+  },
+  "difficulty": 1,
+  "dodges": 43,
+  "duration": 41.3,
+  "elites": {
+    "ss_drone_tieur": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 16,
+  "heals_used": 1,
+  "hits_taken": {
+    "ss_architect": 9,
+    "ss_drone_tieur": 3,
+    "ss_security_droid": 1,
+    "ss_spectre": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_cloth": 3,
+    "revolver_ammo": 10,
+    "whisky": 1
+  },
+  "items": {
+    "sol": {
+      "0": 13,
+      "1": 1
+    }
+  },
+  "killer": "ss_architect",
+  "kills": {
+    "ss_drone_tieur": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 5
+  },
+  "map": "perm_station_kagami",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30332,
+  "seen": {
+    "ss_architect": 1,
+    "ss_drone_tieur": 1,
+    "ss_security_droid": 3,
+    "ss_spectre": 7
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_drone_tieur": [
+      18.03
+    ],
+    "ss_security_droid": [
+      0.68,
+      0.48
+    ],
+    "ss_spectre": [
+      0.0,
+      0.0,
+      0.6,
+      0.18,
+      0.18
+    ]
+  },
+  "ttk_avg": {
+    "ss_drone_tieur": 18.03,
+    "ss_security_droid": 0.58,
+    "ss_spectre": 0.19
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 253.77,
+  "xp": 109
+}

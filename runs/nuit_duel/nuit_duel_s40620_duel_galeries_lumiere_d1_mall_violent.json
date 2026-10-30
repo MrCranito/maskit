@@ -1,0 +1,79 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.91,
+  "bag_value": 0,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_violent": 461.0
+  },
+  "damage_taken": {
+    "mall_violent": 46.0
+  },
+  "difficulty": 1,
+  "dodges": 2,
+  "duration": 12.3,
+  "elites": {
+    "mall_violent": {
+      "killed": 1,
+      "met": 1
+    }
+  },
+  "enemy": "mall_violent",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 0,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_violent": 3
+  },
+  "hp_end": 54.0,
+  "hp_min": 54.0,
+  "item_ids": {},
+  "items": {},
+  "killer": "",
+  "kills": {
+    "mall_violent": 1
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "duel",
+  "outcome": "victoire",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40620,
+  "seen": {
+    "mall_violent": 1
+  },
+  "shots": {
+    "pistol_glock18": 27,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_violent": [
+      11.93
+    ]
+  },
+  "ttk_avg": {
+    "mall_violent": 11.93
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 360.25,
+  "xp": 0
+}

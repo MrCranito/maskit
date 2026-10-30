@@ -1,0 +1,133 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.62,
+  "bag_value": 20,
+  "boss": {
+    "death_skill": "attaque",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.980770423780181,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "fw_sheriff",
+    "met_t": 4.7
+  },
+  "boss_floor": -1,
+  "boss_kind": "fw_sheriff",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_bandit": 42.4,
+    "fw_bruiser": 56.8,
+    "fw_buffalo": 15.4,
+    "fw_deserter": 64.0,
+    "fw_marauder": 243.9,
+    "fw_raider": 160.0,
+    "fw_sheriff": 57.7
+  },
+  "damage_taken": {
+    "fw_bandit": 25.0,
+    "fw_buffalo": 22.4,
+    "fw_deserter": 7.8,
+    "fw_raider": 17.9,
+    "fw_sheriff": 26.9
+  },
+  "difficulty": 2,
+  "dodges": 12,
+  "duration": 17.7,
+  "elites": {
+    "fw_buffalo": {
+      "killed": 0,
+      "met": 1
+    },
+    "fw_deserter": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 10,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 3,
+    "fw_buffalo": 2,
+    "fw_deserter": 1,
+    "fw_raider": 1,
+    "fw_sheriff": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "silver_dollars": 10
+  },
+  "items": {
+    "sol": {
+      "0": 10
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 1,
+    "fw_marauder": 4,
+    "fw_raider": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30490,
+  "seen": {
+    "fw_bandit": 3,
+    "fw_bruiser": 1,
+    "fw_buffalo": 1,
+    "fw_deserter": 1,
+    "fw_marauder": 7,
+    "fw_raider": 4,
+    "fw_sheriff": 1
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 30
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.0
+    ],
+    "fw_marauder": [
+      0.8,
+      0.58,
+      0.0,
+      1.83
+    ],
+    "fw_raider": [
+      1.28,
+      1.93
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.0,
+    "fw_marauder": 0.8,
+    "fw_raider": 1.61
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 27.06,
+  "xp": 102
+}

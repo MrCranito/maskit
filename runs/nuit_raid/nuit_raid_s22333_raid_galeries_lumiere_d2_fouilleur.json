@@ -1,0 +1,107 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.26,
+  "bag_value": 1068,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 4,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "mall_clone": 151.0,
+    "mall_flayer": 298.0
+  },
+  "damage_taken": {
+    "mall_flayer": 339.4
+  },
+  "difficulty": 2,
+  "dodges": 38,
+  "duration": 101.3,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 553,
+  "heals_used": 10,
+  "hits_taken": {
+    "mall_flayer": 32
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "key_mall_jewelry": 1,
+    "mall_cash_bundle": 5,
+    "mall_energy_drink": 3,
+    "mall_first_aid": 2,
+    "mall_gift_card": 1,
+    "mall_painkillers": 2,
+    "revolver_ammo": 18,
+    "wpn_gadget_smoke": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 2,
+      "2": 1
+    },
+    "conteneur": {
+      "0": 2,
+      "1": 7,
+      "2": 2
+    },
+    "sol": {
+      "0": 21,
+      "3": 1
+    }
+  },
+  "killer": "mall_flayer",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 2
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22333,
+  "seen": {
+    "mall_clone": 2,
+    "mall_flayer": 4
+  },
+  "shots": {
+    "pistol_glock18": 48,
+    "rifle_m4a1": 30,
+    "sniper_m24": 3
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      1.92,
+      0.0
+    ],
+    "mall_flayer": [
+      1.33,
+      0.0
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 0.96,
+    "mall_flayer": 0.67
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 406.14,
+  "xp": 87
+}

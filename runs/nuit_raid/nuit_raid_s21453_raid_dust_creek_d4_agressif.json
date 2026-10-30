@@ -1,0 +1,142 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 5.2,
+  "bag_value": 460,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 2,
+  "corpses_searched": 5,
+  "damage_dealt": {
+    "fw_bandit": 746.0,
+    "fw_guard_dog": 31.5,
+    "fw_marauder": 372.0,
+    "fw_raider": 334.5,
+    "fw_sharpshooter": 42.0
+  },
+  "damage_taken": {
+    "fw_bandit": 75.0,
+    "fw_marauder": 58.0,
+    "fw_raider": 42.0
+  },
+  "difficulty": 4,
+  "dodges": 40,
+  "duration": 74.1,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 231,
+  "heals_used": 3,
+  "hits_taken": {
+    "fw_bandit": 7,
+    "fw_marauder": 4,
+    "fw_raider": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 3,
+    "canned_beans": 6,
+    "key_bank_vault": 1,
+    "leather_holster": 1,
+    "mat_cloth": 7,
+    "mat_scrap": 2,
+    "rifle_ammo": 11,
+    "silver_dollars": 30,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 33,
+      "1": 12
+    },
+    "conteneur": {
+      "0": 9
+    },
+    "sol": {
+      "0": 7,
+      "3": 1
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 8,
+    "fw_guard_dog": 1,
+    "fw_marauder": 5,
+    "fw_raider": 3,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 5,
+  "seed": 21453,
+  "seen": {
+    "fw_bandit": 13,
+    "fw_bruiser": 1,
+    "fw_guard_dog": 1,
+    "fw_marauder": 10,
+    "fw_raider": 5,
+    "fw_sharpshooter": 7
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 20
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      0.6,
+      0.33,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.25
+    ],
+    "fw_guard_dog": [
+      0.18
+    ],
+    "fw_marauder": [
+      0.0,
+      0.4,
+      1.52,
+      1.17,
+      2.52
+    ],
+    "fw_raider": [
+      0.0,
+      0.0,
+      1.38
+    ],
+    "fw_sharpshooter": [
+      0.25
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.15,
+    "fw_guard_dog": 0.18,
+    "fw_marauder": 1.12,
+    "fw_raider": 0.46,
+    "fw_sharpshooter": 0.25
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 83.72,
+  "xp": 171
+}

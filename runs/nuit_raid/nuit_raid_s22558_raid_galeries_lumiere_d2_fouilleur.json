@@ -1,0 +1,96 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 2.72,
+  "bag_value": 260,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_clone": 218.0,
+    "mall_flayer": 309.0
+  },
+  "damage_taken": {
+    "mall_clone": 76.2,
+    "mall_flayer": 63.8
+  },
+  "difficulty": 2,
+  "dodges": 16,
+  "duration": 67.4,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 150,
+  "heals_used": 2,
+  "hits_taken": {
+    "mall_clone": 7,
+    "mall_flayer": 5
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 2,
+    "wpn_pistol_glock18": 1
+  },
+  "items": {
+    "conteneur": {
+      "2": 1
+    },
+    "sol": {
+      "0": 2
+    }
+  },
+  "killer": "mall_flayer",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 3
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22558,
+  "seen": {
+    "mall_clone": 10,
+    "mall_flayer": 3
+  },
+  "shots": {
+    "pistol_glock18": 57,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_clone": [
+      3.42,
+      39.05
+    ],
+    "mall_flayer": [
+      1.0,
+      0.0,
+      38.0
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 21.24,
+    "mall_flayer": 13.0
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 282.27,
+  "xp": 91
+}

@@ -1,0 +1,100 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.59,
+  "bag_value": 134,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_detector": 42.0,
+    "ss_security_droid": 104.5,
+    "ss_teleporter": 73.5
+  },
+  "damage_taken": {
+    "ss_detector": 5.6,
+    "ss_teleporter": 94.4
+  },
+  "difficulty": 4,
+  "dodges": 15,
+  "duration": 23.9,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 68,
+  "heals_used": 0,
+  "hits_taken": {
+    "ss_detector": 1,
+    "ss_teleporter": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "space_circuit": 2,
+    "space_servo": 2
+  },
+  "items": {
+    "conteneur": {
+      "0": 2,
+      "1": 2
+    }
+  },
+  "killer": "ss_teleporter",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_teleporter": 1
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21964,
+  "seen": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 1,
+    "ss_teleporter": 3
+  },
+  "shots": {
+    "rifle_scarh": 20,
+    "smg_p90": 50,
+    "sniper_m82": 2
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      1.25
+    ],
+    "ss_security_droid": [
+      1.42,
+      1.13
+    ],
+    "ss_teleporter": [
+      1.22
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 1.25,
+    "ss_security_droid": 1.27,
+    "ss_teleporter": 1.22
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 299.17,
+  "xp": 85
+}

@@ -1,0 +1,107 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 1.84,
+  "bag_value": 20,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_flayer": 175.8,
+    "mall_security_bot": 103.6,
+    "mall_store_warden": 279.4,
+    "mall_zombie": 198.0
+  },
+  "damage_taken": {
+    "mall_flayer": 45.0,
+    "mall_security_bot": 7.0,
+    "mall_store_warden": 26.0,
+    "mall_zombie": 22.0
+  },
+  "difficulty": 1,
+  "dodges": 58,
+  "duration": 125.9,
+  "elites": {
+    "mall_store_warden": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "enemy": "mall_store_warden",
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 10,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_flayer": 5,
+    "mall_security_bot": 1,
+    "mall_store_warden": 2,
+    "mall_zombie": 2
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_cloth": 3,
+    "silver_dollars": 4
+  },
+  "items": {
+    "sol": {
+      "0": 7
+    }
+  },
+  "killer": "mall_store_warden",
+  "kills": {
+    "mall_flayer": 2,
+    "mall_zombie": 3
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "duel",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 40646,
+  "seen": {
+    "mall_flayer": 2,
+    "mall_security_bot": 2,
+    "mall_store_warden": 1,
+    "mall_zombie": 8
+  },
+  "shots": {
+    "pistol_glock18": 76,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "mall_flayer": [
+      4.02,
+      0.72
+    ],
+    "mall_zombie": [
+      2.9,
+      9.68,
+      2.67
+    ]
+  },
+  "ttk_avg": {
+    "mall_flayer": 2.37,
+    "mall_zombie": 5.08
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 316.49,
+  "xp": 92
+}

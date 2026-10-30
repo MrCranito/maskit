@@ -1,0 +1,125 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 5.98,
+  "bag_value": 8,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "fw_bandit": 594.5,
+    "fw_guard_dog": 52.0,
+    "fw_marauder": 742.5,
+    "fw_raider": 563.5,
+    "fw_sharpshooter": 162.0
+  },
+  "damage_taken": {
+    "fw_bandit": 42.0,
+    "fw_marauder": 58.0
+  },
+  "difficulty": 4,
+  "dodges": 29,
+  "duration": 33.1,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 4,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 4,
+    "fw_marauder": 4
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "silver_dollars": 4
+  },
+  "items": {
+    "sol": {
+      "0": 4
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_guard_dog": 1,
+    "fw_marauder": 8,
+    "fw_raider": 5,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 20102,
+  "seen": {
+    "fw_bandit": 13,
+    "fw_guard_dog": 1,
+    "fw_marauder": 9,
+    "fw_raider": 5,
+    "fw_sharpshooter": 5
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      0.0,
+      0.0,
+      6.93,
+      0.0
+    ],
+    "fw_guard_dog": [
+      0.92
+    ],
+    "fw_marauder": [
+      4.53,
+      0.0,
+      0.0,
+      5.15,
+      1.17,
+      4.53,
+      1.03,
+      0.55
+    ],
+    "fw_raider": [
+      2.63,
+      0.0,
+      0.0,
+      0.68,
+      0.43
+    ],
+    "fw_sharpshooter": [
+      0.0,
+      0.2
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 1.73,
+    "fw_guard_dog": 0.92,
+    "fw_marauder": 2.12,
+    "fw_raider": 0.75,
+    "fw_sharpshooter": 0.1
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 337.61,
+  "xp": 182
+}

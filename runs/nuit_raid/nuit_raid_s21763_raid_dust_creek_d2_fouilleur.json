@@ -1,0 +1,114 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 5.95,
+  "bag_value": 45,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "fw_bandit": 123.0,
+    "fw_marauder": 67.7,
+    "fw_raider": 306.0,
+    "fw_sharpshooter": 94.5
+  },
+  "damage_taken": {
+    "fw_marauder": 100.0
+  },
+  "difficulty": 2,
+  "dodges": 17,
+  "duration": 61.2,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 25,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_marauder": 10
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "lasso": 1,
+    "mat_scrap": 5,
+    "rifle_ammo": 10
+  },
+  "items": {
+    "cadavre": {
+      "0": 1
+    },
+    "conteneur": {
+      "0": 5
+    },
+    "sol": {
+      "1": 10
+    }
+  },
+  "killer": "fw_marauder",
+  "kills": {
+    "fw_bandit": 2,
+    "fw_marauder": 1,
+    "fw_raider": 4,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 2,
+  "seed": 21763,
+  "seen": {
+    "fw_bandit": 6,
+    "fw_marauder": 5,
+    "fw_raider": 4,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "pistol_glock18": 19,
+    "rifle_m4a1": 60,
+    "sniper_m24": 2
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "fw_bandit": [
+      0.97,
+      0.0
+    ],
+    "fw_marauder": [
+      1.42
+    ],
+    "fw_raider": [
+      1.0,
+      1.53,
+      2.43,
+      0.0
+    ],
+    "fw_sharpshooter": [
+      0.43,
+      0.4
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.49,
+    "fw_marauder": 1.42,
+    "fw_raider": 1.24,
+    "fw_sharpshooter": 0.42
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 373.18,
+  "xp": 117
+}

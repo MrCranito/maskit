@@ -1,0 +1,116 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 4.28,
+  "bag_value": 361,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 3,
+  "corpses_searched": 1,
+  "damage_dealt": {
+    "fw_bandit": 590.0,
+    "fw_marauder": 120.0,
+    "fw_raider": 172.0,
+    "fw_sharpshooter": 88.5
+  },
+  "damage_taken": {
+    "fw_bandit": 100.0
+  },
+  "difficulty": 4,
+  "dodges": 53,
+  "duration": 132.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 188,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 9
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "key_bank_vault": 1,
+    "leather_holster": 1,
+    "mat_cloth": 3,
+    "revolver_ammo": 15,
+    "silver_dollars": 11
+  },
+  "items": {
+    "conteneur": {
+      "0": 15
+    },
+    "sol": {
+      "0": 15,
+      "3": 1
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 7,
+    "fw_marauder": 1,
+    "fw_raider": 1,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21949,
+  "seen": {
+    "fw_bandit": 12,
+    "fw_marauder": 1,
+    "fw_raider": 2,
+    "fw_sharpshooter": 3
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      0.53,
+      0.18,
+      2.87,
+      3.78,
+      0.0,
+      0.0,
+      26.8
+    ],
+    "fw_marauder": [
+      0.0
+    ],
+    "fw_raider": [
+      3.8
+    ],
+    "fw_sharpshooter": [
+      0.17,
+      0.03
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 4.88,
+    "fw_marauder": 0.0,
+    "fw_raider": 3.8,
+    "fw_sharpshooter": 0.1
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 307.35,
+  "xp": 130
+}

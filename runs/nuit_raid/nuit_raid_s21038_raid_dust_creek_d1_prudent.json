@@ -1,0 +1,123 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 1.68,
+  "bag_value": 497,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 18,
+  "containers_opened": 7,
+  "corpses_searched": 6,
+  "damage_dealt": {
+    "fw_bandit": 144.0,
+    "fw_raider": 228.0,
+    "fw_sharpshooter": 103.6
+  },
+  "damage_taken": {
+    "fw_bandit": 8.0,
+    "fw_raider": 108.0
+  },
+  "difficulty": 1,
+  "dodges": 18,
+  "duration": 420.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 1,
+  "gold_estimate": 271,
+  "heals_used": 2,
+  "hits_taken": {
+    "fw_bandit": 1,
+    "fw_raider": 7
+  },
+  "hp_end": 74.0,
+  "hp_min": 45.0,
+  "item_ids": {
+    "bandage": 6,
+    "black_powder": 3,
+    "leather_holster": 1,
+    "mat_chemicals": 1,
+    "mat_cloth": 5,
+    "mat_gears": 3,
+    "playing_cards": 1,
+    "revolver_ammo": 26,
+    "rifle_ammo": 14,
+    "silver_dollars": 15,
+    "snake_oil": 1,
+    "wanted_poster": 2,
+    "whisky": 1,
+    "wpn_gadget_decoy": 1,
+    "wpn_rifle_ak47": 2
+  },
+  "items": {
+    "cadavre": {
+      "0": 30,
+      "1": 9
+    },
+    "conteneur": {
+      "0": 31,
+      "1": 8,
+      "2": 1
+    },
+    "sol": {
+      "0": 2,
+      "1": 1
+    }
+  },
+  "killer": "",
+  "kills": {
+    "fw_bandit": 3,
+    "fw_raider": 3,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "temps",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21038,
+  "seen": {
+    "fw_bandit": 6,
+    "fw_raider": 4,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "pistol_p9": 29,
+    "smg_mp5": 43
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      1.42,
+      0.6,
+      2.08
+    ],
+    "fw_raider": [
+      6.23,
+      4.92,
+      10.02
+    ],
+    "fw_sharpshooter": [
+      2.35,
+      0.28
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 1.37,
+    "fw_raider": 7.06,
+    "fw_sharpshooter": 1.32
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 245.43,
+  "xp": 0
+}

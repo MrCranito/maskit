@@ -1,0 +1,113 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.83,
+  "bag_value": 35,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 1,
+  "corpses_searched": 1,
+  "damage_dealt": {
+    "fw_bandit": 252.0,
+    "fw_marauder": 252.0,
+    "fw_raider": 152.0,
+    "fw_sharpshooter": 48.0
+  },
+  "damage_taken": {
+    "fw_bandit": 0.6,
+    "fw_marauder": 46.4,
+    "fw_raider": 31.0,
+    "fw_sharpshooter": 22.0
+  },
+  "difficulty": 1,
+  "dodges": 21,
+  "duration": 57.1,
+  "elites": {},
+  "errors": [
+    "texture_storage.h:85 Parameter \"t\" is null. "
+  ],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 20,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_bandit": 1,
+    "fw_marauder": 5,
+    "fw_raider": 2,
+    "fw_sharpshooter": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mat_scrap": 5,
+    "silver_dollars": 10
+  },
+  "items": {
+    "conteneur": {
+      "0": 15
+    }
+  },
+  "killer": "fw_bandit",
+  "kills": {
+    "fw_bandit": 3,
+    "fw_marauder": 3,
+    "fw_raider": 2,
+    "fw_sharpshooter": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22570,
+  "seen": {
+    "fw_bandit": 10,
+    "fw_marauder": 5,
+    "fw_raider": 3,
+    "fw_sharpshooter": 3
+  },
+  "shots": {
+    "pistol_p9": 50,
+    "smg_mp5": 60
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      3.5,
+      0.0,
+      1.03
+    ],
+    "fw_marauder": [
+      7.37,
+      5.18,
+      10.03
+    ],
+    "fw_raider": [
+      0.98,
+      5.0
+    ],
+    "fw_sharpshooter": [
+      0.63
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 1.51,
+    "fw_marauder": 7.53,
+    "fw_raider": 2.99,
+    "fw_sharpshooter": 0.63
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 260.37,
+  "xp": 116
+}

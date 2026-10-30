@@ -1,0 +1,110 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.24,
+  "bag_value": 134,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 4,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "fw_bandit": 36.0,
+    "fw_guard_dog": 36.0,
+    "fw_raider": 352.0,
+    "fw_sharpshooter": 80.0
+  },
+  "damage_taken": {
+    "fw_guard_dog": 6.0,
+    "fw_raider": 153.0
+  },
+  "difficulty": 1,
+  "dodges": 22,
+  "duration": 62.0,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 68,
+  "heals_used": 3,
+  "hits_taken": {
+    "fw_guard_dog": 1,
+    "fw_raider": 11
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "canned_beans": 2,
+    "dynamite": 2,
+    "leather_holster": 1,
+    "rifle_ammo": 6,
+    "silver_dollars": 20,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 20
+    },
+    "conteneur": {
+      "0": 3,
+      "1": 9
+    }
+  },
+  "killer": "fw_raider",
+  "kills": {
+    "fw_guard_dog": 1,
+    "fw_raider": 4,
+    "fw_sharpshooter": 2
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 5,
+  "seed": 21175,
+  "seen": {
+    "fw_bandit": 4,
+    "fw_guard_dog": 1,
+    "fw_marauder": 1,
+    "fw_raider": 5,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "pistol_p9": 50,
+    "smg_mp5": 36
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_guard_dog": [
+      1.7
+    ],
+    "fw_raider": [
+      2.38,
+      3.1,
+      20.53,
+      2.62
+    ],
+    "fw_sharpshooter": [
+      1.75,
+      0.67
+    ]
+  },
+  "ttk_avg": {
+    "fw_guard_dog": 1.7,
+    "fw_raider": 7.16,
+    "fw_sharpshooter": 1.21
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 261.05,
+  "xp": 104
+}

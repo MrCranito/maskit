@@ -1,0 +1,100 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 5.66,
+  "bag_value": 12,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "mall_clone": 156.0,
+    "mall_flayer": 376.0,
+    "mall_night_spider": 12.0,
+    "mall_zombie": 32.0
+  },
+  "damage_taken": {
+    "mall_clone": 28.0,
+    "mall_flayer": 51.0,
+    "mall_night_spider": 2.3,
+    "tourelle": 18.7
+  },
+  "difficulty": 1,
+  "dodges": 9,
+  "duration": 71.1,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 6,
+  "heals_used": 0,
+  "hits_taken": {
+    "mall_clone": 2,
+    "mall_flayer": 5,
+    "mall_night_spider": 1,
+    "tourelle": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "silver_dollars": 6
+  },
+  "items": {
+    "sol": {
+      "0": 6
+    }
+  },
+  "killer": "mall_night_spider",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 5
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 21700,
+  "seen": {
+    "mall_clone": 5,
+    "mall_flayer": 5,
+    "mall_night_spider": 1,
+    "mall_zombie": 5
+  },
+  "shots": {
+    "pistol_p9": 39,
+    "smg_mp5": 60
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "mall_clone": [
+      9.28,
+      1.03
+    ],
+    "mall_flayer": [
+      1.6,
+      6.37,
+      6.02,
+      3.83,
+      3.78
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 5.15,
+    "mall_flayer": 4.32
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 762.05,
+  "xp": 105
+}

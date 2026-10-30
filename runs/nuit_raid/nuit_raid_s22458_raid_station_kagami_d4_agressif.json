@@ -1,0 +1,144 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 3.75,
+  "bag_value": 568,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 11,
+  "corpses_searched": 10,
+  "damage_dealt": {
+    "ss_detector": 260.5,
+    "ss_security_droid": 344.0,
+    "ss_spectre": 88.5,
+    "ss_teleporter": 449.5
+  },
+  "damage_taken": {
+    "ss_detector": 5.6,
+    "ss_security_droid": 350.2,
+    "ss_teleporter": 50.4,
+    "tourelle": 18.8
+  },
+  "difficulty": 4,
+  "dodges": 165,
+  "duration": 249.8,
+  "elites": {},
+  "errors": [
+    "texture_storage.h:85 Parameter \"t\" is null. "
+  ],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 331,
+  "heals_used": 19,
+  "hits_taken": {
+    "ss_detector": 1,
+    "ss_security_droid": 54,
+    "ss_teleporter": 3,
+    "tourelle": 1
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 5,
+    "black_powder": 4,
+    "mat_cloth": 8,
+    "mat_scrap": 10,
+    "revolver_ammo": 27,
+    "rifle_ammo": 7,
+    "silver_dollars": 7,
+    "space_data_chip": 2,
+    "space_energy_cell": 8,
+    "space_medigel": 4,
+    "space_plasma_cells": 50,
+    "space_ration": 9,
+    "space_servo": 1,
+    "whisky": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 47,
+      "1": 2
+    },
+    "conteneur": {
+      "0": 46,
+      "1": 1
+    },
+    "sol": {
+      "0": 39,
+      "1": 8
+    }
+  },
+  "killer": "ss_security_droid",
+  "kills": {
+    "ss_detector": 4,
+    "ss_security_droid": 4,
+    "ss_spectre": 3,
+    "ss_teleporter": 6
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 3,
+  "seed": 22458,
+  "seen": {
+    "ss_detector": 4,
+    "ss_security_droid": 6,
+    "ss_spectre": 5,
+    "ss_teleporter": 7
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 98,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "ss_detector": [
+      3.4,
+      0.0,
+      0.22,
+      0.2
+    ],
+    "ss_security_droid": [
+      0.18,
+      0.0,
+      0.0,
+      0.17
+    ],
+    "ss_spectre": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "ss_teleporter": [
+      1.35,
+      1.38,
+      13.07,
+      0.0,
+      1.1,
+      1.57
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 0.96,
+    "ss_security_droid": 0.09,
+    "ss_spectre": 0.0,
+    "ss_teleporter": 3.08
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 253.6,
+  "xp": 169
+}

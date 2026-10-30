@@ -1,0 +1,113 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.56,
+  "bag_value": 14,
+  "boss": {
+    "death_skill": "ss_orbital_laser",
+    "hp_ratio_at_death": 1.0,
+    "hp_ratio_at_last_hit": 0.888,
+    "hp_ratio_end": 1.0,
+    "killed": false,
+    "kind": "ss_architect",
+    "met_t": 1.0
+  },
+  "boss_floor": -1,
+  "boss_kind": "ss_architect",
+  "boss_phase_at_death": 1,
+  "bot_stuck": 0,
+  "containers_opened": 0,
+  "corpses_searched": 0,
+  "damage_dealt": {
+    "ss_architect": 336.0,
+    "ss_atlas": 54.0,
+    "ss_drone_tieur": 96.0,
+    "ss_spectre": 56.0
+  },
+  "damage_taken": {
+    "ss_architect": 33.1,
+    "ss_atlas": 24.6,
+    "ss_drone_tieur": 63.8,
+    "ss_spectre": 13.4
+  },
+  "difficulty": 2,
+  "dodges": 58,
+  "duration": 32.1,
+  "elites": {
+    "ss_atlas": {
+      "killed": 0,
+      "met": 1
+    },
+    "ss_drone_tieur": {
+      "killed": 0,
+      "met": 1
+    }
+  },
+  "errors": [],
+  "floors": [
+    "0",
+    "-1"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 7,
+  "heals_used": 1,
+  "hits_taken": {
+    "ss_architect": 4,
+    "ss_atlas": 4,
+    "ss_drone_tieur": 6,
+    "ss_spectre": 3
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "silver_dollars": 7,
+    "whisky": 1
+  },
+  "items": {
+    "sol": {
+      "0": 7,
+      "1": 1
+    }
+  },
+  "killer": "ss_architect",
+  "kills": {
+    "ss_spectre": 2
+  },
+  "map": "perm_station_kagami",
+  "mode": "boss",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 30351,
+  "seen": {
+    "ss_architect": 1,
+    "ss_atlas": 1,
+    "ss_drone_tieur": 1,
+    "ss_spectre": 2
+  },
+  "shots": {
+    "pistol_p9": 39,
+    "smg_mp5": 30
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "ss_spectre": [
+      15.98,
+      0.33
+    ]
+  },
+  "ttk_avg": {
+    "ss_spectre": 8.15
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 310.29,
+  "xp": 73
+}

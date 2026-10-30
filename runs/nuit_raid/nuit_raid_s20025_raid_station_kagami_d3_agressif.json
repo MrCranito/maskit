@@ -1,0 +1,140 @@
+{
+  "arsenal": [
+    "rifle_m4a1",
+    "pistol_glock18",
+    "sniper_m24"
+  ],
+  "avg_frame_ms": 3.73,
+  "bag_value": 1738,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 9,
+  "corpses_searched": 10,
+  "damage_dealt": {
+    "ss_detector": 49.0,
+    "ss_security_droid": 128.0,
+    "ss_spectre": 92.6,
+    "ss_teleporter": 295.0
+  },
+  "damage_taken": {
+    "ss_detector": 5.0,
+    "ss_security_droid": 17.0,
+    "ss_spectre": 40.0,
+    "ss_teleporter": 235.0
+  },
+  "difficulty": 3,
+  "dodges": 60,
+  "duration": 136.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 803,
+  "heals_used": 9,
+  "hits_taken": {
+    "ss_detector": 1,
+    "ss_security_droid": 3,
+    "ss_spectre": 8,
+    "ss_teleporter": 17
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "bandage": 4,
+    "black_powder": 6,
+    "canned_beans": 1,
+    "mat_cloth": 7,
+    "mat_scrap": 3,
+    "revolver_ammo": 16,
+    "rifle_ammo": 6,
+    "silver_dollars": 40,
+    "space_circuit": 13,
+    "space_energy_cell": 8,
+    "space_iridium": 2,
+    "space_medigel": 1,
+    "space_nanomeds": 1,
+    "space_officer_badge": 1,
+    "space_plasma_cells": 63,
+    "space_ration": 4,
+    "wpn_rifle_ak47": 1,
+    "wpn_smg_mp5": 1,
+    "wpn_sniper_ax50": 1
+  },
+  "items": {
+    "cadavre": {
+      "0": 52
+    },
+    "conteneur": {
+      "0": 52,
+      "1": 1,
+      "2": 4
+    },
+    "sol": {
+      "0": 64,
+      "1": 6
+    }
+  },
+  "killer": "ss_security_droid",
+  "kills": {
+    "ss_detector": 1,
+    "ss_security_droid": 2,
+    "ss_spectre": 2,
+    "ss_teleporter": 5
+  },
+  "map": "perm_station_kagami",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "agressif",
+  "rooms_visited": 1,
+  "searches_cancelled": 4,
+  "seed": 20025,
+  "seen": {
+    "ss_detector": 4,
+    "ss_security_droid": 12,
+    "ss_spectre": 6,
+    "ss_teleporter": 7
+  },
+  "shots": {
+    "pistol_glock18": 76,
+    "rifle_m4a1": 30,
+    "sniper_m24": 1
+  },
+  "stuck_enemies": {},
+  "tier": "moyen",
+  "ttk": {
+    "ss_detector": [
+      1.65
+    ],
+    "ss_security_droid": [
+      0.52,
+      1.68
+    ],
+    "ss_spectre": [
+      0.0,
+      0.23
+    ],
+    "ss_teleporter": [
+      0.42,
+      1.65,
+      7.82,
+      2.68,
+      7.63
+    ]
+  },
+  "ttk_avg": {
+    "ss_detector": 1.65,
+    "ss_security_droid": 1.1,
+    "ss_spectre": 0.12,
+    "ss_teleporter": 4.04
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_02_space_station",
+  "worst_frame_ms": 277.89,
+  "xp": 124
+}

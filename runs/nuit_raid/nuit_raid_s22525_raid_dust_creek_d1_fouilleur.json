@@ -1,0 +1,115 @@
+{
+  "arsenal": [
+    "pistol_p9",
+    "smg_mp5"
+  ],
+  "avg_frame_ms": 3.56,
+  "bag_value": 99,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 2,
+  "corpses_searched": 1,
+  "damage_dealt": {
+    "fw_bandit": 180.0,
+    "fw_marauder": 116.0,
+    "fw_raider": 292.0,
+    "fw_sharpshooter": 112.0
+  },
+  "damage_taken": {
+    "fw_bandit": 48.0,
+    "fw_raider": 61.0
+  },
+  "difficulty": 1,
+  "dodges": 55,
+  "duration": 81.8,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_frag",
+  "gadgets_used": 3,
+  "gold_estimate": 52,
+  "heals_used": 1,
+  "hits_taken": {
+    "fw_bandit": 6,
+    "fw_raider": 4
+  },
+  "hp_end": 11.0,
+  "hp_min": 11.0,
+  "item_ids": {
+    "bandage": 1,
+    "dynamite": 1,
+    "mat_scrap": 4,
+    "rifle_ammo": 23,
+    "silver_dollars": 3
+  },
+  "items": {
+    "cadavre": {
+      "0": 1,
+      "1": 12
+    },
+    "conteneur": {
+      "0": 7,
+      "1": 12
+    }
+  },
+  "killer": "",
+  "kills": {
+    "fw_bandit": 1,
+    "fw_marauder": 1,
+    "fw_raider": 4,
+    "fw_sharpshooter": 3
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "extraction",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 0,
+  "seed": 22525,
+  "seen": {
+    "fw_bandit": 8,
+    "fw_marauder": 4,
+    "fw_raider": 5,
+    "fw_sharpshooter": 3
+  },
+  "shots": {
+    "pistol_p9": 75,
+    "smg_mp5": 60
+  },
+  "stuck_enemies": {},
+  "tier": "debutant",
+  "ttk": {
+    "fw_bandit": [
+      22.33
+    ],
+    "fw_marauder": [
+      6.93
+    ],
+    "fw_raider": [
+      1.18,
+      7.88,
+      4.82,
+      8.15
+    ],
+    "fw_sharpshooter": [
+      1.27,
+      0.6,
+      0.92
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 22.33,
+    "fw_marauder": 6.93,
+    "fw_raider": 5.51,
+    "fw_sharpshooter": 0.93
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 321.92,
+  "xp": 370
+}

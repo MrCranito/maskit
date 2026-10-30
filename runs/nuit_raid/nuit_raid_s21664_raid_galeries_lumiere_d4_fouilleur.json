@@ -1,0 +1,138 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 11.92,
+  "bag_value": 1074,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 5,
+  "corpses_searched": 12,
+  "damage_dealt": {
+    "mall_clone": 324.0,
+    "mall_flayer": 585.0,
+    "mall_night_spider": 52.0,
+    "mall_security_bot": 192.0,
+    "mall_zombie": 324.0
+  },
+  "damage_taken": {
+    "mall_clone": 131.6,
+    "mall_flayer": 33.6,
+    "mall_night_spider": 16.8,
+    "mall_zombie": 102.2
+  },
+  "difficulty": 4,
+  "dodges": 41,
+  "duration": 142.5,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 554,
+  "heals_used": 11,
+  "hits_taken": {
+    "mall_clone": 11,
+    "mall_flayer": 2,
+    "mall_night_spider": 2,
+    "mall_zombie": 7
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "mall_batteries": 4,
+    "mall_cash_bundle": 6,
+    "mall_energy_drink": 7,
+    "mall_first_aid": 1,
+    "mall_gold_ring": 2,
+    "mall_painkillers": 3,
+    "mall_smartphone": 1,
+    "mat_cloth": 5,
+    "mat_scrap": 5,
+    "revolver_ammo": 29,
+    "rifle_ammo": 11,
+    "silver_dollars": 14
+  },
+  "items": {
+    "cadavre": {
+      "0": 9,
+      "1": 8,
+      "2": 3
+    },
+    "conteneur": {
+      "0": 7,
+      "1": 2
+    },
+    "sol": {
+      "0": 48,
+      "1": 11
+    }
+  },
+  "killer": "mall_night_spider",
+  "kills": {
+    "mall_clone": 2,
+    "mall_flayer": 5,
+    "mall_security_bot": 1,
+    "mall_zombie": 4
+  },
+  "map": "perm_galeries_lumiere",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "fouilleur",
+  "rooms_visited": 0,
+  "searches_cancelled": 1,
+  "seed": 21664,
+  "seen": {
+    "mall_clone": 13,
+    "mall_flayer": 5,
+    "mall_night_spider": 1,
+    "mall_security_bot": 1,
+    "mall_zombie": 7
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 100,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "mall_clone": [
+      0.0,
+      0.0
+    ],
+    "mall_flayer": [
+      0.0,
+      3.93,
+      4.3,
+      1.33,
+      9.0
+    ],
+    "mall_security_bot": [
+      2.43
+    ],
+    "mall_zombie": [
+      1.1,
+      0.0,
+      0.9,
+      1.97
+    ]
+  },
+  "ttk_avg": {
+    "mall_clone": 0.0,
+    "mall_flayer": 3.71,
+    "mall_security_bot": 2.43,
+    "mall_zombie": 0.99
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_03_mall",
+  "worst_frame_ms": 1269.95,
+  "xp": 145
+}

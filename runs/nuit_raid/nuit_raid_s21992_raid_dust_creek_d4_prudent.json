@@ -1,0 +1,115 @@
+{
+  "arsenal": [
+    "rifle_scarh",
+    "sniper_m82",
+    "smg_p90"
+  ],
+  "avg_frame_ms": 6.07,
+  "bag_value": 110,
+  "boss": {},
+  "boss_phase_at_death": -1,
+  "bot_stuck": 0,
+  "containers_opened": 3,
+  "corpses_searched": 2,
+  "damage_dealt": {
+    "fw_bandit": 334.0,
+    "fw_guard_dog": 120.0,
+    "fw_marauder": 214.5,
+    "fw_raider": 73.5
+  },
+  "damage_taken": {
+    "fw_marauder": 14.6,
+    "fw_raider": 85.4
+  },
+  "difficulty": 4,
+  "dodges": 12,
+  "duration": 144.4,
+  "elites": {},
+  "errors": [],
+  "floors": [
+    "0"
+  ],
+  "gadget": "gadget_c4",
+  "gadgets_used": 0,
+  "gold_estimate": 73,
+  "heals_used": 0,
+  "hits_taken": {
+    "fw_marauder": 2,
+    "fw_raider": 4
+  },
+  "hp_end": 0.0,
+  "hp_min": 0.0,
+  "item_ids": {
+    "dynamite": 2,
+    "mat_scrap": 3,
+    "revolver_ammo": 31
+  },
+  "items": {
+    "cadavre": {
+      "0": 17
+    },
+    "conteneur": {
+      "0": 17,
+      "1": 2
+    }
+  },
+  "killer": "fw_marauder",
+  "kills": {
+    "fw_bandit": 4,
+    "fw_guard_dog": 1,
+    "fw_marauder": 3,
+    "fw_raider": 1
+  },
+  "map": "perm_dust_creek",
+  "mode": "raid",
+  "outcome": "mort",
+  "profile": "prudent",
+  "rooms_visited": 0,
+  "searches_cancelled": 8,
+  "seed": 21992,
+  "seen": {
+    "fw_bandit": 8,
+    "fw_guard_dog": 1,
+    "fw_marauder": 8,
+    "fw_raider": 5,
+    "fw_sharpshooter": 2
+  },
+  "shots": {
+    "rifle_scarh": 40,
+    "smg_p90": 50,
+    "sniper_m82": 10
+  },
+  "stuck_enemies": {},
+  "tier": "equipe",
+  "ttk": {
+    "fw_bandit": [
+      0.0,
+      0.0,
+      1.6,
+      0.87
+    ],
+    "fw_guard_dog": [
+      0.0
+    ],
+    "fw_marauder": [
+      1.9,
+      0.38,
+      0.67
+    ],
+    "fw_raider": [
+      0.57
+    ]
+  },
+  "ttk_avg": {
+    "fw_bandit": 0.62,
+    "fw_guard_dog": 0.0,
+    "fw_marauder": 0.98,
+    "fw_raider": 0.57
+  },
+  "unreachable_containers": 0,
+  "unreachable_kinds": {},
+  "warnings": [],
+  "world": "world_01_far_west",
+  "worst_frame_ms": 267.09,
+  "xp": 121
+}
