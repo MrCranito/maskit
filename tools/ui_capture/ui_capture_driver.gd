@@ -52,6 +52,12 @@ func _run() -> void:
 			await _sleep(0.6)
 			await _shot("boutique_gems_dernier")
 	await _icons()
+	var cl := CoopLoadout.new()
+	get_tree().root.add_child(cl)
+	await _sleep(1.0)
+	await _shot("arsenal_depart_coop")
+	cl.queue_free()
+	await _sleep(0.2)
 	for ok: bool in [false, true]:
 		var s := RaidEndScreen.create(ok, _summary(ok))
 		get_tree().root.add_child(s)
