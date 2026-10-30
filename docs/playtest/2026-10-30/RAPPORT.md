@@ -10,7 +10,7 @@ audit des animations et captures en jeu.** Godot 4.7.2, `main` du 29/10 (bestiai
 > (extraction, victoire) sont donc pessimistes. Les **écarts** sont fiables : entre difficultés,
 > entre monstres, entre arsenaux. Pour cette raison, **aucun réglage de difficulté n'est
 > appliqué** dans cette branche. Ils sont proposés, chiffrés et testés en passe B. Seule une
-> règle existante du projet a été appliquée : le plafond des drops.
+> règle existante du projet a été appliquée : le plafond des drops (Buffle).
 
 ---
 
@@ -46,9 +46,15 @@ audit des animations et captures en jeu.** Godot 4.7.2, `main` du 29/10 (bestiai
    3 Robustes (`fw_bruiser`) : 2 vus et 0 tué en 150 raids. Le M202 demande le Déserteur, qui
    n'apparaît pas en raid au rez-de-chaussée. À l'inverse, le Desert Eagle (1,1 raid) et le
    M82 (0,7 raid) se débloquent presque tout de suite.
-6. **Le butin du Shérif viole les plafonds par construction.** 4 à 6 tirages sans remise parmi
-   une dizaine d'objets : lingot d'or 32 %, Desert Eagle 32 %, AUG Légendaire 2,5 %. Baisser
-   les poids n'y peut rien. Il faut décider (voir Volet 3). Le Buffle, lui, est corrigé.
+6. **Le butin des boss est incohérent, et celui du Shérif viole les plafonds.** Mesures
+   faites sur 100 000 cadavres simulés avec le code du jeu :
+   - le Shérif donne 5 objets, pour une valeur de 630 ;
+   - l'Architecte donne 1 objet (39) et l'Omnistore 1 objet (78). Ils n'ont pas de table propre
+     et retombent sur la table générique de leur biome, comme un monstre ordinaire.
+
+   Côté plafonds, le Shérif dépasse sur 4 objets : lingot d'or 10,9 %, Desert Eagle 10,8 %,
+   SCAR-H 7,3 % (plafond Épique 4 %), diamant brut 2,5 % (plafond Légendaire 1 %). Baisser
+   les poids n'y peut rien : il faut décider (voir Volet 3). Le Buffle, lui, est corrigé.
 7. **Trois défauts d'interface sur les écrans de combat** (seeds dans la liste des bugs) :
    - l'écran « Éliminé » s'affiche sous le HUD : la barre du boss et les boutons restent par-dessus ;
    - le message « Nouvelle arme débloquable » chevauche le titre de la barre du boss ;
@@ -247,21 +253,67 @@ tiré 100 000 fois par source. Les autres difficultés et les étages −1 et +1
 trésor), chaque cadavre d'ennemi (les élites en contexte trésor, comme en jeu) et le butin au
 sol de chaque ennemi.
 
-_(Résultats détaillés ci-dessous, section « Simulation ».)_
+Durée : 2 394 s, environ 21 millions de tirages. Résultats complets dans
+`donnees/resume.json`, clé `drops`.
 
-### Plafonds (Légendaire < 1 %, Épique < 4 % par source)
-- `python3 tools/cap_drop_rates.py --check` sur `main` : **10 dépassements**, tous dans les
-  tables ajoutées avec le bestiaire.
-  - Buffle : diamant brut 1,46 %, carte au trésor 4,15 %. **Corrigé.**
-  - Shérif : lingot d'or 32 %, Desert Eagle 32 %, SCAR-H 22 %, collier, carte et diamant
-    10-13 %, P320 et AUG 2,5 %.
-- **Le Shérif ne peut pas être plafonné par les poids.** Sa table tire 4 à 6 objets sans
-  remise parmi une dizaine. Chaque objet rare sort donc presque à coup sûr, et l'outil de
-  plafonnement ne converge pas : je n'ai rien changé. Deux options :
-  1. exempter les boss du plafond et l'écrire dans `cap_drop_rates.py`. C'est ma
-     recommandation : un boss vraiment très difficile doit vraiment payer ;
-  2. diluer la table avec 6 à 8 objets communs (or, munitions, matériaux) pour revenir sous
-     4 % et 1 %, au prix d'un boss moins gratifiant.
+### Plafonds (Légendaire < 1 %, Épique < 4 % par fouille)
+- **Toutes les sources respectent les plafonds**, sauf le cadavre du Shérif : conteneurs,
+  salles au trésor, cadavres, élites et butin au sol, dans les 3 mondes. Le Buffle aussi,
+  après correction.
+- **Shérif**, chance d'obtenir l'objet par cadavre (Normal, rez-de-chaussée) :
+  - lingot d'or 10,9 % ;
+  - Desert Eagle 10,8 % ;
+  - SCAR-H 7,3 % ;
+  - diamant brut 2,5 %.
+
+  `cap_drop_rates.py --check` annonce des taux plus élevés (jusqu'à 32 %) : il calcule la
+  table d'un boss comme une salle au trésor, alors qu'en jeu le boss est tiré en contexte
+  combat. La simulation fait foi.
+- **On ne peut pas plafonner le Shérif par les poids.** Sa table tire 4 à 6 objets sans
+  remise parmi une dizaine, et l'outil de plafonnement ne converge pas : je n'ai rien changé.
+  Deux options :
+  1. exempter les boss du plafond, l'écrire dans `cap_drop_rates.py`, et **donner une vraie
+     table à l'Architecte et à l'Omnistore** (`enemy_ss_architect.tres`,
+     `enemy_mall_omnistore.tres`). C'est ma recommandation : un boss vraiment très difficile
+     doit vraiment payer, et les trois mondes doivent payer pareil ;
+  2. diluer la table du Shérif avec 6 à 8 objets communs pour revenir sous 4 % et 1 %. Dans
+     ce cas, les deux autres boss restent à revoir de toute façon.
+
+### Ce que rapporte une fouille (Normal, rez-de-chaussée ; Facile et Cauchemar entre parenthèses)
+Colonne « Épique+ » : nombre moyen d'objets Épiques ou Légendaires par fouille, en %.
+
+| Source | Vide | Objets | Valeur | Épique+ |
+|---|---|---|---|---|
+| Caisse | 12 % | 1,3 | 33 | 0,48 (0,37 → 0,94) |
+| Tonneau | 20 % | 1,2 | 21 | 0 |
+| Coffre | 0 % | 3,0 | 324 | 5,0 (4,2 → 7,4) |
+| Coffre-fort | 0 % | 3,0 | 390 | 4,4 (3,6 → 6,5) |
+| Coffre en salle au trésor | 0 % | 4,0 | 903 | 41,8 (36,3 → 53,8) |
+| Cadavre de Bandit | 10 % | 1,4 | 36 | 0,14 |
+| Cadavre de Maraudeur | **45 %** | 0,6 | 11 | 0 |
+| Butin au sol d'un Bandit | 70 % | 0,5 | 10 | 0,8 |
+| Cadavre du Buffle (élite) | 0 % | 3,5 | 205 | 4,4 |
+| Cadavre du Déserteur (élite) | 0 % | 4,5 | 526 | 20,9 |
+| Cadavre d'Atlas (élite) | 0 % | 2,0 | 186 | 7,5 |
+| Cadavre de la Gardienne (élite) | 0 % | 2,0 | 235 | 4,4 |
+| **Cadavre du Shérif (boss)** | 0 % | 5,0 | **630** | 38,4 |
+| **Cadavre de l'Architecte (boss)** | 0 % | **1,0** | **39** | 0,2 |
+| **Cadavre de l'Omnistore (boss)** | 0 % | **1,0** | **78** | 0,2 |
+
+Lecture :
+- Les salles au trésor jouent leur rôle : environ 8 fois plus d'Épiques qu'un coffre normal.
+- De Facile à Cauchemar, la part d'Épiques est multipliée par 1,5 à 2,5 selon la source ; à l'étage −1, par 1,15 à 1,35.
+- **La hyène ne rapporte presque rien** : 45 % de cadavres vides, valeur 11. C'est le monstre
+  le plus dangereux du Far West, et le moins payé.
+- **Les élites de la Station et du centre commercial paient 2 à 3 fois moins que le
+  Déserteur.**
+
+### Observé en raid contre simulé
+La comparaison n'est **pas concluante cette nuit** : le journal du bot comptait les
+quantités (une pile de 42 dollars d'argent = 42), alors que la simulation compte les
+objets. C'est corrigé dans le bot (`_count_item` compte désormais 1 par objet). Aucun écart
+anormal n'a été relevé sur ce que l'on peut comparer : aucun Légendaire en 150 raids, ce qui
+est cohérent avec les taux simulés en Facile et Normal au rez-de-chaussée.
 
 ---
 

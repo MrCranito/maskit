@@ -200,6 +200,13 @@ class BotLogger extends Logger:
 		pass
 
 
+## Les joysticks virtuels du bot ne sont jamais dans l'arbre : on les libère avec lui.
+func _exit_tree() -> void:
+	for stick: TouchJoystick in [move_stick, aim_stick]:
+		if is_instance_valid(stick):
+			stick.queue_free()
+
+
 func _install_logger() -> void:
 	var lg := BotLogger.new()
 	lg.bot = self
@@ -514,9 +521,10 @@ func _on_picked(item: Resource, count: int) -> void:
 
 
 func _count_item(source: String, it: ItemData, count: int) -> void:
+	# Par source et rareté : nombre d'objets (une pile = 1, comme LootRoller) ; quantités à part.
 	var by: Dictionary = items.get_or_add(source, {})
 	var r := str(it.rarity)
-	by[r] = int(by.get(r, 0)) + count
+	by[r] = int(by.get(r, 0)) + 1
 	item_ids[String(it.id)] = int(item_ids.get(String(it.id), 0)) + count
 
 
@@ -1306,7 +1314,7 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
-	if is_instance_valid(move_stick):
+	if is_instance_valid(move_stick) and is_instance_valid(aim_stick):
 		_sticks(Vector2.ZERO, Vector2.ZERO)
 	var ttk_avg := {}
 	for k: String in ttk:
@@ -1348,6 +1356,12 @@ func _finish() -> void:
 	print("PLAYTEST ", outcome, " ", snappedf(t, 0.1), "s")
 	PlaytestProbe.enabled = false
 	PlaytestProbe.sink = null
+	# Joysticks virtuels (hors de l'arbre) libérés dès la fin : aucun nœud orphelin.
+	if is_instance_valid(player):
+		player.set_joysticks(null, null)
+	for stick: TouchJoystick in [move_stick, aim_stick]:
+		if is_instance_valid(stick):
+			stick.free()
 	finished.emit(log)
 	if not embedded:
 		get_tree().quit(0 if outcome != "erreur" else 2)
