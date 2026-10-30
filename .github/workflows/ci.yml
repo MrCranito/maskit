@@ -1,0 +1,257 @@
+# CI principale : sur chaque pull request et chaque push vers main/develop.
+#
+#   compile       le projet charge sans erreur de parsing (`godot --headless --quit`)
+#   lint          gdlint + gdformat --check sur scripts/ et tests/ (avertissement, non bloquant pour l'instant)
+#   tests         suite GUT headless, rapport JUnit annoté dans la PR
+#   server        tests Node du relais multijoueur (seulement si server/ change)
+#   export-smoke  export debug Linux + Web pour détecter une casse d'export avant le tag
+#
+# Le dossier .godot/ (imports) est mis en cache, clé = hash des fichiers *.import :
+# quand les assets ne changent pas, l'import passe de plusieurs minutes à quelques secondes.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+  # Clé du cache d'import (bump le suffixe pour forcer un ré-import complet).
+  IMPORT_CACHE_KEY: godot-import-4.7.2-v1
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  changes:
+    name: Fichiers modifiés
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+
+  compile:
+    name: Compilation Godot
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Godot
+        uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+
+      - name: Cache des imports (.godot/)
+        uses: actions/cache@v4
+        with:
+          path: .godot
+          key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
+          restore-keys: ${{ env.IMPORT_CACHE_KEY }}-
+
+      - name: Importer le projet
+        run: godot --headless --path . --import 2>&1 | tail -20
+
+      - name: Vérifier que le projet charge sans erreur
+        run: |
+          set -o pipefail
+          godot --headless --path . --quit 2>&1 | tee compile.log | tail -40
+          if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script|Could not parse|Failed to parse" compile.log; then
+            echo "::error::Erreur de parsing ou de chargement — voir compile.log"
+            grep -nE "SCRIPT ERROR|Parse Error|Failed to load script|Could not parse|Failed to parse" compile.log | head -40
+            exit 1
+          fi
+          echo "✅ Le projet compile sans erreur." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Journal de compilation
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compile-log
+          path: compile.log
+          retention-days: 7
+
+  lint:
+    name: Lint GDScript (avertissement)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Installer gdtoolkit
+        run: pip install --quiet "gdtoolkit==4.*"
+      - name: gdlint
+        # Non bloquant tant que la base n'est pas propre : le résultat est résumé dans la PR.
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gdlint scripts tests 2>&1 | tee gdlint.log || true
+          N=$(grep -cE ":[0-9]+: " gdlint.log || true)
+          echo "### gdlint : ${N} avertissement(s)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$N" != "0" ]; then
+            { echo '```'; head -60 gdlint.log; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::gdlint : ${N} avertissement(s) (non bloquant)"
+          fi
+      - name: gdformat --check
+        continue-on-error: true
+        run: |
+          gdformat --check scripts tests 2>&1 | tee gdformat.log || true
+          N=$(grep -c "would reformat" gdformat.log || true)
+          echo "### gdformat : ${N} fichier(s) à reformater" >> "$GITHUB_STEP_SUMMARY"
+          [ "$N" = "0" ] || echo "::warning::gdformat : ${N} fichier(s) à reformater (non bloquant)"
+
+  tests:
+    name: Tests GUT
+    needs: compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Godot
+        uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+
+      - name: Restaurer le cache des imports (.godot/)
+        uses: actions/cache/restore@v4
+        with:
+          path: .godot
+          key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
+          restore-keys: ${{ env.IMPORT_CACHE_KEY }}-
+
+      - name: Importer le projet
+        run: godot --headless --path . --import 2>&1 | tail -20
+
+      - name: Lancer les tests GUT
+        run: |
+          set -o pipefail
+          godot --headless --path . -s addons/gut/gut_cmdln.gd \
+            -gdir=res://tests -ginclude_subdirs -gexit \
+            -gjunit_xml_file=res://test_results.xml 2>&1 | tee gut_output.log | tail -80
+          # Sécurité supplémentaire : GUT sort avec 1 en cas d'échec, mais on
+          # vérifie aussi le résumé pour ne jamais laisser passer un échec.
+          if grep -qE "^\s*Failing\s+[1-9]|Script Error|Parse Error" gut_output.log; then
+            echo "::error::Des tests GUT ont échoué ou un script ne compile pas."
+            exit 1
+          fi
+
+      - name: Résumé des tests dans la PR
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: test_results.xml
+          check_name: Rapport GUT
+          detailed_summary: true
+          include_passed: false
+          require_tests: true
+
+      - name: Publier le rapport JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gut-results
+          path: |
+            test_results.xml
+            gut_output.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  server:
+    name: Tests serveur relais
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  export-smoke:
+    name: Export ${{ matrix.preset }} (debug)
+    needs: compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - preset: Linux
+            slug: linux
+            file: raidersgo.x86_64
+          - preset: Web
+            slug: web
+            file: index.html
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Installer Godot + modèles
+        uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          templates: linux,web
+
+      - name: Restaurer le cache des imports (.godot/)
+        uses: actions/cache/restore@v4
+        with:
+          path: .godot
+          key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
+          restore-keys: ${{ env.IMPORT_CACHE_KEY }}-
+
+      - name: Importer le projet
+        run: godot --headless --path . --import 2>&1 | tail -20
+
+      - name: Exporter
+        run: |
+          set -o pipefail
+          mkdir -p "build/${{ matrix.slug }}"
+          godot --headless --path . --export-debug "${{ matrix.preset }}" \
+            "build/${{ matrix.slug }}/${{ matrix.file }}" 2>&1 | tee export.log | tail -40
+          test -s "build/${{ matrix.slug }}/${{ matrix.file }}"
+          du -sh "build/${{ matrix.slug }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Publier l'export (7 jours)
+        uses: actions/upload-artifact@v4
+        with:
+          name: raidersgo-${{ matrix.slug }}-debug
+          path: build/${{ matrix.slug }}
+          retention-days: 7
+
+      - name: Journal d'export en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-log-${{ matrix.slug }}
+          path: export.log
+          if-no-files-found: ignore
+          retention-days: 7
