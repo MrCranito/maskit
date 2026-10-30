@@ -41,7 +41,7 @@ def gpx(cx, cy):
 GLOWS = []
 t = C.get("tent", {"c": [36.5, 44.5], "r": [16.0, 12.0]})
 tx, ty = gpx(*t["c"])
-GLOWS.append((tx, ty, (t["r"][0] + 7) * PPC, (t["r"][1] + 6) * PPC, (1.0, 0.25, 0.85), 0.3))
+GLOWS.append((tx, ty, (t["r"][0] + 7) * PPC, (t["r"][1] + 6) * PPC, (0.78, 0.3, 1.0), 0.3))
 GLOWS.append((tx, ty, t["r"][0] * 0.75 * PPC, t["r"][1] * 0.75 * PPC, (0.65, 0.3, 1.0), 0.35))
 for pth in C.get("paths", []):
     for (px_, py_) in pth["pts"]:
@@ -49,10 +49,10 @@ for pth in C.get("paths", []):
         GLOWS.append((x, y, 4.5 * PPC, 3.5 * PPC, (0.75, 0.3, 1.0), 0.18 if pth["role"] != "avenue" else 0.26))
 lot = C.get("lot", [22, 111, 28, 14])
 x, y = gpx(lot[0] + lot[2] / 2, lot[1] + 2)
-GLOWS.append((x, y, 12 * PPC, 9 * PPC, (1.0, 0.3, 0.8), 0.32))
+GLOWS.append((x, y, 12 * PPC, 9 * PPC, (0.8, 0.3, 1.0), 0.3))
 for rd in C.get("rides", []):
     x, y = gpx(*rd["c"])
-    col = (1.0, 0.3, 0.85) if rd["kind"] == "ferris_wheel" else (1.0, 0.55, 0.35)
+    col = (0.85, 0.3, 1.0) if rd["kind"] == "ferris_wheel" else (1.0, 0.55, 0.35)
     GLOWS.append((x, y, (rd["r"] + 4) * PPC, (rd["r"] + 4) * PPC, col, 0.3))
 for s in L.get("prop_spawns", []):
     if s["kind"] == "hc_lamp_post":
@@ -70,7 +70,8 @@ for _y, _row in enumerate(L["tiles"]):
 from PIL import ImageFilter
 _mi = Image.fromarray((_m * 255).astype(np.uint8)).resize(((_TW + 2 * M) * 8, (_TH + 2 * M) * 8), Image.BILINEAR)
 OUT_MASK = _mi.filter(ImageFilter.GaussianBlur(10))
-OUT_K = float(os.environ.get("HC_GRADE_OUTSIDE", "0.62"))
+OUT_K = float(os.environ.get("HC_GRADE_OUTSIDE", "0.56"))
+CURVE = float(os.environ.get("HC_GRADE_CURVE", "0.55"))
 
 
 def outside(x0, y0, w, h):
@@ -117,21 +118,29 @@ def grade(a, x0, y0):
     lum = f @ np.array([0.299, 0.587, 0.114], np.float32)
     # saturation
     f = lum[:, :, None] + (f - lum[:, :, None]) * SAT
-    # ombres : bleu nuit → violet, relevées
+    # ombres : bleu nuit → violet (sans relever : les noirs restent profonds comme la planche)
     sh = np.clip(1.0 - lum / 0.28, 0.0, 1.0)[:, :, None]
-    f = f + sh * np.array([0.05, 0.0, 0.035], np.float32)
+    f = f + sh * np.array([0.025, 0.0, 0.02], np.float32)
     # intérieurs chauds : pixels orangés (R > G > B) renforcés
     warm = np.clip((f[:, :, 0] - f[:, :, 2]) * 3.0, 0.0, 1.0) * np.clip((f[:, :, 1] - f[:, :, 2]) * 3.0, 0.0, 1.0)
     f = f + warm[:, :, None] * np.array([0.06, 0.025, -0.02], np.float32)
     # hors parc : assombri, teinté violet nuit
     o = outside(x0, y0, a.shape[1], a.shape[0])[:, :, None]
-    f = f * (1.0 - o * (1.0 - OUT_K)) + o * np.array([0.02, 0.0, 0.03], np.float32)
+    f = f * (1.0 - o * (1.0 - OUT_K)) + o * np.array([0.005, 0.012, 0.045], np.float32)
     # brume violette légère (bruit basse fréquence en coordonnées image, stable entre bandes)
     hz = haze(x0, y0, a.shape[1], a.shape[0])[:, :, None]
-    f = f + hz * np.array([0.05, 0.015, 0.08], np.float32) * float(os.environ.get("HC_GRADE_HAZE", "1.0"))
+    f = f + hz * np.array([0.05, 0.015, 0.08], np.float32) * float(os.environ.get("HC_GRADE_HAZE", "0.45"))
     # lueurs au sol : ajout « screen » modulé (plus fort sur les zones sombres, garde les hautes lumières)
     g = glow_field(x0, y0, a.shape[1], a.shape[0])
-    f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - g * (0.55 + 0.45 * (1.0 - np.clip(lum, 0, 1)))[:, :, None])
+    f = 1.0 - (1.0 - np.clip(f, 0, 1)) * (1.0 - g * (0.45 + 0.25 * (1.0 - np.clip(lum, 0, 1)))[:, :, None])
+    # magentas → violets (la planche tire vers le violet bleuté)
+    mag = np.clip((f[:, :, 0] - f[:, :, 1]) * 2.0, 0.0, 1.0) * np.clip((f[:, :, 2] - f[:, :, 1]) * 2.0, 0.0, 1.0)
+    f = f + mag[:, :, None] * np.array([-0.07, 0.0, 0.05], np.float32)
+    # courbe en S (contraste ombre / lumière marqué) puis gamma léger vers les tons sombres
+    f = np.clip(f, 0.0, 1.0)
+    sc = f * f * (3.0 - 2.0 * f)
+    f = f + (sc - f) * CURVE
+    f = np.power(f, 1.12)
     return (np.clip(f, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
 
 

@@ -235,9 +235,9 @@ static func _try(rng: RandomNumberGenerator) -> Result:
 	#    halls en dur autour de la place, roulottes en périphérie, stands partout ailleurs.
 	var edges := _street_edges(L, rng)
 	var tents := _place(L, taken, zone, edges, rng, [Vector2i(11, 10), Vector2i(10, 11)], 2, "tent")
-	var halls := _place(L, taken, zone, edges, rng, [Vector2i(9, 8), Vector2i(8, 9), Vector2i(10, 7), Vector2i(7, 10), Vector2i(8, 7)], Cfg.geti("hc_halls", 8), "hall")
+	var halls := _place(L, taken, zone, edges, rng, [Vector2i(10, 9), Vector2i(9, 10), Vector2i(11, 8), Vector2i(9, 8), Vector2i(8, 9)], Cfg.geti("hc_halls", 8), "hall")
 	var cars := _place(L, taken, zone, edges, rng, [Vector2i(7, 5), Vector2i(5, 7), Vector2i(6, 5)], Cfg.geti("hc_caravans", 4), "caravan")
-	var stands := _place(L, taken, zone, edges, rng, [Vector2i(6, 5), Vector2i(5, 6), Vector2i(7, 5), Vector2i(5, 5), Vector2i(6, 6)], Cfg.geti("hc_stands_max", 40), "stand")
+	var stands := _place(L, taken, zone, edges, rng, [Vector2i(7, 6), Vector2i(6, 7), Vector2i(8, 6), Vector2i(6, 6), Vector2i(6, 5), Vector2i(5, 6)], Cfg.geti("hc_stands_max", 40), "stand")
 	if tents.size() < 2 or cars.size() < Cfg.geti("hc_caravans", 4) or stands.size() < 12:
 		return null
 	var tent_roles: Array = [[&"mirrors", &"tent_mirrors", "Palais des glaces", FloorLayout.ROOM_TRAP],

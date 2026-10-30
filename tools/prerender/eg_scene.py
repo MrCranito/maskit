@@ -780,7 +780,7 @@ def mat_sand(name, base=(0.78, 0.6, 0.34)):
     ripple = s.noise(s.comb(s.mul(s.sep(o)[0], 0.22), s.mul(s.sep(o)[1], 1.4), 0.0), 2.6, 3, 0.5)
     grain = s.noise(o, 60.0, 4, 0.7)
     big = s.noise(o, 0.12, 4, 0.55)
-    col = s.mix(s.mul(s.smooth(ripple, 0.3, 0.75), 0.85), tuple(x * 0.72 for x in base), tuple(min(1.0, x * 1.16) for x in base))
+    col = s.mix(s.mul(s.smooth(ripple, 0.3, 0.75), 0.6), tuple(x * 0.8 for x in base), tuple(min(1.0, x * 1.12) for x in base))
     col = s.mix(s.mul(grain, 0.25), col, tuple(x * 0.85 for x in base))
     mid = s.noise(o, 0.55, 5, 0.6)
     col = s.mix(s.smooth(big, 0.52, 0.78, 0.0, 0.75), col, tuple(x * 0.68 for x in base))
@@ -796,7 +796,7 @@ def mat_sand(name, base=(0.78, 0.6, 0.34)):
     return s.m
 
 
-def mat_ashlar(name, base, dark, pw=1.0, ph=0.5, var=0.12, rough=0.8, grime=0.3, frieze=None):
+def mat_ashlar(name, base, dark, pw=1.0, ph=0.5, var=0.12, rough=0.8, grime=0.3, frieze=None, footsand=True):
     """Appareil de blocs de grès (UV monde : u horizontal, v vertical) : joints sombres, teinte par
     bloc, érosion, sable incrusté en bas ; frieze = (couleur, v0, v1) bande de hiéroglyphes."""
     s = NT(name)
@@ -817,8 +817,10 @@ def mat_ashlar(name, base, dark, pw=1.0, ph=0.5, var=0.12, rough=0.8, grime=0.3,
     n = s.noise(s.obj(), 3.0, 5, 0.6)
     col = s.mix(s.smooth(n, 0.5, 0.85, 0.0, grime), col, tuple(x * 0.6 for x in base))
     # sable incrusté au pied du mur
-    sandk = s.sub(1.0, s.smooth(v, 0.05, 0.4))
-    col = s.mix(s.mul(sandk, 0.6), col, (0.8, 0.64, 0.4))
+    # (faces verticales seulement : sur une arase, v = Y monde < 0 → tout serait « ensablé »)
+    if footsand:
+        sandk = s.sub(1.0, s.smooth(v, 0.05, 0.4))
+        col = s.mix(s.mul(sandk, 0.6), col, (0.8, 0.64, 0.4))
     if frieze:
         fc, v0, v1 = frieze
         band = s.mul(s.smooth(v, v0 - 0.01, v0), s.sub(1.0, s.smooth(v, v1, v1 + 0.01)))
@@ -944,8 +946,8 @@ def build_materials():
     mat_ashlar("wall", (0.37, 0.31, 0.25), STONE_DARK, pw=1.0, ph=0.45, var=0.18, grime=0.75)
     mat_ashlar("wall_ext", (0.41, 0.34, 0.27), STONE_DARK, pw=1.2, ph=0.5, var=0.18, grime=0.75)
     mat_ashlar("wall_frieze", STONE, STONE_DARK, pw=1.0, ph=0.45, frieze=((0.95, 0.75, 0.3), 0.85, 1.15))
-    mat_ashlar("wall_sanct", (0.82, 0.64, 0.38), STONE_DARK, pw=0.8, ph=0.4, frieze=((1.0, 0.8, 0.32), 0.7, 1.2))
-    mat_ashlar("wall_top", (0.43, 0.37, 0.3), STONE_DARK, pw=0.9, ph=0.65, var=0.26, grime=0.85)
+    mat_ashlar("wall_sanct", (0.5, 0.41, 0.31), STONE_DARK, pw=0.8, ph=0.4, grime=0.7, frieze=((1.0, 0.8, 0.32), 0.7, 1.2), footsand=False)
+    mat_ashlar("wall_top", (0.5, 0.43, 0.35), STONE_DARK, pw=0.9, ph=0.65, var=0.26, grime=0.85, footsand=False)
     mat_decal("sand_drift", (0.8, 0.65, 0.44), 0.75, 2.0)
     mat_decal("sand_shade", (0.52, 0.38, 0.22), 0.5, 1.2)
     mat_slabs("roof_slab", (0.4, 0.34, 0.28), (0.33, 0.28, 0.23), 1.0, grout=(0.12, 0.09, 0.07), sand=0.6)
@@ -1098,8 +1100,36 @@ for _y in range(1, H - 1):
                     EXT_CELLS[(_x, _y)] = True
 
 
+_WH = {}
+
+
 def wall_h(x, y):
-    return {"column": 1.9, "lm": 0.0, "pylon": H_PYLON, "sanct": H_SANCT, "roof": H_ROOF, "ext": H_EXT, "inner": H_INNER}[wall_kind(x, y)]
+    """Hauteur d'arase. Murs « ext » / « inner » en ruine : sommet érodé irrégulier (gradins de
+    blocs manquants), brèches basses ; jamais sous 0.7 (le mur reste bloquant et lisible)."""
+    v = _WH.get((x, y))
+    if v is not None:
+        return v
+    k = wall_kind(x, y)
+    h = {"column": 1.9, "lm": 0.0, "pylon": H_PYLON, "sanct": H_SANCT, "roof": H_ROOF, "ext": H_EXT, "inner": H_INNER}[k]
+    if k in ("ext", "inner") and (x, y) not in DOOR_NEAR:
+        hr = random.Random(x * 92821 + y * 68917 + SEED * 7)
+        # bruit lent le long des murs (zones plus ruinées) + bruit par case
+        zone = math.sin(x * 0.37 + SEED * 0.1) * math.cos(y * 0.29 - SEED * 0.07)
+        r = hr.random()
+        if r < 0.07 + 0.08 * max(0.0, zone):
+            h = max(0.7, h * hr.uniform(0.45, 0.6))          # brèche
+        elif r < 0.5 + 0.2 * zone:
+            h = h - hr.choice((0.12, 0.2, 0.3, 0.42))        # blocs manquants
+    _WH[(x, y)] = h
+    return h
+
+
+# cases murées voisines d'une porte : arase intacte (linteaux, chambranles)
+DOOR_NEAR = set()
+for (_dx, _dy) in DOOR_CELLS:
+    for _ox in (-1, 0, 1):
+        for _oy in (-1, 0, 1):
+            DOOR_NEAR.add((_dx + _ox, _dy + _oy))
 
 
 # ======================================================================= sol
@@ -1265,6 +1295,41 @@ def build_walls():
                         sz = hr.uniform(0.18, 0.38)
                         tg2.box(bx, Y(by + sz), h + 0.004, bx + sz, Y(by), h + hr.uniform(0.06, 0.18),
                                 hr.choice(("wall", "wall_ext", "granite")), rot=hr.uniform(-0.4, 0.4))
+    # piliers engagés aux angles saillants des murs extérieurs (débord + sommet plus haut)
+    pil = mbs.setdefault("hullwalls", MB())
+    for (x, y) in EXT_CELLS:
+        if wall_kind(x, y) != "ext" or (x, y) in DOOR_NEAR or CELL_BLD.get((x, y)) is not None:
+            continue
+        wn = {sd: tile(x + dx, y + dy) == 3 for sd, dx, dy in SIDES}
+        corner = (wn["N"] != wn["S"]) and (wn["E"] != wn["W"])
+        if not corner:
+            continue
+        o = 0.1
+        hp_ = H_EXT + 0.32
+        pil.box(x - (o if not wn["W"] else 0.0), Y(y + 1) - (o if not wn["S"] else 0.0), -0.02,
+                x + 1 + (o if not wn["E"] else 0.0), Y(y) + (o if not wn["N"] else 0.0), hp_, "wall_ext")
+        pil.box(x - 0.16, Y(y + 1) - 0.16, hp_, x + 1.16, Y(y) + 0.16, hp_ + 0.14, "wall_top")
+    # blocs tombés au pied des murs érodés (sur le sable / dallage, bas : ne bloquent pas)
+    fb = mbs.setdefault("_fallen", MB())
+    for y in range(1, H - 1):
+        for x in range(1, W - 1):
+            if tile(x, y) != 3 or wall_kind(x, y) not in ("ext", "inner"):
+                continue
+            base = H_EXT if wall_kind(x, y) == "ext" else H_INNER
+            loss = base - wall_h(x, y)
+            if loss < 0.15:
+                continue
+            hr = random.Random(x * 31 + y * 1777 + SEED)
+            for sd, dx, dy in SIDES:
+                nx, ny = x + dx, y + dy
+                if tile(nx, ny) not in (1, 2) or hr.random() > 0.55:
+                    continue
+                for _q in range(hr.randint(1, 3 if loss > 0.4 else 2)):
+                    sz = hr.uniform(0.16, 0.3)
+                    bx = nx + 0.5 - dx * 0.5 * 0 + (hr.uniform(-0.45, 0.45) if dx == 0 else -dx * hr.uniform(0.1, 0.4))
+                    by = ny + 0.5 + (hr.uniform(-0.45, 0.45) if dy == 0 else -dy * hr.uniform(0.1, 0.4))
+                    fb.box(bx - sz / 2, Y(by + sz * 0.35), 0.0, bx + sz / 2, Y(by - sz * 0.35), hr.uniform(0.07, 0.13),
+                           hr.choice(("wall", "wall_ext", "wall_top")), rot=hr.uniform(-0.6, 0.6))
     # pylônes : faces inclinées (talus) — un prisme par bloc de pylône
     for p in PYLONS:
         x, y, w, h = p
@@ -1379,7 +1444,25 @@ def roof_chamber(mb, b, rng):
     sanct = b.get("arch") == "sanctuary"
     z = H_SANCT if sanct else H_ROOF
     X0, X1, YN, YS = x - 0.04, x + w + 0.04, Y(y) + 0.04, Y(y + h) - 0.04
-    mb.box(X0, YS, z, X1, YN, z + 0.1, "roof_slab" if not sanct else "slabs_gold")
+    mb.box(X0, YS, z, X1, YN, z + 0.1, "slabs_dark" if not sanct else "slabs_gold")
+    if not sanct:
+        # toit de dalles-poutres de grès posées en travers (joints sombres), quelques-unes
+        # fendues ou déchaussées : lecture « ruine » proche de la planche
+        along_x = w < h
+        L0, L1 = (y, y + h) if along_x else (x, x + w)
+        pos = L0 + 0.15
+        while pos < L1 - 0.2:
+            bw_ = min(rng.uniform(0.6, 0.95), L1 - 0.15 - pos)
+            ztop = z + 0.1 + rng.uniform(0.08, 0.16)
+            mat_ = rng.choice(("wall_top", "wall_top", "wall_ext", "roof_slab"))
+            if rng.random() < 0.1:
+                pos += bw_ + 0.1
+                continue
+            if along_x:
+                mb.box(X0 + 0.05, Y(pos + bw_), z + 0.09, X1 - 0.05, Y(pos), ztop, mat_, rot=rng.uniform(-0.02, 0.02))
+            else:
+                mb.box(pos, YS + 0.05, z + 0.09, pos + bw_, YN - 0.05, ztop, mat_, rot=rng.uniform(-0.02, 0.02))
+            pos += bw_ + 0.1
     for (a0, a1, b0, b1) in ((X0, X1, YS, YS + 0.2), (X0, X1, YN - 0.2, YN), (X0, X0 + 0.2, YS + 0.2, YN - 0.2), (X1 - 0.2, X1, YS + 0.2, YN - 0.2)):
         mb.box(a0, b0, z + 0.1, a1, b1, z + 0.26, "gold_dark" if sanct else "wall_top")
     zt = z + 0.1
@@ -1453,20 +1536,28 @@ def lm_pyramid(mb, rect, rng, big):
     apex = (cx, cy, hp)
     bl, br = (x, Y(y + h), 0.0), (x + w, Y(y + h), 0.0)
     tl, tr = (x, Y(y), 0.0), (x + w, Y(y), 0.0)
-    # faces (4 triangles) : sud, est, nord, ouest
-    mb.poly([bl, br, apex], "pyramid")
-    mb.poly([br, tr, apex], "pyramid_dark")
-    mb.poly([tr, tl, apex], "pyramid_dark")
-    mb.poly([tl, bl, apex], "pyramid")
-    # pyramidion
-    k = 0.06 if big else 0.1
-    mb.sphere(cx, cy, hp - w * k * 0.4, w * k, "gold", 1, 1.0, 1.0, 0.8)
-    # entrée sombre sur la face sud (trapèze encastré)
-    ex = cx
-    ez = hp * 0.12
-    t_ = ez / hp
-    yfront = Y(y + h) + t_ * (cy - Y(y + h)) + 0.02
-    mb.poly([(ex - 0.5, Y(y + h) + 0.02, 0.0), (ex + 0.5, Y(y + h) + 0.02, 0.0), (ex + 0.3, yfront, ez), (ex - 0.3, yfront, ez)], "doorway")
+    # gradins visibles : assises en retrait successif (la lumière rasante dessine les marches)
+    n = max(8, int(hp / 0.55))
+    dz = hp * 0.92 / n
+    for i in range(n):
+        t = i / n
+        ins = t * w * 0.46
+        mb.box(x + ins, Y(y + h) + ins, i * dz - (0.01 if i else 0.0), x + w - ins, Y(y) - ins, (i + 1) * dz, "pyramid")
+    del bl, br, tl, tr, apex
+    # pyramidion doré (pointe) sur la dernière assise
+    tw = w * 0.08 / 2 + 0.25
+    ztop = hp * 0.92
+    base_ = len(mb.V)
+    pts = [(cx - tw, cy - tw, ztop), (cx + tw, cy - tw, ztop), (cx + tw, cy + tw, ztop), (cx - tw, cy + tw, ztop)]
+    ap = (cx, cy, ztop + tw * 1.4)
+    for i in range(4):
+        mb.poly([pts[i], pts[(i + 1) % 4], ap], "gold" if i in (0, 3) else "gold_dark")
+    del base_
+    # entrée sombre au sud : niche au pied d'une contremarche, linteau de granit
+    ki = 2 if big else 1
+    yf = Y(y + h) + (ki / n) * w * 0.46
+    mb.box(cx - 0.55, yf - 0.04, ki * dz, cx + 0.55, yf + 0.25, ki * dz + 1.0, "doorway")
+    mb.box(cx - 0.75, yf - 0.1, ki * dz + 1.0, cx + 0.75, yf + 0.3, ki * dz + 1.25, "granite")
     # blocs éboulés au pied
     for k2 in range(rng.randint(4, 8)):
         bx = x + rng.uniform(-0.4, w + 0.4)
@@ -1476,45 +1567,51 @@ def lm_pyramid(mb, rect, rng, big):
 
 
 def lm_sphinx(mb, rect, rng):
-    """Colosse assis (pharaon au némès) face au sud, sur un socle : lecture nette vue de dessus
-    (tête et némès rayé au nord, épaules, bras sur les cuisses, genoux et pieds au sud)."""
+    """Sphinx couché face au sud sur un socle : corps de lion allongé, croupe et pattes arrière
+    repliées au nord, poitrail, longues pattes avant tendues vers le sud, tête au némès rayé
+    (or / lapis), barbe, uræus, queue enroulée sur le flanc."""
     x, y, w, h = rect
     cx = x + w / 2
     yS, yN = Y(y + h), Y(y)
     G, GL = "granite", "granite_lit"
     mb.box(x + 0.02, yS + 0.02, 0.0, x + w - 0.02, yN - 0.02, 0.8, "wall_ext")
     mb.box(x + 0.1, yS + 0.1, 0.8, x + w - 0.1, yN - 0.1, 0.95, "wall_top")
-    bw = w / 2 - 0.45
     v0 = len(mb.V)
-    # trône (dossier au nord)
-    mb.box(cx - bw - 0.1, yN - 2.6, 0.95, cx + bw + 0.1, yN - 0.15, 4.6, G)
-    # cuisses et genoux (vers le sud), tibias, pieds
-    for sx in (-0.72, 0.72):
-        mb.box(cx + sx * bw - 0.62, yS + 3.0, 2.2, cx + sx * bw + 0.62, yN - 2.2, 2.9, GL)
-        mb.sphere(cx + sx * bw, yS + 3.0, 2.6, 0.72, GL, 2, 1.0, 0.9, 0.7)
-        mb.box(cx + sx * bw - 0.55, yS + 1.0, 0.95, cx + sx * bw + 0.55, yS + 3.1, 2.4, G)
-        mb.box(cx + sx * bw - 0.6, yS + 0.25, 0.95, cx + sx * bw + 0.6, yS + 1.3, 1.45, GL)
-    # torse, pagne doré, bras posés sur les cuisses
-    mb.box(cx - bw + 0.25, yN - 3.4, 2.9, cx + bw - 0.25, yN - 1.6, 5.6, G)
-    mb.box(cx - 0.45, yS + 3.0, 2.85, cx + 0.45, yN - 3.2, 3.05, "gold_dark")
+    z0 = 0.95
+    # corps, croupe, pattes arrière repliées
+    mb.sphere(cx, yS + 6.0, z0 + 1.05, 1.0, GL, 3, 1.75, 3.1, 1.2)
     for sx in (-1.0, 1.0):
-        mb.seg((cx + sx * (bw - 0.15), yN - 2.4, 5.2), (cx + sx * (bw - 0.25), yS + 3.4, 3.1), 0.32, GL, 8)
-        mb.sphere(cx + sx * (bw - 0.25), yS + 3.4, 3.15, 0.36, GL, 2)
-    # collier d'or, tête, némès rayé, barbe, uræus
-    hz = 5.6
-    mb.cyl(cx, yN - 2.0, hz - 0.15, hz + 0.15, 1.15, "gold", 20)
-    mb.sphere(cx, yN - 2.0, hz + 0.95, 0.8, GL, 3, 0.95, 0.9, 1.1)
-    mb.sphere(cx, yN - 1.6, hz + 0.95, 1.05, "gold_dark", 3, 1.25, 0.95, 0.95)
-    for k in range(7):
-        sx_ = cx - 1.25 + k * 0.4
-        mb.box(sx_, yN - 2.25, hz + 1.7, sx_ + 0.2, yN - 0.75, hz + 1.95, "lapis")
-    mb.box(cx - 0.16, yN - 2.95, hz - 0.15, cx + 0.16, yN - 2.6, hz + 0.6, GL)
-    mb.box(cx - 0.12, yN - 2.85, hz + 1.75, cx + 0.12, yN - 2.45, hz + 2.3, "gold")
+        mb.sphere(cx + sx * 1.3, yS + 8.0, z0 + 0.85, 1.0, GL, 3, 0.95, 1.35, 0.9)
+        mb.seg((cx + sx * 1.85, yS + 8.6, z0 + 0.25), (cx + sx * 1.9, yS + 6.6, z0 + 0.25), 0.32, G, 8)
+        mb.sphere(cx + sx * 1.9, yS + 6.5, z0 + 0.25, 0.4, G, 2, 1.1, 1.3, 0.7)
+    # poitrail et cou
+    mb.sphere(cx, yS + 3.9, z0 + 1.35, 1.0, GL, 3, 1.35, 1.1, 1.3)
+    mb.seg((cx, yS + 4.1, z0 + 1.9), (cx, yS + 3.75, z0 + 3.0), 0.72, GL, 10)
+    # pattes avant tendues
+    for sx in (-1.0, 1.0):
+        mb.seg((cx + sx * 0.95, yS + 4.2, z0 + 0.4), (cx + sx * 0.95, yS + 0.9, z0 + 0.36), 0.42, GL, 10)
+        mb.sphere(cx + sx * 0.95, yS + 0.85, z0 + 0.3, 0.5, GL, 2, 1.05, 1.15, 0.62)
+        for t in (-0.25, 0.0, 0.25):
+            mb.sphere(cx + sx * 0.95 + t, yS + 0.42, z0 + 0.18, 0.13, G, 1)
+    # tête, némès (or rayé de lapis), retombées, barbe, uræus
+    hz = z0 + 3.25
+    mb.sphere(cx, yS + 3.55, hz, 0.78, GL, 3, 0.95, 0.95, 1.05)
+    mb.sphere(cx, yS + 3.95, hz + 0.12, 1.0, "gold_dark", 3, 1.2, 0.95, 1.0)
+    for sx in (-1.0, 1.0):
+        mb.box(cx + sx * 0.82 - 0.2, yS + 3.2, hz - 1.25, cx + sx * 0.82 + 0.2, yS + 4.05, hz - 0.05, "gold_dark")
+        mb.box(cx + sx * 0.82 - 0.21, yS + 3.45, hz - 1.2, cx + sx * 0.82 + 0.21, yS + 3.62, hz - 0.08, "lapis")
+    for k in range(-3, 4):
+        mb.box(cx + k * 0.24 - 0.06, yS + 3.35, hz + 0.84, cx + k * 0.24 + 0.06, yS + 4.6, hz + 1.1, "lapis")
+    mb.box(cx - 0.16, yS + 2.62, hz - 1.0, cx + 0.16, yS + 2.95, hz - 0.35, GL)
+    mb.box(cx - 0.1, yS + 2.85, hz + 0.6, cx + 0.1, yS + 3.1, hz + 1.05, "gold")
+    mb.box(cx - 0.32, yS + 2.74, hz - 0.12, cx + 0.32, yS + 2.86, hz + 0.08, G)
+    # queue
+    mb.seg((cx + 1.6, yS + 9.1, z0 + 0.3), (cx + 2.1, yS + 7.4, z0 + 0.2), 0.14, G, 6)
+    mb.seg((cx + 2.1, yS + 7.4, z0 + 0.2), (cx + 1.95, yS + 6.0, z0 + 0.2), 0.12, G, 6)
     # colosse agrandi (le socle garde sa taille) : lecture monumentale comme la planche
-    cy_ = (yS + yN) / 2
     for i in range(v0, len(mb.V)):
         vx, vy, vz = mb.V[i]
-        mb.V[i] = (cx + (vx - cx) * 1.25, cy_ + (vy - cy_) * 1.12, 0.95 + (vz - 0.95) * 1.3)
+        mb.V[i] = (cx + (vx - cx) * 1.3, yS + (vy - yS) * 1.08, z0 + (vz - z0) * 1.2)
 
 
 def lm_obelisk(mb, rect, rng):
@@ -1623,6 +1720,24 @@ def build_landmarks():
         else:
             lm_rock(mb, rect, rng)
         mb.to_object("lm_%s_%d" % (kind, i), "world")
+    # marge rendue hors jeu : amas de rochers et palmiers (bords chargés comme la planche)
+    mg = MB()
+    rng = random.Random(SEED * 17 + 3)
+    for k in range(70):
+        side = rng.randint(0, 3)
+        if side == 0:
+            cx, cy = rng.uniform(-MARGIN, W + MARGIN), rng.uniform(-MARGIN + 0.5, -0.6)
+        elif side == 1:
+            cx, cy = rng.uniform(-MARGIN, W + MARGIN), rng.uniform(H + 0.6, H + MARGIN - 0.5)
+        elif side == 2:
+            cx, cy = rng.uniform(-MARGIN + 0.5, -0.6), rng.uniform(-MARGIN, H + MARGIN)
+        else:
+            cx, cy = rng.uniform(W + 0.6, W + MARGIN - 0.5), rng.uniform(-MARGIN, H + MARGIN)
+        if rng.random() < 0.3:
+            lm_palm(mg, [cx - 0.5, cy - 0.5, 1, 1], rng)
+        else:
+            lm_rock(mg, [cx - 1.0, cy - 1.0, 2.0, 2.0], rng, rng.random() < 0.4)
+    mg.to_object("_margin", "world")
 
 
 # ======================================================================= décors (prop_spawns)
@@ -1987,6 +2102,115 @@ def build_details():
             rx = x + w / 2 + math.cos(an) * min(w, h) * 0.5
             ry = Y(y + h / 2) + math.sin(an) * min(w, h) * 0.5
             det.seg((rx, ry, 0.0), (rx + prng.uniform(-0.1, 0.1), ry + prng.uniform(-0.1, 0.1), prng.uniform(0.5, 0.9)), 0.03, "palm_leaf", 4)
+    # --- intérieurs meublés (décor non bloquant, adossé aux murs) ---
+    fur = MB()
+    frng = random.Random(SEED * 13 + 7)
+    FURN_ROLES = ("tomb", "treasury", "offering", "statue_hall", "embalming", "guard_hall", "scribe", "trap_hall")
+    for r in ROOMS:
+        role = (r.get("tags") or ["desert"])[0]
+        if role not in FURN_ROLES:
+            continue
+        rx, ry, rw, rh = r["rect"]
+        # dallage à motifs au centre (bordure dorée, champ sombre, losange lapis)
+        iw, ih = rw - 2, rh - 2
+        if iw >= 3 and ih >= 3 and role in ("tomb", "treasury", "offering", "statue_hall"):
+            cx, cy = rx + rw / 2, ry + rh / 2
+            hw, hh = min(iw, 5) / 2 - 0.3, min(ih, 5) / 2 - 0.3
+            fur.box(cx - hw, Y(cy + hh), -0.01, cx + hw, Y(cy - hh), 0.007, "gold_dark")
+            fur.box(cx - hw + 0.14, Y(cy + hh - 0.14), 0.0, cx + hw - 0.14, Y(cy - hh + 0.14), 0.0095, "slabs_dark")
+            fur.box(cx - 0.45, Y(cy + 0.45), 0.0, cx + 0.45, Y(cy - 0.45), 0.012, "lapis" if role != "treasury" else "gold", rot=0.785)
+        for yy in range(ry, ry + rh):
+            for xx in range(rx, rx + rw):
+                if tile(xx, yy) != 2 or (xx, yy) in GAME_CELLS:
+                    continue
+                nw_ = [(dx, dy) for _, dx, dy in SIDES if tile(xx + dx, yy + dy) == 3]
+                if not nw_ or frng.random() > 0.3:
+                    continue
+                dx, dy = nw_[0]
+                qx, qy = xx + 0.5 + dx * 0.28, yy + 0.5 + dy * 0.28
+                q = frng.random()
+                if role in ("statue_hall", "tomb") and q < 0.35:
+                    # statue assise adossée (socle, siège, corps, tête au némès)
+                    fur.box(qx - 0.3, Y(qy + 0.3), 0.0, qx + 0.3, Y(qy - 0.3), 0.16, "granite")
+                    fur.box(qx - 0.22, Y(qy + 0.22), 0.16, qx + 0.22, Y(qy - 0.22), 0.62, "granite_lit")
+                    fur.box(qx - 0.24 - dx * 0.0, Y(qy + 0.24), 0.16, qx + 0.24, Y(qy - 0.24), 0.36, "granite")
+                    fur.sphere(qx, Y(qy), 0.8, 0.16, "granite_lit", 2)
+                    fur.sphere(qx + dx * 0.05, Y(qy + dy * 0.05), 0.84, 0.2, "gold_dark", 2, 1.15, 1.0, 0.8)
+                elif role in ("treasury", "tomb", "offering") and q < 0.7:
+                    # coffre doré ou vase d'or
+                    if frng.random() < 0.5:
+                        fur.box(qx - 0.2, Y(qy + 0.13), 0.0, qx + 0.2, Y(qy - 0.13), 0.2, "gold_dark", rot=0.0)
+                        fur.box(qx - 0.21, Y(qy + 0.14), 0.2, qx + 0.21, Y(qy - 0.14), 0.25, "gold")
+                    else:
+                        fur.cyl(qx, Y(qy), 0.0, 0.32, 0.11, "gold", 10, r2=0.07)
+                        fur.sphere(qx, Y(qy), 0.14, 0.12, "gold", 2)
+                elif q < 0.85:
+                    # brasero de bronze (braises)
+                    fur.cyl(qx, Y(qy), 0.0, 0.28, 0.05, "bronze", 8)
+                    fur.cyl(qx, Y(qy), 0.28, 0.36, 0.16, "bronze", 10, r2=0.2)
+                    fur.cyl(qx, Y(qy), 0.34, 0.37, 0.15, "coal", 10)
+                else:
+                    # colonne engagée
+                    fur.cyl(qx, Y(qy), 0.0, 1.0, 0.14, "stone_lit", 10)
+                    fur.cyl(qx, Y(qy), 1.0, 1.08, 0.2, "wall_top", 10)
+    fur.to_object("_furniture", "world")
+    # sable qui entre par les portes (langues de sable de part et d'autre du seuil)
+    for (dx_, dy_) in DOOR_CELLS:
+        for ox, oy in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            c_ = (dx_ + ox, dy_ + oy)
+            if tile(*c_) in (1, 2) and rng.random() < 0.8:
+                decal(det, c_[0] + 0.5 - ox * 0.2, c_[1] + 0.5 - oy * 0.2, rng.uniform(0.45, 0.7), "sand_drift")
+    # parvis : dallage ancien à demi ensablé autour des bâtiments (dalles disjointes, fissurées)
+    prng = random.Random(SEED * 19 + 5)
+    for y in range(4, H - 4):
+        for x in range(2, W - 2):
+            c_ = (x, y)
+            if tile(x, y) != 1 or paving_of(x, y) is not None or c_ in GAME_CELLS or c_ in PATH_DONE or c_ in LM_CELLS:
+                continue
+            d = 9
+            for oy in range(-3, 4):
+                for ox in range(-3, 4):
+                    if tile(x + ox, y + oy) == 3:
+                        d = min(d, max(abs(ox), abs(oy)))
+            if d > 3 or prng.random() > (0.62 - d * 0.12):
+                continue
+            for qx, qy in ((x + 0.25, y + 0.25), (x + 0.75, y + 0.75)) if prng.random() < 0.35 else ((x + 0.5, y + 0.5),):
+                sz = 0.46 if qx != x + 0.5 else prng.uniform(0.82, 0.95)
+                det.box(qx - sz / 2, Y(qy + sz / 2), -0.01, qx + sz / 2, Y(qy - sz / 2), prng.uniform(0.008, 0.026),
+                        prng.choice(("slabs_big", "slabs_big", "wall_top", "slabs")), rot=prng.uniform(-0.08, 0.08))
+            if prng.random() < 0.3:
+                decal(det, x + prng.uniform(0.2, 0.8), y + prng.uniform(0.2, 0.8), prng.uniform(0.4, 0.8), "sand_drift")
+    # micro-détail du sable : ossements, jarres brisées, traces de pas
+    for k in range(140):
+        cx, cy = rng.uniform(1, W - 1), rng.uniform(1, H - 1)
+        c_ = (int(cx), int(cy))
+        if tile(*c_) != 1 or paving_of(*c_) is not None or c_ in GAME_CELLS:
+            continue
+        q = rng.random()
+        if q < 0.35:
+            for j in range(rng.randint(2, 4)):
+                a_ = rng.uniform(0, math.pi)
+                ln = rng.uniform(0.18, 0.35)
+                px_, py_ = cx + rng.uniform(-0.3, 0.3), cy + rng.uniform(-0.3, 0.3)
+                det.seg((px_, Y(py_), 0.03), (px_ + math.cos(a_) * ln, Y(py_) + math.sin(a_) * ln, 0.03), 0.025, "bone", 5)
+            if rng.random() < 0.5:
+                det.sphere(cx, Y(cy), 0.05, 0.07, "bone", 2, 1.0, 1.2, 0.8)
+        elif q < 0.6:
+            det.cyl(cx, Y(cy), 0.0, 0.12, 0.09, rng.choice(["clay", "clay_dark"]), 8, r2=0.06)
+            for j in range(3):
+                det.box(cx + rng.uniform(-0.3, 0.3), Y(cy + rng.uniform(-0.3, 0.3)), 0.0, cx + rng.uniform(0.32, 0.4), Y(cy + rng.uniform(-0.3, -0.25)), 0.02, "clay", rot=rng.uniform(0, 3))
+        else:
+            # traces de pas : petites empreintes alternées le long d'une marche aléatoire
+            a_ = rng.uniform(0, math.tau)
+            px_, py_ = cx, cy
+            for j in range(rng.randint(8, 16)):
+                a_ += rng.uniform(-0.25, 0.25)
+                px_ += math.cos(a_) * 0.32
+                py_ += math.sin(a_) * 0.32
+                if tile(int(px_), int(py_)) != 1:
+                    break
+                sd = 0.07 if j % 2 else -0.07
+                decal(det, px_ - math.sin(a_) * sd, py_ + math.cos(a_) * sd, 0.065, "sand_shade")
     det.to_object("_floordet", "world")
 
 
@@ -2011,7 +2235,7 @@ def build_lights():
         for fx in (0.3, 0.7):
             L_ = bpy.data.lights.new("g%d" % n, "POINT")
             L_.color = (1.0, 0.5, 0.18)
-            L_.energy = LIGHT_E * 1.1 * max(1.0, cw_ * ch_ / 60.0)
+            L_.energy = LIGHT_E * 0.6 * max(1.0, cw_ * ch_ / 60.0)
             L_.shadow_soft_size = 0.6
             o = bpy.data.objects.new("g%d" % n, L_)
             o.location = (cx_ + cw_ * fx, Y(cy_ + ch_ * 0.5), 2.4)

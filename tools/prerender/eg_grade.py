@@ -47,10 +47,10 @@ for t in C.get("torches", []):
 for s in L.get("prop_spawns", []):
     if s.get("kind") in ("eg_brazier", "eg_torch", "eg_fire_bowl", "eg_campfire"):
         x, y = gpx(s["cell"][0] + 0.5, s["cell"][1] + 0.5)
-        GLOWS.append((x, y, 2.8 * PPC, 2.6 * PPC, (1.0, 0.48, 0.12), 0.45))
+        GLOWS.append((x, y, 3.4 * PPC, 3.1 * PPC, (1.0, 0.46, 0.1), 0.6))
 sa = C.get("sanctuary", [30, 32, 12, 12])
 x, y = gpx(sa[0] + sa[2] / 2, sa[1] + sa[3] / 2)
-GLOWS.append((x, y, sa[2] * 0.75 * PPC, sa[3] * 0.75 * PPC, (1.0, 0.62, 0.2), 0.32))
+GLOWS.append((x, y, sa[2] * 0.6 * PPC, sa[3] * 0.6 * PPC, (1.0, 0.55, 0.15), 0.2))
 for ct in C.get("courts", [])[:1]:
     x, y = gpx(ct[0] + ct[2] / 2, ct[1] + ct[3] / 2)
     GLOWS.append((x, y, ct[2] * 0.7 * PPC, ct[3] * 0.7 * PPC, (1.0, 0.55, 0.2), 0.16))

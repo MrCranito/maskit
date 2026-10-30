@@ -1115,7 +1115,7 @@ def mat_dirt(name, base=(0.13, 0.09, 0.13), light=(0.24, 0.18, 0.22)):
     return s.m
 
 
-def mat_pavers(name, c1=(0.17, 0.14, 0.22), c2=(0.1, 0.08, 0.15)):
+def mat_pavers(name, c1=(0.22, 0.21, 0.26), c2=(0.11, 0.105, 0.14)):
     """Pavés de la place et du parvis : petits carreaux irréguliers, joints sombres, mousse."""
     s = NT(name)
     o = s.obj()
@@ -1166,10 +1166,10 @@ def mat_clown_face(name):
 
 
 def build_materials():
-    mat_dirt("dirt")
-    mat_dirt("dirt_dark", (0.14, 0.1, 0.15), (0.24, 0.18, 0.24))
-    mat_pavers("pavers", (0.2, 0.16, 0.25), (0.12, 0.09, 0.17))
-    mat_pavers("pavers_lot", (0.22, 0.18, 0.27), (0.13, 0.1, 0.18))
+    mat_dirt("dirt", (0.1, 0.095, 0.12), (0.21, 0.19, 0.23))
+    mat_dirt("dirt_dark", (0.12, 0.1, 0.13), (0.22, 0.18, 0.22))
+    mat_pavers("pavers", (0.25, 0.23, 0.28), (0.11, 0.105, 0.14))
+    mat_pavers("pavers_lot", (0.27, 0.25, 0.3), (0.12, 0.11, 0.15))
     mat_grass("grass")
     mat_grass("forest_floor", (0.1, 0.13, 0.14))
     mat_wood("plank", (0.42, 0.26, 0.24))
@@ -2651,6 +2651,7 @@ def build_groves():
 
 # ======================================================================= lumières
 LIGHT_E = float(os.environ.get("HC_LIGHT", "100"))
+WASH = float(os.environ.get("HC_WASH", "0.5"))  # nappes diffuses (place, cours, allées)
 
 
 def build_lights():
@@ -2708,7 +2709,7 @@ def build_lights():
     L_.shape = "DISK"
     L_.size = 12.0
     L_.color = NEON["magenta"]
-    L_.energy = LIGHT_E * 2.2
+    L_.energy = LIGHT_E * 2.2 * WASH
     o = bpy.data.objects.new("plaza", L_)
     o.location = (TC.x, TC.y, 7.0)
     scene.collection.objects.link(o)
@@ -2722,7 +2723,7 @@ def build_lights():
             L2.shape = "DISK"
             L2.size = 4.0
             L2.color = NEON["violet"] if k % 3 == 0 else (NEON["magenta"] if k % 3 == 1 else NEON["warm"])
-            L2.energy = LIGHT_E * 0.7
+            L2.energy = LIGHT_E * 0.7 * WASH
             o2 = bpy.data.objects.new("ave%d" % k, L2)
             o2.location = (p_[0], Y(p_[1]), 4.5)
             scene.collection.objects.link(o2)
@@ -2732,7 +2733,7 @@ def build_lights():
         L5.shape = "DISK"
         L5.size = 7.0
         L5.color = NEON["magenta"] if k % 2 else NEON["violet"]
-        L5.energy = LIGHT_E * 1.0
+        L5.energy = LIGHT_E * 1.0 * WASH
         o5 = bpy.data.objects.new("yd%d" % k, L5)
         o5.location = (yd["c"][0], Y(yd["c"][1]), 6.0)
         scene.collection.objects.link(o5)
@@ -2741,7 +2742,7 @@ def build_lights():
     L3.shape = "DISK"
     L3.size = 12.0
     L3.color = NEON["magenta"]
-    L3.energy = LIGHT_E * 2.0
+    L3.energy = LIGHT_E * 2.0 * (0.5 + WASH)
     o3 = bpy.data.objects.new("lot", L3)
     o3.location = (LOT[0] + LOT[2] / 2, Y(LOT[1] + LOT[3] / 2), 6.0)
     scene.collection.objects.link(o3)
@@ -2764,7 +2765,7 @@ def build_world():
 
 # ======================================================================= rendu
 EXPOSURE = float(os.environ.get("HC_EXPOSURE", "0.15"))
-SUN_E = float(os.environ.get("HC_MOON", "1.3"))
+SUN_E = float(os.environ.get("HC_MOON", "1.6"))
 SKY = float(os.environ.get("HC_SKY", "0.22"))
 SAT = float(os.environ.get("HC_SAT", "1.3"))
 CON = float(os.environ.get("HC_CON", "1.15"))
@@ -2797,11 +2798,11 @@ def setup_render():
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes["Background"]
-    bg.inputs[0].default_value = (0.28, 0.12, 0.45, 1)    # nuit violette (ambiance de la maquette)
+    bg.inputs[0].default_value = (0.14, 0.12, 0.4, 1)    # nuit violette (ambiance de la maquette)
     bg.inputs[1].default_value = SKY
     moon = bpy.data.lights.new("moon", "SUN")
     moon.energy = SUN_E
-    moon.color = (0.55, 0.5, 1.0)
+    moon.color = (0.45, 0.55, 1.0)
     moon.angle = math.radians(1.5)
     so = bpy.data.objects.new("moon", moon)
     sc.collection.objects.link(so)
