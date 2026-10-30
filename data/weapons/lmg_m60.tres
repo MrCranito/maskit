@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+id = &"lmg_m60"
+display_name = "M60"
+description = "« Le cochon » : chaque rafale traverse le premier rang."
+family = "firearm"
+category = &"lmg"
+rarity = 3
+slot = &"weapon"
+gadget_kind = &""
+charges = 0
+throw_range = 0.0
+fuse_time = 0.0
+effect_radius = 0.0
+effect_duration = 0.0
+damage = 19.0
+fire_rate = 9.5
+projectile_speed = 1100.0
+range = 700.0
+projectile_lifetime = 0.636
+projectile_count = 1
+spread_degrees = 0.0
+inaccuracy_deg = 8.0
+spread_bloom_per_shot = 0.9
+spread_bloom_max = 10.0
+spread_bloom_recovery = 14.0
+spread_move_deg = 5.0
+pierce = 1
+projectile_color = Color(1.0, 0.84, 0.45, 1)
+projectile_style = &"bullet"
+affixes = Array[StringName]([])
+magazine_size = 100
+reload_time = 5.0
+automatic = true
+explosion_radius = 0.0
+explosion_damage = 0.0
+recoil_px = 5.5
+shake_px = 2.4
+move_speed_mult = 0.85
+muzzle_flash_scale = 1.0
+eject_shells = true
+sprite_id = &"lmg_m60"
+value = 950
+unlock_mode = &"kill"
+unlock_enemy_kind = &"mall_brute"
+unlock_kills = 3
+price_gold = 2200

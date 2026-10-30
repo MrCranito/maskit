@@ -17,20 +17,22 @@ const RARITY_COLORS: Array[Color] = [
 ]
 const RARITY_NAMES: Array[String] = ["Commun", "Peu commun", "Rare", "Épique", "Légendaire"]
 
-## Catégories (champ `category`) — arsenal de la planche docs/reference/arsenal.jpg.
+## Catégories (champ `category`) : planche docs/reference/arsenal.jpg (pistolets, mitraillettes,
+## fusils d'assaut, snipers, lance-roquettes, autres) + revolver, fusil à pompe, mitrailleuse et
+## lance-grenades (catalogue de la phase 8, CLAUDE.md « Arsenal »).
 const CAT_PISTOL := &"pistol"
+const CAT_REVOLVER := &"revolver"
 const CAT_SMG := &"smg"
+const CAT_SHOTGUN := &"shotgun"
 const CAT_RIFLE := &"rifle"
+const CAT_LMG := &"lmg"
 const CAT_SNIPER := &"sniper"
+const CAT_GRENADE := &"grenade_launcher"
 const CAT_ROCKET := &"rocket_launcher"
 ## « Autres » : grenades, mine, C4, drone (emplacement d'équipement, voir `slot`).
 const CAT_GADGET := &"gadget"
-## Anciennes catégories (plus utilisées par le catalogue, gardées pour compatibilité).
-const CAT_REVOLVER := &"revolver"
-const CAT_SHOTGUN := &"shotgun"
-const CAT_LMG := &"lmg"
-const CAT_GRENADE := &"grenade_launcher"
-const CATEGORIES: Array[StringName] = [CAT_PISTOL, CAT_SMG, CAT_RIFLE, CAT_SNIPER, CAT_ROCKET, CAT_GADGET]
+const CATEGORIES: Array[StringName] = [CAT_PISTOL, CAT_REVOLVER, CAT_SMG, CAT_SHOTGUN, CAT_RIFLE, CAT_LMG,
+	CAT_SNIPER, CAT_GRENADE, CAT_ROCKET, CAT_GADGET]
 const CATEGORY_NAMES: Dictionary = {
 	CAT_PISTOL: "Pistolet", CAT_SMG: "Mitraillette", CAT_RIFLE: "Fusil d'assaut",
 	CAT_SNIPER: "Fusil de sniper", CAT_ROCKET: "Lance-roquettes", CAT_GADGET: "Équipement",
@@ -39,8 +41,10 @@ const CATEGORY_NAMES: Dictionary = {
 }
 ## Titres de section (écran d'arsenal), dans l'ordre de CATEGORIES.
 const CATEGORY_TITLES: Dictionary = {
-	CAT_PISTOL: "Pistolets", CAT_SMG: "Mitraillettes", CAT_RIFLE: "Fusils d'assaut",
-	CAT_SNIPER: "Fusils de sniper", CAT_ROCKET: "Lance-roquettes", CAT_GADGET: "Autres",
+	CAT_PISTOL: "Pistolets", CAT_REVOLVER: "Revolvers", CAT_SMG: "Mitraillettes",
+	CAT_SHOTGUN: "Fusils à pompe", CAT_RIFLE: "Fusils d'assaut", CAT_LMG: "Mitrailleuses",
+	CAT_SNIPER: "Fusils de sniper", CAT_GRENADE: "Lance-grenades", CAT_ROCKET: "Lance-roquettes",
+	CAT_GADGET: "Autres",
 }
 
 ## Emplacement : arme (3 emplacements) ou équipement (1 emplacement).
