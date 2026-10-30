@@ -191,7 +191,7 @@ func _generate_floors() -> void:
 			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
 		# Bestiaire : un seul boss par raid, élites du monde (scripts/dungeon/bestiary_rules.gd).
 		if world is WorldData:
-			BestiaryRules.apply(floors, world as WorldData, run_seed)
+			BestiaryRules.apply(floors, world as WorldData, run_seed, difficulty)
 	if floors.is_empty():
 		if gen != null and world == null:
 			push_warning("Raid: générateur présent mais pas de monde, carte d'exemple.")

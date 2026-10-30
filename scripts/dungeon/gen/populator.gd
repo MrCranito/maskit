@@ -208,8 +208,12 @@ static func enemy_count(room: FloorLayout.Room, floor_index: int, difficulty: in
 	var n := area * dens * tmul * fmul + roll
 	var cap := Cfg.geti("enemy_max_per_room", 9)
 	var bonus := 0
-	if room.type == FloorLayout.ROOM_SUPER_LOOT or room.type == FloorLayout.ROOM_BOSS:
+	if room.type == FloorLayout.ROOM_SUPER_LOOT:
 		bonus = Cfg.geti("guards_min", 2) + int(Cfg.by_index("guards_bonus", difficulty, [0, 0, 1, 1, 2]))
+		cap += bonus
+	elif room.type == FloorLayout.ROOM_BOSS:
+		# Gardes de l'arène (escorte d'élite comprise), réglés à part des salles au trésor.
+		bonus = Cfg.geti("boss_guards_min", Cfg.geti("guards_min", 2)) 			+ int(Cfg.by_index("boss_guards_bonus", difficulty, Cfg.get_arr("guards_bonus", [0, 0, 1, 1, 2])))
 		cap += bonus
 	return mini(int(floor(n)) + bonus, cap)
 
