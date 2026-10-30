@@ -408,6 +408,12 @@ func _build_slab_content(sl: Control, m: Vector4, slab_w: float) -> void:
 	play_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	play_button.pressed.connect(_on_play)
 	inner.add_child(play_button)
+	# Respiration entre DÉPLOYER et l'interrupteur (retour de Victor : ils se collaient).
+	var gap := Control.new()
+	gap.name = "DeploySwitchGap"
+	gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	gap.custom_minimum_size.y = Balance.get_float("menu", "lobby_deploy_switch_gap", 9.0)
+	inner.add_child(gap)
 	online_switch = OnlineSwitch.new()
 	online_switch.size_flags_horizontal = Control.SIZE_SHRINK_END
 	online_switch.changed.connect(func(_on: bool) -> void: _refresh_online())

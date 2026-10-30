@@ -263,6 +263,9 @@ func test_home_layout_all_viewports() -> void:
 			assert_lte(sw.end.x, vp.x - safe.z + 0.5, "Interrupteur hors de l'encoche " + tag)
 			assert_lte(sw.end.y, vp.y - safe.w + 0.5, "Interrupteur au-dessus de la barre d'accueil " + tag)
 			assert_false(sw.intersects(play), "Interrupteur sous DÉPLOYER " + tag)
+			assert_gte(sw.position.y - play.end.y, Balance.get_float("menu", "lobby_deploy_switch_gap", 9.0),
+				"Espace net entre DÉPLOYER et l'interrupteur " + tag)
+			assert_gte(play.position.y, _rect(m.wallet).end.y, "DÉPLOYER reste sous la barre du haut " + tag)
 			for l: Label in [m.pass_card.tier_label, m.pass_card.xp_label, m.pass_card.next_value, m.gold_label]:
 				assert_true(_fits(l), "Texte entier %s : « %s »" % [tag, l.text])
 			for b: Button in [m.online_switch.online_button, m.online_switch.offline_button]:
