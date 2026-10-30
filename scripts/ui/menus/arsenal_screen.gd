@@ -755,10 +755,17 @@ func _section_header(cat: StringName, sample: WeaponData) -> Control:
 	row.add_theme_constant_override("separation", 12)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var tex: Texture2D = WeaponIcon.texture_for(sample)
-	if cat == WeaponData.CAT_GADGET or tex == null:
+	if cat == WeaponData.CAT_GADGET:
 		var ic := SectionGlyph.new()
 		ic.custom_minimum_size = Vector2(54, 30)
 		row.add_child(ic)
+	elif tex == null:
+		# Catégorie sans sprite (revolver, fusil à pompe…) : silhouette dessinée de la catégorie.
+		var wi := WeaponIcon.new(sample)
+		wi.silhouette = true
+		wi.use_equipped_skin = false
+		wi.custom_minimum_size = Vector2(54, 30)
+		row.add_child(wi)
 	else:
 		var tr := TextureRect.new()
 		tr.texture = tex

@@ -252,8 +252,24 @@ func _process(delta: float) -> void:
 		s.visible = k > 0.001
 
 
-## Chargement par morceaux : tuiles qui recoupent la vue (+ marge) chargées en arrière-plan,
-## les autres libérées.
+## Forçage pour les tests (-1 : automatique, 0 : synchrone, 1 : en arrière-plan).
+static var threaded_loading_override := -1
+
+
+## Chargement en arrière-plan sans risque ? Non sous le serveur de rendu factice (--headless :
+## bot de playtest, tests, serveur) : son registre de textures (RendererDummy::TextureStorage)
+## n'est pas protégé contre les accès concurrents. Une texture créée par le fil de chargement
+## pendant que le fil principal en crée une autre corrompt le registre → « texture_storage.h:85
+## Parameter "t" is null » (texture_2d_initialize) et RID perdus. Les vrais moteurs de rendu
+## (Forward+, Mobile, Compatibility) sont protégés : on garde le fil de chargement en jeu.
+static func threaded_loading_safe() -> bool:
+	if threaded_loading_override >= 0:
+		return threaded_loading_override == 1
+	return DisplayServer.get_name() != "headless"
+
+
+## Chargement par morceaux : tuiles qui recoupent la vue (+ marge) chargées en arrière-plan
+## (synchrone sous le rendu factice, voir threaded_loading_safe), les autres libérées.
 func _stream() -> void:
 	var vp := get_viewport()
 	if vp == null:
@@ -264,7 +280,10 @@ func _stream() -> void:
 		var want := view.intersects(t["rect"])
 		var spr: Sprite2D = t["sprite"]
 		if want and spr == null:
-			if not t["pending"]:
+			if not threaded_loading_safe() and not t["pending"]:
+				# Serveur de rendu factice : chargement synchrone (voir threaded_loading_safe).
+				_make_sprite(t, load(t["file"]) as Texture2D)
+			elif not t["pending"]:
 				ResourceLoader.load_threaded_request(t["file"])
 				t["pending"] = true
 			elif ResourceLoader.load_threaded_get_status(t["file"]) == ResourceLoader.THREAD_LOAD_LOADED:

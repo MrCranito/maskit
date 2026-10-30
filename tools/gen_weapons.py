@@ -8,7 +8,8 @@ Produit, à partir des tableaux ci-dessous :
 
 Les valeurs d'équilibrage vivent dans les .tres générés (pas dans le code du jeu).
 Relancer après modification :  python3 tools/gen_weapons.py
-Catalogue = la planche docs/reference/arsenal.jpg (18 armes + 5 équipements) + le leurre (artisanat).
+Catalogue = la planche docs/reference/arsenal.jpg (18 armes + 5 équipements) + le leurre (artisanat)
++ revolvers, fusils à pompe, mitrailleuses et lance-grenades (phase 8, 12 modèles).
 Armurerie : champs unlock_mode / unlock_enemy_kind / unlock_kills / price_gold (tableau UNLOCKS). Le script
 remplace tout : les .tres d'armes absents du tableau et leurs objets wpn_* sont supprimés.
 Le pistolet de départ (pistol_p9) n'a pas d'objet wpn_ (LootDB.weapon_item le crée au besoin).
@@ -25,7 +26,9 @@ WEAPON_DIR = os.path.join(ROOT, "data", "weapons")
 ITEM_DIR = os.path.join(ROOT, "data", "items")
 TABLE_DIR = os.path.join(ROOT, "data", "loot_tables")
 
-# --- Catalogue = EXACTEMENT la planche docs/reference/arsenal.jpg (contrat « Refonte n°2 »).
+# --- Catalogue = la planche docs/reference/arsenal.jpg (contrat « Refonte n°2 ») + les 4 catégories
+# de la phase 8 (revolver, fusil à pompe, mitrailleuse, lance-grenades), dessinées en code tant
+# qu'elles n'ont pas de sprite (WeaponView, WeaponIcon, LootVisuals : silhouette de la catégorie).
 # sprite_id = id. Stats explicites par arme (pas de multiplicateur caché) : la rareté apporte un
 # gain net au sein d'une catégorie (DPS, chargeur, rechargement, précision).
 # Champs omis = valeurs par défaut de CATEGORY_DEFAULTS.
@@ -46,6 +49,23 @@ CATEGORY_DEFAULTS = {
     "rocket_launcher": dict(spread_move_deg=3.0, projectile_speed=520, range=820, inaccuracy_deg=0.5, automatic=False, recoil_px=14,
                             shake_px=9.0, muzzle_flash_scale=1.8, move_speed_mult=0.85, eject_shells=False,
                             projectile_style="rocket", color=(1.0, 0.55, 0.2), weight=6.0),
+    "revolver": dict(spread_bloom_per_shot=1.2, spread_bloom_max=4.0, spread_bloom_recovery=10.0, spread_move_deg=2.0,
+                     projectile_speed=1050, range=600, inaccuracy_deg=1.5, automatic=False, recoil_px=7, shake_px=2.6,
+                     muzzle_flash_scale=1.1, eject_shells=False, projectile_style="bullet", color=(1.0, 0.8, 0.38),
+                     weight=1.3),
+    # Fusil à pompe : projectile_count plombs répartis sur spread_degrees, courte portée.
+    "shotgun": dict(projectile_count=8, spread_degrees=18.0, spread_move_deg=2.0, projectile_speed=820, range=300,
+                    inaccuracy_deg=2.0, automatic=False, recoil_px=10, shake_px=4.0, muzzle_flash_scale=1.4,
+                    projectile_style="bullet", color=(1.0, 0.78, 0.4), weight=3.2),
+    # Mitrailleuse : gros chargeur, long rechargement, ralentit le porteur.
+    "lmg": dict(spread_bloom_per_shot=0.9, spread_bloom_max=10.0, spread_bloom_recovery=14.0, spread_move_deg=5.0,
+                projectile_speed=1100, range=700, inaccuracy_deg=8.0, automatic=True, recoil_px=4, shake_px=2.0,
+                muzzle_flash_scale=1.0, move_speed_mult=0.88, projectile_style="bullet", color=(1.0, 0.84, 0.45),
+                weight=7.0),
+    # Lance-grenades : grenade en cloche qui rebondit puis explose (Projectile STYLE_GRENADE).
+    "grenade_launcher": dict(spread_move_deg=2.0, projectile_speed=520, range=520, inaccuracy_deg=1.0, automatic=False,
+                             recoil_px=9, shake_px=4.0, muzzle_flash_scale=1.0, move_speed_mult=0.92,
+                             eject_shells=False, projectile_style="grenade", color=(0.75, 1.0, 0.45), weight=4.0),
     "gadget": dict(projectile_speed=520, range=420, inaccuracy_deg=0.0, automatic=False, recoil_px=0, shake_px=0,
                    muzzle_flash_scale=0.0, eject_shells=False, projectile_style="grenade", color=(0.6, 1.0, 0.4),
                    weight=0.6, magazine_size=1, reload_time=0.0, fire_rate=1.0, damage=0.0),
@@ -99,6 +119,37 @@ WEAPONS = [
     ("rocket_javelin", "rocket_launcher", 4, "Javelin", "Missile guidé léger : file vers l'ennemi le plus proche du viseur.",
      dict(damage=45, fire_rate=0.9, magazine_size=1, reload_time=2.0, explosion_radius=110, explosion_damage=150,
           projectile_speed=600, range=1000, move_speed_mult=0.9, affixes=["homing"], value=2600)),
+    # Revolvers
+    ("revolver_peacemaker", "revolver", 0, "Peacemaker", "Le six-coups de la frontière : lent à recharger, lourd à encaisser.",
+     dict(damage=30, fire_rate=1.8, magazine_size=6, reload_time=2.2, value=80)),
+    ("revolver_model29", "revolver", 2, "Model 29", "Calibre .44 Magnum : la balle traverse la poussière et le reste.",
+     dict(damage=38, fire_rate=2.0, magazine_size=6, reload_time=2.0, inaccuracy_deg=1.2, value=180)),
+    ("revolver_python", "revolver", 3, "Python", "Mécanique parfaite : précis, rapide, perforant.",
+     dict(damage=48, fire_rate=2.4, magazine_size=6, reload_time=1.6, inaccuracy_deg=0.8, pierce=1, range=640, value=700)),
+    # Fusils à pompe
+    ("shotgun_870", "shotgun", 0, "Remington 870", "Pompe classique : huit plombs, une porte ouverte.",
+     dict(damage=9, fire_rate=1.1, magazine_size=6, reload_time=2.6, value=90)),
+    ("shotgun_benelli", "shotgun", 2, "Benelli M4", "Semi-automatique : on enchaîne les décharges sans pomper.",
+     dict(damage=10, fire_rate=2.2, magazine_size=7, reload_time=2.4, spread_degrees=16.0, value=480)),
+    ("shotgun_aa12", "shotgun", 4, "AA-12", "Fusil à pompe automatique : un mur de plombs à bout portant.",
+     dict(damage=10, fire_rate=3.6, magazine_size=20, reload_time=2.6, automatic=True, recoil_px=6, shake_px=3.0,
+          value=1800)),
+    # Mitrailleuses
+    ("lmg_m249", "lmg", 0, "M249", "Cent cartouches en bande : on tient la ligne.",
+     dict(damage=11, fire_rate=11.0, magazine_size=100, reload_time=4.5, value=220)),
+    ("lmg_pkm", "lmg", 2, "PKM", "7,62 en bande : lourd, bruyant, inarrêtable.",
+     dict(damage=15, fire_rate=10.0, magazine_size=100, reload_time=4.8, move_speed_mult=0.86, recoil_px=5, value=500)),
+    ("lmg_m60", "lmg", 3, "M60", "« Le cochon » : chaque rafale traverse le premier rang.",
+     dict(damage=19, fire_rate=9.5, magazine_size=100, reload_time=5.0, pierce=1, move_speed_mult=0.85, recoil_px=5.5,
+          shake_px=2.4, value=950)),
+    # Lance-grenades
+    ("gl_m79", "grenade_launcher", 0, "M79", "Un coup, une cloche, une explosion : à recharger après chaque tir.",
+     dict(damage=20, fire_rate=1.0, magazine_size=1, reload_time=2.0, explosion_radius=100, explosion_damage=70, value=240)),
+    ("gl_china_lake", "grenade_launcher", 2, "China Lake", "À pompe, trois grenades : de quoi nettoyer une salle.",
+     dict(damage=20, fire_rate=1.3, magazine_size=3, reload_time=2.8, explosion_radius=100, explosion_damage=80, value=560)),
+    ("gl_m32", "grenade_launcher", 3, "M32 MGL", "Barillet de six grenades : un tapis de feu en quelques secondes.",
+     dict(damage=22, fire_rate=2.0, magazine_size=6, reload_time=3.6, explosion_radius=110, explosion_damage=90,
+          value=1250)),
     # Autres (équipement : emplacement gadget)
     ("gadget_frag", "gadget", 0, "Grenade frag", "Lancée en cloche, explose après une courte mèche.",
      dict(gadget_kind="frag", charges=3, throw_range=420, fuse_time=1.6, explosion_radius=120, explosion_damage=95,
@@ -139,6 +190,14 @@ UNLOCKS = {
     "rifle_scarh": ("kill", 2000, "fw_bruiser", 3),
     "sniper_m82": ("kill", 2400, "fw_sharpshooter", 1),
     "rocket_m202": ("kill", 2800, "fw_deserter", 1),
+    "revolver_peacemaker": ("shop", 240), "shotgun_870": ("shop", 260), "lmg_m249": ("shop", 320),
+    "gl_m79": ("shop", 340), "revolver_model29": ("shop", 750),
+    "shotgun_benelli": ("kill", 1100, "mall_zombie", 8),
+    "lmg_pkm": ("kill", 1300, "ss_security_droid", 4),
+    "gl_china_lake": ("kill", 1400, "ss_atlas", 2),
+    "revolver_python": ("kill", 1700, "fw_sharpshooter", 3),
+    "lmg_m60": ("kill", 2200, "mall_brute", 3),
+    "gl_m32": ("kill", 2600, "fw_buffalo", 2),
 }
 STARTER_ID = "pistol_p9"
 
@@ -148,6 +207,12 @@ TIER_WEIGHTS = {
     "medium": [0.25, 0.15, 0.08, 0.025, 0.006],  # caisses, chariots, cadavres, casiers
     "enemy": [0.12, 0.06, 0.025, 0.006, 0.0012], # sacoches d'ennemis (rare)
 }
+# Raretés de la planche uniquement (Commun, Rare, Épique, Légendaire) : « Peu commun » n'est plus
+# affiché (MenuKit.RARITY_UI_NAMES le montre comme Rare).
+# Armes à feu par rareté dans le catalogue de la planche (hors pistolet de départ). Le poids d'une
+# rareté est réparti entre ses modèles : ajouter des armes ne rend pas les armes plus fréquentes
+# dans le butin, seulement plus variées (rareté absente de la planche : le poids d'un modèle).
+FIREARM_REF_COUNT = {0: 3, 2: 5, 3: 5, 4: 4}
 # Équipement : plutôt caisses militaires / coffres (multiplicateur appliqué aux gadgets).
 GADGET_MULT = {"rich": 1.6, "medium": 0.5, "enemy": 0.6}
 MILITARY_TABLES = {"crate", "wagon", "cargo_crate", "armory_chest", "locker", "safe", "chest"}
@@ -315,10 +380,16 @@ def patch_table(path: str, kind: str) -> None:
             del entries[k]
     if kind in TABLE_TIERS:
         tier, mult = TABLE_TIERS[kind]
+        firearms = {}
+        for (wid, cat, rarity, *_rest) in WEAPONS:
+            if wid != STARTER_ID and cat != "gadget":
+                firearms[rarity] = firearms.get(rarity, 0) + 1
         for (wid, cat, rarity, *_rest) in WEAPONS:
             if wid == STARTER_ID:
                 continue
             w = TIER_WEIGHTS[tier][rarity] * mult
+            if cat != "gadget":
+                w *= FIREARM_REF_COUNT.get(rarity, 1) / firearms[rarity]
             if cat == "gadget":
                 w *= GADGET_MULT[tier] * (1.5 if kind in MILITARY_TABLES else 1.0)
             if w > 0.0:
