@@ -11,11 +11,12 @@ extends Control
 ##  - Packs, Coffres, Gemmes : ShopOffers (maquettes Packs, ShopChests, Gems) — packs à contenu,
 ##    coffres de skins gratuits (gagnés en jouant, jamais vendus), packs de gemmes avec premier
 ##    achat doublé (paiement SIMULÉ, badge visible).
-## Message permanent : « Purement cosmétique : aucun avantage en jeu ».
+## Message « Purement cosmétique : aucun avantage en jeu » (masqué sur l'onglet Or : l'or achète des armes).
 
-const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"packs", &"chests", &"gems"]
-const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"packs": "Packs", &"chests": "Coffres", &"gems": "Gemmes"}
-const OFFER_TABS: Array[StringName] = [&"packs", &"chests", &"gems"]
+const ALL_TABS: Array[StringName] = [&"character", &"weapon", &"packs", &"chests", &"gold", &"gems"]
+const TAB_TITLES := {&"character": "Personnages", &"weapon": "Armes", &"packs": "Packs", &"chests": "Coffres",
+	&"gold": "Or", &"gems": "Gemmes"}
+const OFFER_TABS: Array[StringName] = [&"packs", &"chests", &"gold", &"gems"]
 
 static var last_tab: StringName = &"character"
 ## Skin à mettre en avant à l'ouverture (ex. clic sur un skin ailleurs) ; vidé à l'ouverture.
@@ -54,6 +55,8 @@ var _d_meta: HBoxContainer = null
 var _d_desc: Label = null
 var _d_backdrop: TextureRect = null
 var _note: Label = null
+## Pastille « Purement cosmétique » du pied (masquée sur l'onglet Or).
+var _fair: Control = null
 
 
 func _ready() -> void:
@@ -105,7 +108,7 @@ func _build() -> void:
 	head.add_child(tab_row)
 	var group := ButtonGroup.new()
 	for tab: StringName in tabs:
-		var b := MenuKit.chip(String(TAB_TITLES[tab]), MenuKit.GEM if tab == &"gems" else MenuKit.GOLD, group)
+		var b := MenuKit.chip(String(TAB_TITLES[tab]), MenuKit.GEM if tab == &"gems" else (MenuKit.COIN if tab == &"gold" else MenuKit.GOLD), group)
 		b.custom_minimum_size = Vector2(Balance.get_float("menu", "shop_tab_width", 124.0), 54)
 		b.add_theme_font_size_override("font_size", 18)
 		b.toggled.connect(func(on: bool) -> void:
@@ -150,6 +153,7 @@ func _build() -> void:
 		MenuKit.GOOD.lightened(0.3), Color(MenuKit.GOOD, 0.6))
 	fair.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	foot.add_child(fair)
+	_fair = fair
 	_note = MenuKit.label("", 15, MenuKit.TEXT_DIM, MenuKit.nunito(750), 3)
 	_note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_note.clip_text = true
@@ -263,6 +267,8 @@ func show_tab(tab: StringName) -> void:
 		_body.remove_child(offers)
 		offers.queue_free()
 		offers = null
+	if _fair != null:
+		_fair.visible = tab != &"gold"
 	var is_offer := OFFER_TABS.has(tab)
 	_detail.visible = not is_offer
 	_scroll.visible = not is_offer
@@ -275,6 +281,7 @@ func show_tab(tab: StringName) -> void:
 			pack_buttons = offers.cards
 		_note.text = {&"packs": "Un skin déjà possédé est remboursé en gemmes.",
 			&"chests": "Coffres gagnés en jouant, jamais vendus. Taux affichés.",
+			&"gold": "L'or achète des armes à l'armurerie : de quoi bien démarrer tes parties.",
 			&"gems": "Les gemmes s'achètent ici ou se gagnent à chaque extraction réussie."}[tab]
 		_refresh_states()
 		return
