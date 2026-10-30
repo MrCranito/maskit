@@ -106,21 +106,48 @@ func test_scenes_instantiate() -> void:
 
 
 func test_splash_continues_boot_image() -> void:
-	# Le boot splash natif et le splash animé partagent la même image : fond sans logo + logo seul.
-	for f: String in ["boot.png", "splash_bg.png", "splash_logo.png", "splash.json"]:
-		assert_true(FileAccess.file_exists("res://assets/ui/splash/" + f), f)
+	# Le boot splash natif (boot.png, rendu depuis la première image du splash) affiché en « keep »
+	# sur fond encre : même couleur de fond, logo centré à la même échelle.
+	assert_eq(int(ProjectSettings.get_setting("application/boot_splash/stretch_mode")), 1, "boot splash en « keep »")
+	var bg: Color = ProjectSettings.get_setting("application/boot_splash/bg_color")
+	assert_true(bg.is_equal_approx(MenuKit.NIGHT), "fond du boot splash = encre")
 	var img := Image.load_from_file(ProjectSettings.globalize_path("res://assets/ui/splash/boot.png"))
 	assert_eq(img.get_size(), Vector2i(1920, 1080), "boot.png en 1920 x 1080")
+	var px: Color = img.get_pixel(4, 4)
+	assert_lt(absf(px.r - MenuKit.NIGHT.r) + absf(px.g - MenuKit.NIGHT.g) + absf(px.b - MenuKit.NIGHT.b), 0.02, "coin de boot.png = encre")
 	var s := (load(SCENES[0]) as PackedScene).instantiate() as SplashScreen
 	s.auto_advance = false
 	add_child_autofree(s)
 	await wait_frames(2)
-	assert_not_null(s.background.texture, "Fond du splash")
-	assert_not_null(s.logo.texture, "Logo du splash")
 	assert_eq(s.next_scene, "res://scenes/ui/menus/main_menu.tscn")
-	# même cadrage « cover » que le boot splash : l'image couvre tout l'écran
-	assert_gte(s.frame_scale * 1920.0, s.size.x - 0.5)
-	assert_gte(s.frame_scale * 1080.0, s.size.y - 0.5)
+	# première image : voile plein écran opaque, logotype centré, slogan masqué
+	assert_eq(s.reveal, 0.0)
+	assert_almost_eq(s.frame_scale, minf(s.size.x / 1920.0, s.size.y / 1080.0), 0.001)
+	var c: Vector2 = s.logo.position + s.wordmark.size * 0.5
+	assert_almost_eq(c.x, s.size.x * 0.5, 1.0, "logo centré (x)")
+	assert_almost_eq(c.y, s.size.y * 0.5, 1.0, "logo centré (y)")
+	assert_eq(s.curtain.color.a, 1.0, "voile opaque à la première image")
+	assert_eq(s.slogan.size.x, 0.0, "slogan pas encore révélé")
+	assert_not_null(s.lobby, "fond vivant du menu")
+
+
+func test_splash_final_layout_fits() -> void:
+	var s := (load(SCENES[0]) as PackedScene).instantiate() as SplashScreen
+	s.auto_advance = false
+	s.frozen = true
+	add_child_autofree(s)
+	await wait_frames(2)
+	for vp: Vector2 in [Vector2(1280, 720), Vector2(1560, 720), Vector2(1600, 720)]:
+		s.size = vp
+		s.reveal = 1.0
+		s.slab_in = 1.0
+		s.slogan.reveal = 1.0
+		var r := Rect2(s.logo.position, s.logo.size)
+		assert_true(Rect2(Vector2.ZERO, vp).encloses(r), "logo visible en entier : %s" % vp)
+		assert_gt(r.position.x, vp.x * 0.5, "logo à droite du héros : %s" % vp)
+		for p: Vector2 in s.curtain.points:
+			assert_true(p.x >= 0.0 and p.x <= vp.x and p.y >= 0.0 and p.y <= vp.y, "plaque dans l'écran : %s" % vp)
+		assert_lt(s.curtain.color.a, 1.0)
 
 
 func test_game_name_is_raidersgo() -> void:

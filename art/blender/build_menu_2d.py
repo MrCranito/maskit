@@ -1,7 +1,7 @@
 """Éléments 2D du menu et du démarrage de RaidersGo (PIL + numpy, aucun Blender) :
 
     python3 art/blender/build_menu_2d.py fx        # flammes (6 images), bouffée de fumée, braise
-    python3 art/blender/build_menu_2d.py splash    # boot.png + couches du splash animé + icône
+    python3 art/blender/build_menu_2d.py splash    # icône (boot.png : tools/splash_boot/render_boot.gd)
     python3 art/blender/build_menu_2d.py all
 
 Entrées du splash : assets/ui/menu/lobby/back.jpg, camp.png, lobby.json (build_menu.py) et la
@@ -10,9 +10,6 @@ Sorties :
     assets/ui/menu/lobby/flame.png   flamme 192 x 320 (additif, déformée par shader dans le jeu)
     assets/ui/menu/lobby/flag_cloth.png  drapeau plat 512 x 320 (ondulé par shader dans le jeu)
     assets/ui/menu/lobby/smoke.png   bouffée douce 128 x 128 (blanc, alpha)
-    assets/ui/splash/boot.png        image de démarrage moteur 1920 x 1080 (logo + slogan)
-    assets/ui/splash/splash_bg.png   même image SANS le logo (fond du splash animé)
-    assets/ui/splash/splash_logo.png logo seul (transparent, mêmes coordonnées que boot.png)
     assets/ui/menu/app_icon_1024.png icône d'application (opaque, 1024 x 1024)
 Composition du démarrage lisible recadrée : le héros et le logo restent dans la bande centrale
 (recadrage portrait du LaunchScreen iOS ≈ 500 px de large au centre ; recadrage 19,5:9 de
@@ -262,76 +259,11 @@ def cover(img: Image.Image, size: tuple[int, int], focus=(0.5, 0.5)) -> Image.Im
 
 
 def splash() -> None:
-    W, H = 1920, 1080
-    meta = json.load(open(os.path.join(LOBBY, "lobby.json")))
-    back = Image.open(os.path.join(LOBBY, "back.jpg")).convert("RGBA")
-    camp = Image.open(os.path.join(LOBBY, "camp.png")).convert("RGBA")
-    x, y, _w, _h = meta["camp"]
-    back.alpha_composite(camp, (x, y))
-    # fond : le camp au coucher du soleil, recadré sur le centre, flou de profondeur + voile
-    bg = cover(back, (W, H), (0.52, 0.42)).filter(ImageFilter.GaussianBlur(7))
-    arr = np.asarray(bg.convert("RGB"), np.float32)
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    # vignettage bleu nuit + dégradé vers le bas (ancre du logo)
-    d = np.sqrt(((xx - W / 2) / (W * 0.62)) ** 2 + ((yy - H * 0.45) / (H * 0.75)) ** 2)
-    vig = np.clip((d - 0.45) * 1.3, 0, 0.85)[..., None]
-    low = np.clip((yy - H * 0.5) / (H * 0.5), 0, 1)[..., None] ** 1.4 * 0.7
-    night = np.array(NIGHT, np.float32)
-    arr = arr * (1 - vig) + night * vig
-    arr = arr * (1 - low) + night * low
-    # halo chaud derrière le héros
-    g = np.exp(-(((xx - W / 2) / (W * 0.22)) ** 2 + ((yy - H * 0.36) / (H * 0.34)) ** 2))[..., None]
-    arr = arr + np.array([255, 150, 90], np.float32) * g * 0.28
-    bg = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).convert("RGBA")
-    # héros en contre-plongée, centré, coupé aux genoux par le dégradé
-    hs = Image.open(hero_shot(os.path.join(TMP, "hero_shot.png"))).convert("RGBA")
-    hs.putalpha(hs.getchannel("A").point(lambda v: 0 if v < 10 else v))
-    hs = hs.crop(hs.getbbox())
-    # grand emblème en filigrane derrière le héros (halo de viseur)
-    halo = emblem(int(H * 0.82), ring=(255, 226, 190), arrow=(240, 80, 70), outline=False)
-    halo.putalpha(halo.getchannel("A").point(lambda v: int(v * 0.2)))
-    bg.alpha_composite(halo, (W // 2 - halo.width // 2, int(H * 0.02)))
-    hh = int(H * 0.8)
-    hs = hs.resize((int(hs.width * hh / hs.height), hh), Image.LANCZOS)
-    hx, hy = W // 2 - hs.width // 2 + 10, int(H * 0.06)
-    # contre-jour : liseré chaud autour de la silhouette
-    a = hs.getchannel("A").filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(10))
-    rim = Image.new("RGBA", hs.size, (255, 170, 100, 0))
-    rim.putalpha(a.point(lambda v: int(v * 0.55)))
-    bg.alpha_composite(rim, (hx, hy))
-    bg.alpha_composite(hs, (hx, hy))
-    # fondu du bas du héros dans la nuit
-    fade = np.clip((yy - H * 0.62) / (H * 0.3), 0, 1) ** 1.2 * 0.92
-    arr = np.asarray(bg.convert("RGB"), np.float32)
-    arr = arr * (1 - fade[..., None]) + night * fade[..., None]
-    bg = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).convert("RGBA")
-    bg.convert("RGB").save(os.path.join(SPLASH, "splash_bg.png"), optimize=True)
-    # logo : bande centrale (lisible dans le recadrage portrait ≈ 500 px)
-    logo = logo_lockup(560, with_emblem=False)
-    lw = min(logo.width, 480)
-    logo = logo.resize((lw, int(logo.height * lw / logo.width)), Image.LANCZOS)
-    ly = int(H * 0.89) - logo.height
-    lx = (W - logo.width) // 2
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    pad = 40
-    ga = Image.new("L", (logo.width + pad * 2, logo.height + pad * 2), 0)
-    ga.paste(logo.getchannel("A"), (pad, pad))
-    ga = ga.filter(ImageFilter.GaussianBlur(18))
-    gl = Image.new("RGBA", ga.size, NIGHT + (0,))
-    gl.putalpha(ga.point(lambda v: int(v * 0.7)))
-    layer.alpha_composite(gl, (lx - pad, ly - pad))
-    layer.alpha_composite(logo, (lx, ly))
-    boot = bg.copy()
-    boot.alpha_composite(layer)
-    boot.convert("RGB").save(os.path.join(SPLASH, "boot.png"), optimize=True)
-    bb = layer.getbbox()
-    layer.crop(bb).save(os.path.join(SPLASH, "splash_logo.png"), optimize=True)
-    with open(os.path.join(SPLASH, "splash.json"), "w") as f:
-        json.dump({"size": [W, H], "logo_layer": [bb[0], bb[1], bb[2] - bb[0], bb[3] - bb[1]],
-                   "logo_rect": [lx, ly, logo.width, logo.height],
-                   "glow_center": [lx + int(logo.width * logo_lockup.go_c[0]), ly + int(logo.height * logo_lockup.go_c[1])],
-                   "glow_size": int(logo.width * logo_lockup.go_w)}, f, indent=1)
-        f.write("\n")
+    """L'écran de démarrage est désormais dessiné en code (scripts/ui/menus/splash_screen.gd,
+    direction D) et boot.png est rendu par Godot depuis sa première image :
+        Godot_v4.7.2-stable_win64.exe --path . -s res://tools/splash_boot/render_boot.gd
+    Cette cible ne régénère plus que l'icône."""
+    print("boot.png : voir tools/splash_boot/render_boot.gd (rendu Godot)")
     icon()
 
 
