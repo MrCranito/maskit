@@ -39,8 +39,9 @@ Image : `docs/reference/royaumes_des_masques.jpg`. Seule la partie « Les royaum
 - Extraction réussie : armes tenues + armes et objets du sac rejoignent la réserve, + quelques gemmes.
 
 ## Monétisation
-- Uniquement cosmétique : skins de personnage et d'armes, payés en gemmes. Aucun avantage en jeu.
 - Gemmes : packs (paiement simulé tant que les comptes stores ne sont pas configurés) + quelques gemmes par extraction.
+- Avec les gemmes : skins de personnage et d'armes (cosmétique), et packs d'or (décision de Victor du 30/10) pour s'équiper à l'armurerie avant les parties. Pas d'autre avantage en jeu vendu (pas de butin, de PV ou d'armes Légendaires contre gemmes).
+- Tout achat de la boutique passe par une fenêtre de confirmation.
 
 ## Mondes et biomes
 Chaque monde a son propre biome (décor, palette, ennemis, boss, tables de loot, armes propres). Les personnages gardent la direction artistique du projet ; le biome change le décor.

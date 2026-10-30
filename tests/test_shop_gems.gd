@@ -185,3 +185,41 @@ func _check_fits(vp: Vector2, tab: StringName) -> void:
 		var amt := s.offers.find_child("SlabArt", true, false) as Control
 		assert_true(slab.grow(1.0).encloses(amt.get_global_rect()), "%s : illustration dans le bandeau" % vp)
 		assert_gte(amt.size.y, 100.0, "%s : grande illustration" % vp)
+
+
+# --- Or contre gemmes (décision de Victor du 30/10) ------------------------------------------
+
+func test_packs_d_or_achetes_en_gemmes() -> void:
+	var packs := Store.gold_packs()
+	assert_gt(packs.size(), 0, "packs d'or configurés ([shop] gold_packs)")
+	var p: Dictionary = packs[0]
+	Profile.gems = int(p["gems"]) - 1
+	var gold0 := Profile.gold
+	assert_false(Store.purchase_gold_pack(0), "pas assez de gemmes : refusé")
+	assert_eq(Profile.gold, gold0, "rien crédité")
+	assert_eq(Profile.gems, int(p["gems"]) - 1, "rien débité")
+	Profile.gems = int(p["gems"]) + 5
+	assert_true(Store.purchase_gold_pack(0))
+	assert_eq(Profile.gems, 5, "gemmes débitées")
+	assert_eq(Profile.gold, gold0 + int(p["gold"]), "or crédité")
+	for i in packs.size() - 1:
+		assert_gt(int(packs[i + 1]["gold"]), int(packs[i]["gold"]), "packs croissants")
+
+
+func test_onglet_or_avec_confirmation() -> void:
+	var s := _shop()
+	await wait_frames(2)
+	s.show_tab(&"gold")
+	await wait_frames(1)
+	assert_not_null(s.offers)
+	assert_eq(s.offers.mode, ShopOffers.MODE_GOLD)
+	var i := s.offers.selected
+	var p: Dictionary = Store.gold_packs()[i]
+	Profile.gems = int(p["gems"])
+	var gold0 := Profile.gold
+	s.offers.action_button.pressed.emit()
+	assert_not_null(s.offers.last_confirm, "confirmation avant l'achat d'or")
+	assert_eq(Profile.gold, gold0, "rien avant confirmation")
+	s.offers.last_confirm.confirmed.emit()
+	assert_eq(Profile.gold, gold0 + int(p["gold"]), "or crédité après confirmation")
+	assert_eq(Profile.gems, 0)
