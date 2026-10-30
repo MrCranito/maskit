@@ -497,19 +497,25 @@ static func _frontage(x: Ctx) -> void:
 	var W := x.W
 	var occ := x.occ
 	var keep := x.keep
-	var paths := x.L.paths
+	var H := x.H
+	# Rues en grille d'octets (au lieu d'un accès au dictionnaire par case et par voisine) ; seules
+	# les cases de la carte sont consultées.
+	var pg := PackedByteArray()
+	pg.resize(W * H)
+	for k: Vector2i in x.L.paths:
+		if k.x >= 0 and k.y >= 0 and k.x < W and k.y < H:
+			pg[k.y * W + k.x] = 1
 	# Balayage de la grille (ordre déterministe, sans tri) : rue dont une voisine est un terrain
 	# libre (ni rue, ni structure, ni abord réservé).
-	for y in range(1, x.H - 1):
+	for y in range(1, H - 1):
 		for xx in range(1, W - 1):
-			var p := Vector2i(xx, y)
-			if not paths.has(p):
+			var i := y * W + xx
+			if pg[i] == 0:
 				continue
 			for d in DIRS:
-				var q: Vector2i = p - d
-				var j := q.y * W + q.x
-				if occ[j] == 0 and keep[j] == 0 and not paths.has(q):
-					x.frontage.append(p)
+				var j := i - d.y * W - d.x
+				if occ[j] == 0 and keep[j] == 0 and pg[j] == 0:
+					x.frontage.append(Vector2i(xx, y))
 					break
 
 
@@ -1175,12 +1181,20 @@ static func _corrals(x: Ctx) -> void:
 static func _try_yard(x: Ctx, R: Rect2i, host: Rect2i, back: Vector2i, role: StringName) -> bool:
 	if R.position.x < 2 or R.position.y < 2 or R.end.x > x.W - 2 or R.end.y > x.H - 2:
 		return false
-	for c in _cells(R):
-		if x.is_occ(c) or x.is_keep(c):
-			return false
-	for c2 in _cells(R.grow(1)):
-		if x.is_occ(c2) and not host.has_point(c2):
-			return false
+	# R et son pourtour sont dans la carte (test ci-dessus) : lecture directe des grilles.
+	var W := x.W
+	var occ := x.occ
+	var keep := x.keep
+	for y in range(R.position.y, R.end.y):
+		var row := y * W
+		for xx in range(R.position.x, R.end.x):
+			if occ[row + xx] == 1 or keep[row + xx] == 1:
+				return false
+	for y1 in range(R.position.y - 1, R.end.y + 1):
+		var row1 := y1 * W
+		for x1 in range(R.position.x - 1, R.end.x + 1):
+			if occ[row1 + x1] == 1 and not host.has_point(Vector2i(x1, y1)):
+				return false
 	if not _ring_ok(x, R if host.size.x == 0 else R.merge(host)):
 		return false
 	# Palissade : périmètre de R, sauf les cases collées au mur du bâtiment.
@@ -1399,22 +1413,32 @@ static func _rock_fits(x: Ctx, r: Rect2i, edge: bool, own: Array[Rect2i]) -> boo
 	var lo := 1 if edge else 3
 	if r.position.x < lo or r.position.y < lo or r.end.x > x.W - lo or r.end.y > x.H - lo:
 		return false
-	for c in _cells(r):
-		if x.is_occ(c) or x.is_keep(c):
-			return false
+	# r est dans la carte (test ci-dessus) : lecture directe des grilles.
+	var W := x.W
+	var occ := x.occ
+	var keep := x.keep
+	for y in range(r.position.y, r.end.y):
+		var row := y * W
+		for xx in range(r.position.x, r.end.x):
+			if occ[row + xx] == 1 or keep[row + xx] == 1:
+				return false
+	# Pourtour : structures étrangères interdites ; cases hors carte et bord de carte ignorés
+	# (bornes [1, W-2] × [1, H-2]).
 	var mg := 1 if edge else 2
-	for c2 in _cells(r.grow(mg)):
-		if not x.inb(c2) or not x.is_occ(c2):
-			continue
-		if c2.x == 0 or c2.y == 0 or c2.x == x.W - 1 or c2.y == x.H - 1:
-			continue
-		var mine := false
-		for o in own:
-			if o.has_point(c2):
-				mine = true
-				break
-		if not mine:
-			return false
+	var g := r.grow(mg)
+	for y2 in range(maxi(g.position.y, 1), mini(g.end.y, x.H - 1)):
+		var row2 := y2 * W
+		for x2 in range(maxi(g.position.x, 1), mini(g.end.x, W - 1)):
+			if occ[row2 + x2] != 1:
+				continue
+			var c2 := Vector2i(x2, y2)
+			var mine := false
+			for o in own:
+				if o.has_point(c2):
+					mine = true
+					break
+			if not mine:
+				return false
 	return _ring_ok(x, r)
 
 

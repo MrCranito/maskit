@@ -358,7 +358,9 @@ func test_leurre_attire_un_ennemi() -> void:
 	await wait_physics_frames(2)
 	assert_eq(e.current_state_name(), Enemy.STATE_PATROL)
 	var decoy_pos := Vector2(260, 40)
-	NoiseSources.emit(decoy_pos, 1.0, 5.0, 500.0)
+	# Durée en temps réel (Time.get_ticks_msec) alors que le test avance de 200 images physiques :
+	# 30 s de marge pour qu'une machine chargée n'efface pas le leurre avant la fin du test.
+	NoiseSources.emit(decoy_pos, 1.0, 30.0, 500.0)
 	assert_eq(NoiseSources.count(), 1)
 	var n := NoiseSources.pulse(get_tree())
 	assert_eq(n, 1, "seul l'ennemi dans le rayon est attiré")

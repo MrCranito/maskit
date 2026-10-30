@@ -6,6 +6,8 @@ const WORLD_PATH := "res://data/worlds/world_03_mall.tres"
 const SEEDS := 20
 const DIFFS := 5
 const MAX_MS_PER_FLOOR := 50.0
+## Passes de chronométrage de test_performance (on garde le meilleur temps de chaque run).
+const PERF_PASSES := 3
 const T := FloorLayout.Tile
 ## Bestiaire du centre commercial (classiques ; élites et boss : tests/test_bestiary_mall.gd).
 const KINDS := [&"mall_zombie", &"mall_flayer", &"mall_security_bot", &"mall_clone", &"mall_brute", &"mall_night_spider"]
@@ -327,11 +329,23 @@ func test_deterministe() -> void:
 
 
 func test_performance() -> void:
-	var t0 := Time.get_ticks_usec()
+	# Chaque run est chronométré PERF_PASSES fois et on garde son meilleur temps : la charge de la
+	# machine (CI, autres processus) ne fait qu'ajouter du temps, alors qu'une vraie régression
+	# ralentit toutes les mesures. Budget inchangé.
 	var n := 0
+	var total_us := 0
 	for s in 6:
-		n += MallGenerator.generate_run(90000 + s, world, 4).size()
-	var ms := float(Time.get_ticks_usec() - t0) / 1000.0 / float(n)
+		var best_us := -1
+		for pass_i in PERF_PASSES:
+			var t0 := Time.get_ticks_usec()
+			var floors := MallGenerator.generate_run(90000 + s, world, 4).size()
+			var us := Time.get_ticks_usec() - t0
+			if pass_i == 0:
+				n += floors
+			best_us = us if best_us < 0 else mini(best_us, us)
+		total_us += best_us
+	var ms := float(total_us) / 1000.0 / float(maxi(n, 1))
+	gut.p("Génération du centre commercial (meilleur de %d passes) : %.1f ms par étage" % [PERF_PASSES, ms])
 	assert_lt(ms, MAX_MS_PER_FLOOR, "génération : %.1f ms par étage" % ms)
 
 

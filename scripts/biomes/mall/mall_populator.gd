@@ -547,22 +547,33 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	var sealed := room.type == FloorLayout.ROOM_SUPER_LOOT or room.type == FloorLayout.ROOM_BOSS
 	var cells: Array[Vector2i] = []
 	var r := room.rect
-	for y in range(r.position.y, r.end.y):
-		for x in range(r.position.x, r.end.x):
-			var p := Vector2i(x, y)
-			var t := c.L.get_tile(p)
+	# Même filtre case par case qu'avant, sur les tableaux bruts (hors grille = VOID, ignoré).
+	var L := c.L
+	var w := L.size.x
+	var tiles := L.tiles
+	var extr := {}
+	for e in L.extraction_cells:
+		extr[e] = true
+	var spawn_check := not sealed and L.floor_index == 0
+	var sp := L.player_spawn
+	for y in range(maxi(r.position.y, 0), mini(r.end.y, L.size.y)):
+		for x in range(maxi(r.position.x, 0), mini(r.end.x, w)):
+			var i := y * w + x
+			var t := tiles[i]
 			if t != T.FLOOR and t != T.STREET:
 				continue
-			if c.blocked.has(p) or c.enemy_cells.has(p) or c.room_id_at(p) != room.id:
+			if c.room_of[i] != room.id:
 				continue
-			if c.L.extraction_cells.has(p):
+			var p := Vector2i(x, y)
+			if c.blocked.has(p) or c.enemy_cells.has(p) or extr.has(p):
 				continue
-			if c.door_adj.has(p) and not sealed:
-				continue
-			if not sealed and c.L.floor_index == 0 and absi(p.x - c.L.player_spawn.x) + absi(p.y - c.L.player_spawn.y) < safe:
-				continue
-			if not sealed and _near_stairs(c, p, stairs_safe):
-				continue
+			if not sealed:
+				if c.door_adj.has(p):
+					continue
+				if spawn_check and absi(x - sp.x) + absi(y - sp.y) < safe:
+					continue
+				if _near_stairs(c, p, stairs_safe):
+					continue
 			cells.append(p)
 	for i in range(cells.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
