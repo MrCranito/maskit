@@ -403,6 +403,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 				if dn == 0 and y2 + 1 >= PARKING.position.y:
 					continue
 				_cand(groups, up, dn, Vector2i(x2, y2), false)
+	var keys := _sorted_keys(groups)
 	var door_cells := {}
 	var connected := {0: true}
 	var pending: Array[Mod] = []
@@ -413,7 +414,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 	while progress and not pending.is_empty():
 		progress = false
 		for m3 in pending.duplicate():
-			var g := _pick(groups, m3, connected, by_unit, door_cells, stairs, false)
+			var g := _pick(groups, keys, m3, connected, by_unit, door_cells, stairs, false)
 			if g.is_empty():
 				continue
 			_door(L, m3, g, door_cells, rng, _shutter(rng), &"")
@@ -425,7 +426,7 @@ static func _connect(L: FloorLayout, mods: Array[Mod], rng: RandomNumberGenerato
 	for m4 in mods:
 		if m4.type != FloorLayout.ROOM_SUPER_LOOT:
 			continue
-		var g2 := _pick(groups, m4, connected, by_unit, door_cells, stairs, false)
+		var g2 := _pick(groups, keys, m4, connected, by_unit, door_cells, stairs, false)
 		if g2.is_empty():
 			return false
 		_door(L, m4, g2, door_cells, rng, DS.LOCKED, m4.key)
@@ -443,12 +444,18 @@ static func _cand(groups: Dictionary, a: int, b: int, c: Vector2i, vertical: boo
 	(groups[key] as Array).append([c, vertical])
 
 
-static func _pick(groups: Dictionary, mu: Mod, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
+## Clés de `groups` dans l'ordre de parcours de _pick (triées une seule fois par _connect :
+## `groups` ne change plus une fois les candidats recensés).
+static func _sorted_keys(groups: Dictionary) -> Array:
+	var keys: Array = groups.keys()
+	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * 1000 + a.y < b.x * 1000 + b.y)
+	return keys
+
+
+static func _pick(groups: Dictionary, keys: Array, mu: Mod, connected: Dictionary, by_unit: Dictionary, door_cells: Dictionary, stairs: Dictionary, extra: bool) -> Dictionary:
 	var u := mu.unit
 	var best := {}
 	var best_score := -1.0
-	var keys: Array = groups.keys()
-	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.x * 1000 + a.y < b.x * 1000 + b.y)
 	for key: Vector2i in keys:
 		if key.x != u and key.y != u:
 			continue
@@ -506,20 +513,58 @@ static func _door(L: FloorLayout, m: Mod, g: Dictionary, door_cells: Dictionary,
 static func _validate(L: FloorLayout, mods: Array[Mod]) -> bool:
 	if not FloorLayout.is_walkable_tile(L.get_tile(L.player_spawn)):
 		return false
-	var reach := L.flood_reachable(L.player_spawn, true)
-	for y in H:
-		for x in W:
-			if FloorLayout.is_walkable_tile(L.get_tile(Vector2i(x, y))) and not reach.has(Vector2i(x, y)):
-				return false
-	var open_reach := L.flood_reachable(L.player_spawn, false)
+	var reach := _flood(L, true)
+	var tiles := L.tiles
+	for j in W * H:
+		if reach[j] == 0 and FloorLayout.is_walkable_tile(tiles[j]):
+			return false
+	var open_reach := _flood(L, false)
 	for m in mods:
 		if m.type != FloorLayout.ROOM_SUPER_LOOT:
 			continue
 		for y2 in range(m.inner.position.y, m.inner.end.y):
 			for x2 in range(m.inner.position.x, m.inner.end.x):
-				if open_reach.has(Vector2i(x2, y2)):
+				if open_reach[y2 * W + x2] == 1:
 					return false
 	return L.extraction_cells.size() >= 2
+
+
+## Cases atteintes depuis l'apparition (1 = atteinte), même règle que FloorLayout.flood_reachable
+## (4-voisinage, cases marchables ; sans `through_locked`, une porte verrouillée arrête la
+## propagation) mais sur une grille d'octets : _validate est appelé à chaque génération du
+## rez-de-chaussée et le parcours par dictionnaire en était l'étape la plus lente.
+static func _flood(L: FloorLayout, through_locked: bool) -> PackedByteArray:
+	var tiles := L.tiles
+	var stop := PackedByteArray()
+	stop.resize(W * H)
+	for j in W * H:
+		if not FloorLayout.is_walkable_tile(tiles[j]):
+			stop[j] = 1
+	if not through_locked:
+		# Comme get_door_at : la première porte enregistrée sur la case fait foi.
+		var first := {}
+		for d in L.doors:
+			if not first.has(d.cell):
+				first[d.cell] = d
+		for cell: Vector2i in first:
+			if L.in_bounds(cell) and tiles[cell.y * W + cell.x] == T.DOOR and (first[cell] as FloorLayout.Door).state == DS.LOCKED:
+				stop[cell.y * W + cell.x] = 1
+	var seen := PackedByteArray()
+	seen.resize(W * H)
+	var s := L.player_spawn
+	var start := s.y * W + s.x
+	seen[start] = 1
+	var stack := PackedInt32Array([start])
+	while not stack.is_empty():
+		var c := stack[stack.size() - 1]
+		stack.resize(stack.size() - 1)
+		var cx := c % W
+		for n: int in [c - 1 if cx > 0 else -1, c + 1 if cx < W - 1 else -1, c - W, c + W]:
+			if n < 0 or n >= W * H or seen[n] == 1 or stop[n] == 1:
+				continue
+			seen[n] = 1
+			stack.append(n)
+	return seen
 
 
 # --- Contrat de rendu ------------------------------------------------------------------
