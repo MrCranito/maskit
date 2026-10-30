@@ -2089,8 +2089,29 @@ def presentation_sheet(kinds) -> None:
         n_death = anims_for(kind)["death"][0]
         shots = [("idle_se_0", "idle"), ("attack_sw_3", "attaque"), ("death_s_%d" % (n_death - 1), "cadavre")]
         if F > 256:
-            shots = shots[:2]
-        w = (cell_w - 32) // len(shots)
+            # boss : idle + attaque à l'échelle réelle du jeu, à côté d'un squelette rôdeur (même facteur)
+            kr = (cell_h - 70) / float(frame_of(kind))
+            x = cx + 6
+            sk = os.path.join(TMP_DIR, "eg_skeleton", "idle_se_0.png")
+            if os.path.exists(sk):
+                im = Image.open(sk).convert("RGBA")
+                n = int(BASE_FRAME * kr)
+                im = im.resize((n, n), Image.LANCZOS)
+                sheet.alpha_composite(im, (x, cy + cell_h - 46 - n + int(n * 0.12)))
+                dr.text((x + 2, cy + cell_h - 40), "squelette (échelle)", font=sub_f, fill=(190, 190, 210, 255))
+                x += n - 10
+            for fname, label in shots[:2]:
+                path = os.path.join(tmp, fname + ".png")
+                if not os.path.exists(path):
+                    continue
+                im = Image.open(path).convert("RGBA")
+                n = int(frame_of(kind) * kr)
+                im = im.resize((n, n), Image.LANCZOS)
+                sheet.alpha_composite(im, (x - 30, cy + 40))
+                dr.text((x + n // 2 - 40, cy + cell_h - 40), label, font=sub_f, fill=(190, 190, 210, 255))
+                x += n - 90
+            shots = []
+        w = (cell_w - 32) // max(len(shots), 1)
         # échelle commune : 1 px de rendu = 1 px affiché ; le boss est réduit pour tenir dans la case
         k = min(1.0, (cell_h - 70) / F, 1.1 * w / F if F > 256 else 9.0)
         x = cx + 10

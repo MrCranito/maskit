@@ -26,7 +26,10 @@ flock /home/claude/.blender_render.lock python3 art/blender/bestiary/egypt/build
 ```
 Animations : idle (6), run (8), attack (6 : 0-2 élan, 2 tenue du télégraphe, 3 coup / tir, 4-5 retour),
 hit (3), death (8, dernière image = cadavre) × 8 directions. Cadre 192 px ; momie et élites 224 px ;
-boss rendu 384 px stocké à 72 % (`world_per_px` compensé) avec idle 4 / run 6 / death 6 images.
+boss rendu 448 px (échelle ×2,5 : ≈ 2,5 fois un squelette en jeu) stocké à 62 % (`world_per_px` 0,94
+compensé, atlas 2048 × 3268 < 8192) avec idle 4 / run 6 / death 6 images. Silhouette du boss : grand
+némès rayé or / lapis, masque d'or, large collier ousekh, cape sombre, sceptre au disque solaire, halo
+doré émissif. La planche de présentation le montre à l'échelle du jeu à côté d'un squelette.
 Sorties : `assets/sprites/enemies/<kind>/` (`_atlas.png` compression VRAM, `_frames.tres`, `_meta.json`).
 
 ## Monstres communs (rangée 1 = plus simples, rangée 2 = plus durs)
