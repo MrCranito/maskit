@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"eg_corpse"
+display_name = "Pilleur momifié"
+rolls_min = 1
+rolls_max = 2
+empty_chance = 0.1
+search_time = 1.2
+entries = {
+&"bandage": 3.0,
+&"eg_bronze_dagger": 0.8,
+&"eg_dates": 2.0,
+&"eg_papyrus": 1.0,
+&"eg_silver_coins": 4.0,
+&"eg_water_skin": 3.0,
+&"wpn_gadget_c4": 0.016,
+&"wpn_gadget_decoy": 0.163,
+&"wpn_gadget_drone": 0.004,
+&"wpn_gadget_frag": 0.163,
+&"wpn_gadget_mine": 0.016,
+&"wpn_gadget_smoke": 0.052,
+&"wpn_pistol_deagle": 0.033,
+&"wpn_pistol_glock18": 0.104,
+&"wpn_pistol_p320": 0.008,
+&"wpn_rifle_ak47": 0.325,
+&"wpn_rifle_aug": 0.008,
+&"wpn_rifle_m4a1": 0.104,
+&"wpn_rifle_scarh": 0.033,
+&"wpn_rocket_javelin": 0.008,
+&"wpn_rocket_m202": 0.033,
+&"wpn_rocket_rpg7": 0.104,
+&"wpn_smg_mp5": 0.325,
+&"wpn_smg_p90": 0.033,
+&"wpn_smg_uzi": 0.008,
+&"wpn_smg_vector": 0.104,
+&"wpn_sniper_ax50": 0.104,
+&"wpn_sniper_m24": 0.325,
+&"wpn_sniper_m82": 0.033
+}

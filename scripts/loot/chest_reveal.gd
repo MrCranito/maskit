@@ -111,6 +111,7 @@ class RevealIcon extends Node2D:
 				draw_circle(Vector2.ZERO, r + 10.0 - k * 3.0, Color(col, 0.12 + k * 0.08))
 		draw_circle(Vector2.ZERO, r, Color(MenuKit.NIGHT_DEEP, 0.85))
 		draw_arc(Vector2.ZERO, r, 0.0, TAU, 32, col, 2.5, true)
-		if item.icon != null:
+		var tex := LootVisuals.item_icon(item)
+		if tex != null:
 			var s := ChestReveal.ICON_PX
-			draw_texture_rect(item.icon, Rect2(Vector2(-s, -s) * 0.5, Vector2(s, s)), false, item.tint)
+			draw_texture_rect(tex, Rect2(Vector2(-s, -s) * 0.5, Vector2(s, s)), false, LootVisuals.item_tint(item))

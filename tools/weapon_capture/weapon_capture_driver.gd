@@ -10,6 +10,8 @@ const SEED := 20261030
 
 var out: String = ""
 var weapons: PackedStringArray = PackedStringArray()
+## --dirs : en plus, <out>/dir_<id>_<k>.png (8 directions de tir, en marchant).
+var dirs: bool = false
 
 
 func _ready() -> void:
@@ -18,6 +20,8 @@ func _ready() -> void:
 			out = a.substr(6)
 		elif a.begins_with("--weapons="):
 			weapons = a.substr(10).split(",", false)
+		elif a == "--dirs":
+			dirs = true
 	_run.call_deferred()
 
 
@@ -30,9 +34,23 @@ func _sleep(s: float) -> void:
 	await get_tree().create_timer(s, true).timeout
 
 
-func _shot(n: String) -> void:
-	await _frames(3)
+## `around` : recadre l'image sur ce nœud (carré de 30 % de la hauteur de l'écran).
+## `flash` : attend que l'éclair de bouche soit visible et capture cette image-là.
+func _shot(n: String, around: Node2D = null, flash: CanvasItem = null) -> void:
+	if flash != null:
+		var until := Time.get_ticks_msec() + 1500
+		while not flash.visible and Time.get_ticks_msec() < until:
+			await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+	else:
+		await _frames(3)
 	var img := get_tree().root.get_viewport().get_texture().get_image()
+	if img != null and is_instance_valid(around):
+		var p: Vector2 = around.get_global_transform_with_canvas().origin
+		var s := int(img.get_height() * 0.3)
+		var r := Rect2i(Vector2i(p) - Vector2i(s / 2, s / 2), Vector2i(s, s))
+		r = r.intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+		img = img.get_region(r)
 	if img != null and out != "":
 		DirAccess.make_dir_recursive_absolute(out)
 		var p := out.path_join("%s.png" % n)
@@ -103,4 +121,23 @@ func _run() -> void:
 		await _shot("tir_%s" % id)
 		aim_stick.output = Vector2.ZERO
 		await _sleep(0.8)
+		if dirs:
+			# 8 directions en marchant dans le sens du tir (prise en main, bouche du canon), sans HUD.
+			if is_instance_valid(raid.hud):
+				raid.hud.visible = false
+			for k in 8:
+				var d := Vector2.RIGHT.rotated(k * TAU / 8.0)
+				move_stick.output = d * 0.6
+				aim_stick.output = d
+				await _sleep(0.12 if k % 2 == 0 else 0.18)
+				var fl: CanvasItem = player.find_child("MuzzleFlash", true, false) as CanvasItem
+				await _shot("dir_%s_%d" % [id, k], player, fl)
+				# Retour au point de départ (reste dans la zone éclairée).
+				aim_stick.output = Vector2.ZERO
+				move_stick.output = -d * 0.6
+				await _sleep(0.18)
+				move_stick.output = Vector2.ZERO
+				await _sleep(0.3)
+			if is_instance_valid(raid.hud):
+				raid.hud.visible = true
 	get_tree().quit(0)

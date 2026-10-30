@@ -73,11 +73,11 @@ func test_held_span_and_weapon_scale_keep_game_proportions() -> void:
 	assert_gt(span_ak, span_glock * 1.5, "Un fusil est bien plus long qu'un pistolet")
 	var ppu := Balance.get_float("menu", "lobby_weapon_px_per_unit", 8.0)
 	assert_almost_eq(LobbyHero.weapon_scale(ak, 100.0) * 100.0, span_ak * ppu, 0.01)
-	# Arme sans sprite (silhouette dessinée) : longueur de la silhouette.
+	# Arme sans sprite ni repli de catégorie (silhouette dessinée) : longueur de la silhouette.
 	var w := WeaponData.new()
-	w.category = &"lmg"
+	w.category = &"test_cat_xyz"
 	w.id = &"test_no_sprite_xyz"
-	assert_almost_eq(WeaponView.held_span(w), WeaponView.shape_muzzle(&"lmg").length(), 0.01)
+	assert_almost_eq(WeaponView.held_span(w), WeaponView.shape_muzzle(&"test_cat_xyz").length(), 0.01)
 
 
 func test_held_from_info() -> void:

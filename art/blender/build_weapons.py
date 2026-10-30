@@ -1,10 +1,14 @@
-"""Arsenal d'Exfil Rush (planche docs/reference/arsenal.jpg) : 18 armes + 5 équipements.
+"""Arsenal d'Exfil Rush (planche docs/reference/arsenal.jpg) : 30 armes + 5 équipements.
 
 Usage (depuis la racine du projet) :
     python3 art/blender/build_weapons.py                   # tout (sprites tenus, icônes, sprites au sol)
     python3 art/blender/build_weapons.py smg_mp5 rifle_aug # quelques-uns
+    python3 art/blender/build_weapons.py --phase8          # les 12 armes de la phase 8 (revolvers, pompes, LMG, LG)
     python3 art/blender/build_weapons.py --sheet out.png   # planche-contact des icônes (après rendu)
     python3 art/blender/build_weapons.py --icon-meta       # métadonnées des icônes seulement (sans rendu)
+    python3 art/blender/build_weapons.py --phase8 --sheet out.png   # planche des 12 armes de la phase 8
+Sans bpy en module : blender -b --python lanceur.py -- art/blender/build_weapons.py <args>, où le lanceur
+remplace sys.argv par [script, args...] puis exécute le script (Pillow doit être importable).
 
 Sorties :
 - assets/sprites/weapons/<id>.png + <id>.json (grip, muzzle en px dans l'image, scale, size) :
@@ -506,6 +510,400 @@ def rocket_javelin(m):
     return {"grip": (0.10, 0, -0.16), "muzzle": (1.40, 0, 0.24)}
 
 
+# --------------------------------------------------------------------------- briques (phase 8)
+
+def curve2d(*segs, n=6):
+    """Profil 2D (x, z) fait de segments de Bézier cubiques [(p0, p1, p2, p3), ...] et de points seuls."""
+    out = []
+    for s in segs:
+        if len(s) == 4 and isinstance(s[0], tuple):
+            p0, p1, p2, p3 = s
+            for i in range(n + 1):
+                t = i / n
+                a, b, c, d = (1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3
+                pt = (a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1])
+                if not out or abs(out[-1][0] - pt[0]) + abs(out[-1][1] - pt[1]) > 1e-4:
+                    out.append(pt)
+        else:
+            out.append(s)
+    return out
+
+
+def flutes(m, x, z, r, length, n, mat, phase=0.0, w=0.035, depth=0.02):
+    """Cannelures d'un barillet d'axe X (bandes sombres posées sur la surface)."""
+    for k in range(n):
+        a = phase + k * 2 * math.pi / n
+        box("flute", (length, depth, w), (x, -r * math.cos(a), z + r * math.sin(a)), m[mat],
+            rot=(math.pi - a, 0, 0), bevel=0.0)
+
+
+def ribs_x(m, x0, x1, n, z, size_y, size_z, mat):
+    """Anneaux / nervures transversales régulières (garde-main striés, devant de pompe)."""
+    for k in range(n):
+        xx = x0 + (x1 - x0) * (k + 0.5) / n
+        box("rib", (0.022, size_y, size_z), (xx, 0, z), m[mat], bevel=0.0)
+
+
+def shells(m, pts, mat="brass", tip="dark", r=0.026):
+    """Bande de cartouches (mitrailleuses) : une cartouche couchée par point, pointe vers +X."""
+    for (x, y, z) in pts:
+        cyl_x("round", r, r, 0.10, (x, y, z), m[mat], seg=8)
+        cyl_x("tip", r, r * 0.35, 0.05, (x + 0.075, y, z), m[mat], seg=8)
+        box("link", (0.03, r * 2.4, r * 2.4), (x - 0.02, y, z), m[tip], bevel=0.0)
+
+
+def bipod(m, x, z, mat="dark", deployed=True, y=0.05):
+    for sy in (-y, y):
+        if deployed:
+            C.mesh_obj("bipod", C.bm_tube([(x, sy, z), (x + 0.16, sy * 3, z - 0.46)], [0.024, 0.02], seg=6), m[mat])
+            C.mesh_obj("foot", C.bm_xform(C.bm_sphere(8, 6, 0.03), loc=(x + 0.16, sy * 3, z - 0.47)), m["rubber"])
+        else:
+            C.mesh_obj("bipod", C.bm_tube([(x, sy, z), (x - 0.42, sy * 1.2, z - 0.05)], [0.022, 0.02], seg=6), m[mat])
+
+
+# --------------------------------------------------------------------------- revolvers
+
+def _revolver(m, frame, barrel, gripm, cyl, blen, underlug="rod", rib=False, adj_sight=False, cyl_len=0.27):
+    """Revolver : barillet d'axe X (centre x=0.11, z=0.15), canon au-dessus de l'axe (z=0.21)."""
+    cx, cz, r = 0.11, 0.15, 0.105
+    x0, x1 = cx - cyl_len / 2, cx + cyl_len / 2
+    # carcasse : montant arrière (bouclier), pontet supérieur, cadre inférieur, pied de canon
+    prism("frameBack", [(x0 - 0.10, 0.30), (x0 + 0.01, 0.30), (x0 + 0.01, 0.02), (x0 - 0.06, 0.0), (x0 - 0.12, 0.10)],
+          0.12, m[frame])
+    box("topStrap", (cyl_len + 0.04, 0.10, 0.05), (cx, 0, 0.285), m[frame], bevel=0.01)
+    box("frameLow", (cyl_len + 0.04, 0.10, 0.06), (cx, 0, 0.02), m[frame], bevel=0.01)
+    box("frameFront", (0.07, 0.12, 0.30), (x1 + 0.03, 0, 0.15), m[frame], bevel=0.012)
+    # barillet cannelé
+    cyl_x("cylinder", r, r, cyl_len, (cx, 0, cz), m[cyl], seg=18)
+    cyl_x("cylFront", r * 0.92, r * 0.80, 0.02, (x1 + 0.005, 0, cz), m[cyl], seg=18)
+    flutes(m, cx + 0.01, cz, r * 0.97, cyl_len * 0.62, 6, "black", phase=math.pi / 6)
+    cyl_x("pin", 0.022, 0.022, 0.06, (x1 + 0.08, 0, cz - 0.02), m["steel"], seg=8)
+    # canon
+    xb0 = x1 + 0.06
+    cyl_x("barrel", 0.045, 0.042, blen, (xb0 + blen / 2, 0, 0.21), m[barrel], seg=14)
+    cyl_x("crown", 0.034, 0.034, 0.012, (xb0 + blen + 0.004, 0, 0.21), m["black"], seg=12)
+    if underlug == "full":           # Python : tenon plein sous tout le canon
+        box("underlug", (blen, 0.085, 0.085), (xb0 + blen / 2, 0, 0.15), m[barrel], bevel=0.02)
+    elif underlug == "shroud":       # Model 29 : carénage de la tige d'éjection, à mi-canon
+        prism("shroud", [(xb0 - 0.01, 0.20), (xb0 + 0.34, 0.20), (xb0 + 0.34, 0.13), (xb0 + 0.30, 0.10),
+                         (xb0 - 0.01, 0.10)], 0.08, m[barrel])
+    else:                            # Peacemaker : tige d'éjection et son fourreau, côté droit
+        cyl_x("ejRod", 0.022, 0.022, blen * 0.82, (xb0 + blen * 0.41, -0.035, 0.145), m[barrel], seg=8)
+        cyl_x("ejHead", 0.03, 0.03, 0.04, (xb0 + 0.06, -0.06, 0.145), m["steel"], seg=8)
+    if rib:                          # bande ventilée (Python)
+        box("rib", (blen, 0.05, 0.022), (xb0 + blen / 2, 0, 0.295), m[barrel], bevel=0.0)
+        for k in range(int(blen / 0.09)):
+            box("ribPost", (0.03, 0.045, 0.05), (xb0 + 0.05 + k * 0.09, 0, 0.265), m[barrel], bevel=0.0)
+    box("sightF", (0.06, 0.03, 0.06) if not rib else (0.05, 0.03, 0.05),
+        (xb0 + blen - 0.04, 0, 0.27 if not rib else 0.325), m[barrel], bevel=0.0)
+    if adj_sight:
+        box("sightR", (0.08, 0.08, 0.05), (x0 - 0.02, 0, 0.33), m["black"], bevel=0.0)
+    # chien (crête) et détente
+    prism("hammer", [(x0 - 0.06, 0.26), (x0 - 0.02, 0.30), (x0 - 0.10, 0.37), (x0 - 0.17, 0.36), (x0 - 0.10, 0.30)],
+          0.05, m["dark"])
+    guard("guard", x0 - 0.02, x0 + 0.17, 0.0, m[frame])
+    box("trigger", (0.025, 0.03, 0.10), (x0 + 0.06, 0, -0.06), m["dark"], rot=(0, 0.35, 0))
+    # crosse « bec de corbin » (dos qui remonte vers le chien, talon arrondi)
+    gx = x0 - 0.04
+    prof = curve2d(((gx + 0.04, 0.0), (gx - 0.02, -0.06), (gx - 0.06, -0.18), (gx - 0.04, -0.30)),
+                   ((gx - 0.07, -0.33), (gx - 0.14, -0.36), (gx - 0.24, -0.34), (gx - 0.26, -0.30)),
+                   ((gx - 0.24, -0.20), (gx - 0.20, -0.04), (gx - 0.12, 0.10), (gx - 0.07, 0.26)),
+                   (gx + 0.0, 0.10))
+    prism("grip", prof, 0.13, m[gripm])
+    # plaquettes de crosse (bois / caoutchouc) légèrement en relief, cadre visible autour
+    inner = curve2d(((gx - 0.01, -0.03), (gx - 0.05, -0.10), (gx - 0.08, -0.20), (gx - 0.07, -0.28)),
+                    ((gx - 0.07, -0.28), (gx - 0.12, -0.31), (gx - 0.18, -0.31), (gx - 0.22, -0.28)),
+                    ((gx - 0.20, -0.18), (gx - 0.16, -0.06), (gx - 0.10, 0.06), (gx - 0.06, 0.08)))
+    prism("gripPanel", inner, 0.145, m[gripm])
+    return {"grip": (gx - 0.13, 0, -0.14), "muzzle": (xb0 + blen + 0.01, 0, 0.21), "x0": x0, "gx": gx}
+
+
+def revolver_peacemaker(m):
+    # Colt Single Action Army : carcasse bleuie, canon 4,75", tige d'éjection, plaquettes en noyer, chien à crête
+    info = _revolver(m, "black", "dark", "wood_grip", "dark", 0.50, underlug="rod")
+    box("loadGate", (0.05, 0.012, 0.10), (info["x0"] + 0.02, -0.062, 0.15), m["dark"], bevel=0.0)
+    return info
+
+
+def revolver_model29(m):
+    # S&W Model 29 : acier patiné, canon long 8 3/8", carénage d'éjecteur, hausse réglable, crosse bois
+    info = _revolver(m, "gunmetal", "gunmetal", "wood", "worn", 0.84, underlug="shroud", adj_sight=True)
+    cyl_y("latch", 0.03, 0.13, (info["x0"] - 0.05, 0, 0.21), m["steel"])
+    return info
+
+
+def revolver_python(m):
+    # Colt Python : finition nickelée gravée, canon 6" à bande ventilée et tenon plein, crosse bois à médaillon
+    info = _revolver(m, "silver", "engraved", "wood_grip", "silver", 0.62, underlug="full", rib=True, adj_sight=True)
+    gx = info["gx"]
+    C.mesh_obj("medal", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(gx - 0.13, -0.075, -0.12), scale=(0.035, 0.012, 0.04)),
+               m["gold"])
+    box("goldLine", (0.30, 0.124, 0.012), (0.11, 0, 0.255), m["gold"], bevel=0.0)
+    return info
+
+
+# --------------------------------------------------------------------------- fusils à pompe
+
+def _shotgun_stock(m, mat, x0=-0.02, butt="rubber", length=1.0):
+    """Crosse droite de chasse (poignée anglaise) partant de l'arrière de la carcasse."""
+    xb = x0 - length
+    prism("stock", [(x0, 0.30), (x0, 0.10), (x0 - 0.28, 0.03), (xb, -0.16), (xb, 0.28), (x0 - 0.36, 0.24)], 0.13, m[mat])
+    box("butt", (0.05, 0.14, 0.46), (xb - 0.02, 0, 0.06), m[butt])
+    return {"grip": (x0 - 0.22, 0, 0.02)}
+
+
+def shotgun_870(m):
+    # Remington 870 : carcasse noire, long canon, tube magasin, devant de pompe strié en bois, crosse bois
+    box("receiver", (0.60, 0.13, 0.22), (0.26, 0, 0.20), m["black"], bevel=0.025)
+    box("port", (0.24, 0.01, 0.07), (0.30, -0.068, 0.23), m["dark"], bevel=0.0)
+    box("loadPort", (0.22, 0.10, 0.02), (0.30, 0, 0.085), m["dark"], bevel=0.0)
+    cyl_x("barrel", 0.042, 0.04, 1.42, (1.24, 0, 0.27), m["dark"], seg=12)
+    cyl_x("vrib", 0.016, 0.016, 1.38, (1.22, 0, 0.315), m["dark"], seg=6)
+    C.mesh_obj("bead", C.bm_xform(C.bm_sphere(8, 6, 0.022), loc=(1.92, 0, 0.33)), m["brass"])
+    cyl_x("magTube", 0.04, 0.04, 1.10, (1.10, 0, 0.17), m["black"], seg=12)
+    cyl_x("magCap", 0.046, 0.046, 0.06, (1.68, 0, 0.17), m["dark"], seg=12)
+    box("barrelBand", (0.05, 0.10, 0.16), (1.58, 0, 0.22), m["dark"], bevel=0.01)
+    box("pump", (0.46, 0.16, 0.13), (0.92, 0, 0.165), m["wood"], bevel=0.04)
+    ribs_x(m, 0.72, 1.12, 9, 0.165, 0.166, 0.10, "wood_dark")
+    guard("guard", 0.04, 0.26, 0.08, m["black"])
+    box("trigger", (0.03, 0.03, 0.10), (0.14, 0, 0.02), m["dark"], rot=(0, 0.3, 0))
+    info = _shotgun_stock(m, "wood", x0=-0.04, length=0.98)
+    return {"grip": info["grip"], "muzzle": (1.96, 0, 0.27)}
+
+
+def shotgun_benelli(m):
+    # Benelli M4 : semi-auto tactique, acier patiné, crosse télescopique, poignée pistolet, œilletons, rail
+    box("receiver", (0.66, 0.13, 0.22), (0.24, 0, 0.21), m["gunmetal"], bevel=0.025)
+    box("port", (0.22, 0.01, 0.07), (0.30, -0.068, 0.24), m["black"], bevel=0.0)
+    rail(m, -0.04, 0.52, 0.335, 0.08, mat="black")
+    # œilletons (ghost ring) arrière, guidon à ailettes
+    prism("ghostR", [(-0.02, 0.35), (0.06, 0.35), (0.05, 0.46), (0.01, 0.46)], 0.10, m["black"])
+    cyl_y("ring", 0.03, 0.105, (0.03, 0, 0.44), m["dark"])
+    cyl_x("barrel", 0.042, 0.04, 1.02, (1.06, 0, 0.27), m["dark"], seg=12)
+    prism("sightF", [(1.40, 0.30), (1.48, 0.30), (1.47, 0.40), (1.42, 0.40)], 0.07, m["black"])
+    cyl_x("magTube", 0.042, 0.042, 0.98, (1.04, 0, 0.17), m["black"], seg=12)
+    cyl_x("magCap", 0.05, 0.05, 0.06, (1.54, 0, 0.17), m["dark"], seg=12)
+    box("forend", (0.54, 0.16, 0.15), (0.84, 0, 0.18), m["black"], bevel=0.035)
+    slots(m, 0.64, 5, 0.09, 0.15, 0.04, 0.165, "dark")
+    box("bolt", (0.05, 0.05, 0.05), (0.36, -0.09, 0.22), m["steel"], bevel=0.01)
+    grip("grip", -0.02, 0.10, m["black"], h=0.34, w=0.13)
+    guard("guard", 0.00, 0.22, 0.09, m["gunmetal"])
+    box("trigger", (0.03, 0.03, 0.10), (0.10, 0, 0.03), m["dark"], rot=(0, 0.3, 0))
+    # crosse télescopique : tube + crosse coulissante + plaque de couche
+    cyl_x("tube", 0.05, 0.05, 0.50, (-0.30, 0, 0.24), m["black"], seg=10)
+    prism("stock", [(-0.36, 0.33), (-0.36, 0.14), (-0.56, 0.04), (-0.82, 0.0), (-0.82, 0.34)], 0.13, m["black"])
+    box("cheek", (0.30, 0.135, 0.04), (-0.62, 0, 0.34), m["worn"])
+    box("butt", (0.05, 0.14, 0.36), (-0.84, 0, 0.17), m["rubber"])
+    return {"grip": (-0.12, 0, -0.08), "muzzle": (1.58, 0, 0.27)}
+
+
+def shotgun_aa12(m):
+    # AA-12 : automatique, corps rectiligne massif (crosse dans l'axe), chargeur tambour, manchon ventilé
+    prof = [(-0.96, 0.34), (-0.96, -0.08), (-0.82, -0.08), (-0.62, 0.06), (-0.22, 0.10), (0.70, 0.10),
+            (0.76, 0.16), (0.76, 0.34), (0.66, 0.40), (-0.20, 0.40), (-0.60, 0.38)]
+    prism("body", prof, 0.17, m["legend"])
+    box("butt", (0.05, 0.18, 0.44), (-0.98, 0, 0.13), m["rubber"])
+    rail(m, -0.20, 0.66, 0.42, 0.08, mat="black")
+    # poignée de transport et organes de visée
+    C.mesh_obj("handle", C.bm_tube(C.bezier((-0.10, 0, 0.42), (-0.06, 0, 0.58), (0.22, 0, 0.58), (0.26, 0, 0.42), 7),
+                                   [0.028] * 7, seg=6), m["black"])
+    box("sightF", (0.05, 0.07, 0.10), (0.62, 0, 0.48), m["black"], bevel=0.0)
+    # manchon de canon ventilé + canon court + cache-flamme
+    box("shroud", (0.46, 0.15, 0.16), (0.99, 0, 0.25), m["legend"], bevel=0.02)
+    slots(m, 0.82, 4, 0.10, 0.25, 0.06, 0.155, "black")
+    cyl_x("barrel", 0.045, 0.045, 0.16, (1.30, 0, 0.25), m["dark"], seg=12)
+    cyl_x("brake", 0.06, 0.06, 0.10, (1.42, 0, 0.25), m["gold"], seg=10)
+    # tambour de 20 coups devant la poignée
+    cyl_y("drum", 0.25, 0.17, (0.28, 0, -0.20), m["black"])
+    cyl_y("drumFace", 0.20, 0.18, (0.28, 0, -0.20), m["legend"])
+    cyl_y("drumHub", 0.06, 0.19, (0.28, 0, -0.20), m["gold"])
+    box("feed", (0.20, 0.14, 0.16), (0.28, 0, 0.06), m["black"], bevel=0.01)
+    grip("grip", -0.10, 0.10, m["black"], h=0.36, w=0.14, slant=0.22)
+    guard("guard", -0.08, 0.10, 0.09, m["legend"])
+    box("trigger", (0.03, 0.03, 0.10), (0.00, 0, 0.03), m["gold"], rot=(0, 0.3, 0))
+    for x in (-0.70, -0.36):
+        box("goldBand", (0.04, 0.178, 0.30), (x, 0, 0.18), m["gold"], bevel=0.0)
+    return {"grip": (-0.20, 0, -0.08), "muzzle": (1.48, 0, 0.25)}
+
+
+# --------------------------------------------------------------------------- mitrailleuses
+
+def lmg_m249(m):
+    # M249 SAW : boîtier noir, capot d'alimentation, boîte de bande souple sous l'arme, poignée de transport,
+    # bipied replié sous le canon, crosse pleine
+    box("receiver", (0.84, 0.15, 0.22), (0.14, 0, 0.22), m["black"], bevel=0.025)
+    box("cover", (0.46, 0.15, 0.07), (0.02, 0, 0.365), m["dark"], bevel=0.02)
+    box("sightR", (0.08, 0.07, 0.07), (-0.16, 0, 0.42), m["dark"], bevel=0.0)
+    rail(m, -0.10, 0.24, 0.41, 0.07)
+    box("handguard", (0.40, 0.17, 0.16), (0.76, 0, 0.18), m["black"], bevel=0.035)
+    ribs_x(m, 0.60, 0.92, 6, 0.18, 0.175, 0.12, "dark")
+    cyl_x("barrel", 0.04, 0.038, 1.00, (1.06, 0, 0.27), m["dark"], seg=12)
+    cyl_x("gasTube", 0.035, 0.035, 0.40, (1.12, 0, 0.17), m["dark"], seg=10)
+    box("gasBlock", (0.08, 0.09, 0.16), (1.32, 0, 0.21), m["dark"])
+    box("sightF", (0.04, 0.05, 0.14), (1.50, 0, 0.36), m["dark"], bevel=0.0)
+    cyl_x("flash", 0.05, 0.05, 0.14, (1.62, 0, 0.27), m["dark"], seg=8)
+    C.mesh_obj("handle", C.bm_tube(C.bezier((0.66, 0, 0.30), (0.68, 0, 0.46), (0.90, 0, 0.46), (0.92, 0, 0.30), 7),
+                                   [0.024] * 7, seg=6), m["black"])
+    bipod(m, 1.30, 0.14, deployed=False)
+    # boîte à munitions + bande qui remonte vers le boîtier
+    box("ammoBox", (0.30, 0.18, 0.28), (0.26, 0, -0.04), m["olive"], bevel=0.03)
+    box("ammoLid", (0.32, 0.19, 0.04), (0.26, 0, 0.11), m["olive_dark"], bevel=0.01)
+    box("ammoStrap", (0.04, 0.185, 0.29), (0.20, 0, -0.04), m["olive_dark"], bevel=0.0)
+    shells(m, [(0.14, -0.11, 0.16), (0.10, -0.11, 0.20)], r=0.022)
+    grip("grip", -0.06, 0.11, m["black"], h=0.34, w=0.13)
+    guard("guard", -0.04, 0.10, 0.10, m["black"])
+    prism("stock", [(-0.28, 0.32), (-0.28, 0.12), (-0.54, 0.06), (-0.98, 0.0), (-0.98, 0.34), (-0.56, 0.34)],
+          0.14, m["black"])
+    slots(m, -0.80, 3, 0.12, 0.17, 0.10, 0.145, "dark")
+    box("butt", (0.05, 0.15, 0.36), (-1.00, 0, 0.17), m["rubber"])
+    return {"grip": (-0.16, 0, -0.07), "muzzle": (1.69, 0, 0.27)}
+
+
+def lmg_pkm(m):
+    # PKM : boîtier d'acier embouti patiné, crosse squelette en bois, canon fin cannelé, tube de gaz sous le
+    # canon, poignée de transport, cache-flamme long, boîte de 100 coups
+    box("receiver", (0.80, 0.14, 0.21), (0.12, 0, 0.22), m["worn"], bevel=0.02)
+    for x in (-0.14, 0.10, 0.34):
+        box("rivet", (0.03, 0.145, 0.03), (x, 0, 0.17), m["dark"], bevel=0.0)
+    box("cover", (0.56, 0.145, 0.06), (0.04, 0, 0.355), m["gunmetal"], bevel=0.02)
+    box("sightR", (0.12, 0.07, 0.06), (0.30, 0, 0.40), m["dark"])
+    cyl_x("barrel", 0.036, 0.034, 1.12, (1.08, 0, 0.27), m["dark"], seg=10)
+    flutes(m, 0.80, 0.27, 0.036, 0.40, 4, "black", w=0.012, depth=0.012)
+    cyl_x("gasTube", 0.032, 0.032, 0.62, (0.84, 0, 0.17), m["gunmetal"], seg=10)
+    box("gasBlock", (0.08, 0.08, 0.16), (1.18, 0, 0.21), m["dark"])
+    box("sightF", (0.05, 0.05, 0.16), (1.52, 0, 0.36), m["dark"], bevel=0.0)
+    cyl_x("flash", 0.045, 0.05, 0.18, (1.72, 0, 0.27), m["dark"], seg=8)
+    slots(m, 1.66, 3, 0.05, 0.27, 0.07, 0.105, "black")
+    C.mesh_obj("handle", C.bm_tube(C.bezier((0.52, 0, 0.30), (0.52, 0, 0.46), (0.72, 0, 0.46), (0.74, 0, 0.30), 7),
+                                   [0.026] * 7, seg=6), m["wood"])
+    bipod(m, 1.16, 0.14, deployed=False)
+    # boîte de bande métallique verte + bande
+    box("ammoBox", (0.30, 0.15, 0.30), (0.26, 0, -0.06), m["olive"], bevel=0.015)
+    box("ammoLid", (0.31, 0.155, 0.03), (0.26, 0, 0.09), m["dark"], bevel=0.0)
+    cyl_y("ammoKnob", 0.025, 0.17, (0.20, 0, 0.00), m["dark"])
+    shells(m, [(0.16, -0.10, 0.15), (0.12, -0.10, 0.19)], r=0.022)
+    grip("grip", -0.08, 0.11, m["wood"], h=0.34, w=0.13)
+    guard("guard", -0.06, 0.10, 0.10, m["dark"])
+    # crosse squelette : cadre en tube aplati + talon plein
+    pts = [(-0.28, 0, 0.30), (-0.94, 0, 0.30), (-0.96, 0, -0.06), (-0.78, 0, -0.04), (-0.42, 0, 0.10),
+           (-0.28, 0, 0.14)]
+    C.mesh_obj("skel", C.bm_tube(pts + [pts[0]], [0.045] * 7, seg=6, flat=0.55, up=(0, 1, 0)), m["wood"])
+    prism("heel", [(-0.96, 0.30), (-0.96, -0.06), (-0.84, -0.04), (-0.84, 0.30)], 0.11, m["wood"])
+    box("butt", (0.04, 0.13, 0.40), (-0.98, 0, 0.12), m["dark"])
+    return {"grip": (-0.18, 0, -0.07), "muzzle": (1.80, 0, 0.27)}
+
+
+def lmg_m60(m):
+    # M60 : longue silhouette droite, garde-main et crosse beige, canon argenté à poignée, bipied déployé,
+    # longue bande de cartouches en laiton qui pend du côté gauche
+    box("receiver", (0.90, 0.15, 0.22), (0.10, 0, 0.22), m["dark"], bevel=0.025)
+    box("cover", (0.50, 0.155, 0.07), (0.04, 0, 0.365), m["gunmetal"], bevel=0.02)
+    box("sightR", (0.08, 0.08, 0.10), (-0.22, 0, 0.43), m["dark"], bevel=0.0)
+    box("handguard", (0.52, 0.18, 0.15), (0.84, 0, 0.17), m["tan"], bevel=0.04)
+    ribs_x(m, 0.62, 1.06, 7, 0.17, 0.185, 0.10, "olive_dark")
+    cyl_x("barrel", 0.042, 0.04, 1.10, (1.20, 0, 0.27), m["silver"], seg=12)
+    cyl_x("gasCyl", 0.045, 0.045, 0.30, (1.24, 0, 0.17), m["dark"], seg=10)
+    box("sightF", (0.04, 0.05, 0.13), (1.66, 0, 0.36), m["dark"], bevel=0.0)
+    cyl_x("flash", 0.055, 0.05, 0.14, (1.80, 0, 0.27), m["dark"], seg=8)
+    C.mesh_obj("handle", C.bm_tube(C.bezier((0.76, 0, 0.31), (0.80, 0, 0.50), (1.02, 0, 0.50), (1.04, 0, 0.31), 7),
+                                   [0.026] * 7, seg=6), m["dark"])
+    bipod(m, 1.36, 0.14, deployed=True)
+    # bande de laiton : sort du capot et pend en arc sur le flanc visible
+    belt = C.bezier((0.04, -0.12, 0.30), (0.06, -0.14, 0.02), (0.26, -0.14, -0.22), (0.46, -0.13, -0.24), 9)
+    shells(m, belt, r=0.024)
+    grip("grip", -0.10, 0.11, m["tan"], h=0.34, w=0.13)
+    guard("guard", -0.08, 0.10, 0.10, m["dark"])
+    prism("stock", [(-0.35, 0.32), (-0.35, 0.12), (-0.60, 0.06), (-1.08, 0.0), (-1.08, 0.34), (-0.60, 0.34)],
+          0.14, m["tan"])
+    box("shoulder", (0.10, 0.10, 0.06), (-0.92, 0, -0.02), m["dark"], rot=(0, 0.3, 0))
+    box("butt", (0.05, 0.15, 0.36), (-1.10, 0, 0.17), m["rubber"])
+    for x in (-0.48, 0.44):
+        box("brassBand", (0.035, 0.158, 0.23), (x, 0, 0.22 if x > 0 else 0.22), m["brass"], bevel=0.0)
+    return {"grip": (-0.20, 0, -0.07), "muzzle": (1.87, 0, 0.27)}
+
+
+# --------------------------------------------------------------------------- lance-grenades
+
+def gl_m79(m):
+    # M79 « blooper » : canon court et gros à bascule, crosse et devant en bois, hausse à cadre relevée
+    box("receiver", (0.30, 0.15, 0.22), (-0.02, 0, 0.21), m["black"], bevel=0.025)
+    cyl_x("barrel", 0.095, 0.095, 0.76, (0.50, 0, 0.24), m["dark"], seg=18)
+    cyl_x("muzzle", 0.105, 0.105, 0.05, (0.86, 0, 0.24), m["black"], seg=18)
+    cyl_x("bore", 0.07, 0.07, 0.01, (0.89, 0, 0.24), m["black"], seg=16)
+    box("forend", (0.42, 0.17, 0.10), (0.32, 0, 0.13), m["wood"], bevel=0.035)
+    # hausse à cadre (relevée) + guidon
+    box("leafBase", (0.10, 0.10, 0.04), (0.20, 0, 0.345), m["dark"], bevel=0.0)
+    prism("leaf", [(0.17, 0.35), (0.21, 0.35), (0.25, 0.56), (0.21, 0.56)], 0.08, m["dark"])
+    box("leafTop", (0.04, 0.10, 0.03), (0.23, 0, 0.56), m["dark"], bevel=0.0)
+    box("sightF", (0.04, 0.04, 0.07), (0.80, 0, 0.36), m["dark"], bevel=0.0)
+    box("latch", (0.06, 0.06, 0.05), (-0.10, 0, 0.345), m["steel"], bevel=0.0)
+    guard("guard", -0.08, 0.14, 0.10, m["black"])
+    box("trigger", (0.03, 0.03, 0.09), (0.02, 0, 0.04), m["dark"], rot=(0, 0.3, 0))
+    prism("stock", [(-0.16, 0.30), (-0.16, 0.10), (-0.42, 0.02), (-0.90, -0.12), (-0.90, 0.28), (-0.46, 0.26)],
+          0.14, m["wood"])
+    box("butt", (0.08, 0.16, 0.42), (-0.94, 0, 0.08), m["rubber"], bevel=0.02)
+    return {"grip": (-0.34, 0, 0.04), "muzzle": (0.90, 0, 0.24)}
+
+
+def gl_china_lake(m):
+    # China Lake : lance-grenades à pompe, gros canon au-dessus d'un tube magasin, pompe en bois strié,
+    # carcasse d'acier patiné, crosse bois, hausse à échelle
+    box("receiver", (0.58, 0.16, 0.30), (0.10, 0, 0.21), m["gunmetal"], bevel=0.03)
+    box("port", (0.24, 0.01, 0.10), (0.16, -0.083, 0.27), m["black"], bevel=0.0)
+    cyl_x("barrel", 0.075, 0.075, 0.96, (0.86, 0, 0.29), m["dark"], seg=16)
+    cyl_x("muzzle", 0.085, 0.085, 0.05, (1.34, 0, 0.29), m["gunmetal"], seg=16)
+    cyl_x("magTube", 0.07, 0.07, 0.74, (0.76, 0, 0.12), m["gunmetal"], seg=16)
+    cyl_x("magCap", 0.075, 0.075, 0.05, (1.14, 0, 0.12), m["dark"], seg=16)
+    box("band", (0.05, 0.12, 0.26), (1.20, 0, 0.21), m["dark"], bevel=0.01)
+    cyl_x("pump", 0.10, 0.10, 0.38, (0.80, 0, 0.12), m["wood"], seg=16)
+    for k in range(6):
+        cyl_x("groove", 0.104, 0.104, 0.018, (0.65 + k * 0.06, 0, 0.12), m["wood_dark"], seg=16)
+    # hausse à échelle repliée + guidon
+    prism("ladder", [(0.04, 0.36), (0.30, 0.36), (0.30, 0.40), (0.06, 0.44)], 0.08, m["dark"])
+    box("sightF", (0.04, 0.04, 0.08), (1.28, 0, 0.40), m["dark"], bevel=0.0)
+    guard("guard", -0.06, 0.16, 0.06, m["gunmetal"])
+    box("trigger", (0.03, 0.03, 0.09), (0.04, 0, 0.00), m["dark"], rot=(0, 0.3, 0))
+    info = _shotgun_stock(m, "wood", x0=-0.18, length=0.80)
+    return {"grip": info["grip"], "muzzle": (1.37, 0, 0.29)}
+
+
+def gl_m32(m):
+    # M32 MGL : barillet tournant de 6 coups cannelé, carcasse ouverte beige, rail + viseur, poignée avant
+    # verticale, crosse télescopique
+    cx, cz, r, L = 0.24, 0.10, 0.20, 0.40
+    # carcasse : bloc arrière (poignée), longerons haut/bas reliant le canon, plaque avant
+    box("rear", (0.22, 0.16, 0.36), (-0.06, 0, 0.14), m["tan"], bevel=0.025)
+    box("topStrap", (0.80, 0.10, 0.07), (0.28, 0, 0.37), m["tan"], bevel=0.015)
+    rail(m, -0.10, 0.64, 0.415, 0.08, mat="black")
+    box("frontPlate", (0.06, 0.16, 0.38), (cx + L / 2 + 0.04, 0, 0.17), m["tan"], bevel=0.02)
+    cyl_x("axis", 0.03, 0.03, L + 0.14, (cx, 0, cz), m["steel"], seg=8)
+    # barillet cannelé et têtes de grenades (laiton) visibles en façade
+    cyl_x("cylinder", r, r, L, (cx, 0, cz), m["dark"], seg=24)
+    flutes(m, cx, cz, r * 0.98, L * 0.82, 6, "black", phase=0.0, w=0.07, depth=0.03)
+    cyl_x("cylRear", r * 1.02, r * 1.02, 0.03, (cx - L / 2, 0, cz), m["olive_dark"], seg=24)
+    for k in range(6):
+        a = k * math.pi / 3 + math.pi / 6
+        cyl_x("nose", 0.055, 0.04, 0.03, (cx + L / 2 + 0.005, -0.12 * math.cos(a), cz + 0.12 * math.sin(a)),
+              m["brass"], seg=10)
+    # canon court rayé + bague
+    cyl_x("barrel", 0.075, 0.075, 0.44, (0.73, 0, 0.24), m["dark"], seg=16)
+    cyl_x("muzzle", 0.085, 0.085, 0.05, (0.96, 0, 0.24), m["black"], seg=16)
+    box("barrelRail", (0.28, 0.06, 0.04), (0.70, 0, 0.335), m["tan"], bevel=0.0)
+    # viseur réflexe sur le rail
+    box("optic", (0.16, 0.10, 0.12), (0.12, 0, 0.49), m["black"], bevel=0.02)
+    cyl_x("optLens", 0.045, 0.045, 0.01, (0.205, 0, 0.50), m["glass"], seg=12)
+    # poignée avant verticale, poignée pistolet, détente
+    prism("vgrip", [(0.64, 0.19), (0.74, 0.19), (0.73, -0.14), (0.65, -0.14)], 0.10, m["black"])
+    grip("grip", -0.02, 0.0, m["black"], h=0.34, w=0.13)
+    guard("guard", -0.02, 0.10, -0.02, m["tan"])
+    box("trigger", (0.03, 0.03, 0.09), (0.04, 0, -0.08), m["dark"], rot=(0, 0.3, 0))
+    # crosse télescopique
+    cyl_x("tube", 0.045, 0.045, 0.44, (-0.38, 0, 0.24), m["black"], seg=10)
+    prism("stock", [(-0.44, 0.33), (-0.44, 0.14), (-0.60, 0.06), (-0.84, 0.03), (-0.84, 0.34)], 0.13, m["tan"])
+    box("butt", (0.05, 0.14, 0.34), (-0.86, 0, 0.18), m["rubber"])
+    return {"grip": (-0.12, 0, -0.18), "muzzle": (0.99, 0, 0.24)}
+
+
 # --------------------------------------------------------------------------- équipements
 
 def gadget_frag(m):
@@ -616,13 +1014,25 @@ WEAPONS = {
     "rocket_rpg7": rocket_rpg7, "rocket_m202": rocket_m202, "rocket_javelin": rocket_javelin,
     "gadget_frag": gadget_frag, "gadget_smoke": gadget_smoke, "gadget_mine": gadget_mine,
     "gadget_c4": gadget_c4, "gadget_drone": gadget_drone,
+    # phase 8 : revolvers, fusils à pompe, mitrailleuses, lance-grenades
+    "revolver_peacemaker": revolver_peacemaker, "revolver_model29": revolver_model29,
+    "revolver_python": revolver_python,
+    "shotgun_870": shotgun_870, "shotgun_benelli": shotgun_benelli, "shotgun_aa12": shotgun_aa12,
+    "lmg_m249": lmg_m249, "lmg_pkm": lmg_pkm, "lmg_m60": lmg_m60,
+    "gl_m79": gl_m79, "gl_china_lake": gl_china_lake, "gl_m32": gl_m32,
 }
+PHASE8 = ["revolver_peacemaker", "revolver_model29", "revolver_python", "shotgun_870", "shotgun_benelli",
+          "shotgun_aa12", "lmg_m249", "lmg_pkm", "lmg_m60", "gl_m79", "gl_china_lake", "gl_m32"]
 RARITY = {"pistol_p9": 0, "pistol_glock18": 2, "pistol_deagle": 3, "pistol_p320": 4,
           "smg_mp5": 0, "smg_vector": 2, "smg_p90": 3, "smg_uzi": 4,
           "rifle_ak47": 0, "rifle_m4a1": 2, "rifle_scarh": 3, "rifle_aug": 4,
           "sniper_m24": 0, "sniper_ax50": 2, "sniper_m82": 3,
           "rocket_rpg7": 2, "rocket_m202": 3, "rocket_javelin": 4,
-          "gadget_frag": 0, "gadget_smoke": 2, "gadget_mine": 3, "gadget_c4": 4, "gadget_drone": 4}
+          "gadget_frag": 0, "gadget_smoke": 2, "gadget_mine": 3, "gadget_c4": 4, "gadget_drone": 4,
+          "revolver_peacemaker": 0, "revolver_model29": 2, "revolver_python": 3,
+          "shotgun_870": 0, "shotgun_benelli": 2, "shotgun_aa12": 4,
+          "lmg_m249": 0, "lmg_pkm": 2, "lmg_m60": 3,
+          "gl_m79": 0, "gl_china_lake": 2, "gl_m32": 3}
 # Gadgets tenus : rendus à ~48 px de large, affichés à GADGET_SCALE (~14 unités monde en main).
 GADGET_SCALE = 0.30
 
@@ -722,7 +1132,7 @@ def render_item(wid: str) -> None:
         "size": [W, H],
         "rarity": RARITY[wid],
     }
-    with open(os.path.join(OUT, wid + ".json"), "w") as f:
+    with open(os.path.join(OUT, wid + ".json"), "w", newline="\n") as f:
         json.dump(meta, f, indent=2)
         f.write("\n")
     # icône de profil
@@ -748,10 +1158,10 @@ def render_item(wid: str) -> None:
 RARITY_COL = {0: (150, 156, 168), 2: (60, 120, 230), 3: (150, 70, 230), 4: (230, 170, 50)}
 
 
-def contact_sheet(out: str) -> None:
+def contact_sheet(out: str, ids: list[str] | None = None) -> None:
     """Planche façon arsenal.jpg : vignettes à fond de rareté, icône + nom."""
     from PIL import Image, ImageDraw
-    ids = list(WEAPONS)
+    ids = ids or list(WEAPONS)
     cols = 4
     cw, ch = 300, 186
     sheet = Image.new("RGBA", (cw * cols + 10, ch * math.ceil(len(ids) / cols) + 10), (14, 20, 36, 255))
@@ -776,7 +1186,8 @@ def contact_sheet(out: str) -> None:
 
 # Repli par catégorie (WeaponCatalog.icon_for / WeaponView : <category>.png) = modèle commun de la catégorie.
 CATEGORY_FALLBACK = {"pistol": "pistol_p9", "smg": "smg_mp5", "rifle": "rifle_ak47", "sniper": "sniper_m24",
-                     "rocket_launcher": "rocket_rpg7", "gadget": "gadget_frag"}
+                     "rocket_launcher": "rocket_rpg7", "gadget": "gadget_frag", "revolver": "revolver_peacemaker",
+                     "shotgun": "shotgun_870", "lmg": "lmg_m249", "grenade_launcher": "gl_m79"}
 
 
 def write_category_fallbacks() -> None:
@@ -793,17 +1204,20 @@ def write_category_fallbacks() -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    if "--sheet" in args:
-        contact_sheet(args[args.index("--sheet") + 1])
+    sheet = args[args.index("--sheet") + 1] if "--sheet" in args else None
+    ids = [a for a in args if a in WEAPONS]
+    if "--phase8" in args:
+        ids += PHASE8
+    if sheet:
+        contact_sheet(sheet, ids)
         return
     if "--icon-meta" in args:
         # métadonnées des icônes seulement (aucun rendu) : armes demandées, sinon toutes
-        ids = [a for a in args if a != "--icon-meta"] or [w for w in WEAPONS if not w.startswith("gadget_")]
-        for wid in ids:
+        for wid in (ids or [w for w in WEAPONS if not w.startswith("gadget_")]):
             write_icon_meta(wid)
         write_category_fallbacks()
         return
-    for wid in (args or list(WEAPONS)):
+    for wid in (ids or list(WEAPONS)):
         render_item(wid)
     write_category_fallbacks()
 

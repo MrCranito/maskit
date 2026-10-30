@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"fl_ammo_box"
+display_name = "Caisse de munitions"
+rolls_min = 1
+rolls_max = 3
+empty_chance = 0.05
+search_time = 1.2
+entries = {
+&"black_powder": 4,
+&"fl_dog_tags": 0.8,
+&"fl_flare": 2,
+&"fl_steel_plate": 2,
+&"revolver_ammo": 5,
+&"rifle_ammo": 5,
+&"wpn_gadget_c4": 0.035944,
+&"wpn_gadget_decoy": 3.84,
+&"wpn_gadget_drone": 0.004781,
+&"wpn_gadget_frag": 3.84,
+&"wpn_gadget_mine": 0.035944,
+&"wpn_gadget_smoke": 1.536,
+&"wpn_pistol_deagle": 0.035944,
+&"wpn_pistol_glock18": 0.64,
+&"wpn_pistol_p320": 0.004781,
+&"wpn_rifle_ak47": 1.6,
+&"wpn_rifle_aug": 0.004781,
+&"wpn_rifle_m4a1": 0.64,
+&"wpn_rifle_scarh": 0.035944,
+&"wpn_rocket_javelin": 0.004781,
+&"wpn_rocket_m202": 0.035944,
+&"wpn_rocket_rpg7": 0.64,
+&"wpn_smg_mp5": 1.6,
+&"wpn_smg_p90": 0.035944,
+&"wpn_smg_uzi": 0.004781,
+&"wpn_smg_vector": 0.64,
+&"wpn_sniper_ax50": 0.64,
+&"wpn_sniper_m24": 1.6,
+&"wpn_sniper_m82": 0.035944
+}

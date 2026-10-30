@@ -1,0 +1,98 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_05_frozen_lands"
+display_name = "Les Terres gelées"
+biome = &"frozen_lands"
+palette = {
+"alarm": Color(1, 0.2, 0.18, 1),
+"concrete": Color(0.5, 0.54, 0.6, 1),
+"crystal": Color(0.4, 0.85, 1, 1),
+"cyan": Color(0.45, 0.9, 1, 1),
+"extraction": Color(0.3, 1, 0.75, 0.45),
+"floor": Color(0.42, 0.46, 0.52, 1),
+"ice": Color(0.55, 0.78, 0.95, 1),
+"metal": Color(0.36, 0.4, 0.47, 1),
+"shadow": Color(0.06, 0.1, 0.22, 1),
+"snow": Color(0.86, 0.91, 0.97, 1),
+"stairs": Color(0.45, 0.9, 1, 1),
+"street": Color(0.82, 0.88, 0.95, 1),
+"void": Color(0.03, 0.06, 0.12, 1),
+"wall": Color(0.3, 0.34, 0.4, 1),
+"water": Color(0.03, 0.06, 0.12, 1)
+}
+enemy_roster = {
+&"boss": {
+&"ice_drone": 2.0,
+&"ice_hunter": 1.5,
+&"ice_wolf": 2.0
+},
+&"combat": {
+&"ice_bear": 1.0,
+&"ice_drone": 2.0,
+&"ice_elemental": 1.2,
+&"ice_hunter": 1.5,
+&"ice_spider": 2.0,
+&"ice_wolf": 3.0
+},
+&"corridor": {
+&"ice_drone": 1.0,
+&"ice_spider": 2.0,
+&"ice_wolf": 3.0
+},
+&"extraction": {
+&"ice_bear": 1.0,
+&"ice_drone": 1.5,
+&"ice_elemental": 1.0,
+&"ice_hunter": 2.0,
+&"ice_spider": 1.0,
+&"ice_wolf": 2.0
+},
+&"loot": {
+&"ice_drone": 1.5,
+&"ice_hunter": 0.5,
+&"ice_spider": 2.5,
+&"ice_wolf": 2.0
+},
+&"rest": {
+&"ice_drone": 1.0,
+&"ice_wolf": 1.5
+},
+&"spawn": {
+&"ice_drone": 1.0,
+&"ice_wolf": 2.0
+},
+&"super_loot": {
+&"ice_bear": 1.0,
+&"ice_drone": 1.5,
+&"ice_elemental": 1.5,
+&"ice_hunter": 2.0,
+&"ice_wolf": 1.0
+},
+&"trap": {
+&"ice_drone": 2.0,
+&"ice_elemental": 1.0,
+&"ice_hunter": 0.8,
+&"ice_spider": 3.0,
+&"ice_wolf": 1.0
+}
+}
+building_archetypes = Array[StringName]([])
+building_names = {}
+container_kinds = Array[StringName]([&"fl_supply_crate", &"fl_ammo_box", &"fl_fuel_drum", &"fl_footlocker", &"fl_cryo_pod", &"fl_sample_case", &"fl_sled", &"fl_frozen_corpse"])
+prop_kinds = Array[StringName]([&"fl_lab_bench", &"fl_cryo_tank", &"fl_console", &"fl_bunk", &"fl_stove", &"fl_table", &"fl_med_bed", &"fl_map_table", &"fl_radio_rack", &"fl_crate_stack", &"fl_barrels", &"fl_sandbags", &"fl_weapon_rack", &"fl_generator", &"fl_pipes", &"fl_workbench", &"fl_tool_cart", &"fl_telescope", &"fl_antenna", &"fl_helicopter", &"fl_snowcat", &"fl_crystal_core", &"fl_outpost", &"fl_fuel_tanks", &"fl_containers", &"fl_radar"])
+floors_min = 0
+floors_max = 0
+boss_kind = &"ice_titan"
+elite_kinds = Array[StringName]([&"ice_glacier_guardian", &"ice_eternal_mechanic"])
+generator_path = "res://scripts/biomes/frozen_lands/frozen_lands_generator.gd"
+builder_path = "res://scripts/biomes/frozen_lands/frozen_lands_builder.gd"
+containers_dir = "res://assets/sprites/frozen_lands/containers/"
+floor_names = {
+0: "Surface de la base"
+}
+music_explore = &"western_explore"
+music_combat = &"western_combat"
