@@ -168,14 +168,15 @@ SPEC: dict[str, dict] = {
         },
     },
     "eg_pharaoh": {
-        "name": "Le Pharaon éternel", "rig": "human", "frame": 384, "scale": 1.70, "head": 1.10, "leg": 0.84,
-        "torso": (1.30, 1.10), "arm": 1.16, "arm_len": 1.08, "hunch": 0.04, "fps_run": 10, "cam_dz": 0.20,
-        "out_scale": 0.72, "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
+        "name": "Le Pharaon éternel", "rig": "human", "frame": 448, "scale": 2.50, "head": 1.12, "leg": 0.86,
+        "torso": (1.45, 1.15), "arm": 1.30, "arm_len": 1.08, "hunch": 0.04, "fps_run": 10, "cam_dz": 0.0,
+        "out_scale": 0.62, "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
         "top_key": "wrap", "pants_key": "wrap", "sleeve_key": "wrap", "hand_key": "wrap",
         "mats": {
             "eye_glow": "!#fff0a0",
             "shoe": "gold",
-            "cape": ("pat", [("#1e2c6e", "#080c2a", "#3e58b0"), ("#18245e", "#060a22", "#324a9a")], 4.0),
+            "cape": ("pat", [("#1a1838", "#06040e", "#3a3670"), ("#22163a", "#08040e", "#463a78")], 4.0),
+            "halo": "!#ffc04a",
             "sun": "!#ffaa30",
             "sun_core": "!#fff2a0",
             "curse": "!#5affc8",
@@ -1181,21 +1182,21 @@ class Pharaoh(EgHuman):
         for v in cap.verts:
             x, y, z = v.co
             z = max(z, -0.3)
-            v.co = Vector((x * 0.215 * (1.0 + 0.25 * max(0.0, -z)), y * 0.21 + 0.02, z * 0.15 + 0.29))
+            v.co = Vector((x * 0.245 * (1.0 + 0.35 * max(0.0, -z)), y * 0.235 + 0.02, z * 0.18 + 0.30))
         self.part("nemes", cap, "lapis", head)
         for k, z in enumerate((0.25, 0.31, 0.37)):
-            self.part("nemesStripe", C.bm_xform(ring(0.214 - 0.035 * k, 0.212 - 0.035 * k, 0.016), loc=(0, 0.02, z)),
+            self.part("nemesStripe", C.bm_xform(ring(0.250 - 0.045 * k, 0.240 - 0.045 * k, 0.018), loc=(0, 0.02, z)),
                       "gold", head)
         self.part("nemesBand", C.bm_xform(C.bm_box(0.36, 0.03, 0.04, bevel=0.01), loc=(0, -0.172, 0.29)), "gold", head)
         for sx in (1, -1):
-            lap = C.bm_box(0.08, 0.05, 0.34, bevel=0.015)
+            lap = C.bm_box(0.10, 0.06, 0.40, bevel=0.015)
             for v in lap.verts:
                 if v.co.z < 0:
                     v.co.x *= 1.35
-            self.part("lappet", C.bm_xform(lap, loc=(0.19 * sx, -0.03, 0.06), rot=(0.08, 0, -0.06 * sx)), "lapis", head)
-            for k in range(3):
-                self.part("lapStripe", C.bm_xform(C.bm_box(0.11, 0.054, 0.028), loc=(0.19 * sx, -0.03, 0.14 - 0.09 * k),
-                          rot=(0.08, 0, -0.06 * sx)), "gold", head)
+            self.part("lappet", C.bm_xform(lap, loc=(0.22 * sx, -0.03, 0.04), rot=(0.08, 0, -0.08 * sx)), "lapis", head)
+            for k in range(4):
+                self.part("lapStripe", C.bm_xform(C.bm_box(0.14, 0.066, 0.03), loc=(0.22 * sx, -0.03, 0.16 - 0.085 * k),
+                          rot=(0.08, 0, -0.08 * sx)), "gold", head)
         self.part("nemesTail", C.bm_tube([(0, 0.18, 0.22), (0, 0.24, 0.10), (0, 0.24, -0.06)], [0.07, 0.05, 0.03], seg=8),
                   "gold", head)
         # uræus (cobra dressé sur le front)
@@ -1204,6 +1205,13 @@ class Pharaoh(EgHuman):
         self.part("uraeusHood", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -0.21, 0.405), scale=(0.04, 0.012, 0.045)),
                   "lapis", head)
         self.part("uraeusEye", C.bm_xform(C.bm_sphere(6, 4, 0.012), loc=(0, -0.225, 0.43)), "eye_glow", head, nofs=True)
+        # lueur dorée : disque solaire derrière la tête
+        self.part("halo", C.bm_xform(ring(0.34, 0.34, 0.03, 40), loc=(0, 0.26, 0.26), rot=(math.pi / 2 - 0.25, 0, 0)),
+                  "halo", head, nofs=True)
+        for k in range(12):
+            a = 2 * math.pi * k / 12
+            self.part("haloRay", C.bm_xform(C.bm_cyl(4, 0.018, 0.0, 0.12), loc=(0.40 * math.cos(a), 0.26 + 0.1 * math.sin(a) * 0.25, 0.26 + 0.40 * math.sin(a)),
+                      rot=(math.pi / 2 - 0.25, 0, 0)), "halo", head, nofs=True)
 
     def dress(self) -> None:
         sp, pel = self.j["spine"], self.j["pelvis"]
@@ -1213,8 +1221,8 @@ class Pharaoh(EgHuman):
         # plastron et collier ousekh à rangs
         self.part("chestPlate", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.05, 0.30), scale=(0.235 * tw, 0.13 * td, 0.12)),
                   "gold", sp)
-        for k, (r, key) in enumerate(((0.26, "gold"), (0.225, "lapis"), (0.19, "gold"), (0.16, "red"))):
-            self.part("usekh%d" % k, C.bm_xform(ring(r * tw ** 0.7, r * 0.8 * td, 0.028), loc=(0, -0.02, 0.43 - 0.014 * k),
+        for k, (r, key) in enumerate(((0.31, "gold"), (0.27, "lapis"), (0.23, "gold"), (0.19, "lapis"), (0.16, "red"))):
+            self.part("usekh%d" % k, C.bm_xform(ring(r * tw ** 0.7, r * 0.8 * td, 0.032), loc=(0, -0.02, 0.44 - 0.014 * k),
                       rot=(0.32, 0, 0), scale=(1, 1, 0.55)), key, sp)
         self.part("pectoral", C.bm_xform(C.bm_box(0.12, 0.03, 0.09, bevel=0.015), loc=(0, -0.18 * td, 0.27)), "gold", sp)
         self.part("pectoralGem", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -0.20 * td, 0.27), scale=(0.035, 0.015, 0.035)),
@@ -1238,7 +1246,7 @@ class Pharaoh(EgHuman):
             self.part("bracer" + side, C.bm_xform(C.bm_cyl(12, 0.085 * self.AW, 0.078 * self.AW, 0.11),
                       loc=(0, 0, -0.12 * self.AL)), "gold", self.j["fa" + side])
         w = self.weapon("staff", "R", (0, 0, 0))
-        sun_staff(self, w, "pharaohStaff", 1.55, k=1.15)
+        sun_staff(self, w, "pharaohStaff", 1.55, k=1.45)
 
     def arms_rest(self, b: float = 0.0) -> None:
         s = self.shoulder
