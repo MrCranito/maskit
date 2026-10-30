@@ -90,8 +90,8 @@ Tourelles immobiles fixées à certains murs (cône de tir, télégraphe avant l
 /assets (sprites, sfx, music, shaders)
 /tests
 /addons (gut)
-- Autoloads : GameState, SaveManager, Profile, LootManager, EventBus. Systèmes découplés par signaux.
-- Sauvegarde locale JSON (réserve d'armes, objets, gemmes, skins, progression).
+- Autoloads : GameState, SaveManager, Profile, LootManager, EventBus, CloudSync. Systèmes découplés par signaux.
+- Sauvegarde locale JSON (réserve d'armes, objets, gemmes, skins, progression), synchronisée dans le cloud par CloudSync (Supabase, compte invité automatique ; voir docs/CLOUD_SAVE.md).
 - Mobile : pooling projectiles/effets, cible 60 fps.
 
 ## GitHub
