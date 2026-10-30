@@ -1207,13 +1207,22 @@ func _extract(_delta: float) -> void:
 	var me := player.global_position
 	var best := Vector2.INF
 	var best_d := INF
-	for c: Vector2i in l.extraction_cells:
+	# Zones ouvertes seulement (durée de vie : ExtractionPlan) ; repli sur toutes les cases.
+	var cells: Array[Vector2i] = []
+	for z: ExtractionZone in raid.get_open_extraction_zones():
+		cells.append_array(z.cells)
+	if cells.is_empty() and raid.extraction_zones.is_empty():
+		cells = l.extraction_cells
+	for c: Vector2i in cells:
 		var p := FloorLayout.cell_to_world(c)
 		var d := me.distance_to(p)
 		if d < best_d:
 			best_d = d
 			best = p
-	if raid.layout.extraction_cells.has(raid.get_player_cell()):
+	if best == Vector2.INF:
+		_sticks(Vector2.ZERO, Vector2.ZERO)
+		return
+	if cells.has(raid.get_player_cell()):
 		# Canalisation : on reste, on tire sur ce qui approche.
 		var e := _pick_enemy()
 		_sticks(Vector2.ZERO, (e.global_position - me).normalized() if e != null else Vector2.ZERO)
