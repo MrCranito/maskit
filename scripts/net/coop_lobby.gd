@@ -64,7 +64,28 @@ func _ready() -> void:
 	session.lobby_message.connect(_on_lobby_message)
 	_show_room(session.in_room())
 	_on_status_changed(session.status)
+	if session.in_room():
+		_resume_room()
 	MenuKit.fade_in(self)
+
+
+## Retour au salon déjà ouvert (menu principal, « Rejouer ensemble » après un raid) : même
+## équipe, même carte (nouvelle seed), chacun revalide son arsenal.
+func _resume_room() -> void:
+	session.replay_requested = false
+	local_ready = false
+	var path := String(session.lobby_map.get("path", session.raid_info.get("path", "")))
+	map_card = load(path) as MapCard if path != "" and ResourceLoader.exists(path) else null
+	if map_card != null:
+		if session.is_host():
+			GameState.set_current_map(map_card, true)
+			map_seed = GameState.run_seed
+		else:
+			map_seed = int(session.lobby_map.get("seed", 0))
+	_send_info()
+	_send_map()
+	session.send_lobby({"k": "sync"})
+	_refresh_room()
 
 
 # --- Construction -------------------------------------------------------------------
@@ -273,55 +294,113 @@ func _centered(c: Control) -> Control:
 	return c
 
 
-## Carte d'un joueur : rôle, aperçu du skin, pseudo, skin, arsenal, prêt.
-func _player_card(info: Dictionary, role_text: String, present: bool, connected: bool) -> Control:
-	var p := MenuKit.panel(MenuKit.NIGHT_PANEL, 20, 16)
+## Carte d'un joueur (direction D) : rôle, héros en grand avec son skin, pseudo, skin, arsenal,
+## pastille d'état (PRÊT en violet). Place vide : gros « + » (partage du code) et « En attente
+## d'un coéquipier ».
+## `where` : où est le joueur (« lobby », « menu », « end », « raid ») ; `connected` : relais.
+func _player_card(info: Dictionary, role_text: String, present: bool, connected: bool, where: String = "lobby") -> Control:
+	var ready := present and connected and where == "lobby" and bool(info.get("ready", false))
+	var p := PanelContainer.new()
+	p.name = "Card" + role_text.capitalize()
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var edge := Color(MenuKit.VIOLET, 0.95) if ready else Color(1, 1, 1, 0.16)
+	p.add_theme_stylebox_override("panel", CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.8), 22.0, edge, 2.0 if ready else 1.0, 18.0, 14.0))
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
+	v.add_theme_constant_override("separation", 4)
 	p.add_child(v)
-	var pill := MenuKit.pill(role_text, MenuKit.RED if role_text == "HÔTE" else Color(0.2, 0.4, 0.7), 15)
-	pill.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var pill := MenuKit.pill(role_text, MenuKit.VIOLET if role_text == "HÔTE" else Color(1, 1, 1, 0.14), 15)
+	pill.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	v.add_child(pill)
 	if not present:
-		var wait := MenuKit.label("En attente d'un joueur…\nPartage le code !", 22, MenuKit.TEXT_DIM, MenuKit.nunito(800))
+		var c := VBoxContainer.new()
+		c.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		c.alignment = BoxContainer.ALIGNMENT_CENTER
+		c.add_theme_constant_override("separation", 14)
+		v.add_child(c)
+		var plus := Button.new()
+		plus.name = "InviteButton"
+		plus.focus_mode = Control.FOCUS_ALL
+		plus.tooltip_text = "Partager le code du salon"
+		plus.custom_minimum_size = Vector2(120, 120)
+		plus.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		plus.add_theme_stylebox_override("normal", CutBox.make(Color(MenuKit.VIOLET, 0.18), 22.0, MenuKit.VIOLET, 2.0, 0.0, 0.0))
+		plus.add_theme_stylebox_override("hover", CutBox.make(Color(MenuKit.VIOLET, 0.4), 22.0, MenuKit.GOLD, 2.0, 0.0, 0.0))
+		plus.add_theme_stylebox_override("pressed", CutBox.make(Color(MenuKit.VIOLET, 0.6), 22.0, MenuKit.GOLD, 2.0, 0.0, 0.0))
+		plus.add_theme_stylebox_override("focus", CutBox.make(Color(0, 0, 0, 0), 22.0, MenuKit.TEXT, 2.0, 0.0, 0.0))
+		var g := MenuGlyph.new(&"plus", MenuKit.TEXT, 64.0)
+		g.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		g.offset_left = 28
+		g.offset_top = 28
+		g.offset_right = -28
+		g.offset_bottom = -28
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plus.add_child(g)
+		plus.pressed.connect(share_code)
+		MenuKit.add_feedback(plus, 1.06)
+		c.add_child(plus)
+		var wait := MenuKit.title("En attente d'un coéquipier", 30)
+		wait.name = "WaitLabel"
 		wait.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		wait.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		wait.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		v.add_child(wait)
+		c.add_child(wait)
+		var hint := MenuKit.label("Partage le code %s" % LobbyCode.pretty(session.room_code), 18, MenuKit.TEXT_DIM, MenuKit.nunito(600))
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		c.add_child(hint)
 		return p
 	var skin := SkinData.get_skin(StringName(String(info.get("skin", ""))))
 	var prev := HeroPreview.new(false)
-	prev.custom_minimum_size = Vector2(150, 170)
-	prev.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	prev.name = "Hero"
+	prev.custom_minimum_size = Vector2(160, 150)
+	prev.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	prev.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	prev.set_skin(skin)
+	if not connected or where != "lobby":
+		prev.modulate = Color(1, 1, 1, 0.55)
 	v.add_child(prev)
-	var nm := MenuKit.title(String(info.get("name", "Raider")), 28)
+	var nm := MenuKit.title(String(info.get("name", "Raider")), 34)
+	nm.name = "Name"
 	nm.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(nm)
 	var sk_name := skin.display_name if skin != null else "Soldat standard"
-	var sk := MenuKit.label(sk_name, 17, MenuKit.rarity_color(skin.rarity if skin != null else 0), MenuKit.nunito(800))
-	sk.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(sk)
 	var names := PackedStringArray()
 	for id: Variant in info.get("loadout", []):
 		var w := WeaponCatalog.get_weapon(StringName(str(id)))
 		names.append(w.display_name if w != null else str(id))
-	var lo := MenuKit.label(" · ".join(names) if not names.is_empty() else "Arsenal non choisi", 16, MenuKit.TEXT_DIM)
+	var sub := MenuKit.label(sk_name, 17, MenuKit.rarity_color(skin.rarity if skin != null else 0), MenuKit.nunito(700))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(sub)
+	var lo := MenuKit.label(" · ".join(names) if not names.is_empty() else "Arsenal non choisi", 16, MenuKit.TEXT_DIM, MenuKit.nunito(600))
 	lo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lo.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lo.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	lo.custom_minimum_size.x = 120
 	v.add_child(lo)
-	var ready := bool(info.get("ready", false))
-	var rt := "✓ Prêt" if ready else "Choisit son arsenal…"
-	var rc := OK_COLOR if ready else MenuKit.TEXT_DIM
-	if not connected:
-		rt = "Connexion perdue…"
-		rc = MenuKit.BAD
-	var rl := MenuKit.label(rt, 22, rc, MenuKit.nunito(900))
-	rl.name = "Ready"
-	rl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(rl)
+	var st := status_text(info, connected, where)
+	var badge := PanelContainer.new()
+	badge.name = "Ready"
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var bg := MenuKit.VIOLET if ready else (Color(MenuKit.BAD, 0.25) if not connected else Color(1, 1, 1, 0.08))
+	var bb := CutBox.make(bg, 12.0, Color(0, 0, 0, 0), 0.0, 22.0, 6.0)
+	bb.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+	badge.add_theme_stylebox_override("panel", bb)
+	var bl := MenuKit.label(st, 22 if ready else 18, MenuKit.TEXT if ready or not connected else MenuKit.TEXT_DIM,
+		MenuKit.display() if ready else MenuKit.nunito(700))
+	bl.uppercase = true
+	badge.add_child(bl)
+	v.add_child(badge)
 	return p
+
+
+## État affiché sous un joueur du salon.
+static func status_text(info: Dictionary, connected: bool, where: String) -> String:
+	if not connected:
+		return "Connexion perdue…"
+	match where:
+		"menu":
+			return "Au menu principal"
+		"end":
+			return "Sur l'écran de fin"
+		"raid":
+			return "Encore en raid"
+	return "Prêt" if bool(info.get("ready", false)) else "Choisit son arsenal…"
 
 
 # --- Pseudo ---------------------------------------------------------------------------
@@ -392,8 +471,11 @@ func leave_room() -> void:
 func go_back() -> void:
 	if _overlay != null and is_instance_valid(_overlay):
 		return
+	# Dans un salon : retour au menu principal SANS le quitter (le coéquipier s'affiche à côté du
+	# héros) ; « Quitter le salon » le ferme.
 	if session.in_room():
-		session.leave()
+		local_ready = false
+		session.set_local_where("menu")
 	MenuKit.sfx(&"back")
 	MenuKit.go_to(self, MenuKit.MAIN_MENU_SCENE)
 
@@ -461,7 +543,8 @@ func launch() -> void:
 
 func can_launch() -> bool:
 	return session.is_host() and session.peer_present and session.peer_connected and map_card != null \
-		and local_ready and bool(session.peer_info.get("ready", false)) and NetProtocol.compatible(session.peer_info) \
+		and local_ready and bool(session.peer_info.get("ready", false)) and session.peer_where() == "lobby" \
+		and NetProtocol.compatible(session.peer_info) \
 		and not launching
 
 
@@ -475,6 +558,11 @@ func _start_raid(path: String, seed_value: int) -> void:
 	GameState.run_seed = seed_value
 	session.raid_info = {"seed": seed_value, "path": path}
 	session.raid_pending = true
+	# Pendant le raid, ni l'un ni l'autre n'est « prêt » ni au salon (retour par « Rejouer »).
+	session.local_info["where"] = "raid"
+	session.local_info["ready"] = false
+	session.peer_info["where"] = "raid"
+	session.peer_info["ready"] = false
 	GameState.begin_raid()
 	MenuKit.sfx(&"confirm_big")
 	MenuKit.vibrate(40)
@@ -491,7 +579,7 @@ func _local_info() -> Dictionary:
 	return {
 		"k": "info", "gv": NetProtocol.GAME_VERSION, "name": player_name(),
 		"skin": String(Profile.skin_character), "ready": local_ready, "loadout": ids,
-		"gadget": String(g.id) if g != null else "",
+		"gadget": String(g.id) if g != null else "", "where": "lobby",
 	}
 
 
@@ -503,8 +591,9 @@ func _send_info() -> void:
 func _send_map() -> void:
 	if not session.is_host() or map_card == null:
 		return
-	session.send_lobby({"k": "map", "path": map_card.resource_path, "seed": map_seed,
-		"name": map_card.display_name, "difficulty": map_card.difficulty})
+	session.lobby_map = {"k": "map", "path": map_card.resource_path, "seed": map_seed,
+		"name": map_card.display_name, "difficulty": map_card.difficulty}
+	session.send_lobby(session.lobby_map)
 
 
 func _on_lobby_message(d: Dictionary) -> void:
@@ -520,6 +609,9 @@ func _on_lobby_message(d: Dictionary) -> void:
 				map_card = load(path) as MapCard if path != "" and ResourceLoader.exists(path) else null
 				map_seed = int(d.get("seed", 0))
 				_refresh_room()
+		"sync":
+			_send_map()
+			_refresh_room()
 		"start":
 			if not session.is_host():
 				if not local_ready:
@@ -610,9 +702,12 @@ func _refresh_room() -> void:
 	var guest_info: Dictionary = session.peer_info if session.is_host() else me
 	if not session.is_host() and host_info.is_empty():
 		host_info = {"name": session.peer_name}
-	_cards.add_child(_player_card(host_info, "HÔTE", true, session.is_host() or session.peer_connected))
+	var peer_where := session.peer_where()
+	_cards.add_child(_player_card(host_info, "HÔTE", true, session.is_host() or session.peer_connected,
+		"lobby" if session.is_host() else peer_where))
 	var guest_present := not session.is_host() or session.peer_present
-	_cards.add_child(_player_card(guest_info, "INVITÉ", guest_present, not session.is_host() or session.peer_connected))
+	_cards.add_child(_player_card(guest_info, "INVITÉ", guest_present, not session.is_host() or session.peer_connected,
+		peer_where if session.is_host() else "lobby"))
 	if map_card != null:
 		map_label.text = "Carte : %s\nDifficulté : %s" % [map_card.display_name, GameState.difficulty_name(map_card.difficulty)]
 	else:

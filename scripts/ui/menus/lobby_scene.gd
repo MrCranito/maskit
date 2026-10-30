@@ -34,6 +34,8 @@ var fire_glow: Sprite2D = null
 var smoke: CPUParticles2D = null
 var dust: CPUParticles2D = null
 var hero_hit: Control = null
+## Coop : coéquipier posé à droite du héros (même rendu, son skin) ; null tant qu'inutile.
+var mate: LobbyHero = null
 ## Balancement du parallaxe (-1..1), animé en boucle.
 var sway: float = 0.0:
 	set(v):
@@ -482,6 +484,41 @@ func stop_loops() -> void:
 		if t != null and t.is_valid():
 			t.kill()
 	_tweens.clear()
+
+
+## Pieds du coéquipier (repère de l'image, comme hero.position) : à droite du héros, un peu en
+## retrait ([menu] lobby_mate_dx / lobby_mate_dy, px de l'image).
+func mate_feet() -> Vector2:
+	return hero.position + Vector2(Balance.get_float("menu", "lobby_mate_dx", 250.0),
+		Balance.get_float("menu", "lobby_mate_dy", -14.0))
+
+
+## Hauteur du coéquipier (px de l'image).
+func mate_height() -> float:
+	return hero.height_px * Balance.get_float("menu", "lobby_mate_scale", 0.94)
+
+
+## Affiche (ou masque) le coéquipier avec ce skin (null = apparence par défaut).
+func set_mate(skin: SkinData, show: bool) -> void:
+	if mate == null:
+		if not show:
+			return
+		mate = LobbyHero.new(false)
+		mate.name = "Mate"
+		mate.skin = skin
+		mate.position = mate_feet()
+		mate.height_px = mate_height()
+		mate.phase = 0.37  # pas en phase avec le héros
+		hero_layer.add_child(mate)
+		hero_layer.move_child(mate, hero.get_index())  # derrière le héros (en retrait)
+	elif show and mate.skin != skin:
+		mate.set_skin(skin, true)
+	mate.visible = show
+
+
+## Ajoute un contrôle dans le repère de l'image, au-dessus des héros (emplacement du coéquipier).
+func add_overlay_control(c: Control) -> void:
+	hero_layer.add_child(c)
 
 
 ## Position (px de l'écran, repère de ce nœud) des pieds du héros.

@@ -94,6 +94,7 @@ var _end_pending: bool = false
 var _avatar_c4: Array[GadgetDevice] = []
 var _weapon_cache: Dictionary = {}
 var _left_session: bool = false
+var _note_left: float = 0.0
 
 
 func setup(p_raid: Raid, p_session: NetSession) -> void:
@@ -164,7 +165,7 @@ func _exit_tree() -> void:
 			var s: Signal = sig[0]
 			if s.is_connected(sig[1]):
 				s.disconnect(sig[1])
-		if not _left_session and session.in_room():
+		if not _left_session and session.in_room() and not session.replay_requested:
 			session.leave()
 	if get_tree() != null and get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.disconnect(_on_node_added)
@@ -192,6 +193,11 @@ func _process(_delta: float) -> void:
 	if get_tree().paused and (not final_shown or keeps_world_running()):
 		get_tree().paused = false
 	_flush_events()
+	if final_shown:
+		_note_left -= _delta
+		if _note_left <= 0.0:
+			_note_left = 0.4
+			_update_end_note()
 
 
 func _physics_process(delta: float) -> void:
@@ -801,7 +807,7 @@ func defer_end_screen(success: bool, summary: Dictionary) -> bool:
 		_enter_spectator()
 		return true
 	final_shown = true
-	_update_end_note()
+	session.set_local_where("end")
 	return false
 
 
@@ -830,6 +836,7 @@ func _show_final() -> void:
 	raid.end_screen = end
 	raid.add_child(end)
 	_flush_events()
+	session.set_local_where("end")
 	_update_end_note()
 
 
@@ -841,16 +848,44 @@ func keeps_world_running() -> bool:
 	return is_host and CoopRules.in_raid(partner_status)
 
 
+## « Rejouer ensemble » possible : les deux ont fini et le coéquipier est encore dans le salon.
+func can_replay() -> bool:
+	return final_shown and session != null and is_instance_valid(session) and session.in_room() \
+		and session.peer_present and not CoopRules.in_raid(partner_status)
+
+
+## Retour au salon avec la même équipe (l'écran de fin change de scène juste après).
+func request_replay() -> bool:
+	if not can_replay():
+		return false
+	session.replay_requested = true
+	_left_session = true
+	return true
+
+
 ## Ligne d'information sous les boutons de l'écran de fin (coéquipier encore en raid).
 func _update_end_note() -> void:
 	var end := raid.end_screen if raid != null else null
 	if end == null or not is_instance_valid(end):
 		return
 	var t := ""
+	if not session.in_room() or not session.peer_present:
+		t = "%s a quitté le salon." % partner_name
+	elif session.peer_where() == "lobby":
+		t = "%s t'attend au salon." % partner_name
 	if CoopRules.in_raid(partner_status) and partner_connected:
 		t = ("%s est encore en raid : reste sur cet écran, le quitter met fin à sa partie." if is_host
 			else "%s est encore en raid.") % partner_name
 	end.set_note(t)
+	end.set_replay(can_replay())
+	if not end.replay_pressed.is_connected(_on_replay_pressed):
+		end.replay_pressed.connect(_on_replay_pressed)
+
+
+func _on_replay_pressed() -> void:
+	var end := raid.end_screen if raid != null else null
+	if request_replay() and end != null and is_instance_valid(end):
+		end.go_to_menu(MenuKit.COOP_SCENE)
 
 
 func view_position(default: Vector2) -> Vector2:

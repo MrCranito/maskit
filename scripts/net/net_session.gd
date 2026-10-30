@@ -56,6 +56,11 @@ var local_info: Dictionary = {}
 var raid_pending: bool = false
 ## Paramètres du raid lancé (seed, carte…).
 var raid_info: Dictionary = {}
+## Dernière carte du salon ({path, seed, name, difficulty}) : choisie par l'hôte, annoncée à
+## l'invité ; conservée quand on quitte l'écran du salon (menu principal, raid, « Rejouer »).
+var lobby_map: Dictionary = {}
+## « Rejouer ensemble » demandé depuis l'écran de fin : le raid quitté ne ferme pas le salon.
+var replay_requested: bool = false
 ## Octets envoyés / reçus (debug F3, tests de budget).
 var bytes_sent: int = 0
 var bytes_received: int = 0
@@ -367,6 +372,7 @@ func _on_text(text: String) -> void:
 		"relay":
 			var d: Variant = m.get("d")
 			if d is Dictionary:
+				_note_lobby(d)
 				lobby_message.emit(d)
 		"pong":
 			var sample := float(Time.get_ticks_msec() - int(m.get("ts", 0)))
@@ -387,6 +393,44 @@ func _on_error(code: String, message: String) -> void:
 	error_received.emit(code, describe_error(code) if describe_error(code) != "" else message)
 
 
+## Messages de salon retenus même sans écran de salon ouvert (menu principal, écran de fin) :
+## infos du coéquipier (pseudo, skin, prêt, où il est), carte de l'hôte ; « sync » = le
+## coéquipier revient au salon et redemande nos infos.
+func _note_lobby(d: Dictionary) -> void:
+	match String(d.get("k", "")):
+		"info":
+			peer_info = d
+		"map":
+			if not is_host():
+				lobby_map = d
+		"sync":
+			if not local_info.is_empty():
+				send_lobby(local_info)
+
+
+## Où en est-on (« lobby », « menu », « raid », « end ») : mémorisé et annoncé au coéquipier.
+## Hors du salon, on n'est jamais prêt.
+func set_local_where(where: String) -> void:
+	if not in_room():
+		return
+	if local_info.is_empty():
+		local_info = {"k": "info", "gv": NetProtocol.GAME_VERSION, "name": player_name}
+	local_info["where"] = where
+	if where != "lobby":
+		local_info["ready"] = false
+	send_lobby(local_info)
+
+
+## Où est le coéquipier (« lobby » par défaut : anciennes versions sans ce champ).
+func peer_where() -> String:
+	return String(peer_info.get("where", "lobby"))
+
+
+## Nombre de joueurs du salon (1 ou 2).
+func party_size() -> int:
+	return 2 if in_room() and peer_present else 1
+
+
 func _enter_room(code: String, p_token: String, p_role: StringName) -> void:
 	room_code = code
 	token = p_token
@@ -404,6 +448,8 @@ func _reset_room() -> void:
 	peer_connected = false
 	peer_info = {}
 	local_info = {}
+	lobby_map = {}
+	replay_requested = false
 	raid_pending = false
 	_queue.clear()
 	_early.clear()
