@@ -5,8 +5,10 @@
 #   https://github.com/MrCranito/maskit/releases/latest/download/RaidersGo.apk
 # Page : https://github.com/MrCranito/maskit/releases/tag/android-latest
 #
-# APK signé avec un keystore DEBUG généré à la volée : installable pour tester (« sources
-# inconnues »), pas publiable sur le Play Store. Pour une version store : keystore de release en
+# APK signé avec un keystore DEBUG FIXE (tools/android/debug.keystore, ou le secret
+# ANDROID_DEBUG_KEYSTORE_B64 s'il est défini) : la même clé à chaque build, donc chaque APK
+# s'installe par-dessus le précédent sans perdre la sauvegarde. Installable pour tester
+# (« sources inconnues »), pas publiable sur le Play Store. Pour une version store : keystore de release en
 # secrets (voir export.yml). Le numéro de version (versionCode) suit le numéro de run, pour
 # que chaque nouvel APK s'installe par-dessus le précédent.
 name: Android APK
@@ -66,13 +68,24 @@ jobs:
           ls -la "$D"
 
       - name: Réglages Android (SDK, Java, keystore debug)
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
         run: |
           set -e
           SDK="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           echo "SDK Android : $SDK"; ls "$SDK/build-tools" | tail -3
+          # Clé de signature FIXE (sinon chaque APK a une clé différente et Android refuse de
+          # l'installer par-dessus l'ancien : « Application non installée »). Ordre : secret
+          # ANDROID_DEBUG_KEYSTORE_B64 (keystore en base64) s'il existe, sinon la clé de test du dépôt.
           KS="$RUNNER_TEMP/debug.keystore"
-          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -storepass android \
-            -keystore "$KS" -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -noprompt
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$KS"
+            echo "Clé : secret ANDROID_DEBUG_KEYSTORE_B64"
+          else
+            cp tools/android/debug.keystore "$KS"
+            echo "Clé : tools/android/debug.keystore"
+          fi
+          keytool -list -keystore "$KS" -storepass android | grep -i "SHA-256" || true
           mkdir -p ~/.config/godot
           cat > ~/.config/godot/editor_settings-4.7.tres <<EOF
           [gd_resource type="EditorSettings" format=3]

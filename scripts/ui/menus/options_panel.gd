@@ -1,13 +1,14 @@
 class_name OptionsPanel
 extends ModalPanel
 ## Options : volume de la musique, volume des effets (AudioManager), vibrations on/off,
-## économie d'énergie (30 images/s, moins de chauffe et de batterie).
+## images par seconde (Max = fréquence de l'écran jusqu'à 120, 60, ou éco 30 : moins de chauffe).
 ## Les valeurs sont sauvegardées dans SaveManager.data["settings"] (MenuKit.set_setting).
 
 var music_slider: HSlider = null
 var sfx_slider: HSlider = null
 var vibration_toggle: Button = null
-var power_toggle: Button = null
+## Images par seconde (FrameRate) : Max → 60 → éco.
+var fps_button: Button = null
 
 
 func _init() -> void:
@@ -51,28 +52,20 @@ func _build_body() -> void:
 		MenuKit.vibrate())
 	row.add_child(vibration_toggle)
 
-	# Économie d'énergie : limite à 30 images/s (moins de chauffe sur téléphone).
+	# Images par seconde : Max (fréquence de l'écran, 120 sur écran 120 Hz) → 60 → éco (30).
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 16)
 	body.add_child(row2)
-	var l2 := MenuKit.label("Économie d'énergie", 26, MenuKit.TEXT, MenuKit.nunito(800))
+	var l2 := MenuKit.label("Images par seconde", 26, MenuKit.TEXT, MenuKit.nunito(800))
 	l2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row2.add_child(l2)
-	power_toggle = MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
-	power_toggle.toggle_mode = true
-	power_toggle.button_pressed = bool(MenuKit.get_setting(&"power_saving", false))
-	power_toggle.text = "30 i/s" if power_toggle.button_pressed else "60 i/s"
-	var on2 := MenuKit.panel_style(Color(0.18, 0.5, 0.3), Color(0.6, 1.0, 0.7, 0.8), 16, 2, 10)
-	on2.border_width_bottom = 5
-	power_toggle.add_theme_stylebox_override("pressed", on2)
-	power_toggle.add_theme_stylebox_override("hover_pressed", on2)
-	power_toggle.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
-	power_toggle.toggled.connect(func(on: bool) -> void:
-		power_toggle.text = "30 i/s" if on else "60 i/s"
-		MenuKit.set_setting(&"power_saving", on)
-		GameState.apply_power_saving(on)
+	fps_button = MenuKit.button(FrameRate.label_for(FrameRate.saved_mode()), MenuKit.Style.SECONDARY, 22, Vector2(240, 60))
+	fps_button.pressed.connect(func() -> void:
+		var mode := FrameRate.next_mode(FrameRate.saved_mode())
+		FrameRate.apply(mode, true)
+		fps_button.text = FrameRate.label_for(mode)
 		MenuKit.sfx(&"toggle"))
-	row2.add_child(power_toggle)
+	row2.add_child(fps_button)
 
 
 func _slider_row(text: String, value: float, on_change: Callable) -> HSlider:

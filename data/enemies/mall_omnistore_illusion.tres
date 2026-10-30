@@ -32,5 +32,6 @@ attack_pattern = &"slam"
 stagger_ratio = 0.0
 knockback = 0.0
 ground_drop_chance = 0.0
+loot_table = &"enemy_mall"
 corpse_name = "Mirage"
 skills = [{"id": &"mall_illusion_body", "passive": true, "lifetime": 10.0, "hits": 2, "tint": Color(1, 0.55, 0.9, 0.6)}, {"id": &"rush", "status": "", "cooldown": 7.0, "windup": 0.8, "min_range": 120.0, "max_range": 360.0, "speed": 380.0, "damage": 8.0, "self_stun": 0.2}]

@@ -20,7 +20,7 @@ const T := FloorLayout.Tile
 ## Emprise (cases) des grands décors : [largeur, hauteur]. Le point d'appui (spawn) est
 ## la case du bas, au centre (colonne (w-1)/2 depuis la gauche).
 const BIG := {
-	&"fountain": Vector2i(5, 3), &"car_wreck": Vector2i(2, 1), &"store_shelf": Vector2i(2, 1),
+	&"fountain": Vector2i(7, 5), &"car_wreck": Vector2i(2, 1), &"store_shelf": Vector2i(2, 1),
 	&"cinema_seats": Vector2i(2, 1),
 }
 
@@ -28,7 +28,7 @@ const BIG := {
 const PROPS := {
 	&"entrance": [[&"planter", 1, 2, &"wall"], [&"mall_map", 1, 1, &"wall"], [&"bench", 0, 1, &"wall"], [&"debris", 1, 2, &"any"], [&"puddle", 0, 1, &"any"], [&"trash_bin", 0, 1, &"wall"]],
 	&"atrium": [[&"palm_pot", 6, 9, &"any"], [&"bench", 6, 9, &"center"], [&"planter", 4, 6, &"center"], [&"food_table", 2, 4, &"center"], [&"display_table", 1, 2, &"center"], [&"puddle", 2, 3, &"any"], [&"debris", 2, 3, &"any"], [&"neon_sign", 1, 2, &"any"]],
-	&"gallery": [[&"planter", 3, 6, &"center"], [&"bench", 3, 6, &"center"], [&"trash_bin", 1, 3, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 1, 3, &"any"], [&"debris", 2, 4, &"any"], [&"mall_map", 1, 2, &"wall"], [&"palm_pot", 2, 4, &"wall"], [&"display_table", 2, 4, &"center"], [&"food_table", 1, 3, &"center"]],
+	&"gallery": [[&"planter", 5, 8, &"center"], [&"bench", 6, 9, &"center"], [&"trash_bin", 2, 4, &"wall"], [&"neon_sign", 1, 2, &"wall"], [&"puddle", 2, 4, &"any"], [&"debris", 5, 8, &"any"], [&"mall_map", 1, 2, &"wall"], [&"palm_pot", 3, 5, &"wall"], [&"display_table", 3, 5, &"center"], [&"food_table", 3, 5, &"center"]],
 	&"balcony": [[&"planter", 0, 2, &"wall"], [&"bench", 0, 1, &"wall"], [&"neon_sign", 0, 1, &"wall"], [&"debris", 0, 1, &"any"], [&"puddle", 0, 1, &"any"]],
 	&"food_court": [[&"food_table", 3, 6, &"center"], [&"trash_bin", 1, 2, &"wall"], [&"palm_pot", 0, 1, &"wall"], [&"neon_sign", 1, 1, &"wall"]],
 	&"shop_clothes": [[&"clothes_rack", 2, 4, &"any"], [&"mannequin", 1, 3, &"wall"], [&"checkout", 0, 1, &"wall"]],
@@ -547,22 +547,33 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 	var sealed := room.type == FloorLayout.ROOM_SUPER_LOOT or room.type == FloorLayout.ROOM_BOSS
 	var cells: Array[Vector2i] = []
 	var r := room.rect
-	for y in range(r.position.y, r.end.y):
-		for x in range(r.position.x, r.end.x):
-			var p := Vector2i(x, y)
-			var t := c.L.get_tile(p)
+	# Même filtre case par case qu'avant, sur les tableaux bruts (hors grille = VOID, ignoré).
+	var L := c.L
+	var w := L.size.x
+	var tiles := L.tiles
+	var extr := {}
+	for e in L.extraction_cells:
+		extr[e] = true
+	var spawn_check := not sealed and L.floor_index == 0
+	var sp := L.player_spawn
+	for y in range(maxi(r.position.y, 0), mini(r.end.y, L.size.y)):
+		for x in range(maxi(r.position.x, 0), mini(r.end.x, w)):
+			var i := y * w + x
+			var t := tiles[i]
 			if t != T.FLOOR and t != T.STREET:
 				continue
-			if c.blocked.has(p) or c.enemy_cells.has(p) or c.room_id_at(p) != room.id:
+			if c.room_of[i] != room.id:
 				continue
-			if c.L.extraction_cells.has(p):
+			var p := Vector2i(x, y)
+			if c.blocked.has(p) or c.enemy_cells.has(p) or extr.has(p):
 				continue
-			if c.door_adj.has(p) and not sealed:
-				continue
-			if not sealed and c.L.floor_index == 0 and absi(p.x - c.L.player_spawn.x) + absi(p.y - c.L.player_spawn.y) < safe:
-				continue
-			if not sealed and _near_stairs(c, p, stairs_safe):
-				continue
+			if not sealed:
+				if c.door_adj.has(p):
+					continue
+				if spawn_check and absi(x - sp.x) + absi(y - sp.y) < safe:
+					continue
+				if _near_stairs(c, p, stairs_safe):
+					continue
 			cells.append(p)
 	for i in range(cells.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)

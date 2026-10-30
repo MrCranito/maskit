@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="LootTable" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/loot/loot_table.gd" id="1_table"]
+
+[resource]
+script = ExtResource("1_table")
+kind = &"enemy_mall_omnistore"
+display_name = "Carcasse de l'Omnistore"
+rolls_min = 4
+rolls_max = 6
+empty_chance = 0.0
+search_time = 2.0
+entries = {
+&"mall_batteries": 4,
+&"mall_diamond_necklace": 0.006,
+&"mall_first_aid": 2,
+&"mall_gold_ring": 5,
+&"mall_headphones": 2,
+&"mall_luxury_watch": 0.03,
+&"mall_smartphone": 4,
+&"wpn_gadget_mine": 0.00832,
+&"wpn_rifle_aug": 0.001113,
+&"wpn_rifle_scarh": 0.02,
+&"wpn_smg_p90": 0.03,
+&"wpn_smg_uzi": 0.001113
+}

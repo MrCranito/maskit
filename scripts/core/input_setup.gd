@@ -12,6 +12,8 @@ const ACTIONS := {
 	"move_left": [KEY_A, KEY_LEFT],
 	"move_right": [KEY_D, KEY_RIGHT],
 	"toggle_debug": [KEY_F3],
+	# Mode développeur (DevMode, builds debug uniquement), actif quand le F3 est ouvert.
+	"toggle_dev_currency": [KEY_F4],
 	"interact": [KEY_E],
 	"reload": [KEY_R],
 	"gadget": [KEY_G],

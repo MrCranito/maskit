@@ -7,12 +7,12 @@ script = ExtResource("1_table")
 kind = &"enemy_fw_marauder"
 display_name = "Maraudeur abattu"
 rolls_min = 1
-rolls_max = 1
-empty_chance = 0.45
+rolls_max = 2
+empty_chance = 0.12
 search_time = 0.8
 entries = {
 &"mat_cloth": 4.0,
-&"silver_dollars": 2.0,
-&"gold_nugget": 0.6,
-&"pocket_watch": 0.2
+&"silver_dollars": 3.0,
+&"gold_nugget": 1.5,
+&"pocket_watch": 0.5
 }

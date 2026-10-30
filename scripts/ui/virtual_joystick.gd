@@ -16,16 +16,6 @@ const GROUP_MOVE := &"joystick_move"
 const GROUP_AIM := &"joystick_aim"
 const SCENE_PATH := "res://scenes/ui/virtual_joystick.tscn"
 
-# Charte UI : bleu nuit + or.
-const COL_BASE := Color(0.071, 0.102, 0.18, 0.55)
-const COL_BASE_GHOST := Color(0.071, 0.102, 0.18, 0.28)
-const COL_GOLD := Color(0.91, 0.72, 0.36, 0.95)
-const COL_GOLD_SOFT := Color(0.91, 0.72, 0.36, 0.45)
-const COL_INNER := Color(1.0, 1.0, 1.0, 0.12)
-const COL_KNOB := Color(0.13, 0.18, 0.31, 0.95)
-const COL_KNOB_HI := Color(1.0, 1.0, 1.0, 0.16)
-const COL_FIRE := Color(1.0, 0.32, 0.22, 0.95)
-
 ## Émis quand le stick est saisi / relâché.
 signal held_changed(held: bool)
 
@@ -235,41 +225,26 @@ func _draw() -> void:
 		_draw_stick(rest, rest, true)
 
 
+## Maquette Hud (direction D) : déplacement = anneau blanc fin sur encre, manche blanc
+## translucide ; visée = disque violet, anneau violet clair, manche blanc avec mire violette.
 func _draw_stick(base: Vector2, knob: Vector2, ghost: bool) -> void:
 	var a: float = 0.55 if ghost else 1.0
 	var is_aim: bool = side == SIDE_RIGHT
-	# Base : disque bleu nuit, anneau or, anneau intérieur clair.
-	draw_circle(base, radius, COL_BASE_GHOST if ghost else COL_BASE, true, -1.0, true)
-	draw_arc(base, radius, 0.0, TAU, 56, Color(COL_GOLD_SOFT, COL_GOLD_SOFT.a * a), 2.0, true)
-	draw_arc(base, radius * 0.62, 0.0, TAU, 40, Color(COL_INNER, COL_INNER.a * a), 1.5, true)
-	# Repères : 4 chevrons (déplacement) ou 4 traits de mire (visée).
-	for i: int in 4:
-		var d := Vector2.RIGHT.rotated(i * PI * 0.5)
-		var p: Vector2 = base + d * (radius - 14.0)
-		var n: Vector2 = d.orthogonal()
-		var c := Color(COL_GOLD, 0.5 * a)
-		if is_aim:
-			draw_line(p - d * 6.0, p + d * 6.0, c, 2.0, true)
-		else:
-			draw_colored_polygon(PackedVector2Array([p + d * 6.0, p - d * 2.0 + n * 6.0, p - d * 2.0 - n * 6.0]), c)
-	# Arc lumineux dans la direction poussée.
+	var fill: Color = Color(MenuKit.VIOLET, 0.25) if is_aim else Color(MenuKit.NIGHT_DEEP, 0.2)
+	var ring: Color = Color(MenuKit.VIOLET_LIGHT, 0.8) if is_aim else Color(1, 1, 1, 0.3)
+	draw_circle(base, radius, Color(fill, fill.a * a), true, -1.0, true)
+	draw_arc(base, radius, 0.0, TAU, 56, Color(ring, ring.a * a), 2.0, true)
+	# Arc dans la direction poussée.
 	if not ghost and output != Vector2.ZERO:
 		var ang: float = output.angle()
-		var col: Color = COL_FIRE if is_aim else COL_GOLD
-		draw_arc(base, radius - 1.0, ang - 0.55, ang + 0.55, 16, Color(col, 0.35 + 0.6 * output.length()), 6.0, true)
+		var col: Color = MenuKit.VIOLET_LIGHT if is_aim else Color.WHITE
+		draw_arc(base, radius - 1.0, ang - 0.5, ang + 0.5, 16, Color(col, 0.35 + 0.55 * output.length()), 5.0, true)
 	# Manche.
-	var kr: float = radius * 0.42
-	draw_circle(knob, kr + 3.0, Color(0, 0, 0, 0.25 * a), true, -1.0, true)
-	draw_circle(knob, kr, Color(COL_KNOB, COL_KNOB.a * a), true, -1.0, true)
-	draw_circle(knob + Vector2(-kr * 0.28, -kr * 0.3), kr * 0.5, Color(COL_KNOB_HI, COL_KNOB_HI.a * a), true, -1.0, true)
-	var ring: Color = COL_FIRE if (is_aim and not ghost and output != Vector2.ZERO) else COL_GOLD
-	draw_arc(knob, kr, 0.0, TAU, 40, Color(ring, ring.a * a), 3.0, true)
+	var kr: float = radius * 0.44
+	draw_circle(knob, kr, Color(1, 1, 1, (0.75 if is_aim else 0.45) * a), true, -1.0, true)
 	if is_aim:
-		# Icône de mire.
-		var ic := Color(ring, 0.9 * a)
-		draw_arc(knob, kr * 0.42, 0.0, TAU, 24, ic, 2.0, true)
+		var ic := Color(0.227, 0.122, 0.561, 0.95 * a)   # violet profond #3A1F8F
+		draw_arc(knob, kr * 0.46, 0.0, TAU, 24, ic, 2.4, true)
 		for i: int in 4:
 			var d := Vector2.RIGHT.rotated(i * PI * 0.5)
-			draw_line(knob + d * kr * 0.22, knob + d * kr * 0.62, ic, 2.0, true)
-	else:
-		draw_circle(knob, kr * 0.16, Color(COL_GOLD, 0.8 * a), true, -1.0, true)
+			draw_line(knob + d * kr * 0.62, knob + d * kr * 0.88, ic, 2.4, true)

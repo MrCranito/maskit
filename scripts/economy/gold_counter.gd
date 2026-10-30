@@ -66,7 +66,7 @@ func _on_gold(g: int, animate: bool = true) -> void:
 
 func _set_shown(v: int) -> void:
 	shown = v
-	value_label.text = Economy.fmt(v)
+	value_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else Economy.fmt(v)
 
 
 func _gui_input(event: InputEvent) -> void:

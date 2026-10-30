@@ -627,8 +627,9 @@ static func _hiding_spots(c: Ctx, seed_value: int) -> void:
 		var tmp := rooms[i]
 		rooms[i] = rooms[j]
 		rooms[j] = tmp
-	var cfg := ConfigFile.new()
-	cfg.load(Cfg.PATH)
+	# Même fichier (balance.cfg) que Cfg, déjà chargé et mis en cache : pas de relecture du disque
+	# à chaque étage.
+	var cfg := Cfg.cfg()
 	var per_room := float(cfg.get_value("loot", "hiding_spots_per_room", 0.25))
 	var mn := int(cfg.get_value("loot", "hiding_spots_min", 3))
 	var mx := int(cfg.get_value("loot", "hiding_spots_max", 7))
@@ -702,8 +703,9 @@ static func _enemies(c: Ctx, room: FloorLayout.Room, rng: RandomNumberGenerator,
 		cells[i] = cells[j]
 		cells[j] = tmp
 	var kinds: Array[StringName] = []
+	var roster_keys := _weighted_keys(roster)
 	for k in Cfg.geti("enemy_max_per_room", 9) + 8:
-		kinds.append(_weighted(roster, rng))
+		kinds.append(_weighted_pick(roster, roster_keys, rng))
 	# Le boss de la salle boss : un seul colosse garanti.
 	if room.type == FloorLayout.ROOM_BOSS and c.world.boss_kind != &"":
 		kinds[0] = c.world.boss_kind
@@ -737,8 +739,19 @@ static func _depth_roster(roster: Dictionary, world: WorldData, floor_index: int
 
 
 static func _weighted(w: Dictionary, rng: RandomNumberGenerator) -> StringName:
+	return _weighted_pick(w, _weighted_keys(w), rng)
+
+
+## Clés de `w` dans l'ordre de tirage de _weighted (à calculer une fois quand on tire plusieurs
+## fois dans le même dictionnaire).
+static func _weighted_keys(w: Dictionary) -> Array:
 	var keys: Array = w.keys()
 	keys.sort_custom(func(a: Variant, b: Variant) -> bool: return String(a) < String(b))
+	return keys
+
+
+## Tirage pondéré dans `w`, `keys` = _weighted_keys(w) (un seul randf consommé).
+static func _weighted_pick(w: Dictionary, keys: Array, rng: RandomNumberGenerator) -> StringName:
 	var total := 0.0
 	for k: Variant in keys:
 		total += float(w[k])
