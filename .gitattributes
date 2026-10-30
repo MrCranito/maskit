@@ -18,6 +18,7 @@
 
 # Binaires : stockés directement dans git (Git LFS désactivé : envoi LFS impossible depuis l environnement de Claude)
 *.png   binary
+*.keystore binary
 *.jpg   binary
 *.jpeg  binary
 *.webp  binary

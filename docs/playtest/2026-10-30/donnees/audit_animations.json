@@ -1,0 +1,1676 @@
+{
+  "kinds": {
+    "fw_bandit": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 117.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 22.0,
+      "pieds_ecart_horizontal_px": 46.2
+    },
+    "fw_bruiser": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 138.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 30.0,
+      "pieds_ecart_horizontal_px": 19.9
+    },
+    "fw_buffalo": {
+      "cadavre": true,
+      "display_height": 166.1,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 16.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 165.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 62.0,
+      "pieds_ecart_horizontal_px": 124.6
+    },
+    "fw_deserter": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 127.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 20.0,
+      "pieds_ecart_horizontal_px": 24.9
+    },
+    "fw_guard_dog": {
+      "cadavre": true,
+      "display_height": 129.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 16.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 117.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 48.0,
+      "pieds_ecart_horizontal_px": 78.8
+    },
+    "fw_marauder": {
+      "cadavre": true,
+      "display_height": 129.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 16.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 110.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 53.0,
+      "pieds_ecart_horizontal_px": 91.0
+    },
+    "fw_raider": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 115.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 19.0,
+      "pieds_ecart_horizontal_px": 49.0
+    },
+    "fw_sharpshooter": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 133.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 40.0,
+      "pieds_ecart_horizontal_px": 8.4
+    },
+    "fw_sheriff": {
+      "cadavre": true,
+      "display_height": 184.6,
+      "fps": {
+        "attack": 12.0,
+        "charge": 16.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 144.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 23.0,
+      "pieds_ecart_horizontal_px": 24.4
+    },
+    "mall_brute": {
+      "cadavre": true,
+      "display_height": 147.7,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 10.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 116.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 25.0,
+      "pieds_ecart_horizontal_px": 42.1
+    },
+    "mall_clone": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 15.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 97.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 17.0,
+      "pieds_ecart_horizontal_px": 44.0
+    },
+    "mall_flayer": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 16.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 76.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 18.0,
+      "pieds_ecart_horizontal_px": 52.6
+    },
+    "mall_night_spider": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 18.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 139.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 55.0,
+      "pieds_ecart_horizontal_px": 78.2
+    },
+    "mall_omnistore": {
+      "cadavre": true,
+      "display_height": 221.5,
+      "fps": {
+        "attack": 12.0,
+        "death": 9.0,
+        "hit": 14.0,
+        "idle": 6.0,
+        "run": 10.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 6,
+        "hit": 3,
+        "idle": 4,
+        "run": 6
+      },
+      "height_px": 178.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 71.0,
+      "pieds_ecart_horizontal_px": 179.4
+    },
+    "mall_security_bot": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 12.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 101.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 19.0,
+      "pieds_ecart_horizontal_px": 48.8
+    },
+    "mall_store_warden": {
+      "cadavre": true,
+      "display_height": 129.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 12.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 126.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 29.0,
+      "pieds_ecart_horizontal_px": 54.2
+    },
+    "mall_violent": {
+      "cadavre": true,
+      "display_height": 129.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 15.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 92.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 26.0,
+      "pieds_ecart_horizontal_px": 55.6
+    },
+    "mall_zombie": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 9.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 78.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 16.0,
+      "pieds_ecart_horizontal_px": 26.8
+    },
+    "ss_alien": {
+      "cadavre": true,
+      "display_height": 147.7,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 133.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 39.0,
+      "pieds_ecart_horizontal_px": 58.3
+    },
+    "ss_alien_brood": {
+      "cadavre": true,
+      "display_height": 92.3,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 58.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 27.0,
+      "pieds_ecart_horizontal_px": 28.0
+    },
+    "ss_architect": {
+      "cadavre": true,
+      "display_height": 369.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 187.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 42.0,
+      "pieds_ecart_horizontal_px": 45.3
+    },
+    "ss_atlas": {
+      "cadavre": true,
+      "display_height": 147.7,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 126.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 33.0,
+      "pieds_ecart_horizontal_px": 40.0
+    },
+    "ss_detector": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 104.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 61.0,
+      "pieds_ecart_horizontal_px": 100.7
+    },
+    "ss_drone_tieur": {
+      "cadavre": true,
+      "display_height": 129.2,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 89.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 11.0,
+      "pieds_ecart_horizontal_px": 0.8
+    },
+    "ss_security_droid": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 132.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 31.0,
+      "pieds_ecart_horizontal_px": 51.0
+    },
+    "ss_spectre": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 91.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 25.0,
+      "pieds_ecart_horizontal_px": 40.6
+    },
+    "ss_station_guardian": {
+      "cadavre": true,
+      "display_height": 147.7,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 148.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 41.0,
+      "pieds_ecart_horizontal_px": 48.9
+    },
+    "ss_teleporter": {
+      "cadavre": true,
+      "display_height": 110.8,
+      "fps": {
+        "attack": 12.0,
+        "death": 12.0,
+        "hit": 14.0,
+        "idle": 7.0,
+        "run": 14.0
+      },
+      "frames": {
+        "attack": 6,
+        "death": 8,
+        "hit": 3,
+        "idle": 6,
+        "run": 8
+      },
+      "height_px": 110.0,
+      "missing": [],
+      "pieds_ecart_appui_px": 33.0,
+      "pieds_ecart_horizontal_px": 51.0
+    }
+  },
+  "ressemblances": [
+    {
+      "a": "fw_deserter",
+      "b": "fw_sheriff",
+      "distance": 0.086,
+      "hauteurs": [
+        127.0,
+        144.0
+      ]
+    },
+    {
+      "a": "ss_detector",
+      "b": "ss_spectre",
+      "distance": 0.087,
+      "hauteurs": [
+        104.0,
+        91.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_violent",
+      "distance": 0.088,
+      "hauteurs": [
+        76.0,
+        92.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_detector",
+      "distance": 0.092,
+      "hauteurs": [
+        58.0,
+        104.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_zombie",
+      "distance": 0.098,
+      "hauteurs": [
+        97.0,
+        78.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_deserter",
+      "distance": 0.1,
+      "hauteurs": [
+        117.0,
+        127.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_guard_dog",
+      "distance": 0.102,
+      "hauteurs": [
+        165.0,
+        117.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_sharpshooter",
+      "distance": 0.103,
+      "hauteurs": [
+        117.0,
+        133.0
+      ]
+    },
+    {
+      "a": "fw_raider",
+      "b": "fw_sheriff",
+      "distance": 0.103,
+      "hauteurs": [
+        115.0,
+        144.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_raider",
+      "distance": 0.105,
+      "hauteurs": [
+        117.0,
+        115.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_spectre",
+      "distance": 0.109,
+      "hauteurs": [
+        58.0,
+        91.0
+      ]
+    },
+    {
+      "a": "fw_deserter",
+      "b": "fw_raider",
+      "distance": 0.11,
+      "hauteurs": [
+        127.0,
+        115.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_violent",
+      "distance": 0.111,
+      "hauteurs": [
+        116.0,
+        92.0
+      ]
+    },
+    {
+      "a": "ss_security_droid",
+      "b": "ss_teleporter",
+      "distance": 0.112,
+      "hauteurs": [
+        132.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_violent",
+      "b": "mall_zombie",
+      "distance": 0.112,
+      "hauteurs": [
+        92.0,
+        78.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_zombie",
+      "distance": 0.113,
+      "hauteurs": [
+        76.0,
+        78.0
+      ]
+    },
+    {
+      "a": "fw_deserter",
+      "b": "fw_sharpshooter",
+      "distance": 0.114,
+      "hauteurs": [
+        127.0,
+        133.0
+      ]
+    },
+    {
+      "a": "mall_security_bot",
+      "b": "mall_zombie",
+      "distance": 0.115,
+      "hauteurs": [
+        101.0,
+        78.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_zombie",
+      "distance": 0.117,
+      "hauteurs": [
+        116.0,
+        78.0
+      ]
+    },
+    {
+      "a": "ss_detector",
+      "b": "ss_drone_tieur",
+      "distance": 0.119,
+      "hauteurs": [
+        104.0,
+        89.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_omnistore",
+      "distance": 0.119,
+      "hauteurs": [
+        76.0,
+        178.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_night_spider",
+      "distance": 0.119,
+      "hauteurs": [
+        76.0,
+        139.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_drone_tieur",
+      "distance": 0.12,
+      "hauteurs": [
+        58.0,
+        89.0
+      ]
+    },
+    {
+      "a": "mall_night_spider",
+      "b": "mall_omnistore",
+      "distance": 0.121,
+      "hauteurs": [
+        139.0,
+        178.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_station_guardian",
+      "distance": 0.122,
+      "hauteurs": [
+        126.0,
+        148.0
+      ]
+    },
+    {
+      "a": "fw_guard_dog",
+      "b": "fw_marauder",
+      "distance": 0.123,
+      "hauteurs": [
+        117.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_deserter",
+      "b": "fw_guard_dog",
+      "distance": 0.123,
+      "hauteurs": [
+        127.0,
+        117.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_flayer",
+      "distance": 0.124,
+      "hauteurs": [
+        97.0,
+        76.0
+      ]
+    },
+    {
+      "a": "ss_detector",
+      "b": "ss_teleporter",
+      "distance": 0.124,
+      "hauteurs": [
+        104.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_omnistore",
+      "b": "mall_violent",
+      "distance": 0.124,
+      "hauteurs": [
+        178.0,
+        92.0
+      ]
+    },
+    {
+      "a": "fw_deserter",
+      "b": "fw_marauder",
+      "distance": 0.126,
+      "hauteurs": [
+        127.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_sheriff",
+      "distance": 0.129,
+      "hauteurs": [
+        117.0,
+        144.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_security_bot",
+      "distance": 0.13,
+      "hauteurs": [
+        116.0,
+        101.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_security_bot",
+      "distance": 0.131,
+      "hauteurs": [
+        97.0,
+        101.0
+      ]
+    },
+    {
+      "a": "ss_drone_tieur",
+      "b": "ss_spectre",
+      "distance": 0.133,
+      "hauteurs": [
+        89.0,
+        91.0
+      ]
+    },
+    {
+      "a": "fw_sharpshooter",
+      "b": "fw_sheriff",
+      "distance": 0.133,
+      "hauteurs": [
+        133.0,
+        144.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_teleporter",
+      "distance": 0.135,
+      "hauteurs": [
+        58.0,
+        110.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_teleporter",
+      "distance": 0.136,
+      "hauteurs": [
+        133.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_omnistore",
+      "b": "mall_security_bot",
+      "distance": 0.138,
+      "hauteurs": [
+        178.0,
+        101.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_omnistore",
+      "distance": 0.139,
+      "hauteurs": [
+        116.0,
+        178.0
+      ]
+    },
+    {
+      "a": "fw_guard_dog",
+      "b": "fw_raider",
+      "distance": 0.139,
+      "hauteurs": [
+        117.0,
+        115.0
+      ]
+    },
+    {
+      "a": "mall_night_spider",
+      "b": "mall_violent",
+      "distance": 0.139,
+      "hauteurs": [
+        139.0,
+        92.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_security_bot",
+      "distance": 0.14,
+      "hauteurs": [
+        76.0,
+        101.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_security_droid",
+      "distance": 0.14,
+      "hauteurs": [
+        187.0,
+        132.0
+      ]
+    },
+    {
+      "a": "mall_night_spider",
+      "b": "mall_security_bot",
+      "distance": 0.14,
+      "hauteurs": [
+        139.0,
+        101.0
+      ]
+    },
+    {
+      "a": "fw_marauder",
+      "b": "fw_sharpshooter",
+      "distance": 0.14,
+      "hauteurs": [
+        110.0,
+        133.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_marauder",
+      "distance": 0.141,
+      "hauteurs": [
+        117.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_omnistore",
+      "b": "mall_zombie",
+      "distance": 0.143,
+      "hauteurs": [
+        178.0,
+        78.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_raider",
+      "distance": 0.143,
+      "hauteurs": [
+        165.0,
+        115.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_deserter",
+      "distance": 0.143,
+      "hauteurs": [
+        165.0,
+        127.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_violent",
+      "distance": 0.144,
+      "hauteurs": [
+        97.0,
+        92.0
+      ]
+    },
+    {
+      "a": "mall_security_bot",
+      "b": "mall_violent",
+      "distance": 0.146,
+      "hauteurs": [
+        101.0,
+        92.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_flayer",
+      "distance": 0.146,
+      "hauteurs": [
+        116.0,
+        76.0
+      ]
+    },
+    {
+      "a": "mall_night_spider",
+      "b": "mall_zombie",
+      "distance": 0.147,
+      "hauteurs": [
+        139.0,
+        78.0
+      ]
+    },
+    {
+      "a": "fw_marauder",
+      "b": "fw_sheriff",
+      "distance": 0.148,
+      "hauteurs": [
+        110.0,
+        144.0
+      ]
+    },
+    {
+      "a": "fw_raider",
+      "b": "fw_sharpshooter",
+      "distance": 0.148,
+      "hauteurs": [
+        115.0,
+        133.0
+      ]
+    },
+    {
+      "a": "mall_flayer",
+      "b": "mall_store_warden",
+      "distance": 0.148,
+      "hauteurs": [
+        76.0,
+        126.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_omnistore",
+      "distance": 0.149,
+      "hauteurs": [
+        97.0,
+        178.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_bruiser",
+      "distance": 0.149,
+      "hauteurs": [
+        117.0,
+        138.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_sheriff",
+      "distance": 0.149,
+      "hauteurs": [
+        165.0,
+        144.0
+      ]
+    },
+    {
+      "a": "ss_drone_tieur",
+      "b": "ss_teleporter",
+      "distance": 0.15,
+      "hauteurs": [
+        89.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_guard_dog",
+      "distance": 0.15,
+      "hauteurs": [
+        117.0,
+        117.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_security_droid",
+      "distance": 0.15,
+      "hauteurs": [
+        133.0,
+        132.0
+      ]
+    },
+    {
+      "a": "ss_spectre",
+      "b": "ss_teleporter",
+      "distance": 0.15,
+      "hauteurs": [
+        91.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_guard_dog",
+      "b": "fw_sheriff",
+      "distance": 0.152,
+      "hauteurs": [
+        117.0,
+        144.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_night_spider",
+      "distance": 0.153,
+      "hauteurs": [
+        97.0,
+        139.0
+      ]
+    },
+    {
+      "a": "fw_marauder",
+      "b": "fw_raider",
+      "distance": 0.154,
+      "hauteurs": [
+        110.0,
+        115.0
+      ]
+    },
+    {
+      "a": "fw_bandit",
+      "b": "fw_buffalo",
+      "distance": 0.155,
+      "hauteurs": [
+        117.0,
+        165.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_marauder",
+      "distance": 0.159,
+      "hauteurs": [
+        138.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_marauder",
+      "distance": 0.16,
+      "hauteurs": [
+        165.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_night_spider",
+      "distance": 0.16,
+      "hauteurs": [
+        116.0,
+        139.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_clone",
+      "distance": 0.16,
+      "hauteurs": [
+        116.0,
+        97.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_alien_brood",
+      "distance": 0.162,
+      "hauteurs": [
+        133.0,
+        58.0
+      ]
+    },
+    {
+      "a": "mall_security_bot",
+      "b": "mall_store_warden",
+      "distance": 0.162,
+      "hauteurs": [
+        101.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_detector",
+      "distance": 0.163,
+      "hauteurs": [
+        133.0,
+        104.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_guard_dog",
+      "distance": 0.163,
+      "hauteurs": [
+        138.0,
+        117.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_raider",
+      "distance": 0.164,
+      "hauteurs": [
+        138.0,
+        115.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_teleporter",
+      "distance": 0.165,
+      "hauteurs": [
+        187.0,
+        110.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_deserter",
+      "distance": 0.169,
+      "hauteurs": [
+        138.0,
+        127.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_security_droid",
+      "distance": 0.169,
+      "hauteurs": [
+        58.0,
+        132.0
+      ]
+    },
+    {
+      "a": "fw_buffalo",
+      "b": "fw_sharpshooter",
+      "distance": 0.17,
+      "hauteurs": [
+        165.0,
+        133.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_drone_tieur",
+      "distance": 0.172,
+      "hauteurs": [
+        133.0,
+        89.0
+      ]
+    },
+    {
+      "a": "fw_guard_dog",
+      "b": "fw_sharpshooter",
+      "distance": 0.172,
+      "hauteurs": [
+        117.0,
+        133.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_security_droid",
+      "distance": 0.174,
+      "hauteurs": [
+        126.0,
+        132.0
+      ]
+    },
+    {
+      "a": "mall_store_warden",
+      "b": "mall_violent",
+      "distance": 0.175,
+      "hauteurs": [
+        126.0,
+        92.0
+      ]
+    },
+    {
+      "a": "mall_omnistore",
+      "b": "mall_store_warden",
+      "distance": 0.176,
+      "hauteurs": [
+        178.0,
+        126.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_buffalo",
+      "distance": 0.177,
+      "hauteurs": [
+        138.0,
+        165.0
+      ]
+    },
+    {
+      "a": "ss_security_droid",
+      "b": "ss_station_guardian",
+      "distance": 0.177,
+      "hauteurs": [
+        132.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_spectre",
+      "distance": 0.177,
+      "hauteurs": [
+        133.0,
+        91.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_teleporter",
+      "distance": 0.178,
+      "hauteurs": [
+        126.0,
+        110.0
+      ]
+    },
+    {
+      "a": "mall_night_spider",
+      "b": "mall_store_warden",
+      "distance": 0.179,
+      "hauteurs": [
+        139.0,
+        126.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_sheriff",
+      "distance": 0.182,
+      "hauteurs": [
+        138.0,
+        144.0
+      ]
+    },
+    {
+      "a": "mall_store_warden",
+      "b": "mall_zombie",
+      "distance": 0.182,
+      "hauteurs": [
+        126.0,
+        78.0
+      ]
+    },
+    {
+      "a": "fw_bruiser",
+      "b": "fw_sharpshooter",
+      "distance": 0.191,
+      "hauteurs": [
+        138.0,
+        133.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_architect",
+      "distance": 0.191,
+      "hauteurs": [
+        133.0,
+        187.0
+      ]
+    },
+    {
+      "a": "mall_clone",
+      "b": "mall_store_warden",
+      "distance": 0.191,
+      "hauteurs": [
+        97.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_station_guardian",
+      "distance": 0.192,
+      "hauteurs": [
+        133.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_detector",
+      "b": "ss_station_guardian",
+      "distance": 0.192,
+      "hauteurs": [
+        104.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_drone_tieur",
+      "b": "ss_station_guardian",
+      "distance": 0.193,
+      "hauteurs": [
+        89.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_station_guardian",
+      "b": "ss_teleporter",
+      "distance": 0.196,
+      "hauteurs": [
+        148.0,
+        110.0
+      ]
+    },
+    {
+      "a": "ss_detector",
+      "b": "ss_security_droid",
+      "distance": 0.198,
+      "hauteurs": [
+        104.0,
+        132.0
+      ]
+    },
+    {
+      "a": "ss_security_droid",
+      "b": "ss_spectre",
+      "distance": 0.198,
+      "hauteurs": [
+        132.0,
+        91.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_drone_tieur",
+      "distance": 0.2,
+      "hauteurs": [
+        126.0,
+        89.0
+      ]
+    },
+    {
+      "a": "ss_alien",
+      "b": "ss_atlas",
+      "distance": 0.204,
+      "hauteurs": [
+        133.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_station_guardian",
+      "distance": 0.205,
+      "hauteurs": [
+        58.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_station_guardian",
+      "distance": 0.206,
+      "hauteurs": [
+        187.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_drone_tieur",
+      "b": "ss_security_droid",
+      "distance": 0.207,
+      "hauteurs": [
+        89.0,
+        132.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_architect",
+      "distance": 0.209,
+      "hauteurs": [
+        58.0,
+        187.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_drone_tieur",
+      "distance": 0.213,
+      "hauteurs": [
+        187.0,
+        89.0
+      ]
+    },
+    {
+      "a": "mall_brute",
+      "b": "mall_store_warden",
+      "distance": 0.216,
+      "hauteurs": [
+        116.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_spectre",
+      "b": "ss_station_guardian",
+      "distance": 0.216,
+      "hauteurs": [
+        91.0,
+        148.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_spectre",
+      "distance": 0.218,
+      "hauteurs": [
+        187.0,
+        91.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_detector",
+      "distance": 0.222,
+      "hauteurs": [
+        126.0,
+        104.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_detector",
+      "distance": 0.224,
+      "hauteurs": [
+        187.0,
+        104.0
+      ]
+    },
+    {
+      "a": "ss_architect",
+      "b": "ss_atlas",
+      "distance": 0.227,
+      "hauteurs": [
+        187.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_alien_brood",
+      "b": "ss_atlas",
+      "distance": 0.237,
+      "hauteurs": [
+        58.0,
+        126.0
+      ]
+    },
+    {
+      "a": "ss_atlas",
+      "b": "ss_spectre",
+      "distance": 0.237,
+      "hauteurs": [
+        126.0,
+        91.0
+      ]
+    }
+  ]
+}

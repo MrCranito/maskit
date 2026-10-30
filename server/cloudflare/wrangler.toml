@@ -1,0 +1,24 @@
+# Relais coop de RaidersGo sur Cloudflare Workers (voir README.md).
+# Un seul Durable Object « global » reçoit toutes les connexions : même logique que le serveur Node
+# (../relay_core.js), salons en mémoire, aucun stockage.
+name = "raidersgo-relay"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+
+[[durable_objects.bindings]]
+name = "RELAY"
+class_name = "RelayHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RelayHub"]
+
+[vars]
+# Délais de grâce avant fermeture du salon (hôte) / retrait de l'invité, en ms
+HOST_GRACE_MS = "15000"
+GUEST_GRACE_MS = "20000"
+# Connexion coupée après ce silence (ms) : le jeu envoie un ping toutes les 2 s ([net] ping_interval)
+IDLE_TIMEOUT_MS = "30000"
+MAX_ROOMS = "5000"
+# "1" = journal des salons (wrangler tail)
+LOG = "0"

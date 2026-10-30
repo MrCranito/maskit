@@ -4,7 +4,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
-COPY relay.js index.js ./
+COPY relay_core.js relay.js index.js ./
 # L'hébergeur fournit PORT ; 8787 en local.
 ENV PORT=8787
 EXPOSE 8787

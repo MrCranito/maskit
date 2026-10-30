@@ -7,9 +7,23 @@ const assert = require('node:assert');
 const WebSocket = require('ws');
 const { Relay, normalizeCode, isValidCode, generateCode, PROTOCOL_VERSION } = require('../relay');
 
-function client(port) {
+// RELAY_URL=ws://127.0.0.1:8799 : mêmes tests contre un relais déjà lancé (ex. la version
+// Cloudflare sous `wrangler dev`, délais de grâce à 300 ms : voir cloudflare/README.md).
+const EXTERNAL = process.env.RELAY_URL || '';
+
+async function startRelay(opts) {
+  if (EXTERNAL) {
+    const health = EXTERNAL.replace(/^ws/, 'http').replace(/\/$/, '') + '/health';
+    return { url: EXTERNAL, rooms: async () => (await (await fetch(health)).json()).rooms, stop: async () => {} };
+  }
+  const relay = new Relay(Object.assign({ port: 0 }, opts));
+  const port = await relay.start();
+  return { url: `ws://127.0.0.1:${port}`, rooms: async () => relay.rooms.size, stop: () => relay.stop() };
+}
+
+function client(url) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`ws://127.0.0.1:${port}`);
+    const ws = new WebSocket(url);
     const inbox = [];
     const waiters = [];
     ws.on('message', (data, isBinary) => {
@@ -52,8 +66,8 @@ test('codes de salon', () => {
 });
 
 test('salon : création, jonction, relais, erreurs, départ', async () => {
-  const relay = new Relay({ port: 0, heartbeatMs: 60000 });
-  const port = await relay.start();
+  const relay = await startRelay({ heartbeatMs: 60000 });
+  const port = relay.url;
   try {
     const h = await client(port);
     // Version différente refusée.
@@ -97,7 +111,7 @@ test('salon : création, jonction, relais, erreurs, départ', async () => {
     // L'hôte part : salon fermé pour l'invité.
     h.sendj({ t: 'leave' });
     assert.strictEqual((await g.next('room_closed')).reason, 'host_left');
-    assert.strictEqual(relay.rooms.size, 0);
+    assert.strictEqual(await relay.rooms(), 0);
     for (const w of [h, g, bad, third]) w.close();
   } finally {
     await relay.stop();
@@ -105,8 +119,8 @@ test('salon : création, jonction, relais, erreurs, départ', async () => {
 });
 
 test('reprise après coupure et expiration du délai', async () => {
-  const relay = new Relay({ port: 0, heartbeatMs: 60000, hostGraceMs: 300, guestGraceMs: 300 });
-  const port = await relay.start();
+  const relay = await startRelay({ heartbeatMs: 60000, hostGraceMs: 300, guestGraceMs: 300 });
+  const port = relay.url;
   try {
     const h = await client(port);
     await hello(h);

@@ -37,6 +37,10 @@ const DEFS := {
 }
 
 static var _tex_cache: Dictionary = {}
+## Rendus Blender (art/blender/build_containers.py) : 2 px par unité monde ; point d'appui
+## (feet, px) et taille lus dans containers.json, à côté des images.
+const RENDER_PX_PER_WORLD := 2.0
+static var _meta_cache: Dictionary = {}
 
 var kind: StringName = &"crate"
 var cell: Vector2i = Vector2i.ZERO
@@ -96,6 +100,20 @@ static func get_texture(k: StringName, open: bool) -> Texture2D:
 	return tex
 
 
+## Point d'appui et taille d'un rendu Blender ({feet: [x, y], size: [w, h]}), {} si l'image
+## n'en est pas un (dessin SVG, autres biomes).
+static func render_meta(tex: Texture2D) -> Dictionary:
+	if tex == null or tex.resource_path.is_empty() or not tex.resource_path.ends_with(".png"):
+		return {}
+	var dir := tex.resource_path.get_base_dir()
+	if not _meta_cache.has(dir):
+		var path := dir + "/containers.json"
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+		_meta_cache[dir] = data if data is Dictionary else {}
+	var m: Variant = (_meta_cache[dir] as Dictionary).get(tex.resource_path.get_file().get_basename())
+	return m if m is Dictionary else {}
+
+
 func _init() -> void:
 	add_to_group(GROUP)
 	add_to_group(&"fog_hideable")
@@ -120,11 +138,9 @@ func _build() -> void:
 	if tex != null and sc > 0.0:
 		_sprite = Sprite2D.new()
 		_sprite.name = "Sprite"
-		_sprite.texture = tex
 		_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		_sprite.scale = Vector2.ONE * sc
-		_sprite.offset = Vector2(0.0, -tex.get_height() * 0.5 + float(_def.get("foot", 0.0)))
 		add_child(_sprite)
+		_set_sprite_texture(tex)
 	var block: Vector2 = _def.get("block", Vector2.ZERO)
 	if block != Vector2.ZERO:
 		var body := StaticBody2D.new()
@@ -180,8 +196,25 @@ func get_interact_reach() -> float:
 
 func get_visual_height() -> float:
 	if _sprite != null and _sprite.texture != null:
+		var m := render_meta(_sprite.texture)
+		if not m.is_empty():
+			return float((m["feet"] as Array)[1]) * _sprite.scale.y
 		return _sprite.texture.get_height() * _sprite.scale.y - float(_def.get("foot", 0.0)) * _sprite.scale.y
 	return 24.0
+
+
+## Pose l'image (fermée / ouverte) : rendu Blender = échelle 1/2 et point d'appui du rendu sur
+## l'origine ; sinon dessin SVG avec l'échelle et la marge au sol de la définition.
+func _set_sprite_texture(tex: Texture2D) -> void:
+	_sprite.texture = tex
+	var m := render_meta(tex)
+	if not m.is_empty():
+		var feet := Vector2(float(m["feet"][0]), float(m["feet"][1]))
+		_sprite.scale = Vector2.ONE / RENDER_PX_PER_WORLD
+		_sprite.offset = tex.get_size() * 0.5 - feet
+	else:
+		_sprite.scale = Vector2.ONE * float(_def.get("scale", 0.55))
+		_sprite.offset = Vector2(0.0, -tex.get_height() * 0.5 + float(_def.get("foot", 0.0)))
 
 
 ## Appui sur « action » : lance la fouille, ou rouvre la fenêtre de butin.
@@ -288,9 +321,23 @@ func _finish_search() -> void:
 	else:
 		_refresh_visual()
 		_save_state()
+		_play_reveal()
 	if NetHooks.active:
 		NetHooks.container_opened(self)
 	_announce_open()
+
+
+## Effet d'ouverture : faisceau de la meilleure rareté + objets qui jaillissent (ChestReveal) et
+## petit rebond du conteneur.
+func _play_reveal() -> void:
+	if not is_inside_tree() or not bool(LootDB.cfg().get_value(LootDB.SECTION, "reveal_enabled", true)):
+		return
+	add_child(ChestReveal.create(entries, get_visual_height()))
+	if _sprite != null:
+		var base := _sprite.scale
+		var tw := _sprite.create_tween()
+		tw.tween_property(_sprite, "scale", base * Vector2(1.12, 0.88), 0.06)
+		tw.tween_property(_sprite, "scale", base, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _announce_open() -> void:
@@ -424,8 +471,8 @@ func _save_state() -> void:
 func _refresh_visual() -> void:
 	if _sprite != null:
 		var tex := get_texture(kind, state >= State.OPENED)
-		if tex != null:
-			_sprite.texture = tex
+		if tex != null and tex != _sprite.texture:
+			_set_sprite_texture(tex)
 		_sprite.modulate = Color(0.78, 0.74, 0.78) if state == State.EMPTIED else Color.WHITE
 	var best := LootRoller.best_rarity(entries) if state == State.OPENED else -1
 	_glow_color = LootDB.rarity_color(best) if best >= LootDB.geti("glow_min_rarity", 2) else Color(0, 0, 0, 0)
@@ -438,7 +485,9 @@ func get_glow_color() -> Color:
 
 func _draw() -> void:
 	var r: float = float(_def.get("shadow", 16.0))
-	if r > 0.0:
+	# Les rendus Blender portent déjà leur ombre (soleil couchant) : pas d'ellipse en plus.
+	var baked := _sprite != null and not render_meta(_sprite.texture).is_empty()
+	if r > 0.0 and not baked:
 		draw_set_transform(Vector2(r * 0.35, 3.0), 0.0, Vector2(1.0, 0.32))
 		draw_circle(Vector2.ZERO, r, SHADOW_COLOR)
 		draw_circle(Vector2.ZERO, r * 0.7, Color(SHADOW_COLOR, SHADOW_COLOR.a * 0.5))
@@ -468,16 +517,17 @@ func _draw_bag() -> void:
 	draw_rect(Rect2(c + Vector2(-8, -6), Vector2(16, 4)), Color(0.85, 0.66, 0.3))
 
 
+## Anneau de fouille (maquette « Fouille », direction D) : disque encre, piste sombre, progression
+## violet clair, loupe blanche au centre.
 func _draw_ring() -> void:
-	var rad := 17.0
-	_ring.draw_circle(Vector2.ZERO, rad + 5.0, Color(0.05, 0.07, 0.13, 0.85))
-	_ring.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(1, 1, 1, 0.18), 5.0, true)
+	var rad := 18.0
+	_ring.draw_circle(Vector2.ZERO, rad + 6.0, Color(MenuKit.NIGHT_DEEP, 0.85))
+	_ring.draw_arc(Vector2.ZERO, rad, 0.0, TAU, 40, Color(1, 1, 1, 0.14), 5.0, true)
 	var t := get_search_ratio()
 	if t > 0.0:
-		_ring.draw_arc(Vector2.ZERO, rad, -PI * 0.5, -PI * 0.5 + TAU * t, 40, Color(1.0, 0.78, 0.35), 5.0, true)
-	# Loupe stylisée au centre.
-	_ring.draw_arc(Vector2(-2, -2), 6.0, 0.0, TAU, 20, Color(1, 0.95, 0.85), 2.4, true)
-	_ring.draw_line(Vector2(2.5, 2.5), Vector2(8, 8), Color(1, 0.95, 0.85), 3.0, true)
+		_ring.draw_arc(Vector2.ZERO, rad, -PI * 0.5, -PI * 0.5 + TAU * t, 40, MenuKit.VIOLET_LIGHT, 5.0, true)
+	_ring.draw_arc(Vector2(-2, -2), 6.0, 0.0, TAU, 20, Color.WHITE, 2.4, true)
+	_ring.draw_line(Vector2(2.5, 2.5), Vector2(8, 8), Color.WHITE, 3.0, true)
 
 
 # --- Utilitaires ------------------------------------------------------------------

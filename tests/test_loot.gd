@@ -298,3 +298,115 @@ func test_spawner_place_conteneurs_et_cachettes() -> void:
 			n_h += 1
 	assert_eq(n_c, L.container_spawns.size())
 	assert_eq(n_h, 1)
+
+
+# --- Taux de drop des clefs par difficulté (phase 5) ---------------------------------------
+
+func test_taux_de_clef_par_difficulte() -> void:
+	var chances: Array = LootDB.cfg().get_value(LootDB.SECTION, "key_drop_chance", [])
+	assert_eq(chances.size(), 5, "un taux par difficulté")
+	for d in chances.size():
+		var p := float(chances[d])
+		assert_between(p, 0.005, 0.02, "taux dans [0,5 %% ; 2 %%] (difficulté %d)" % d)
+		if d > 0:
+			assert_gte(p, float(chances[d - 1]), "le taux monte avec la difficulté")
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 100 + d
+		var keys: Array[StringName] = [&"key_bank_vault", &"key_saloon_suite"]
+		var n := 40000
+		var got := 0
+		for i in n:
+			for e: Dictionary in LootManager.roll_enemy_drop(rng, d, 0, keys):
+				if (e["item"] as ItemData).is_key():
+					got += 1
+		var rate := float(got) / n
+		assert_between(rate, p * 0.75, p * 1.25, "taux observé %.4f ≈ %.4f (difficulté %d)" % [rate, p, d])
+
+
+# --- Clefs emportées depuis la réserve ------------------------------------------------------
+
+func test_clefs_de_la_reserve_emportees_puis_rendues_ou_perdues() -> void:
+	var saved := Profile.to_dict()
+	var saved_inv: Variant = GameState.get("raid_inventory")
+	Profile.from_dict({"items": {"key_bank_vault": 1, "bandage": 1}})
+	Profile.add_weapon(&"pistol_p9")
+	assert_false(Profile.pack_keys, "par défaut : les clefs restent en réserve")
+	assert_eq(Profile.keys_in_reserve().size(), 1)
+	assert_true(Profile.keys_preview().is_empty(), "rien d'emporté tant que le choix est « non »")
+	Profile.set_pack_keys(true)
+	var bag := Inventory.from_balance()
+	GameState.set("raid_inventory", bag)
+	Profile.start_raid()
+	assert_true(bag.has_item(&"key_bank_vault"), "clef dans le sac de raid")
+	assert_eq(Profile.item_count(&"key_bank_vault"), 0, "la clef a quitté la réserve")
+	Profile.finish_extraction([] as Array[StringName], bag)
+	assert_eq(Profile.item_count(&"key_bank_vault"), 1, "extraction : clef non utilisée rendue")
+	# Mort : la clef emportée est perdue
+	var bag2 := Inventory.from_balance()
+	GameState.set("raid_inventory", bag2)
+	Profile.start_raid()
+	assert_true(bag2.has_item(&"key_bank_vault"))
+	Profile.finish_death()
+	assert_eq(Profile.item_count(&"key_bank_vault"), 0, "mort : clef perdue")
+	GameState.set("raid_inventory", saved_inv)
+	Profile.from_dict(saved)
+
+
+# --- Ouverture (maquette « Butin révélé ») ------------------------------------------------
+
+func _entries(ids: Array) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for id: StringName in ids:
+		out.append({"item": LootDB.get_item(id), "count": 1})
+	return out
+
+
+func test_ouverture_montre_les_plus_rares_d_abord() -> void:
+	var e := _entries([&"bandage", &"pearl_necklace", &"pocket_watch", &"gold_nugget"])
+	var shown := ChestReveal.pick(e, 3)
+	assert_eq(shown.size(), 3, "au plus N objets montrés")
+	assert_eq(shown[0].id, &"pearl_necklace", "le plus rare en premier")
+	for i in range(1, shown.size()):
+		assert_lte(shown[i].rarity, shown[i - 1].rarity, "rareté décroissante")
+	var order := InventoryLootWindow.display_order(e)
+	assert_eq((e[order[0]]["item"] as ItemData).id, &"pearl_necklace", "fenêtre de butin : le plus rare en haut")
+	assert_eq((e[order[order.size() - 1]]["item"] as ItemData).id, &"bandage", "le moins rare en bas")
+
+
+func test_ouverture_lance_l_effet_puis_le_libere() -> void:
+	var c := LootContainer.create(&"chest", Vector2.ZERO)
+	c.has_preset = true
+	c.preset_entries = _entries([&"pearl_necklace", &"bandage"])
+	add_child_autofree(c)
+	await wait_frames(1)
+	c.force_open()
+	await wait_frames(1)
+	var rv := c.get_node_or_null(^"ChestReveal")
+	assert_not_null(rv, "effet d'ouverture ajouté")
+	assert_eq(rv.get_child_count(), 3, "faisceau + 2 icônes")
+	await wait_seconds(LootDB.getf("reveal_duration", 1.6) + 0.6)
+	assert_null(c.get_node_or_null(^"ChestReveal"), "effet libéré à la fin")
+
+
+# --- Rendus Blender des conteneurs (art/blender/build_containers.py) -----------------------
+
+func test_conteneurs_far_west_rendus_blender() -> void:
+	for k: StringName in CONTAINER_KINDS:
+		for opened: bool in [false, true]:
+			var tex := LootContainer.get_texture(k, opened)
+			assert_not_null(tex, "%s%s : image" % [k, "_open" if opened else ""])
+			assert_true(tex.resource_path.ends_with(".png"), "%s : rendu Blender (png) prioritaire" % k)
+			var m := LootContainer.render_meta(tex)
+			assert_false(m.is_empty(), "%s : point d'appui dans containers.json" % k)
+	var c := LootContainer.create(&"chest", Vector2.ZERO)
+	add_child_autofree(c)
+	await wait_frames(1)
+	var sp := c.get_node(^"Sprite") as Sprite2D
+	assert_almost_eq(sp.scale.x, 1.0 / LootContainer.RENDER_PX_PER_WORLD, 0.001, "2 px par unité monde")
+	var m2 := LootContainer.render_meta(sp.texture)
+	var feet := Vector2(float(m2["feet"][0]), float(m2["feet"][1]))
+	# le point d'appui du rendu tombe sur l'origine du conteneur
+	assert_almost_eq((feet - sp.texture.get_size() * 0.5 + sp.offset).length(), 0.0, 0.01)
+	assert_gt(c.get_visual_height(), 10.0, "hauteur visuelle (anneau de fouille, effet d'ouverture)")
+	c.force_open()
+	assert_true(sp.texture.resource_path.ends_with("chest_open.png"), "image ouverte après la fouille")

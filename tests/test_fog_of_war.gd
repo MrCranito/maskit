@@ -239,3 +239,104 @@ func test_perf_90x60() -> void:
 	gut.p("FogOfWar recalcul 90x60 (case + polygone) : moyen %.3f ms, pire %.3f ms, polygone pire %.3f ms (%d rayons) (%d essais)" % [total / maxf(n, 1), worst, poly_worst, fog.last_ray_count, n])
 	assert_lt(total / maxf(n, 1), 2.0, "Recalcul moyen < 2 ms")
 	assert_lt(worst, 6.0, "Pas de pic aberrant")
+
+
+# --- Styles de rendu ([fog] fog_style) ---------------------------------------------
+
+## Crée un brouillard avec le style demandé (balance.cfg modifiée le temps du test).
+func _fog_with_style(style: String) -> FogOfWar:
+	var cfg: ConfigFile = Balance.get(&"_config")
+	var old: Variant = cfg.get_value("fog", "fog_style", null)
+	cfg.set_value("fog", "fog_style", style)
+	var fog := FogOfWar.new()
+	add_child_autofree(fog)
+	fog.setup(_layout)
+	fog.set_door_query(_door_open)
+	cfg.set_value("fog", "fog_style", old)
+	return fog
+
+
+func test_default_style_from_balance() -> void:
+	var expected := StringName(str(Balance.get_value("fog", "fog_style", "")))
+	assert_true(FogOfWar.SHADERS.has(expected), "fog_style de balance.cfg est un style connu")
+	assert_eq(_fog.fog_style, expected)
+	assert_eq((_fog.material as ShaderMaterial).shader, FogOfWar.SHADERS[expected])
+
+
+func test_both_styles_load_with_their_settings() -> void:
+	for style: StringName in [FogOfWar.STYLE_DARKENED, FogOfWar.STYLE_MIST]:
+		var fog := _fog_with_style(String(style))
+		assert_eq(fog.fog_style, style, "Style %s chargé" % style)
+		assert_eq(fog.style_section(), "fog_" + String(style))
+		var mat := fog.material as ShaderMaterial
+		assert_not_null(mat, "Matériau %s" % style)
+		assert_eq(mat.shader, FogOfWar.SHADERS[style], "Shader du style %s" % style)
+		var keys: PackedStringArray = Balance.get_section_keys(fog.style_section())
+		assert_gt(keys.size(), 5, "Section [%s] présente dans balance.cfg" % fog.style_section())
+		for key: String in keys:
+			if FogOfWar.SCRIPT_STYLE_KEYS.has(key):
+				continue
+			assert_eq(mat.get_shader_parameter(StringName(key)), Balance.get_value(fog.style_section(), key), "%s.%s transmis au shader" % [style, key])
+		assert_eq(fog.halo_px, float(Balance.get_value(fog.style_section(), "halo_px", 0.0)))
+	assert_gt(_fog_with_style("mist").halo_px, 0.0, "La brume stylisée utilise le halo (dégradé)")
+
+
+func test_unknown_style_falls_back() -> void:
+	var fog := _fog_with_style("n_existe_pas")
+	assert_eq(fog.fog_style, FogOfWar.STYLE_DARKENED, "Style inconnu → décor assombri")
+	assert_eq((fog.material as ShaderMaterial).shader, FogOfWar.SHADERS[FogOfWar.STYLE_DARKENED])
+
+
+func test_hideables_hidden_out_of_view_in_both_styles() -> void:
+	for style: String in ["darkened", "mist"]:
+		var fog := _fog_with_style(style)
+		fog.update_from(_at(_layout.player_spawn))
+		var seen := Node2D.new()
+		seen.add_to_group(FogOfWar.GROUP_HIDEABLE)
+		seen.position = _at(Vector2i(5, 14))
+		var behind_door := Node2D.new()
+		behind_door.add_to_group(FogOfWar.GROUP_HIDEABLE)
+		behind_door.position = _at(Vector2i(6, 6))
+		var behind_wall := Node2D.new()
+		behind_wall.add_to_group(FogOfWar.GROUP_HIDEABLE)
+		behind_wall.position = _at(Vector2i(13, 22))
+		var far := Node2D.new()
+		far.add_to_group(FogOfWar.GROUP_HIDEABLE)
+		far.position = _at(Vector2i(30, 14))
+		for n: Node2D in [seen, behind_door, behind_wall, far]:
+			add_child_autofree(n)
+		fog.update_hideables()
+		assert_true(seen.visible, "%s : entité en vue affichée" % style)
+		assert_false(behind_door.visible, "%s : cachée derrière une porte fermée" % style)
+		assert_false(behind_wall.visible, "%s : cachée derrière un mur" % style)
+		assert_false(far.visible, "%s : cachée hors du rayon de vue" % style)
+		# Exploré puis quitté : retombe hors vue, l'entité est cachée.
+		fog.update_from(_at(Vector2i(32, 26)))
+		fog.update_hideables()
+		assert_true(fog.is_cell_explored(Vector2i(5, 14)))
+		assert_false(seen.visible, "%s : exploré hors vue = entité cachée" % style)
+		for n: Node2D in [seen, behind_door, behind_wall, far]:
+			n.remove_from_group(FogOfWar.GROUP_HIDEABLE)  # pas de croisement entre styles
+
+
+func test_shaders_single_pass_budget() -> void:
+	# Coût mobile : une passe, aucune boucle, au plus 6 lectures de texture par style.
+	var common := FileAccess.get_file_as_string("res://assets/shaders/fog_common.gdshaderinc")
+	assert_ne(common, "", "Partie commune lisible")
+	for style: StringName in FogOfWar.SHADERS:
+		var sh: Shader = FogOfWar.SHADERS[style]
+		var code := sh.code
+		assert_true(code.contains("fog_common.gdshaderinc"), "%s inclut la partie commune" % style)
+		var full := _strip_comments(code + "\n" + common)
+		var reads := full.count("texture(")
+		assert_lte(reads, 6, "%s : %d lectures de texture (≤ 6)" % [style, reads])
+		var rx := RegEx.create_from_string("\\b(for|while)\\s*\\(")
+		assert_null(rx.search(full), "%s : aucune boucle" % style)
+
+
+func _strip_comments(src: String) -> String:
+	var out := PackedStringArray()
+	for line: String in src.split("\n"):
+		var i := line.find("//")
+		out.append(line if i < 0 else line.substr(0, i))
+	return "\n".join(out)

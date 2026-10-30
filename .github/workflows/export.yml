@@ -17,6 +17,10 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+concurrency:
+  group: export-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   GODOT_VERSION: "4.7.2"
   EXPORT_NAME: raidersgo
@@ -47,8 +51,6 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - name: Installer les templates d'export
         # L'image place les templates dans /root ; GitHub Actions utilise HOME=/github/home.
@@ -93,8 +95,6 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
-        with:
-          lfs: true
 
       - name: Installer templates et réglages éditeur
         run: |

@@ -2,3 +2,4 @@ node_modules
 test
 .gdignore
 *.md
+cloudflare

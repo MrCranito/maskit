@@ -25,6 +25,7 @@ Profile="*res://scripts/core/profile.gd"
 BattlePass="*res://scripts/progression/battle_pass.gd"
 LootManager="*res://scripts/loot/loot_manager.gd"
 AudioManager="*res://scripts/core/audio_manager.gd"
+CloudSync="*res://scripts/net/cloud_sync.gd"
 
 [display]
 

@@ -1,13 +1,15 @@
 class_name InventoryLootWindow
 extends Control
-## Fenêtre de butin d'un conteneur ouvert (EventBus.container_opened) : panneau bleu
-## nuit à droite de l'écran (le joueur reste visible), une ligne par objet (icône,
-## nom couleur de rareté, quantité, bouton « Prendre »), bouton « Tout prendre ».
+## Fenêtre de butin d'un conteneur ouvert (EventBus.container_opened), maquette « Butin
+## révélé » (direction D) : panneau encre à coin coupé à droite de l'écran (le joueur reste
+## visible), petit libellé violet (objets · valeur en or), nom du conteneur en Anton, une ligne
+## par objet triée par rareté (liseré de rareté, icône, nom, rareté · valeur, « PRENDRE »),
+## jauge du sac (emplacements, poids), « TOUT PRENDRE » violet.
 ## Se ferme quand le conteneur est vidé, quand on s'éloigne (cible d'interaction
 ## perdue) ou via ✕. Le jeu continue (pas de pause) : la fouille reste risquée.
 ## Reconstruite seulement quand le contenu change.
 
-const ROW_HEIGHT := 70.0
+const ROW_HEIGHT := 64.0
 
 ## Ouverture / fermeture (l'InventoryHud masque alors le bouton action, couvert par la fenêtre).
 signal visibility_changed_for_action(open: bool)
@@ -22,6 +24,9 @@ var _list: VBoxContainer = null
 var _scroll: ScrollContainer = null
 var _take_all: Button = null
 var _full_label: Label = null
+var _bag_label: Label = null
+var _bag_weight: Label = null
+var _bag_bar: ProgressBar = null
 var _tween: Tween = null
 
 
@@ -51,7 +56,9 @@ func _place_safe() -> void:
 
 func _build() -> void:
 	_panel = PanelContainer.new()
-	_panel.add_theme_stylebox_override("panel", InventoryStyle.panel(20, 18))
+	var ps := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.9), 22.0, Color(0, 0, 0, 0), 0.0, 18.0, 16.0)
+	ps.corners = CutBox.CUT_TOP_RIGHT
+	_panel.add_theme_stylebox_override("panel", ps)
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.custom_minimum_size = Vector2(430, 0)
 	# Ancré à droite, centré verticalement (au-dessus du stick droit, sous le sac).
@@ -75,35 +82,85 @@ func _build() -> void:
 	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	names.add_theme_constant_override("separation", 0)
 	head.add_child(names)
-	_title = InventoryStyle.title("", 28)
-	names.add_child(_title)
-	_subtitle = InventoryStyle.label("", 15, InventoryStyle.TEXT_SECONDARY, 700)
+	_subtitle = MenuKit.label("", 15, MenuKit.GOLD, MenuKit.nunito(600), 0)
+	_subtitle.uppercase = true
 	names.add_child(_subtitle)
-	var close_btn := InventoryStyle.button("✕", InventoryStyle.NIGHT_BLUE_LIGHT, 22, Vector2(54, 50))
+	_title = MenuKit.label("", 34, MenuKit.TEXT, MenuKit.display(), 0)
+	_title.uppercase = true
+	names.add_child(_title)
+	var close_btn := Button.new()
+	close_btn.name = "CloseButton"
+	close_btn.text = "×"
+	close_btn.tooltip_text = "Fermer"
+	close_btn.focus_mode = Control.FOCUS_NONE
+	close_btn.custom_minimum_size = Vector2(52, 52)
 	close_btn.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	close_btn.add_theme_font_override("font", MenuKit.nunito(500))
+	close_btn.add_theme_font_size_override("font_size", 28)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+		close_btn.add_theme_color_override(k, MenuKit.TEXT)
+	close_btn.add_theme_stylebox_override("normal", CutBox.make(Color(0, 0, 0, 0), 0.0, Color(1, 1, 1, 0.4), 1.5, 0.0, 0.0))
+	close_btn.add_theme_stylebox_override("hover", CutBox.make(Color(1, 1, 1, 0.1), 0.0, Color(1, 1, 1, 0.6), 1.5, 0.0, 0.0))
+	close_btn.add_theme_stylebox_override("pressed", CutBox.make(Color(0, 0, 0, 0.4), 0.0, Color(1, 1, 1, 0.6), 1.5, 0.0, 0.0))
 	close_btn.pressed.connect(close)
 	head.add_child(close_btn)
-
-	var sep := ColorRect.new()
-	sep.color = Color(InventoryStyle.GOLD, 0.35)
-	sep.custom_minimum_size = Vector2(0, 2)
-	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_child(sep)
 
 	_scroll = ScrollContainer.new()
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(_scroll)
 	_list = VBoxContainer.new()
-	_list.add_theme_constant_override("separation", 8)
+	_list.add_theme_constant_override("separation", 6)
 	_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.add_child(_list)
 
-	_full_label = InventoryStyle.label("Sacoche pleine ou trop lourde !", 16, Color(1.0, 0.55, 0.45), 800)
-	_full_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_full_label = MenuKit.label("▲ Sac plein ou trop lourd", 16, Color(1.0, 0.44, 0.57), MenuKit.nunito(600), 0)
+	_full_label.uppercase = true
 	_full_label.visible = false
 	v.add_child(_full_label)
 
-	_take_all = InventoryStyle.button("Tout prendre", InventoryStyle.GOLD, 21, Vector2(0, 60))
+	# Jauge du sac : emplacements (gauche) et poids (droite)
+	var bag := VBoxContainer.new()
+	bag.add_theme_constant_override("separation", 4)
+	v.add_child(bag)
+	var brow := HBoxContainer.new()
+	bag.add_child(brow)
+	_bag_label = MenuKit.label("", 15, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	_bag_label.uppercase = true
+	_bag_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	brow.add_child(_bag_label)
+	_bag_weight = MenuKit.label("", 15, MenuKit.TEXT, MenuKit.nunito(600), 0)
+	_bag_weight.uppercase = true
+	brow.add_child(_bag_weight)
+	_bag_bar = ProgressBar.new()
+	_bag_bar.show_percentage = false
+	_bag_bar.custom_minimum_size = Vector2(0, 7)
+	var bb := StyleBoxFlat.new()
+	bb.bg_color = Color(1, 1, 1, 0.14)
+	var bf := StyleBoxFlat.new()
+	bf.bg_color = MenuKit.VIOLET_LIGHT
+	_bag_bar.add_theme_stylebox_override("background", bb)
+	_bag_bar.add_theme_stylebox_override("fill", bf)
+	bag.add_child(_bag_bar)
+
+	_take_all = Button.new()
+	_take_all.name = "TakeAll"
+	_take_all.text = "TOUT PRENDRE"
+	_take_all.focus_mode = Control.FOCUS_NONE
+	_take_all.custom_minimum_size = Vector2(0, 64)
+	_take_all.add_theme_font_override("font", MenuKit.display())
+	_take_all.add_theme_font_size_override("font_size", 28)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color"]:
+		_take_all.add_theme_color_override(k, MenuKit.TEXT)
+	_take_all.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.4))
+	var mk := func(bg: Color) -> CutBox:
+		var c := CutBox.make(bg, 14.0, Color(0, 0, 0, 0), 0.0, 16.0, 0.0)
+		c.corners = CutBox.CUT_TOP_LEFT
+		return c
+	_take_all.add_theme_stylebox_override("normal", mk.call(MenuKit.VIOLET))
+	_take_all.add_theme_stylebox_override("hover", mk.call(MenuKit.VIOLET.lightened(0.12)))
+	_take_all.add_theme_stylebox_override("pressed", mk.call(MenuKit.VIOLET.darkened(0.2)))
+	_take_all.add_theme_stylebox_override("hover_pressed", mk.call(MenuKit.VIOLET.darkened(0.2)))
+	_take_all.add_theme_stylebox_override("disabled", mk.call(Color(MenuKit.VIOLET, 0.35)))
 	_take_all.pressed.connect(_on_take_all)
 	v.add_child(_take_all)
 
@@ -155,22 +212,48 @@ func _rebuild() -> void:
 		close()
 		return
 	_title.text = container.get_display_name()
+	_refresh_bag()
 	var n := container.entries.size()
 	if n == 0:
-		_subtitle.text = "Rien d'intéressant…"
-		var empty := InventoryStyle.label("Le conteneur est vide.", 18, InventoryStyle.TEXT_SECONDARY, 600)
+		_subtitle.text = "Rien d'intéressant"
+		var empty := MenuKit.label("Le conteneur est vide.", 18, Color(1, 1, 1, 0.6), MenuKit.nunito(600), 0)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.custom_minimum_size = Vector2(0, 60)
 		_list.add_child(empty)
 		_scroll.custom_minimum_size = Vector2(0, 60)
 		_take_all.disabled = true
 		return
-	_subtitle.text = "%d objet%s · %d $" % [n, "s" if n > 1 else "", LootRoller.total_value(container.entries)]
+	var gold := 0
+	for e: Dictionary in container.entries:
+		gold += Economy.item_sell_price(e["item"] as ItemData) * int(e["count"])
+	_subtitle.text = "%d objet%s · ≈ %d or" % [n, "s" if n > 1 else "", gold]
 	_take_all.disabled = false
-	for i in n:
+	# Affichage du plus rare au moins rare ; chaque ligne garde l'index réel de l'entrée.
+	for i: int in display_order(container.entries):
 		_list.add_child(_make_row(i, container.entries[i]))
-	# Au-delà de 5 lignes : défilement (le panneau ne dépasse pas l'écran).
-	_scroll.custom_minimum_size = Vector2(0, (ROW_HEIGHT + 8.0) * mini(n, 5) - 8.0)
+	# Au-delà de 4 lignes : défilement (le panneau ne dépasse pas l'écran).
+	_scroll.custom_minimum_size = Vector2(0, (ROW_HEIGHT + 6.0) * mini(n, 4) - 6.0)
+
+
+## Index des entrées dans l'ordre d'affichage : rareté décroissante, puis valeur décroissante.
+static func display_order(entries: Array[Dictionary]) -> Array[int]:
+	var idx: Array[int] = []
+	for i in entries.size():
+		idx.append(i)
+	idx.sort_custom(func(a: int, b: int) -> bool:
+		var ia: ItemData = entries[a]["item"]
+		var ib: ItemData = entries[b]["item"]
+		return ia.rarity > ib.rarity if ia.rarity != ib.rarity else ia.value > ib.value)
+	return idx
+
+
+func _refresh_bag() -> void:
+	if inventory == null or _bag_label == null:
+		return
+	_bag_label.text = "Sac %d / %d" % [inventory.used_slots(), inventory.capacity()]
+	_bag_weight.text = ("%.1f / %.0f kg" % [inventory.total_weight(), inventory.max_weight]).replace(".", ",")
+	_bag_bar.max_value = maxf(inventory.max_weight, 0.1)
+	_bag_bar.value = inventory.total_weight()
 
 
 func _make_row(i: int, e: Dictionary) -> Control:
@@ -179,21 +262,20 @@ func _make_row(i: int, e: Dictionary) -> Control:
 	var rc := LootDB.rarity_color(it.rarity)
 	var row := PanelContainer.new()
 	var st := StyleBoxFlat.new()
-	st.bg_color = InventoryStyle.NIGHT_BLUE_DEEP.lerp(rc, 0.10)
-	st.border_color = Color(rc, 0.75)
-	st.border_width_left = 5
-	st.set_corner_radius_all(12)
-	st.content_margin_left = 10
+	st.bg_color = Color(rc, 0.14) if it.rarity >= ItemData.Rarity.EPIC else Color(1, 1, 1, 0.04)
+	st.border_color = rc
+	st.border_width_left = 4
+	st.content_margin_left = 8
 	st.content_margin_right = 8
-	st.content_margin_top = 6
-	st.content_margin_bottom = 6
+	st.content_margin_top = 4
+	st.content_margin_bottom = 4
 	row.add_theme_stylebox_override("panel", st)
 	row.custom_minimum_size = Vector2(0, ROW_HEIGHT)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 12)
 	row.add_child(h)
 	var tile := Control.new()
-	tile.custom_minimum_size = Vector2(56, 56)
+	tile.custom_minimum_size = Vector2(52, 52)
 	tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	tile.draw.connect(func() -> void:
@@ -204,13 +286,31 @@ func _make_row(i: int, e: Dictionary) -> Control:
 	names.alignment = BoxContainer.ALIGNMENT_CENTER
 	names.add_theme_constant_override("separation", 0)
 	h.add_child(names)
-	var nm := InventoryStyle.label(it.display_name + ("  ×%d" % count if count > 1 else ""), 19, rc.lightened(0.2), 800)
+	var nm := MenuKit.label(it.display_name + ("  ×%d" % count if count > 1 else ""), 18, MenuKit.TEXT, MenuKit.nunito(700), 0)
 	nm.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	nm.custom_minimum_size = Vector2(150, 0)
 	names.add_child(nm)
-	names.add_child(InventoryStyle.label("%s · ≈ %d or" % [LootDB.rarity_name(it.rarity), Economy.item_sell_price(it) * count], 14, InventoryStyle.TEXT_SECONDARY, 700))
-	var take := InventoryStyle.button("Prendre", InventoryStyle.NIGHT_BLUE_LIGHT, 17, Vector2(108, 52))
+	var meta := HBoxContainer.new()
+	meta.add_theme_constant_override("separation", 6)
+	names.add_child(meta)
+	var rl := MenuKit.label(LootDB.rarity_name(it.rarity), 14, rc, MenuKit.nunito(600), 0)
+	rl.uppercase = true
+	meta.add_child(rl)
+	var vl := MenuKit.label("· ≈ %d or" % (Economy.item_sell_price(it) * count), 14, Color(1, 1, 1, 0.55), MenuKit.nunito(600), 0)
+	vl.uppercase = true
+	meta.add_child(vl)
+	var take := Button.new()
+	take.text = "PRENDRE"
+	take.focus_mode = Control.FOCUS_NONE
+	take.custom_minimum_size = Vector2(104, 48)
 	take.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	take.add_theme_font_override("font", MenuKit.display())
+	take.add_theme_font_size_override("font_size", 19)
+	for k: String in ["font_color", "font_hover_color", "font_pressed_color"]:
+		take.add_theme_color_override(k, MenuKit.TEXT)
+	take.add_theme_stylebox_override("normal", CutBox.make(MenuKit.NIGHT_DEEP, 0.0, Color(1, 1, 1, 0.35), 1.0, 0.0, 0.0))
+	take.add_theme_stylebox_override("hover", CutBox.make(MenuKit.NIGHT_PANEL, 0.0, Color(1, 1, 1, 0.6), 1.0, 0.0, 0.0))
+	take.add_theme_stylebox_override("pressed", CutBox.make(Color(MenuKit.VIOLET, 0.8), 0.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0))
 	take.pressed.connect(_on_take.bind(i))
 	h.add_child(take)
 	return row

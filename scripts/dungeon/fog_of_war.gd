@@ -2,11 +2,15 @@ class_name FogOfWar
 extends Node2D
 ## Brouillard atmosphérique permanent sur la grille d'un FloorLayout.
 ##
-## Rendu : tout l'écran est sous une brume bleu nuit animée ; seule la zone que le
-## joueur voit réellement (polygone de visibilité, bloqué par murs et portes
-## fermées, atténué par un vignettage circulaire) est nette. Les zones explorées
-## hors de vue retombent dans la brume : seul un très léger souvenir du décor
-## transparaît ([fog] explored_memory_strength), ennemis et conteneurs y sont cachés.
+## Rendu : seule la zone que le joueur voit réellement (polygone de visibilité, bloqué
+## par murs et portes fermées, atténué par un vignettage circulaire) est nette. Hors
+## vue, deux styles au choix ([fog] fog_style, réglages dans [fog_<style>]) :
+##   darkened (option A, « décor assombri ») : le décor reste lisible, désaturé,
+##     assombri et teinté bleu nuit ; une zone jamais vue est quasi illisible ;
+##     brume légère par-dessus (fog_darkened.gdshader, lit l'écran déjà dessiné) ;
+##   mist (option B, « brume stylisée ») : brume bleu nuit → violet moins opaque,
+##     dégradé depuis le bord de vision, grain fin (fog_mist.gdshader).
+## Dans les deux cas, ennemis et conteneurs hors vue sont cachés (groupe fog_hideable).
 ##
 ## Logique (inchangée, sert à l'IA / la sauvegarde / les tests) : grille par case
 ##   0 = jamais vu, 1 = exploré hors vue, 2 = visible,
@@ -25,15 +29,24 @@ extends Node2D
 ## basse résolution ([fog] mask_px_per_texel), rafraîchi UNIQUEMENT après un
 ## recalcul (UPDATE_ONCE). Le brouillard est un unique rectangle en espace monde
 ## (z 80) : il suit donc exactement la caméra (lissage, interpolation) sans décalage.
-## Le shader fog_of_war.gdshader échantillonne 4 textures (masque, mémoire
-## d'exploration 1 texel/case, bruit ×2), sans boucle.
+## Les shaders (partie commune fog_common.gdshaderinc) échantillonnent 4 textures
+## (masque, mémoire d'exploration 1 texel/case, bruit ×2) + l'écran pour darkened,
+## sans boucle. Canal G du masque : halo large ([fog_<style>] halo_px, 0 = aucun)
+## qui donne le dégradé depuis le bord de vision.
 ##
 ## Branchement (raid) :
 ##   fog.setup(layout); fog.set_door_query(func(c): return porte_ouverte(c))
 ##   DoorNode.state_changed → fog.invalidate() ; chaque frame : fog.update_from(player.global_position)
 ##   changement d'étage : etat = fog.get_state() … plus tard fog.set_state(etat)
 
-const SHADER: Shader = preload("res://assets/shaders/fog_of_war.gdshader")
+const STYLE_DARKENED := &"darkened"
+const STYLE_MIST := &"mist"
+const SHADERS := {
+	STYLE_DARKENED: preload("res://assets/shaders/fog_darkened.gdshader"),
+	STYLE_MIST: preload("res://assets/shaders/fog_mist.gdshader"),
+}
+## Clés de [fog_<style>] lues par le script (les autres sont des uniformes du shader).
+const SCRIPT_STYLE_KEYS: Array[String] = ["halo_px"]
 const NOISE_PATH := "res://assets/textures/fog/fog_noise.png"
 const GROUP_HIDEABLE := &"fog_hideable"
 const GROUP_PLAYER := &"player"
@@ -47,6 +60,15 @@ const CORNER_EPS := 0.0009
 const OCTANTS: Array[Vector4i] = [
 	Vector4i(1, 0, 0, 1), Vector4i(0, 1, 1, 0), Vector4i(0, -1, 1, 0), Vector4i(-1, 0, 0, 1),
 	Vector4i(-1, 0, 0, -1), Vector4i(0, -1, -1, 0), Vector4i(0, 1, -1, 0), Vector4i(1, 0, 0, -1),
+]
+## Décalages du halo large (unité = halo_px) : centre + 3 anneaux (dégradé régulier).
+const HALO_TAPS: Array[Vector2] = [
+	Vector2(0, 0),
+	Vector2(0.33, 0), Vector2(-0.33, 0), Vector2(0, 0.33), Vector2(0, -0.33),
+	Vector2(0.47, 0.47), Vector2(-0.47, 0.47), Vector2(0.47, -0.47), Vector2(-0.47, -0.47),
+	Vector2(0.67, 0), Vector2(-0.67, 0), Vector2(0, 0.67), Vector2(0, -0.67),
+	Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1),
+	Vector2(0.71, 0.71), Vector2(-0.71, 0.71), Vector2(0.71, -0.71), Vector2(-0.71, -0.71),
 ]
 ## Décalages de flou du masque (unité = edge_feather_px) : centre + 2 anneaux.
 const FEATHER_TAPS: Array[Vector2] = [
@@ -69,6 +91,9 @@ var circle_rays: int = 40
 var edge_feather_px: float = 22.0
 var mask_px_per_texel: float = 8.0
 var reveal_roofs: bool = true
+## Style de rendu (STYLE_DARKENED ou STYLE_MIST) et largeur du halo du masque (px monde).
+var fog_style: StringName = STYLE_DARKENED
+var halo_px: float = 0.0
 
 var layout: FloorLayout = null
 ## Durée du dernier recalcul (ms) : shadowcasting et/ou polygone (debug / tests).
@@ -100,6 +125,7 @@ var _ray_keys: PackedInt64Array = PackedInt64Array()
 var _fan_points: PackedVector2Array = PackedVector2Array()
 var _fan_indices: PackedInt32Array = PackedInt32Array()
 var _fan_colors: PackedColorArray = PackedColorArray()
+var _halo_colors: PackedColorArray = PackedColorArray()
 var _roof_rects: Array[Rect2] = []
 var _wall_rects: Array[Rect2] = []  ## Rangées de murs / portes fermées en vue (fusionnées)
 
@@ -344,6 +370,24 @@ func _load_balance() -> void:
 	edge_feather_px = float(_cfg("edge_feather_px", edge_feather_px))
 	mask_px_per_texel = maxf(float(_cfg("mask_px_per_texel", mask_px_per_texel)), 1.0)
 	reveal_roofs = bool(_cfg("reveal_roofs", reveal_roofs))
+	var st := StringName(str(_cfg("fog_style", String(fog_style))))
+	if not SHADERS.has(st):
+		push_warning("FogOfWar: fog_style « %s » inconnu, « %s » utilisé." % [st, STYLE_DARKENED])
+		st = STYLE_DARKENED
+	fog_style = st
+	halo_px = maxf(float(_style_cfg("halo_px", 0.0)), 0.0)
+
+
+## Section des réglages de rendu du style courant.
+func style_section() -> String:
+	return "fog_" + String(fog_style)
+
+
+func _style_cfg(key: String, default: Variant) -> Variant:
+	var bal: Node = _autoload(&"Balance")
+	if bal == null:
+		return default
+	return bal.call(&"get_value", style_section(), key, default)
 
 
 func _apply_shader_params() -> void:
@@ -352,18 +396,12 @@ func _apply_shader_params() -> void:
 	var m := _material
 	m.set_shader_parameter(&"map_size_px", Vector2(_w, _h) * TS)
 	m.set_shader_parameter(&"view_radius_px", float(view_radius) * TS)
-	m.set_shader_parameter(&"fog_color", _cfg("fog_color", Color(0.035, 0.05, 0.11, 1.0)))
-	m.set_shader_parameter(&"mist_color", _cfg("mist_color", Color(0.2, 0.25, 0.42, 1.0)))
-	m.set_shader_parameter(&"unseen_alpha", float(_cfg("unseen_alpha", 0.985)))
-	m.set_shader_parameter(&"memory_strength", float(_cfg("explored_memory_strength", 0.12)))
-	m.set_shader_parameter(&"mist_density", float(_cfg("mist_density", 0.55)))
-	m.set_shader_parameter(&"mist_scale", float(_cfg("mist_scale", 900.0)))
-	m.set_shader_parameter(&"mist_speed", float(_cfg("mist_speed", 14.0)))
-	m.set_shader_parameter(&"edge_softness", float(_cfg("edge_softness", 0.22)))
-	m.set_shader_parameter(&"edge_noise", float(_cfg("edge_noise", 0.35)))
-	m.set_shader_parameter(&"vignette_start", float(_cfg("vignette_start", 0.55)))
-	m.set_shader_parameter(&"penumbra_color", _cfg("penumbra_color", Color(0.06, 0.08, 0.2, 1.0)))
-	m.set_shader_parameter(&"visible_haze", float(_cfg("visible_haze", 0.12)))
+	# Uniformes du style : toutes les clés de [fog_<style>] (sauf celles du script).
+	var bal: Node = _autoload(&"Balance")
+	if bal != null and bal.has_method(&"get_section_keys"):
+		for key: String in bal.call(&"get_section_keys", style_section()):
+			if not SCRIPT_STYLE_KEYS.has(key):
+				m.set_shader_parameter(StringName(key), bal.call(&"get_value", style_section(), key))
 	m.set_shader_parameter(&"reveal", 1.0 if _reveal_all else 0.0)
 	m.set_shader_parameter(&"player_pos", _player_pos)
 
@@ -697,8 +735,8 @@ func _collect_roofs(oc: Vector2i) -> void:
 func _build_render() -> void:
 	if _material == null:
 		_material = ShaderMaterial.new()
-		_material.shader = SHADER
 		material = _material
+	_material.shader = SHADERS[fog_style]
 	if _noise_tex == null and ResourceLoader.exists(NOISE_PATH):
 		_noise_tex = load(NOISE_PATH) as Texture2D
 	# Masque de visibilité : SubViewport couvrant toute la carte, basse résolution.
@@ -765,17 +803,21 @@ func _draw() -> void:
 
 
 ## Appelé par MaskDrawer._draw : polygone en éventail, plusieurs passes décalées
-## en mélange additif (somme = 1 au cœur) → bord adouci d'environ edge_feather_px.
+## en mélange additif (somme = 1 au cœur) → bord adouci d'environ edge_feather_px
+## (canal R) ; si halo_px > 0, idem en plus large dans le canal G (dégradé de brume).
 func _draw_mask(ci: Node2D) -> void:
 	var n := _poly.size()
 	if n < 3:
 		return
-	var taps := FEATHER_TAPS.size()
-	var col := Color(1.0, 1.0, 1.0, 1.0 / float(taps))
+	# Mélange additif par canal : R = bord court (champ de vision), G = halo large.
+	var col := Color(1.0, 0.0, 0.0, 1.0 / float(FEATHER_TAPS.size()))
+	var hcol := Color(0.0, 1.0, 0.0, 1.0 / float(HALO_TAPS.size()))
 	if _fan_points.size() != n + 1:
 		_fan_points.resize(n + 1)
 		_fan_colors.resize(n + 1)
 		_fan_colors.fill(col)
+		_halo_colors.resize(n + 1)
+		_halo_colors.fill(hcol)
 		_fan_indices.resize(n * 3)
 		for k in n:
 			_fan_indices[k * 3] = 0
@@ -793,6 +835,14 @@ func _draw_mask(ci: Node2D) -> void:
 			ci.draw_rect(rr, col)
 		for rr in _roof_rects:
 			ci.draw_rect(rr, col)
+	if halo_px > 0.0:
+		for tap in HALO_TAPS:
+			ci.draw_set_transform(tap * halo_px)
+			RenderingServer.canvas_item_add_triangle_array(rid, _fan_indices, _fan_points, _halo_colors)
+			for rr in _wall_rects:
+				ci.draw_rect(rr, hcol)
+			for rr in _roof_rects:
+				ci.draw_rect(rr, hcol)
 	ci.draw_set_transform(Vector2.ZERO)
 
 
