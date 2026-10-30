@@ -4,7 +4,8 @@ extends Node2D
 ##   Shadow (z -3, dessin unique) · AimMarker (z -2, dessin unique, tourné)
 ##   Body root (inclinaison, écrasement/étirement, recul du corps)
 ##     → Body (AnimatedSprite2D des planches du skin, sinon SVG, sinon silhouette dessinée)
-##     → WeaponPivot (main, z ±1) → WeaponView (sprite d'arme, recul, éclair)
+##   WeaponPivot (main, z ±1, hors du corps : ni écrasé ni incliné avec lui, il suit seulement
+##     son rebond) → WeaponView (sprite d'arme, recul, éclair)
 ##   HpBar (redessinée quand les PV changent) · ReloadRing (redessiné par pas de 1/32)
 ## Planches : HeroSkin.frames_for/meta_for/material_for(HeroSkin.current()). Les anims sont
 ## découvertes à la lecture (« <base>_<dir8> ») : idle et run obligatoires ; backpedal,
@@ -84,6 +85,15 @@ var _turn_cooldown: float = 0.0
 var _reload_step: int = -1
 var _reload_progress: float = -1.0
 var _lean: float = 0.0
+## Tenue de l'arme : angle affiché (lissé vers la visée, ou vers la marche sans visée), sens du
+## retournement gauche/droite et passage derrière le corps, avec hystérésis (aucun saut).
+var _weapon_angle: float = 0.0
+var _weapon_flip: float = 1.0
+var _weapon_turn_aim: float = 30.0
+var _weapon_turn_move: float = 12.0
+var _weapon_flip_dead: float = 0.18
+var _weapon_behind_in: float = -0.42
+var _weapon_behind_out: float = -0.26
 
 # Réglages ([player_visual] + [player_fx]).
 var _tilt_rad: float = 0.09
@@ -131,7 +141,7 @@ func setup(p: Player) -> void:
 		_build_fallback_body()
 	_weapon_pivot = Node2D.new()
 	_weapon_pivot.name = "WeaponPivot"
-	_root.add_child(_weapon_pivot)
+	add_child(_weapon_pivot)
 	weapon_view = WeaponView.new()
 	_weapon_pivot.add_child(weapon_view)
 
@@ -165,6 +175,11 @@ func _load_balance() -> void:
 	_turn_dot = Balance.get_float("player_fx", "turn_dust_dot", 0.1)
 	_hit_squash = Balance.get_float("player_fx", "hit_squash", 0.12)
 	_hit_flash_time = Balance.get_float("player", "hit_flash_duration", 0.12)
+	_weapon_turn_aim = Balance.get_float("player_visual", "weapon_turn_speed_aim", 30.0)
+	_weapon_turn_move = Balance.get_float("player_visual", "weapon_turn_speed_move", 12.0)
+	_weapon_flip_dead = Balance.get_float("player_visual", "weapon_flip_deadzone", 0.18)
+	_weapon_behind_in = Balance.get_float("player_visual", "weapon_behind_enter", -0.42)
+	_weapon_behind_out = Balance.get_float("player_visual", "weapon_behind_exit", -0.26)
 
 
 func _make_drawn(parent: Node, node_name: String, z: int, drawer: Callable) -> Node2D:
@@ -392,7 +407,7 @@ func _process(delta: float) -> void:
 	var speed: float = vel.length()
 	var ratio: float = speed / ref_speed
 
-	update_facing(false)
+	update_facing(false, delta)
 
 	# Écrasement / étirement : impulsion au démarrage (étiré) et à l'arrêt (tassé), ressort amorti.
 	if moving != _was_moving:
@@ -425,6 +440,8 @@ func _process(delta: float) -> void:
 	_root.position = Vector2(0.0, bob) - aim * _body_kick_px * bk - aim * 2.0 * _hit_t
 	_root.rotation = _lean
 	_root.scale = Vector2(1.0 + _sq, 1.0 - _sq)
+	# L'arme suit le rebond et le recul du corps, sans son écrasement (qui la déformerait).
+	_weapon_pivot.position = Player.hand_offset(Vector2.from_angle(_weapon_angle), hand_height, hand_radius) + _root.position
 	_shadow.scale = Vector2(1.0 + _sq * 0.5 - bob * 0.01, 1.0)
 
 	weapon_view.animate(delta)
@@ -454,6 +471,7 @@ func _process(delta: float) -> void:
 	if alpha != _last_alpha:
 		_last_alpha = alpha
 		_root.modulate.a = alpha
+		_weapon_pivot.modulate.a = alpha
 
 
 func _animate_sheets(moving: bool, vel: Vector2, ratio: float) -> void:
@@ -562,31 +580,68 @@ func _check_turn(delta: float, vel: Vector2, ratio: float) -> void:
 	_turn_ref = dir
 
 
-## Orientation 8 voies (visée si on vise, sinon mouvement) + arme tournée vers la visée.
-func update_facing(force: bool) -> void:
+## Orientation 8 voies (visée si on vise, sinon mouvement) + arme tenue.
+## Arme : vers la visée quand on vise ; sinon dans le sens de la marche (même référence que le
+## corps, la vitesse réelle, pour qu'arme et corps tournent ensemble) ; à l'arrêt, elle garde sa
+## direction. L'angle affiché rejoint la cible en douceur (rapide en visée, plus doux en marche),
+## le retournement gauche/droite et le passage derrière le corps ont une hystérésis.
+## `force` : tout est recalé immédiatement (apparition, sortie de cachette).
+func update_facing(force: bool, delta: float = 0.0) -> void:
 	var aim: Vector2 = player.aim_direction
+	var aiming: bool = player.is_aiming()
+	var moving: bool = player.is_moving()
 	var facing_vec: Vector2 = aim
-	if not player.is_aiming() and player.is_moving():
+	if not aiming and moving:
 		facing_vec = player.velocity
 	facing_index = Player.dir8_index(facing_vec, -1 if force else facing_index, _dir_hysteresis)
-	var a: float = aim.angle()
-	_weapon_pivot.position = Player.hand_offset(aim, hand_height, hand_radius)
-	_weapon_pivot.rotation = a
-	var flip_y: float = -1.0 if aim.x < 0.0 else 1.0
-	if _weapon_pivot.scale.y != flip_y:
-		_weapon_pivot.scale = Vector2(1.0, flip_y)
-	# Visée vers le haut : l'arme passe derrière le corps.
-	var behind: bool = aim.y < -0.35
+	var want: Vector2 = aim
+	if not aiming:
+		want = player.velocity if moving and player.velocity.length_squared() > 1.0 else Vector2.from_angle(_weapon_angle)
+		if force:
+			want = aim
+	var target: float = want.angle()
+	if force or delta <= 0.0:
+		_weapon_angle = target
+	else:
+		_weapon_angle = smooth_angle(_weapon_angle, target, _weapon_turn_aim if aiming else _weapon_turn_move, delta)
+	var dir: Vector2 = Vector2.from_angle(_weapon_angle)
+	_weapon_pivot.rotation = _weapon_angle
+	_weapon_flip = flip_sign(0.0 if force else _weapon_flip, dir.x, _weapon_flip_dead)
+	if _weapon_pivot.scale.y != _weapon_flip:
+		_weapon_pivot.scale = Vector2(1.0, _weapon_flip)
+	if force:
+		_weapon_pivot.position = Player.hand_offset(dir, hand_height, hand_radius)
+	# Visée vers le haut : l'arme passe derrière le corps (hystérésis : pas de clignotement).
+	var behind: bool = dir.y < (_weapon_behind_out if _weapon_behind and not force else _weapon_behind_in)
 	if force or behind != _weapon_behind:
 		_weapon_behind = behind
 		_weapon_pivot.z_index = -1 if behind else 1
 	var show: bool = player.is_alive() and not player.is_hidden()
 	if _weapon_pivot.visible != show:
 		_weapon_pivot.visible = show
-	_aim_marker_rot.rotation = a
+	_aim_marker_rot.rotation = aim.angle()
 	if _aim_marker.visible != show:
 		_aim_marker.visible = show
 	_update_cone()
+
+
+## Logique pure : angle `cur` rapproché de `target` (approche exponentielle, chemin le plus court).
+static func smooth_angle(cur: float, target: float, rate: float, delta: float) -> float:
+	if rate <= 0.0:
+		return target
+	return wrapf(lerp_angle(cur, target, 1.0 - exp(-rate * delta)), -PI, PI)
+
+
+## Logique pure : sens du retournement vertical de l'arme (1 = canon à droite, -1 = à gauche).
+## `prev` = 0 : aucun historique. Bascule seulement au-delà de ±`dead` (composante x de la direction).
+static func flip_sign(prev: float, x: float, dead: float) -> float:
+	if prev == 0.0:
+		return -1.0 if x < 0.0 else 1.0
+	if prev > 0.0 and x < -dead:
+		return -1.0
+	if prev < 0.0 and x > dead:
+		return 1.0
+	return prev
 
 
 ## Écarte les traits du cône selon l'imprécision effective (pas de redessin, seuil 0,25°).
@@ -611,6 +666,16 @@ func muzzle_offset(dir: Vector2) -> Vector2:
 	var flip: float = -1.0 if d.x < 0.0 else 1.0
 	var m: Vector2 = weapon_view.muzzle_local
 	return Player.hand_offset(d, hand_height, hand_radius) + Vector2(m.x, m.y * flip).rotated(d.angle())
+
+
+## Angle affiché de l'arme (radians, lissé) — debug et tests.
+func get_weapon_angle() -> float:
+	return _weapon_angle
+
+
+## Sens du retournement de l'arme (1 = canon à droite, -1 = à gauche) — debug et tests.
+func get_weapon_flip() -> float:
+	return _weapon_flip
 
 
 ## Position de la main (pivot), relative aux pieds.

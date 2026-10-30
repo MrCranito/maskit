@@ -22,6 +22,7 @@ var _feed: VBoxContainer = null
 
 func _ready() -> void:
 	name = "InventoryHud"
+	add_to_group(&"inventory_hud")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	set_process(false)
@@ -82,7 +83,7 @@ func _place_safe() -> void:
 	bag_button.offset_bottom = m.y + InventoryBagButton.SIZE.y
 	_feed.offset_left = m.x
 	_feed.offset_right = m.x + 360.0
-	_feed.offset_top = m.y + 68.0
+	_feed.offset_top = m.y + 54.0
 	_feed.offset_bottom = _feed.offset_top + FEED_MAX * 44.0
 	align_pause_button()
 

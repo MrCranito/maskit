@@ -1245,19 +1245,19 @@ func _build_banner() -> void:
 	ps.bg_color = Color(MenuKit.NIGHT_DEEP, 0.72)
 	ps.content_margin_left = 20
 	ps.content_margin_right = 20
-	ps.content_margin_top = 6
-	ps.content_margin_bottom = 7
+	ps.content_margin_top = 4
+	ps.content_margin_bottom = 5
 	panel.add_theme_stylebox_override("panel", ps)
 	center.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-	_banner_title = _make_label(18, Color.WHITE, false)
+	_banner_title = _make_label(16, Color.WHITE, false)
 	_banner_title.label_settings.font = MenuKit.nunito(600)
 	_banner_title.uppercase = true
 	vbox.add_child(_banner_title)
-	_banner_room = _make_label(15, Color(1, 1, 1, 0.6), false)
+	_banner_room = _make_label(13, Color(1, 1, 1, 0.6), false)
 	_banner_room.label_settings.font = MenuKit.nunito(500)
 	vbox.add_child(_banner_room)
 
