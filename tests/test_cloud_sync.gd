@@ -155,6 +155,31 @@ func test_has_progress() -> void:
 	assert_true(CS.has_progress({"profile": {"gems": 5, "weapons": [{}]}}))
 
 
+func test_apply_entitlements_grants_bundle() -> void:
+	Profile.from_dict({"gems": 0})
+	assert_false(Profile.bundles_bought.has(&"recrue"))
+	Store.apply_entitlements(["bundle_recrue", "bundle_inconnu", "pass_premium_s1"])
+	assert_true(Profile.bundles_bought.has(&"recrue"), "pack restauré")
+	for sid: StringName in Store.bundle(&"recrue")["skins"]:
+		assert_true(Profile.owns_skin(sid))
+	var gems := Profile.gems
+	Store.apply_entitlements(["bundle_recrue"])
+	assert_eq(Profile.gems, gems, "pas de double crédit")
+
+
+func test_store_offline_fallback() -> void:
+	# Headless : pas de cloud → crédit local immédiat (comportement historique des tests).
+	assert_false(CloudSync.purchases_online())
+	Profile.from_dict({"gems": 0})
+	assert_true(Store.purchase_pack(0))
+	assert_gt(Profile.gems, 0)
+
+
+func test_purchase_error_labels() -> void:
+	assert_eq(CS.purchase_error_label("simulated_disabled"), "Paiement de test désactivé sur le serveur")
+	assert_eq(CS.purchase_error_label(""), "Erreur inconnue")
+
+
 func test_status_labels() -> void:
 	for s: StringName in [CS.STATUS_DISABLED, CS.STATUS_OFFLINE, CS.STATUS_SYNCING, CS.STATUS_SYNCED, CS.STATUS_CONFLICT]:
 		assert_false(CS.status_label(s).is_empty())

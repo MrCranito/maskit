@@ -69,6 +69,9 @@ func _ready() -> void:
 			tabs.append(t)
 	base_skin = SkinData.get_skin(HeroSkin.DEFAULT_SKIN_ID)
 	_build()
+	var cs: Node = get_node_or_null(^"/root/CloudSync")
+	if cs != null:
+		cs.connect(&"purchase_finished", _on_purchase_finished)
 	var focus := SkinData.get_skin(focus_skin_id) if not String(focus_skin_id).is_empty() else null
 	focus_skin_id = &""
 	if focus != null:
@@ -785,7 +788,25 @@ func _pop_card(s: SkinData) -> void:
 		.tween_property(card, "scale", Vector2.ONE, 0.3).from(Vector2(1.05, 1.05))
 
 
-## Achat d'un pack de gemmes (paiement simulé).
+## Retour du serveur pour un achat (packs de gemmes et packs à contenu) : rafraîchit, ou explique l'échec.
+func _on_purchase_finished(ok: bool, _product_id: String, _gems: int, _entitlements: Array, message: String) -> void:
+	if ok:
+		MenuKit.sfx(&"gold_pickup")
+		if is_instance_valid(offers):
+			offers.rebuild()
+		_refresh_states()
+		return
+	MenuKit.sfx(&"error")
+	var m := ModalPanel.new("Achat impossible", Vector2(560, 0))
+	_open_modal(m)
+	var l := MenuKit.label(message, 21, MenuKit.TEXT, MenuKit.nunito(750))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.custom_minimum_size = Vector2(480, 0)
+	m.body.add_child(l)
+
+
+## Achat d'un pack de gemmes (vérifié par le serveur quand le cloud est actif).
 func buy_pack(i: int) -> bool:
 	if current_tab == &"gems" and is_instance_valid(offers):
 		var ok2 := offers.buy_pack(i)

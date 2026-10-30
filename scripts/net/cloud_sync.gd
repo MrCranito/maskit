@@ -25,6 +25,10 @@ signal conflict_detected(local_info: Dictionary, remote_info: Dictionary)
 signal remote_applied
 ## Liaison de compte terminée (ok = succès ; message = libellé à afficher).
 signal link_finished(ok: bool, message: String)
+## Achat vérifié par le serveur : ok, product_id, gemmes créditées, droits, message d'erreur éventuel.
+signal purchase_finished(ok: bool, product_id: String, gems: int, entitlements: Array, message: String)
+## Compte supprimé (ok) : la sauvegarde locale a été réinitialisée.
+signal account_deleted(ok: bool, message: String)
 
 const CFG_PATH := "res://data/cloud.cfg"
 const SESSION_PATH := "user://cloud_session.json"
@@ -326,9 +330,11 @@ func _reconcile() -> bool:
 	var action := decide(local_version(), is_dirty(), has_content(data), remote_exists, remote_version)
 	match action:
 		Action.PUSH:
+			Store.apply_entitlements(entitlements)
 			return await _push_local(remote_version if remote_exists else 0)
 		Action.PULL:
 			_apply_remote((remote as Dictionary).get("save", {}) as Dictionary, remote_version)
+			Store.apply_entitlements(entitlements)
 			_set_status(STATUS_SYNCED)
 			return true
 		Action.CONFLICT:
@@ -339,6 +345,7 @@ func _reconcile() -> bool:
 			conflict_detected.emit(describe_save(payload_of(data)), describe_save(
 				pending_remote["save"] as Dictionary, pending_remote["updated_at"], pending_remote["device"]))
 			return true
+	Store.apply_entitlements(entitlements)
 	_set_status(STATUS_SYNCED)
 	return true
 
@@ -618,6 +625,111 @@ static func provider_label(p: StringName) -> String:
 		&"google":
 			return "Google"
 	return String(p)
+
+
+# --- Achats vérifiés par le serveur (Edge Function verify_purchase) ---------------------------
+
+## Les achats passent-ils par le serveur ? (cloud actif et compte connu). Sinon la boutique
+## retombe sur le paiement simulé local (éditeur sans réseau, tests).
+func purchases_online() -> bool:
+	return enabled() and not user_id.is_empty() and status != STATUS_DISABLED
+
+
+## Envoie un reçu au serveur, qui vérifie auprès du store et crédite. `store` : "apple"
+## (transaction_id StoreKit 2), "google" (purchase_token Play Billing) ou "simulated" (test,
+## accepté seulement si le secret ALLOW_SIMULATED_PURCHASES du projet vaut "true").
+## Résultat par purchase_finished ; le crédit local (gemmes, skins) est fait par Store.fulfill_*.
+func purchase(store: String, product_id: String, receipt: Dictionary = {}) -> void:
+	if purchase_busy:
+		purchase_finished.emit(false, product_id, 0, [], "Un achat est déjà en cours")
+		return
+	purchase_busy = true
+	var ok := await _ensure_session()
+	if not ok:
+		purchase_busy = false
+		purchase_finished.emit(false, product_id, 0, [], "Hors ligne : achat impossible")
+		return
+	var body := {"store": store, "product_id": product_id, "device": _device_name()}
+	body.merge(receipt)
+	var res := await _request("/functions/v1/verify_purchase", HTTPClient.METHOD_POST, body, true)
+	purchase_busy = false
+	var r: Variant = res.get("body")
+	var d: Dictionary = r if r is Dictionary else {}
+	if not bool(res.get("ok", false)) or not bool(d.get("ok", false)):
+		purchase_finished.emit(false, product_id, 0, [], purchase_error_label(str(d.get("reason", last_error))))
+		return
+	var ents: Array = d.get("entitlements", []) if d.get("entitlements") is Array else []
+	for e: Variant in ents:
+		if not entitlements.has(str(e)):
+			entitlements.append(str(e))
+	gems_granted += int(d.get("gems", 0))
+	purchase_finished.emit(true, str(d.get("product_id", product_id)), int(d.get("gems", 0)), ents, "")
+
+
+static func purchase_error_label(reason: String) -> String:
+	match reason:
+		"simulated_disabled":
+			return "Paiement de test désactivé sur le serveur"
+		"unknown_product":
+			return "Produit inconnu"
+		"verification_failed":
+			return "Reçu refusé par le store"
+		"unauthenticated":
+			return "Compte non reconnu, réessaie plus tard"
+	return reason if not reason.is_empty() else "Erreur inconnue"
+
+
+## « Restaurer mes achats » : relit les droits du serveur (packs à contenu, pass) et les applique.
+func restore_purchases() -> bool:
+	if not enabled():
+		return false
+	var ok := await _ensure_session()
+	if not ok:
+		return false
+	var res := await _rpc("pull_state", {})
+	if not bool(res.get("ok", false)):
+		return false
+	var b: Variant = res.get("body")
+	var state: Dictionary = b if b is Dictionary else {}
+	gems_granted = int(state.get("gems_granted", 0))
+	entitlements.clear()
+	for e: Variant in (state.get("entitlements", []) as Array):
+		entitlements.append(str(e))
+	Store.apply_entitlements(entitlements)
+	return true
+
+
+# --- Suppression du compte (Edge Function delete_account) --------------------------------------
+
+## Supprime le compte sur le serveur (toutes ses données) et repart d'un profil neuf en local.
+## Un nouveau compte invité sera créé à la prochaine synchronisation.
+func delete_account() -> void:
+	if not enabled():
+		account_deleted.emit(false, "Sauvegarde cloud désactivée")
+		return
+	var ok := await _ensure_session()
+	if not ok:
+		account_deleted.emit(false, "Hors ligne : suppression impossible pour l'instant")
+		return
+	var res := await _request("/functions/v1/delete_account", HTTPClient.METHOD_POST, {}, true)
+	var r: Variant = res.get("body")
+	if not bool(res.get("ok", false)) or not (r is Dictionary and bool((r as Dictionary).get("ok", false))):
+		account_deleted.emit(false, "Échec de la suppression : %s" % last_error)
+		return
+	_push_timer.stop()
+	forget_session()
+	pending_remote = {}
+	gems_granted = 0
+	entitlements.clear()
+	var sm: Node = get_node_or_null(^"/root/SaveManager")
+	if sm != null:
+		_applying = true
+		sm.call("replace_data", {})
+		_applying = false
+	_write_meta(0, false)
+	_set_status(STATUS_OFFLINE)
+	account_deleted.emit(true, "Compte supprimé")
+	sync()
 
 
 # --- HTTP --------------------------------------------------------------------------------------
