@@ -8,6 +8,8 @@
 #   NET_SMOKE_PORT  port du relais (défaut 18787)
 #   NET_SMOKE_SHOTS dossier de captures : fenêtres réelles sous xvfb au lieu du mode headless
 #   NET_SMOKE_KEEP  1 = garder le dossier temporaire (journaux)
+#   NET_SMOKE_SERVER cloudflare = relais Cloudflare (server/cloudflare) sous `wrangler dev` au
+#                   lieu du serveur Node (même protocole ; npm ci fait dans server/cloudflare)
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PORT="${NET_SMOKE_PORT:-18787}"
@@ -24,12 +26,23 @@ cleanup() {
 trap cleanup EXIT
 
 # --- Serveur relais ---------------------------------------------------------------------
-if [ ! -d "$ROOT/server/node_modules/ws" ]; then
-  (cd "$ROOT/server" && npm ci --no-audit --no-fund >/dev/null 2>&1) || { echo "npm ci a échoué"; exit 2; }
+WAIT_STEPS=50
+if [ "${NET_SMOKE_SERVER:-node}" = "cloudflare" ]; then
+  if [ ! -d "$ROOT/server/cloudflare/node_modules/wrangler" ]; then
+    (cd "$ROOT/server/cloudflare" && npm ci --no-audit --no-fund >/dev/null 2>&1) || { echo "npm ci (cloudflare) a échoué"; exit 2; }
+  fi
+  (cd "$ROOT/server/cloudflare" && WRANGLER_SEND_METRICS=false node node_modules/wrangler/bin/wrangler.js dev \
+    --port "$PORT" --ip 127.0.0.1 --var LOG:1 --show-interactive-dev-session=false) >"$TMP/server.log" 2>&1 &
+  SERVER_PID=$!
+  WAIT_STEPS=1200
+else
+  if [ ! -d "$ROOT/server/node_modules/ws" ]; then
+    (cd "$ROOT/server" && npm ci --no-audit --no-fund >/dev/null 2>&1) || { echo "npm ci a échoué"; exit 2; }
+  fi
+  PORT="$PORT" LOG=1 node "$ROOT/server/index.js" >"$TMP/server.log" 2>&1 &
+  SERVER_PID=$!
 fi
-PORT="$PORT" LOG=1 node "$ROOT/server/index.js" >"$TMP/server.log" 2>&1 &
-SERVER_PID=$!
-for _ in $(seq 1 50); do
+for _ in $(seq 1 "$WAIT_STEPS"); do
   curl -sf "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 && break
   sleep 0.1
 done

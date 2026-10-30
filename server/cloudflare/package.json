@@ -1,0 +1,15 @@
+{
+  "name": "raidersgo-relay-cloudflare",
+  "version": "1.0.0",
+  "description": "Relais coop de RaidersGo sur Cloudflare Workers (Durable Object).",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "dev": "wrangler dev --port 8799",
+    "deploy": "wrangler deploy",
+    "test": "node test/run_against_dev.js"
+  },
+  "devDependencies": {
+    "wrangler": "4.150.0"
+  }
+}
