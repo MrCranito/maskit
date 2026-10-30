@@ -91,6 +91,9 @@ enum AttackType { MELEE, RANGED }
 @export_range(0.0, 1.0) var retreat_hp_ratio: float = 0.0
 ## Vitesse de déplacement latéral pendant l'échange de tirs (fraction de move_speed).
 @export_range(0.0, 1.5) var strafe_ratio: float = 0.55
+## Régénération en Retour : × [enemy_ai] return_regen_ratio_per_sec (1 = normale, 0 = aucune :
+## l'ennemi entamé le reste, même s'il décroche et revient). Sans effet sur les boss ([boss]).
+@export_range(0.0, 2.0) var return_regen_mult: float = 1.0
 
 @export_group("Schéma d'attaque")
 ## &"single", &"burst" (rafale), &"fan" (éventail), &"aimed" (tir précis avec ligne de visée),

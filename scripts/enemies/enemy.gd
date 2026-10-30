@@ -384,6 +384,8 @@ func _load_balance() -> void:
 	attack_recovery = _bf("attack_recovery", attack_recovery)
 	return_speed_ratio = _bf("return_speed_ratio", return_speed_ratio)
 	return_regen_ratio_per_sec = _bf("return_regen_ratio_per_sec", return_regen_ratio_per_sec)
+	if data != null:
+		return_regen_ratio_per_sec *= data.return_regen_mult
 	if data != null and data.boss:
 		return_regen_ratio_per_sec = Balance.get_float("boss", "return_regen_ratio_per_sec", 0.0)
 	return_timeout = _bf("return_timeout", return_timeout)
