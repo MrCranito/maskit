@@ -1,8 +1,8 @@
 extends GutTest
 ## Réglages appliqués d'après le playtest automatique du 30/10 (docs/playtest, PR #13) :
 ##  - salle du boss allégée ([generator] enemy_room_mult boss 1.0 → 0.3) et escorte réduite
-##    ([boss] elite_boss_escorts 2 → 1) : le bot mourait de l'escorte et de la salle avant
-##    d'avoir touché le boss ;
+##    ([boss] elite_boss_escorts 2 → 1, puis par difficulté : voir tests/test_boss_pressure.gd) :
+##    le bot mourait de l'escorte et de la salle avant d'avoir touché le boss ;
 ##  - difficulté Normal adoucie (enemy_density, cooldown_mult, spread_mult) : 0 % d'extraction
 ##    en Normal, ce qui bloquait la 2e carte ;
 ##  - fix/difficulte-normal : densité Normal propre à chaque biome ([generator] pour le Far West,
@@ -30,14 +30,15 @@ func _room(type: StringName, size: Vector2i) -> FloorLayout.Room:
 
 
 func _guards(c: ConfigFile, difficulty: int) -> int:
-	var bonus: Array = c.get_value("generator", "guards_bonus", [0, 0, 1, 1, 2])
-	return int(c.get_value("generator", "guards_min", 2)) + int(bonus[difficulty])
+	var bonus: Array = c.get_value("generator", "boss_guards_bonus", [0, 0, 1, 1, 2])
+	return int(c.get_value("generator", "boss_guards_min", 2)) + int(bonus[difficulty])
 
 
 # --- Salle du boss et escorte -------------------------------------------------------
 
-func test_boss_escort_is_one_elite() -> void:
-	assert_eq(int(_cfg().get_value("boss", "elite_boss_escorts", -1)), 1, "une seule élite d'escorte")
+func test_boss_escort_at_most_one_elite_until_nightmare() -> void:
+	for i in 4:
+		assert_lte(BestiaryRules.boss_escorts(i), 1, "au plus une élite d'escorte (difficulté %d)" % i)
 
 
 func test_boss_room_population_light() -> void:
@@ -53,7 +54,8 @@ func test_boss_room_population_light() -> void:
 
 
 ## Salle de boss de 20×20 en Normal au rez-de-chaussée, sans aléa : 400 × 0,021 × 0,3 = 2,52
-## → 2 ennemis de salle + 2 gardes (dont l'escorte). Avant : 400 × 0,028 × 1,0 = 11,2 → plafonné à 11.
+## → 2 ennemis de salle + 2 gardes ([generator] boss_guards_min, dont l'élite d'escorte).
+## Avant le 30/10 : 400 × 0,028 × 1,0 = 11,2 → plafonné à 11.
 func test_boss_room_enemy_count_normal() -> void:
 	var c := _cfg()
 	var boss := _room(&"boss", Vector2i(20, 20))
@@ -67,7 +69,7 @@ func test_boss_room_enemy_count_normal() -> void:
 		"la salle du boss n'est plus une salle de combat avec un boss en plus")
 
 
-func test_boss_room_keeps_one_elite_escort() -> void:
+func test_boss_room_escort_hard_is_one_elite() -> void:
 	var elites: Array[StringName] = []
 	for f: String in DirAccess.get_files_at("res://data/enemies/"):
 		var file := f.trim_suffix(".remap")
@@ -88,11 +90,11 @@ func test_boss_room_keeps_one_elite_escort() -> void:
 	var room := l.add_room(Rect2i(0, 0, 20, 20), false, &"boss", "arène")
 	for i in 4:
 		l.add_spawn(l.enemy_spawns, Vector2i(2 + i, 2), &"the_boss" if i == 0 else &"grunt_a", room.id)
-	BestiaryRules.apply({0: l}, w, 42)
+	BestiaryRules.apply({0: l}, w, 42, 2)
 	var n := 0
 	for sp: FloorLayout.Spawn in l.enemy_spawns:
 		n += 1 if elites.has(sp.kind) else 0
-	assert_eq(n, 1, "une seule élite autour du boss")
+	assert_eq(n, 1, "Difficile : une seule élite autour du boss")
 
 
 # --- Difficulté Normal --------------------------------------------------------------

@@ -23,6 +23,15 @@ const TIERS := {
 ## Arsenal réaliste par difficulté (raids) : Facile, Normal → débutant ; Difficile, Expert →
 ## moyen ; Cauchemar → bien équipé.
 const TIER_BY_DIFFICULTY := ["debutant", "debutant", "moyen", "moyen", "equipe"]
+## Mode boss : soins dans le sac au départ, comme un joueur qui arrive au boss après un raid
+## (le bot en consomme 5,2 par raid complet, playtest du 30/10). Sans eux, le bot partait au
+## combat sans aucun soin, ce qu'aucun joueur ne fait. Environ 75 PV par monde, objets
+## communs et peu communs du biome. `--no-kit` : départ sac vide (ancienne mesure).
+const BOSS_HEAL_KIT := {
+	"far_west": {&"bandage": 2, &"whisky": 1},
+	"space_station": {&"space_medigel": 3},
+	"mall": {&"mall_painkillers": 3},
+}
 const PROFILES := {
 	"prudent": {"dist": 0.8, "cover_hp": 0.6, "heal_hp": 0.55, "extract_hp": 0.35, "budget": 170.0,
 		"floors": false, "loot_radius": 1400.0, "engage": 0.9},
@@ -42,6 +51,7 @@ var out_path: String = ""
 var enemy_kind: StringName = &""
 var max_time: float = 300.0
 var smoke: bool = false
+var heal_kit: bool = true
 ## Captures périodiques du viewport (sous xvfb, sans --headless) : dossier et période (s de jeu).
 var shots_dir: String = ""
 var shot_every: float = 5.0
@@ -150,6 +160,7 @@ func configure(opts: Dictionary, parent: Node) -> void:
 	seed_value = int(opts.get("seed", seed_value))
 	max_time = float(opts.get("max_time", max_time))
 	enemy_kind = StringName(str(opts.get("enemy", "")))
+	heal_kit = bool(opts.get("heal_kit", heal_kit))
 
 
 func _ready() -> void:
@@ -168,6 +179,7 @@ func _ready() -> void:
 			"enemy": enemy_kind = StringName(v)
 			"max-time": max_time = float(v)
 			"smoke": smoke = true
+			"no-kit": heal_kit = false
 			"shots": shots_dir = v
 			"shot-every": shot_every = float(v)
 	if tier.is_empty():
@@ -254,6 +266,10 @@ func _setup() -> void:
 		_abort("raid non chargé")
 		return
 	player = raid.player as Player
+	# Le sac est vidé au chargement du raid (LootManager) : soins de départ ajoutés ensuite.
+	if mode == "boss" and heal_kit:
+		_give_heal_kit(String(log.get("world", "")))
+	log["heal_kit"] = _heal_items()
 	move_stick = TouchJoystick.new()
 	aim_stick = TouchJoystick.new()
 	aim_stick.side = &"right"
@@ -846,6 +862,12 @@ func _choose_weapon(d: float) -> void:
 	var ws := player.get_weapons()
 	if ws.size() < 2:
 		return
+	# Changer d'arme annule le rechargement (WeaponLoadout.switch_to) : le bot finit le sien,
+	# comme un joueur. Avant, il quittait l'arme en rechargement (-4) puis revenait sur un
+	# chargeur vide qu'il ne finissait jamais de recharger (recharge 1,6 s > délai de changement
+	# 1,2 s) : l'arme principale (MP5, M4A1, P90) ne tirait qu'un chargeur par combat.
+	if player.is_reloading():
+		return
 	var cur := player.current_slot
 	var best := cur
 	var best_s := -INF
@@ -860,7 +882,8 @@ func _choose_weapon(d: float) -> void:
 			s -= 3.0
 		if w.category == &"smg" and d > 420.0:
 			s -= 1.5
-		if i == cur and player.is_reloading():
+		# Arme rangée au chargeur vide : il faudrait la recharger après le changement.
+		if i != cur and i < player.loadout.ammo.size() and WeaponLoadout.magazine_of(w) > 0 				and player.loadout.ammo[i] <= 0:
 			s -= 4.0
 		if i == cur:
 			s += 0.5
@@ -886,6 +909,18 @@ func _maybe_gadget(e: Enemy, d: float) -> void:
 		if player.use_gadget((e.global_position - player.global_position).normalized()):
 			gadgets_used += 1
 			_gadget_cd = 4.0
+
+
+## Mode boss : soins de départ du monde (BOSS_HEAL_KIT) dans le sac.
+func _give_heal_kit(world_key: String) -> void:
+	for kit_key: String in BOSS_HEAL_KIT:
+		if not world_key.contains(kit_key):
+			continue
+		var kit: Dictionary = BOSS_HEAL_KIT[kit_key]
+		for item_id: StringName in kit:
+			var it := LootDB.get_item(item_id)
+			if it != null:
+				GameState.raid_inventory.add_item(it, int(kit[item_id]))
 
 
 func _heal_items() -> int:

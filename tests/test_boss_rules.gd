@@ -86,7 +86,7 @@ func test_elites_guard_treasure_and_escort_boss() -> void:
 	}
 	BestiaryRules.apply(floors, w, 7)
 	var guards := int(Balance.get_value("boss", "elite_super_loot_guards", 1))
-	var escorts := int(Balance.get_value("boss", "elite_boss_escorts", 2))
+	var escorts := BestiaryRules.boss_escorts(GameState.difficulty)
 	var n0 := 0
 	for sp: FloorLayout.Spawn in floors[0].enemy_spawns:
 		n0 += 1 if elites.has(sp.kind) else 0
