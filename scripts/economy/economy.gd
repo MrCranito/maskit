@@ -31,18 +31,22 @@ static func item_sell_price(item: ItemData) -> int:
 	if item == null:
 		return 0
 	if item.is_weapon():
-		return weapon_sell_price(WeaponCatalog.get_weapon(item.weapon_id))
+		return weapon_sell_price(item.get_weapon())
 	var ratio := cfg_f("sell_ratio", 0.5)
 	return maxi(int(round(float(item.value) * ratio)), int(cfg("sell_min", 1)))
 
 
-## Pièces d'or reçues pour une arme (exemplaire en double) : selon sa rareté.
+## Pièces d'or reçues pour une arme (exemplaire en double) : selon sa rareté, × le bonus des
+## affixes tirés au drop ([affixes] value_bonus_per_affix).
 static func weapon_sell_price(w: WeaponData) -> int:
 	if w == null or w.permanent:
 		return 0
 	var arr: Variant = cfg("weapon_sell_by_rarity", [40, 90, 150, 350, 800])
 	var a: Array = arr if arr is Array else [40, 90, 150, 350, 800]
-	return int(a[clampi(w.rarity, 0, a.size() - 1)])
+	var base := int(a[clampi(w.rarity, 0, a.size() - 1)])
+	if not w.has_rolled_affixes():
+		return base
+	return roundi(float(base) * Affixes.value_mult(w.rolled_affixes.size()))
 
 
 ## Faut-il confirmer la vente de cet objet (rareté ≥ confirm_min_rarity) ?

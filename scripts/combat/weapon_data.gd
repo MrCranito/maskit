@@ -115,8 +115,14 @@ const UNLOCK_DROP := &"drop"
 @export var projectile_color: Color = Color(1.0, 0.22, 0.15)
 ## Style visuel du projectile : bullet, pellet, tracer (sniper), rocket, grenade.
 @export var projectile_style: StringName = &"bullet"
-## Affixes (brûlure, gel, ricochet...).
+## Traits FIXES du modèle (salvo, homing…), jamais tirés au hasard.
 @export var affixes: Array[StringName] = []
+## Affixes TIRÉS au drop (data/affixes, voir Affixes) : vide sur les ressources du catalogue,
+## rempli sur les exemplaires dupliqués (Affixes.make_weapon).
+@export var rolled_affixes: Array[StringName] = []
+## Cache des AffixData résolus (non exporté : recalculé après un duplicate()).
+var _affix_list: Array[AffixData] = []
+var _affix_list_ready: bool = false
 
 @export_group("Chargeur")
 ## Balles par chargeur (0 = illimité, pas de rechargement).
@@ -201,6 +207,18 @@ func get_sprite_id() -> StringName:
 ## relative `move_ratio` (0..1). Logique pure.
 func effective_inaccuracy(bloom: float, move_ratio: float, move_mult: float = 1.0) -> float:
 	return maxf(inaccuracy_deg + maxf(bloom, 0.0) + spread_move_deg * clampf(move_ratio, 0.0, 1.0) * move_mult, 0.0)
+
+
+func has_rolled_affixes() -> bool:
+	return not rolled_affixes.is_empty()
+
+
+## Affixes tirés résolus (AffixData), mis en cache : aucune allocation par tir.
+func get_affix_list() -> Array[AffixData]:
+	if not _affix_list_ready:
+		_affix_list_ready = true
+		_affix_list = Affixes.resolve(rolled_affixes)
+	return _affix_list
 
 
 ## Dégâts par seconde théoriques (affichage).

@@ -120,6 +120,14 @@ static func draw_item_tile(ci: CanvasItem, rect: Rect2, item: ItemData, count: i
 			var cfs := int(rect.size.y * 0.13)
 			ci.draw_string_outline(font, rect.position + Vector2(7.0, cfs + 4.0), cat, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12.0, cfs, 4, NIGHT_BLUE_DEEP)
 			ci.draw_string(font, rect.position + Vector2(7.0, cfs + 4.0), cat, HORIZONTAL_ALIGNMENT_LEFT, rect.size.x - 12.0, cfs, Color(rc.lightened(0.35), 0.95))
+		# Affixes tirés : une pastille par affixe (couleur de l'affixe) en bas à droite, au-dessus
+		# du liseré de rareté (le haut porte la catégorie).
+		var ax := Affixes.resolve(item.weapon_affixes) if not item.weapon_affixes.is_empty() else ([] as Array[AffixData])
+		var dr := maxf(rect.size.y * 0.065, 3.5)
+		for k: int in ax.size():
+			var c := rect.position + Vector2(rect.size.x - 9.0 - dr - float(k) * (dr * 2.0 + 4.0), rect.size.y - 13.0 - dr)
+			ci.draw_circle(c, dr + 1.5, NIGHT_BLUE_DEEP)
+			ci.draw_circle(c, dr, ax[k].color)
 	else:
 		var tex := LootVisuals.item_icon(item)
 		if tex != null:
