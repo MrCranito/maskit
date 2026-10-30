@@ -53,7 +53,7 @@ jobs:
           templates: android
 
       - name: Cache des imports (.godot/)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .godot
           key: ${{ env.IMPORT_CACHE_KEY }}-${{ hashFiles('**/*.import', 'project.godot', 'export_presets.cfg') }}
