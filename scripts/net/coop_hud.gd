@@ -267,8 +267,8 @@ func show_spectator(on: bool) -> void:
 		_spectator_label.text = "Spectateur — tu regardes %s" % coop.partner_name
 		var quit := _spectator.find_child("QuitSpectator", true, false) as Button
 		if quit != null:
-			quit.text = "Quitter" if not coop.is_host else "Quitter (fin du raid de %s)" % coop.partner_name
-			quit.custom_minimum_size.x = 180 if not coop.is_host else 420
+			quit.text = "Quitter"
+			quit.custom_minimum_size.x = 180
 
 
 ## Invité : l'hôte a disparu → fin du raid, arsenal conservé, butin perdu.
