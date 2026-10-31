@@ -8,10 +8,11 @@ run/main_scene="res://scenes/ui/menus/splash.tscn"
 run/max_fps=120
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://assets/ui/menu/app_icon_1024.png"
-boot_splash/bg_color=Color(0.071, 0.102, 0.18, 1)
+config/windows_native_icon="res://assets/ui/menu/app_icon.ico"
+boot_splash/bg_color=Color(0.035, 0.035, 0.07, 1)
 boot_splash/show_image=true
 boot_splash/image="res://assets/ui/splash/boot.png"
-boot_splash/stretch_mode=4
+boot_splash/stretch_mode=1
 boot_splash/use_filter=true
 
 [autoload]

@@ -482,15 +482,23 @@ func test_ecran_de_fin_trie_par_rarete_et_tient_a_l_ecran() -> void:
 	get_tree().paused = false
 
 
-# --- Dispersion (retour iPhone : fusils d'assaut / mitraillettes imprécis) ------------------
+# --- Dispersion (retour Victor : « pas foufou ») : premier tir net, rafale lisible ----------
 
 func test_dispersion_par_categorie() -> void:
 	for id: StringName in [&"rifle_ak47", &"rifle_m4a1", &"rifle_scarh", &"rifle_aug", &"smg_mp5", &"smg_vector", &"smg_p90", &"smg_uzi"]:
 		var w := WeaponCatalog.get_weapon(id)
-		assert_gte(w.inaccuracy_deg, 4.0, "%s : imprécision nette" % id)
+		assert_lte(w.inaccuracy_deg, 2.5, "%s : le premier tir part là où on vise" % id)
 		assert_gt(w.spread_bloom_per_shot, 0.0, "%s : la dispersion grandit en rafale" % id)
-		assert_gte(w.spread_bloom_max, 8.0, "%s : plafond de rafale" % id)
+		assert_gte(w.spread_bloom_max, 4.0, "%s : plafond de rafale lisible" % id)
+		assert_lte(w.inaccuracy_deg + w.spread_bloom_max, 9.0, "%s : la rafale reste jouable" % id)
+		assert_gte(w.spread_bloom_recovery, 25.0, "%s : se resserre vite" % id)
 		assert_gt(w.spread_move_deg, 0.0)
+	for l: StringName in [&"lmg_m249", &"lmg_pkm", &"lmg_m60"]:
+		var wl := WeaponCatalog.get_weapon(l)
+		assert_lte(wl.inaccuracy_deg, 3.0, "%s : premier tir net" % l)
+		assert_gt(wl.effective_inaccuracy(0.0, 1.0), wl.inaccuracy_deg + 4.0, "%s : imprécise en courant" % l)
+	for g: StringName in [&"shotgun_870", &"shotgun_benelli", &"shotgun_aa12"]:
+		assert_lte(WeaponCatalog.get_weapon(g).inaccuracy_deg, 1.5, "%s : gerbe centrée sur la visée" % g)
 	for p: StringName in [&"pistol_p9", &"pistol_deagle", &"pistol_p320"]:
 		var wp := WeaponCatalog.get_weapon(p)
 		assert_lte(wp.inaccuracy_deg + wp.spread_bloom_max, 5.0, "%s : reste précis" % p)

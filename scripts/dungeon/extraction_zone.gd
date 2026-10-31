@@ -7,7 +7,11 @@ extends Node2D
 ##   - balise radio au bord avec un feu vert qui pulse et un fumigène vert qui monte ;
 ##   - icône flottante au-dessus de la zone (au-dessus du brouillard : repérable de loin) ;
 ##   - pendant la canalisation : anneau de progression centré sur la zone et pastille
-##     « Extraction… 3 s ».
+##     « Extraction… 3 s », colonne de lumière qui s'intensifie, anneau en tirets qui accélère ;
+##   - réussite (play_success) : colonne éblouissante et gerbe d'éclats qui montent.
+##   - durée de vie (ExtractionPlan) : minuteur au-dessus de la zone, qui clignote en orange
+##     avant la fermeture ; zone fermée grisée et barrée (plus de colonne ni de fumigène) ;
+##     zone d'urgence invisible tant qu'elle n'est pas ouverte.
 ## Performance : chaque morceau est dessiné UNE fois ; l'animation passe par des Tween sur
 ## rotation / position / échelle / opacité de nœuds (aucun redessin par frame). Seul l'anneau
 ## de progression est redessiné pendant la canalisation, quand la valeur affichée change.
@@ -16,19 +20,36 @@ const COL := Color(0.3, 1.0, 0.62)          ## vert extraction
 const COL_CYAN := Color(0.45, 0.95, 1.0)
 const COL_DARK := Color(0.02, 0.07, 0.07)
 const TS := float(FloorLayout.TILE_SIZE)
+const COL_WARN := Color(1.0, 0.62, 0.22)
+const COL_CLOSED := Color(0.62, 0.64, 0.7)
+
+enum State { OPEN, CLOSING, CLOSED, DORMANT }
 
 ## Cases de la zone.
 var cells: Array[Vector2i] = []
 ## Centre (monde) et rayon (px) de la zone.
 var center: Vector2 = Vector2.ZERO
 var radius: float = 96.0
+## Durée de vie (horloge du raid, s) : ouverte de opens_at à closes_at (INF = jamais fermée).
+var zone_name: String = ""
+var opens_at: float = 0.0
+var closes_at: float = INF
+var emergency: bool = false
+var rank: int = 0
+var state: int = State.OPEN
 
 var _ground: ZoneGround = null
 var _spinner: ZoneSpinner = null
 var _beacon_light: Node2D = null
 var _icon: Node2D = null
 var _progress: ZoneProgress = null
+var _beam: ZoneBeam = null
+var _spin_tween: Tween = null
 var _tweens: Array[Tween] = []
+var _smoke: Node2D = null
+var _timer: ZoneTimer = null
+var _closed_mark: Node2D = null
+var _pending_clock: float = -1.0
 
 
 ## Regroupe les cases d'extraction en zones contiguës (4-voisinage), triées (déterministe).
@@ -69,6 +90,105 @@ static func create_all(all_cells: Array[Vector2i]) -> Array[ExtractionZone]:
 	return out
 
 
+## Une zone par ExtractionPlan.Spec (durées de vie, noms, zone d'urgence).
+static func create_from_specs(specs: Array) -> Array[ExtractionZone]:
+	var out: Array[ExtractionZone] = []
+	for sp: Variant in specs:
+		var z := ExtractionZone.new()
+		z.cells.assign(sp.cells)
+		z.zone_name = sp.name
+		z.opens_at = sp.opens_at
+		z.closes_at = sp.closes_at
+		z.emergency = sp.emergency
+		z.rank = sp.rank
+		z._compute_geometry()
+		out.append(z)
+	return out
+
+
+## État à l'instant `t` (s, horloge du raid).
+func state_at(t: float) -> int:
+	if t < opens_at:
+		return State.DORMANT
+	if t >= closes_at:
+		return State.CLOSED
+	if closes_at - t <= Balance.get_float("extraction", "close_warning", 30.0):
+		return State.CLOSING
+	return State.OPEN
+
+
+func is_open() -> bool:
+	return state == State.OPEN or state == State.CLOSING
+
+
+## Secondes avant fermeture (INF si la zone ne ferme pas).
+func remaining_at(t: float) -> float:
+	return closes_at - t if closes_at != INF else INF
+
+
+## Libellé de minuteur (« 3:05 », « URGENCE », « FERMÉE »).
+static func format_time(sec: float) -> String:
+	var s := maxi(ceili(sec), 0)
+	return "%d:%02d" % [s / 60, s % 60]
+
+
+## Avance l'horloge : met à jour l'état (visuels) et le minuteur. Renvoie l'état.
+func update_clock(t: float) -> int:
+	var st := state_at(t)
+	if not is_node_ready():
+		state = st
+		_pending_clock = t
+		return st
+	if st != state:
+		state = st
+		_apply_state()
+	_update_timer(t)
+	return st
+
+
+func _apply_state() -> void:
+	visible = state != State.DORMANT
+	var closed := state == State.CLOSED
+	if _closed_mark != null:
+		_closed_mark.visible = closed
+	for n: Node2D in [_spinner, _beam, _smoke, _beacon_light, _icon.get_parent() if _icon != null else null]:
+		if n != null:
+			n.visible = not closed
+	if _progress != null and closed:
+		_progress.visible = false
+	if _ground != null:
+		_ground.self_modulate = Color(COL_CLOSED, 0.55) if closed else Color.WHITE
+	if closed:
+		for tw: Tween in _tweens:
+			if tw != null and tw.is_valid():
+				tw.kill()
+		_tweens.clear()
+
+
+func _update_timer(t: float) -> void:
+	if _timer == null:
+		return
+	var txt := ""
+	var col := COL
+	var blink := false
+	match state:
+		State.CLOSED:
+			txt = "FERMÉE"
+			col = COL_CLOSED
+		State.CLOSING:
+			txt = format_time(closes_at - t)
+			col = COL_WARN
+			blink = fmod(t, 1.0) > 0.5
+		_:
+			txt = "URGENCE" if emergency and closes_at == INF else (format_time(closes_at - t) if closes_at != INF else "")
+			col = COL_WARN if emergency else COL
+	_timer.set_state(txt, col, blink)
+
+
+func get_timer_text() -> String:
+	return _timer.text if _timer != null else ""
+
+
 func _compute_geometry() -> void:
 	var sum := Vector2.ZERO
 	for c: Vector2i in cells:
@@ -97,11 +217,30 @@ func _ready() -> void:
 	add_child(_spinner)
 	_build_beacon()
 	_build_icon()
+	_beam = ZoneBeam.new()
+	_beam.radius = radius
+	_beam.modulate.a = 0.0
+	add_child(_beam)
 	_progress = ZoneProgress.new()
 	_progress.radius = radius
 	_progress.visible = false
 	add_child(_progress)
+	_closed_mark = ClosedMark.new()
+	_closed_mark.radius = radius
+	_closed_mark.visible = false
+	add_child(_closed_mark)
+	var th := Node2D.new()
+	th.name = "Timer"
+	th.z_as_relative = false
+	th.z_index = 85
+	th.position = Vector2(0, -radius - 82.0)
+	add_child(th)
+	_timer = ZoneTimer.new()
+	th.add_child(_timer)
 	_start_animations()
+	if _pending_clock >= 0.0:
+		_apply_state()
+		_update_timer(_pending_clock)
 
 
 func _exit_tree() -> void:
@@ -129,6 +268,7 @@ func _build_beacon() -> void:
 	smoke.z_as_relative = false
 	smoke.z_index = 60
 	add_child(smoke)
+	_smoke = smoke
 	for i in 3:
 		var puff := SmokePuff.new()
 		puff.modulate.a = 0.0
@@ -163,6 +303,7 @@ func _start_animations() -> void:
 	var spin := create_tween().set_loops()
 	spin.tween_property(_spinner, "rotation", TAU, Balance.get_float("extraction", "spin_period", 14.0)).from(0.0)
 	_tweens.append(spin)
+	_spin_tween = spin
 	var pulse := create_tween().set_loops()
 	pulse.tween_property(_ground, "modulate:a", 0.72, 1.3).set_trans(Tween.TRANS_SINE)
 	pulse.tween_property(_ground, "modulate:a", 1.0, 1.3).set_trans(Tween.TRANS_SINE)
@@ -180,19 +321,66 @@ func _start_animations() -> void:
 # --- Canalisation ----------------------------------------------------------------------
 
 func show_progress(on: bool) -> void:
-	if _progress == null:
+	if _progress == null or (on and state == State.CLOSED):
 		return
 	_progress.visible = on
 	if _icon != null:
 		_icon.get_parent().visible = not on
 	if on:
 		_progress.set_state(0.0, Raid.extraction_channel_time())
+	else:
+		_set_intensity(0.0)
 
 
 ## p = 0..1, remaining = secondes restantes.
 func set_progress(p: float, remaining: float) -> void:
 	if _progress != null:
 		_progress.set_state(p, remaining)
+	_set_intensity(p)
+
+
+## Colonne de lumière et vitesse de l'anneau selon la progression (0 = au repos).
+func _set_intensity(p: float) -> void:
+	var q := clampf(p, 0.0, 1.0)
+	if _beam != null:
+		_beam.modulate.a = 0.0 if q <= 0.0 else lerpf(Balance.get_float("extraction", "beam_alpha_min", 0.25),
+			Balance.get_float("extraction", "beam_alpha_max", 0.8), q)
+	if _spin_tween != null and _spin_tween.is_valid():
+		_spin_tween.set_speed_scale(1.0 + Balance.get_float("extraction", "spin_boost", 9.0) * q)
+
+
+## Réussite : colonne éblouissante qui s'élargit, gerbe d'éclats vers le haut.
+func play_success(duration: float) -> void:
+	if _progress != null:
+		_progress.visible = false
+	if _beam != null:
+		_beam.modulate.a = 1.0
+		var tw := create_tween().set_parallel(true)
+		tw.tween_property(_beam, "scale", Vector2(1.6, 1.15), duration * 0.5).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(_beam, "modulate", Color(1.6, 1.6, 1.6, 1.0), duration * 0.5)
+	var p := CPUParticles2D.new()
+	p.z_as_relative = false
+	p.z_index = 87
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.amount = int(Balance.get_value("extraction", "success_particles", 60))
+	p.lifetime = duration
+	p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = radius * 0.6
+	p.direction = Vector2.UP
+	p.spread = 25.0
+	p.initial_velocity_min = 220.0
+	p.initial_velocity_max = 520.0
+	p.gravity = Vector2.ZERO
+	p.scale_amount_min = 3.0
+	p.scale_amount_max = 7.0
+	p.color = COL.lightened(0.4)
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(1, 1, 1, 1))
+	ramp.set_color(1, Color(1, 1, 1, 0))
+	p.color_ramp = ramp
+	p.emitting = true
+	add_child(p)
 
 
 func is_progress_visible() -> bool:
@@ -205,6 +393,90 @@ func get_progress_text() -> String:
 
 # =====================================================================================
 # Morceaux dessinés une fois.
+
+## Colonne de lumière de l'extraction : dégradé vertical additif, large au sol, qui s'efface
+## vers le haut ; au-dessus du brouillard (visible de loin pendant la canalisation).
+class ZoneBeam extends Node2D:
+	var radius: float = 96.0
+
+	func _init() -> void:
+		z_as_relative = false
+		z_index = 84
+		var m := CanvasItemMaterial.new()
+		m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = m
+
+	func _draw() -> void:
+		var h := Balance.get_float("extraction", "beam_height", 520.0)
+		var w0 := radius * 0.95
+		var w1 := radius * 0.55
+		var steps := 12
+		for i in steps:
+			var t0 := float(i) / steps
+			var t1 := float(i + 1) / steps
+			# Fondu en bas (pas de bord net au sol) et vers le haut.
+			var a0 := 0.55 * (1.0 - t0) * smoothstep(0.0, 0.18, t0)
+			var a1 := 0.55 * (1.0 - t1) * smoothstep(0.0, 0.18, t1)
+			var y0 := -h * t0
+			var y1 := -h * t1
+			var hw0 := lerpf(w0, w1, t0)
+			var hw1 := lerpf(w0, w1, t1)
+			var pts := PackedVector2Array([Vector2(-hw0, y0), Vector2(hw0, y0), Vector2(hw1, y1), Vector2(-hw1, y1)])
+			var cols := PackedColorArray([Color(COL, a0), Color(COL, a0), Color(COL, a1), Color(COL, a1)])
+			draw_polygon(pts, cols)
+		# Cœur plus clair.
+		var core := PackedVector2Array([Vector2(-w0 * 0.25, 0), Vector2(w0 * 0.25, 0), Vector2(w1 * 0.12, -h), Vector2(-w1 * 0.12, -h)])
+		draw_polygon(core, PackedColorArray([Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.5), Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0)]))
+		# Disque au sol.
+		draw_circle(Vector2.ZERO, radius * 0.9, Color(COL, 0.18))
+
+
+## Intensité affichée de la colonne de lumière (tests).
+func get_beam_alpha() -> float:
+	return _beam.modulate.a if _beam != null else 0.0
+
+## Zone fermée : grand X barré et contour gris par-dessus la plaque.
+class ClosedMark extends Node2D:
+	var radius: float = 96.0
+
+	func _init() -> void:
+		z_index = 2
+
+	func _draw() -> void:
+		var r := radius * 0.62
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 96, Color(COL_CLOSED, 0.8), 3.0, true)
+		for k in 2:
+			var a := Vector2(r, r) if k == 0 else Vector2(r, -r)
+			draw_line(-a, a, Color(0.05, 0.05, 0.08, 0.7), 14.0, true)
+			draw_line(-a, a, Color(0.85, 0.3, 0.28, 0.9), 7.0, true)
+
+
+## Minuteur au-dessus de la zone (pastille encre, texte coloré) ; redessiné quand il change.
+class ZoneTimer extends Node2D:
+	var text: String = ""
+	var color: Color = COL
+	var dim: bool = false
+
+	func set_state(t: String, c: Color, blink: bool) -> void:
+		if t == text and c == color and blink == dim:
+			return
+		text = t
+		color = c
+		dim = blink
+		queue_redraw()
+
+	func _draw() -> void:
+		if text == "":
+			return
+		var font := LootVisuals.text_font(900)
+		var fs := 22
+		var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var pill := Rect2(Vector2(-w * 0.5 - 12.0, -16.0), Vector2(w + 24.0, 32.0))
+		draw_rect(pill, Color(0.024, 0.027, 0.05, 0.85))
+		draw_rect(pill, Color(color, 0.9), false, 2.0)
+		var c := Color(color.lightened(0.25), 0.45 if dim else 1.0)
+		draw_string(font, Vector2(-w * 0.5, 8.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, c)
+
 
 ## Plaque au sol : disque sombre translucide, double anneau lumineux, chevrons, pictogramme.
 class ZoneGround extends Node2D:
@@ -296,6 +568,9 @@ class ZoneProgress extends Node2D:
 	var radius: float = 96.0
 	var progress: float = 0.0
 	var text: String = ""
+	## Pastille « Extraction… N s » au-dessus de l'anneau (masquée : le compte à rebours plein
+	## écran d'ExtractionOverlay la remplace ; [extraction] ring_label).
+	var show_label: bool = Balance.get_value("extraction", "ring_label", false) == true
 
 	func _init() -> void:
 		z_as_relative = false
@@ -317,6 +592,8 @@ class ZoneProgress extends Node2D:
 			draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 96, Color(COL, 0.35), 16.0, true)
 			draw_arc(Vector2.ZERO, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 96, Color(0.85, 1.0, 0.9), 6.0, true)
 		# Pastille de texte au sommet de l'anneau.
+		if not show_label:
+			return
 		var font := LootVisuals.text_font(900)
 		var fs := 18
 		var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x

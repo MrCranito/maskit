@@ -5,6 +5,11 @@
 #   https://github.com/MrCranito/maskit/releases/latest/download/RaidersGo.apk
 # Page : https://github.com/MrCranito/maskit/releases/tag/android-latest
 #
+# Export RELEASE (perf/fluidite : le modèle debug ralentit nettement le GDScript et écrit chaque
+# avertissement dans logcat), signé avec la même clé de test. Le mode développeur reste disponible
+# dans cet APK grâce au feature tag « dev_apk » (ajouté au préréglage Android pendant le build
+# seulement, jamais dans les exports de version : DevMode.is_available()).
+#
 # APK signé avec un keystore DEBUG FIXE : le secret ANDROID_DEBUG_KEYSTORE_B64 s'il est défini
 # (Settings > Secrets > Actions, contenu : `base64 -w 0 debug.keystore`), sinon la clé de test
 # versionnée tools/android/debug.keystore (mot de passe « android »). La même clé à chaque build,
@@ -96,6 +101,13 @@ jobs:
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$KS" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+          # Export release signé avec la même clé de test (aucun secret de version utilisé ici).
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$KS" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android" >> "$GITHUB_ENV"
+          # APK de test : feature tag dev_apk (mode développeur disponible), préréglage Android seulement.
+          sed -i '/^name="Android"/,/^\[preset\.[0-9]*\.options\]/ s/^custom_features=""/custom_features="dev_apk"/' export_presets.cfg
+          grep -A6 '^name="Android"' export_presets.cfg | grep custom_features
           # Numéro de version : un nouvel APK s'installe par-dessus l'ancien.
           sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/" export_presets.cfg
           sed -i "s/^version\/name=.*/version\/name=\"0.1.${GITHUB_RUN_NUMBER}\"/" export_presets.cfg
@@ -107,7 +119,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build/android
-          godot --headless --verbose --path . --export-debug "Android" build/android/RaidersGo.apk 2>&1 | tee export.log | tail -60
+          godot --headless --verbose --path . --export-release "Android" build/android/RaidersGo.apk 2>&1 | tee export.log | tail -60
           ls -la build/android
           test -s build/android/RaidersGo.apk
 

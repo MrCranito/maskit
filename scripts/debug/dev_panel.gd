@@ -4,7 +4,9 @@ extends CanvasLayer
 ## - badge « DEV » discret (direction D : encre, biseau, accent violet) tant que les ressources
 ##   sont illimitées, pour ne jamais confondre avec une vraie partie ;
 ## - section du panneau de debug F3 : bascule « Gemmes et or illimités » (clic, ou F4 quand le F3
-##   est ouvert).
+##   est ouvert) ; bascule « Tout débloquer » (profil de développement virtuel, DevMode) ;
+## - « Donner » : n'importe quelle arme ou objet du catalogue (DevTools.give_*) : en raid, l'arme
+##   arrive en main et l'objet dans le sac ; au menu, dans la réserve.
 ## Créé par GameState uniquement si DevMode.is_available() (jamais en version publiée).
 
 const LAYER := 110
@@ -12,6 +14,14 @@ const LAYER := 110
 var badge: PanelContainer = null
 var panel: PanelContainer = null
 var toggle: Button = null
+## Bascule « Tout débloquer » (DevMode.set_all_unlocked).
+var unlock_toggle: Button = null
+## Sélecteur « Donner » : catalogue (DevTools.catalog), quantité, bouton, message.
+var give_picker: OptionButton = null
+var give_count: SpinBox = null
+var give_button: Button = null
+var give_label: Label = null
+var _catalog: Array[Dictionary] = []
 var _root: Control = null
 
 
@@ -33,6 +43,7 @@ func _init() -> void:
 func _ready() -> void:
 	_build()
 	DevMode.notifier.changed.connect(func(_on: bool) -> void: refresh())
+	DevMode.notifier.unlock_changed.connect(func(_on: bool) -> void: refresh())
 	EventBus.debug_toggled.connect(func(_on: bool) -> void: refresh())
 	refresh()
 
@@ -76,6 +87,15 @@ func _build() -> void:
 	toggle.toggled.connect(_on_toggled)
 	col.add_child(toggle)
 	col.add_child(MenuKit.label("F4 · achats gratuits, solde réel intact", 13, MenuKit.TEXT_DIM, MenuKit.nunito(400)))
+	unlock_toggle = MenuKit.chip("Tout débloquer", MenuKit.VIOLET)
+	unlock_toggle.name = "UnlockToggle"
+	unlock_toggle.custom_minimum_size = Vector2(300, 44)
+	unlock_toggle.toggled.connect(func(on: bool) -> void:
+		DevMode.set_all_unlocked(on)
+		refresh())
+	col.add_child(unlock_toggle)
+	col.add_child(MenuKit.label("Profil de test, ta sauvegarde est gardée", 13, MenuKit.TEXT_DIM, MenuKit.nunito(400)))
+	_build_give(col)
 	panel.anchor_left = 1.0
 	panel.anchor_right = 1.0
 	panel.offset_top = 88.0
@@ -84,11 +104,75 @@ func _build() -> void:
 	_root.add_child(panel)
 
 
+## « Donner » : liste déroulante du catalogue (armes puis objets), quantité, bouton.
+func _build_give(col: VBoxContainer) -> void:
+	col.add_child(MenuKit.label("Donner", 15, MenuKit.TEXT, MenuKit.nunito(700)))
+	give_picker = OptionButton.new()
+	give_picker.name = "GivePicker"
+	give_picker.custom_minimum_size = Vector2(300, 40)
+	give_picker.fit_to_longest_item = false
+	_catalog = DevTools.catalog()
+	for i: int in _catalog.size():
+		var e: Dictionary = _catalog[i]
+		var prefix := "Arme" if e["kind"] == &"weapon" else "Objet"
+		give_picker.add_item("%s · %s (%s)" % [prefix, e["name"], LootDB.rarity_name(int(e["rarity"]))], i)
+		give_picker.set_item_metadata(i, i)
+	col.add_child(give_picker)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	col.add_child(row)
+	give_count = SpinBox.new()
+	give_count.name = "GiveCount"
+	give_count.min_value = 1
+	give_count.max_value = int(Balance.get_value("dev", "give_max_count", 99))
+	give_count.value = 1
+	give_count.custom_minimum_size = Vector2(110, 40)
+	row.add_child(give_count)
+	give_button = MenuKit.chip("Donner", MenuKit.VIOLET)
+	give_button.name = "GiveButton"
+	give_button.toggle_mode = false
+	give_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	give_button.pressed.connect(give_selected)
+	row.add_child(give_button)
+	give_label = MenuKit.label("", 13, MenuKit.TEXT_DIM, MenuKit.nunito(400))
+	give_label.name = "GiveLabel"
+	col.add_child(give_label)
+
+
+## Donne l'entrée choisie du sélecteur (quantité = nombre d'exemplaires). Renvoie le message.
+func give_selected() -> String:
+	var i := give_picker.selected
+	if i < 0 or i >= _catalog.size():
+		return ""
+	var e: Dictionary = _catalog[i]
+	var n := int(give_count.value)
+	var msg := ""
+	if e["kind"] == &"weapon":
+		for _k in n:
+			msg = DevTools.give_weapon(e["id"])
+	else:
+		msg = DevTools.give_item(e["id"], n)
+	give_label.text = msg if not msg.is_empty() else "Impossible"
+	return msg
+
+
+## Sélectionne une entrée du catalogue par id (tests, raccourcis).
+func select_entry(id: StringName) -> bool:
+	for i: int in _catalog.size():
+		if _catalog[i]["id"] == id:
+			give_picker.select(i)
+			return true
+	return false
+
+
 func refresh() -> void:
 	if badge == null:
 		return
 	var on := DevMode.is_unlimited()
-	badge.visible = on
+	var all := DevMode.is_all_unlocked()
+	badge.visible = on or all
+	unlock_toggle.set_pressed_no_signal(all)
+	unlock_toggle.text = "Tout débloquer : %s" % ("oui" if all else "non")
 	panel.visible = bool(GameState.debug_enabled)
 	toggle.set_pressed_no_signal(on)
 	toggle.text = "Gemmes et or illimités : %s" % ("oui" if on else "non")

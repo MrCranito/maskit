@@ -2,7 +2,10 @@ class_name ShopOffers
 extends Control
 ## Onglets « Packs », « Coffres » et « Gemmes » de la boutique (maquettes Packs, ShopChests, Gems,
 ## direction D) : cartes encre à coin coupé à gauche, bandeau violet en biais à droite avec
-## l'offre choisie et son bouton d'action. Toute la logique est dans Store ; cet écran affiche
+## l'offre choisie et son bouton d'action. Gemmes : illustration peinte de chaque pack (CurrencyArt)
+## sur une lueur qui monte avec la taille du pack, rubans calculés (« Meilleure offre », « Populaire »),
+## bonus en autocollant, prix sur un vrai bouton (choisit la carte, puis achète).
+## Toute la logique est dans Store ; cet écran affiche
 ## et appelle. Les coffres ne se vendent pas : ils se gagnent en jouant (Store.open_chest).
 
 signal changed
@@ -12,6 +15,7 @@ signal open_tab(tab: StringName)
 const MODE_GEMS := &"gems"
 const MODE_PACKS := &"packs"
 const MODE_CHESTS := &"chests"
+const MODE_GOLD := &"gold"
 
 var mode: StringName = MODE_GEMS
 var selected: int = 0
@@ -21,6 +25,8 @@ var cards: Array[Button] = []
 var action_button: Button = null
 ## Fenêtre de révélation du dernier coffre ouvert (null si fermée).
 var reveal: Control = null
+## Dernière fenêtre de confirmation ouverte (tests).
+var last_confirm: ConfirmPanel = null
 ## Dernier résultat de Store.open_chest / purchase_bundle (tests).
 var last_result: Dictionary = {}
 
@@ -39,7 +45,9 @@ func _init(p_mode: StringName = MODE_GEMS) -> void:
 
 func _ready() -> void:
 	if mode == MODE_GEMS:
-		selected = mini(2, Store.packs().size() - 1)
+		selected = maxi(Store.popular_pack(), 0)
+	elif mode == MODE_GOLD:
+		selected = clampi(int(Balance.get_value("shop", "gold_pack_default", 1)), 0, maxi(Store.gold_packs().size() - 1, 0))
 	elif mode == MODE_PACKS:
 		selected = 0
 		var list := Store.bundles()
@@ -85,6 +93,8 @@ func rebuild() -> void:
 			_build_bundles()
 		MODE_CHESTS:
 			_build_chests()
+		MODE_GOLD:
+			_build_gold()
 		_:
 			_build_gems()
 	_fill_slab()
@@ -117,7 +127,8 @@ static func fmt(n: int) -> String:
 	return ("-" if n < 0 else "") + s + out
 
 
-## Carte encre à coin haut droit coupé ; anneau blanc quand elle est choisie.
+## Carte encre à coin haut droit coupé ; la carte choisie a un anneau blanc épais et un fond
+## teinté de violet, les autres sont légèrement atténuées (la carte choisie ressort nettement).
 func _card(i: int, tint: Color) -> Button:
 	var b := Button.new()
 	b.name = "Card%d" % i
@@ -131,44 +142,71 @@ func _card(i: int, tint: Color) -> Button:
 		return c
 	var on := i == selected
 	var bg := Color(MenuKit.NIGHT_DEEP, 0.88).lerp(tint, 0.22)
-	b.add_theme_stylebox_override("normal", mk.call(bg, 2.5 if on else 0.0))
-	b.add_theme_stylebox_override("hover", mk.call(bg.lightened(0.06), 2.5 if on else 1.0))
-	b.add_theme_stylebox_override("pressed", mk.call(bg.darkened(0.1), 2.5))
-	b.add_theme_stylebox_override("hover_pressed", mk.call(bg.darkened(0.1), 2.5))
-	b.add_theme_stylebox_override("focus", mk.call(Color(0, 0, 0, 0), 2.5))
+	if on:
+		bg = bg.lerp(Color(MenuKit.VIOLET, 0.92), 0.3)
+	var ring := 3.5 if on else 0.0
+	b.add_theme_stylebox_override("normal", mk.call(bg, ring))
+	b.add_theme_stylebox_override("hover", mk.call(bg.lightened(0.06), ring if on else 1.5))
+	b.add_theme_stylebox_override("pressed", mk.call(bg.darkened(0.1), 3.5))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(bg.darkened(0.1), 3.5))
+	b.add_theme_stylebox_override("focus", mk.call(Color(0, 0, 0, 0), 3.5))
+	if not on:
+		b.modulate = Color(0.84, 0.84, 0.9)
 	b.pressed.connect(func() -> void: select(i))
 	MenuKit.add_feedback(b, 1.02)
 	cards.append(b)
 	return b
 
 
-## Bandeau de prix en bas d'une carte : « libellé ……… prix » (violet si la carte est choisie).
-func _price_strip(card: Control, left: String, right: String, on: bool) -> void:
-	var p := PanelContainer.new()
-	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var st := CutBox.make(MenuKit.VIOLET if on else Color(1, 1, 1, 0.1), 12.0, Color(0, 0, 0, 0), 0.0, 14.0, 4.0)
-	st.corners = CutBox.CUT_TOP_LEFT
-	p.add_theme_stylebox_override("panel", st)
-	p.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	p.offset_left = 12
-	p.offset_right = -12
-	p.offset_top = -62
-	p.offset_bottom = -12
-	card.add_child(p)
+## Vrai bouton de prix en bas d'une carte (Anton, coin coupé) : violet plein sur la carte choisie
+## (le toucher achète, comme « Acheter » du bandeau), encre cerclée sinon (le toucher choisit la carte).
+## `caption` : petit texte à gauche (ex. « Valeur 2 600 »), vide = prix centré.
+func _price_button(card: Control, i: int, price: String, caption: String, on: bool, buy: Callable) -> Button:
+	var b := Button.new()
+	b.name = "PriceButton"
+	b.focus_mode = Control.FOCUS_NONE
+	b.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	b.offset_left = 12
+	b.offset_right = -12
+	b.offset_top = -66
+	b.offset_bottom = -12
+	var base := MenuKit.VIOLET if on else Color(MenuKit.NIGHT_DEEP, 0.7)
+	var mk := func(bg: Color, border: float) -> CutBox:
+		var c := CutBox.make(bg, 14.0, Color(1, 1, 1, 0.9) if border > 0.0 else Color(0, 0, 0, 0), border, 14.0, 4.0)
+		c.corners = CutBox.CUT_TOP_LEFT
+		return c
+	b.add_theme_stylebox_override("normal", mk.call(base, 0.0 if on else 1.5))
+	b.add_theme_stylebox_override("hover", mk.call(base.lerp(MenuKit.VIOLET_LIGHT, 0.25), 0.0 if on else 1.5))
+	b.add_theme_stylebox_override("pressed", mk.call(base.darkened(0.2), 0.0 if on else 1.5))
+	b.add_theme_stylebox_override("hover_pressed", mk.call(base.darkened(0.2), 0.0 if on else 1.5))
 	var row := HBoxContainer.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	p.add_child(row)
-	var l := _txt(left, 15, Color(1, 1, 1, 0.75))
-	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(l)
-	var r := _txt(right, 22, MenuKit.TEXT, 700)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 14
+	row.offset_right = -14
+	b.add_child(row)
+	if not caption.is_empty():
+		var l := _txt(caption, 15, Color(1, 1, 1, 0.75))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		l.clip_text = true
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		row.add_child(l)
+	var r := _big(price, 28)
 	r.name = "Price"
 	r.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	if left.is_empty():
+	if caption.is_empty():
 		r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		r.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(r)
+	b.pressed.connect(func() -> void:
+		if i == selected:
+			buy.call()
+		else:
+			select(i))
+	MenuKit.add_feedback(b, 1.03)
+	card.add_child(b)
+	return b
 
 
 ## Étiquette en haut à gauche d'une carte.
@@ -276,6 +314,42 @@ static func pack_bonus_pct(i: int) -> int:
 	return roundi((mine / base - 1.0) * 100.0)
 
 
+## Ruban d'une offre de gemmes : « Meilleure offre » sur le meilleur rapport gemmes / euro,
+## « Populaire » sur le pack choisi d'office (balance.cfg), "" sinon. Calculé, jamais en dur.
+static func pack_ribbon(i: int) -> String:
+	if i < 0:
+		return ""
+	if i == Store.best_value_pack():
+		return "Meilleure offre"
+	if i == Store.popular_pack():
+		return "Populaire"
+	return ""
+
+
+## Couleur de la lueur d'un pack : cyan des gemmes pour les petits, or pour les gros (bourse, coffre).
+static func pack_glow_color(i: int) -> Color:
+	var n := Store.packs().size()
+	var t := clampf(float(i) / maxf(1.0, n - 1.0), 0.0, 1.0)
+	return MenuKit.GEM.lerp(MenuKit.COIN, smoothstep(0.35, 0.75, t))
+
+
+## Illustration d'un pack (image peinte, sinon une gemme dessinée).
+static func pack_art(i: int) -> Control:
+	var tex := CurrencyArt.pack(i)
+	if tex == null:
+		var g := GemIcon.new()
+		g.name = "Art"
+		return g
+	var t := TextureRect.new()
+	t.name = "Art"
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
+
+
 func _build_gems() -> void:
 	var col := VBoxContainer.new()
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -286,16 +360,26 @@ func _build_gems() -> void:
 		var ban := PanelContainer.new()
 		ban.name = "WelcomeBanner"
 		ban.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var st := CutBox.make(Color(MenuKit.VIOLET, 0.35), 0.0, Color(0, 0, 0, 0), 0.0, 16.0, 10.0)
-		st.accent_width = 4.0
-		st.accent_color = MenuKit.GOLD
+		var st := CutBox.make(Color(MenuKit.COIN, 0.16), 0.0, Color(0, 0, 0, 0), 0.0, 16.0, 4.0)
+		st.accent_width = 5.0
+		st.accent_color = MenuKit.COIN
 		ban.add_theme_stylebox_override("panel", st)
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 14)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		ban.add_child(row)
-		row.add_child(_kicker("Premier achat", MenuKit.GOLD))
-		row.add_child(_kicker("Gemmes doublées sur le pack de ton choix · une seule fois"))
+		var x2 := _big("×%d" % Store.first_bonus_multiplier(), 30, MenuKit.COIN)
+		x2.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(x2)
+		var k := _kicker("Premier achat", MenuKit.COIN)
+		k.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		row.add_child(k)
+		var d := _kicker("Gemmes doublées sur le pack de ton choix · une seule fois")
+		d.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		d.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		d.clip_text = true
+		d.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		row.add_child(d)
 		col.add_child(ban)
 	var grid := HBoxContainer.new()
 	grid.add_theme_constant_override("separation", 10)
@@ -303,51 +387,115 @@ func _build_gems() -> void:
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(grid)
 	var packs := Store.packs()
-	var cheapest := 1 << 30
-	for k: StringName in [SkinData.KIND_CHARACTER, SkinData.KIND_WEAPON]:
-		for s: SkinData in SkinData.shop_skins(k):
-			if s.price_gems > 0:
-				cheapest = mini(cheapest, s.price_gems)
+	var art_ratio := clampf(Balance.get_float("menu", "shop_gem_art_ratio", 0.5), 0.2, 0.7)
+	var glow_range: Variant = Balance.get_value("menu", "shop_gem_glow", [0.18, 0.62])
+	var g0 := float(glow_range[0]) if glow_range is Array else 0.18
+	var g1 := float(glow_range[1]) if glow_range is Array else 0.62
+	var first := Store.first_bonus_available()
 	for i: int in packs.size():
 		var p: Dictionary = packs[i]
-		var card := _card(i, MenuKit.GEM.lerp(MenuKit.VIOLET, clampf(i / 3.0, 0.0, 1.0)))
+		var t := clampf(float(i) / maxf(1.0, packs.size() - 1.0), 0.0, 1.0)
+		var on := i == selected
+		var card := _card(i, MenuKit.GEM.lerp(MenuKit.VIOLET, t))
 		grid.add_child(card)
-		var c := VBoxContainer.new()
-		c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		c.offset_top = 30
-		c.offset_bottom = -74
-		c.add_theme_constant_override("separation", 2)
-		c.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(c)
-		var gems_row := HBoxContainer.new()
-		gems_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		gems_row.add_theme_constant_override("separation", -10)
-		gems_row.custom_minimum_size.y = 96
-		gems_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		c.add_child(gems_row)
-		for k: int in mini(i + 1, 4):
-			var g := GemIcon.new()
-			var px := 56.0 - k * 6.0
-			g.custom_minimum_size = Vector2(px, px)
-			g.size_flags_vertical = Control.SIZE_SHRINK_END
-			gems_row.add_child(g)
-		var n := _big(fmt(int(p["gems"])), 56)
-		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		c.add_child(n)
-		var u := _kicker("Gemmes", Color(1, 1, 1, 0.65))
-		u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		c.add_child(u)
-		var now := Store.pack_gems_now(i)
-		var best := best_affordable(now)
-		var buys := "Complète un solde" if now < cheapest or best == null else "De quoi prendre %s" % skin_title(best)
-		var bl := _txt(buys, 16, MenuKit.GOLD if best != null and now >= cheapest else Color(1, 1, 1, 0.5))
-		bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		bl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		c.add_child(bl)
+		# Lueur (et rayons pour les gros packs) qui monte avec la taille du pack, puis l'illustration.
+		var glow := PackGlow.new()
+		glow.name = "Glow"
+		glow.color = pack_glow_color(i)
+		glow.strength = lerpf(g0, g1, t) * (1.25 if on else 1.0)
+		glow.rays = 0 if i == 0 else 10 + 2 * i
+		glow.anchor_right = 1.0
+		glow.anchor_bottom = art_ratio + 0.08
+		card.add_child(glow)
+		var art := pack_art(i)
+		art.anchor_left = 0.05
+		art.anchor_right = 0.95
+		art.anchor_top = 0.05
+		art.anchor_bottom = art_ratio + 0.05
+		card.add_child(art)
+		var ribbon := pack_ribbon(i)
+		if not ribbon.is_empty():
+			_ribbon(card, ribbon, MenuKit.COIN if i == Store.best_value_pack() else MenuKit.VIOLET)
 		var pct := pack_bonus_pct(i)
 		if pct > 0:
-			_tag(card, "+%d %%" % pct, MenuKit.GOLD, Color(0.07, 0.04, 0.14))
-		_price_strip(card, "", str(p["price"]), i == selected)
+			_bonus_sticker(card, pct, not ribbon.is_empty())
+		var info := VBoxContainer.new()
+		info.name = "Info"
+		info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		info.anchor_top = art_ratio + 0.04
+		info.anchor_right = 1.0
+		info.anchor_bottom = 1.0
+		info.offset_bottom = -72
+		info.alignment = BoxContainer.ALIGNMENT_CENTER
+		info.add_theme_constant_override("separation", -4)
+		card.add_child(info)
+		var n := _big(fmt(int(p["gems"])), 52)
+		n.name = "Amount"
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(n)
+		card.resized.connect(func() -> void:
+			n.add_theme_font_size_override("font_size", int(clampf(card.size.x * 0.21, 32.0, 60.0))))
+		var u := _kicker("Gemmes", Color(1, 1, 1, 0.65))
+		u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(u)
+		if first:
+			var extra := Store.pack_gems_now(i) - int(p["gems"])
+			var bl := _txt("+%s offertes" % fmt(extra), 16, MenuKit.COIN, 700)
+			bl.name = "FirstBonus"
+			bl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			info.add_child(bl)
+		_price_button(card, i, str(p["price"]), "", on, func() -> void: ask_pack(i))
+
+
+## Ruban en haut d'une carte (« Meilleure offre », « Populaire ») ; s'arrête avant le coin coupé.
+func _ribbon(card: Control, t: String, bg: Color) -> void:
+	var p := PanelContainer.new()
+	p.name = "Ribbon"
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var st := CutBox.make(bg, 12.0, Color(0, 0, 0, 0), 0.0, 12.0, 3.0)
+	st.corners = CutBox.CUT_BOTTOM_RIGHT
+	p.add_theme_stylebox_override("panel", st)
+	p.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	p.offset_right = -26
+	card.add_child(p)
+	var dark := bg.get_luminance() > 0.55
+	var l := _txt(t, 15, Color(0.07, 0.04, 0.14) if dark else MenuKit.TEXT, 700)
+	l.uppercase = true
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.clip_text = true
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	p.add_child(l)
+	# Cartes étroites (1280 x 720) : le texte rétrécit pour tenir en entier plutôt que d'être tronqué.
+	card.resized.connect(func() -> void:
+		var room := card.size.x - 26.0 - 24.0
+		var px := 15
+		while px > 11 and MenuKit.nunito(700).get_string_size(t.to_upper(), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > room:
+			px -= 1
+		l.add_theme_font_size_override("font_size", px))
+
+
+## Pastille « +24 % » penchée, posée sur l'illustration comme un autocollant (sous le ruban s'il y en a un).
+func _bonus_sticker(card: Control, pct: int, below_ribbon: bool) -> void:
+	var p := PanelContainer.new()
+	p.name = "Bonus"
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var st := CutBox.make(MenuKit.COIN, 8.0, Color(0.07, 0.04, 0.14, 0.9), 2.0, 8.0, 0.0)
+	st.corners = CutBox.CUT_TOP_LEFT | CutBox.CUT_BOTTOM_RIGHT
+	p.add_theme_stylebox_override("panel", st)
+	p.position = Vector2(8, 46 if below_ribbon else 14)
+	p.rotation_degrees = -6.0
+	card.add_child(p)
+	var v := VBoxContainer.new()
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_theme_constant_override("separation", -6)
+	p.add_child(v)
+	var n := _big("+%d %%" % pct, 24, Color(0.07, 0.04, 0.14))
+	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(n)
+	var l := _txt("de gemmes", 12, Color(0.07, 0.04, 0.14, 0.8), 700)
+	l.uppercase = true
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(l)
 
 
 func _fill_gems_slab() -> void:
@@ -356,12 +504,58 @@ func _fill_gems_slab() -> void:
 		return
 	var i := clampi(selected, 0, packs.size() - 1)
 	var first := Store.first_bonus_available()
-	_right(_kicker("Ton premier pack" if first else "Pack choisi"))
-	_right(_big(fmt(Store.pack_gems_now(i)), 96)).name = "Amount"
-	_right(_kicker("Gemmes · doublées" if first else "Gemmes"))
+	var head := HBoxContainer.new()
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.alignment = BoxContainer.ALIGNMENT_END
+	head.add_theme_constant_override("separation", 10)
+	var ribbon := pack_ribbon(i)
+	if not ribbon.is_empty():
+		head.add_child(MenuKit.pill(ribbon, MenuKit.COIN if i == Store.best_value_pack() else MenuKit.TEXT, 14,
+			Color(0.07, 0.04, 0.14) if i == Store.best_value_pack() else Color(0.227, 0.122, 0.561)))
+	head.add_child(_kicker("Ton premier pack" if first else "Pack choisi"))
+	_slab_col.add_child(head)
+	# Grande illustration du pack choisi : prend toute la place libre du bandeau (plus de vide) ;
+	# le nombre de gemmes est posé sur son bas, à droite.
+	var stage := Control.new()
+	stage.name = "SlabArt"
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.custom_minimum_size = Vector2(0, 120)
+	_slab_col.add_child(stage)
+	var glow := PackGlow.new()
+	glow.color = pack_glow_color(i).lerp(MenuKit.TEXT, 0.2)
+	glow.strength = 0.5
+	glow.rays = 14
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glow.offset_bottom = -40
+	stage.add_child(glow)
+	var art := pack_art(i)
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_bottom = -52
+	stage.add_child(art)
+	var amount := MenuKit.label(fmt(Store.pack_gems_now(i)), 84, MenuKit.TEXT, MenuKit.display(), 10)
+	amount.name = "Amount"
+	amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	amount.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	amount.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	amount.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	amount.offset_bottom = 8
+	stage.add_child(amount)
+	if first:
+		var row := HBoxContainer.new()
+		row.name = "FirstBonus"
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.alignment = BoxContainer.ALIGNMENT_END
+		row.add_theme_constant_override("separation", 10)
+		row.add_child(_kicker("Gemmes"))
+		row.add_child(MenuKit.pill("×%d premier achat · %s au lieu de %s" % [Store.first_bonus_multiplier(),
+			fmt(Store.pack_gems_now(i)), fmt(int(packs[i]["gems"]))], MenuKit.COIN, 14, Color(0.07, 0.04, 0.14)))
+		_slab_col.add_child(row)
+	else:
+		_right(_kicker("Gemmes"))
 	var pct := pack_bonus_pct(i)
 	if pct > 0:
-		var pill := MenuKit.pill("+%d %% par rapport au petit pack" % pct, MenuKit.TEXT, 16, Color(0.227, 0.122, 0.561))
+		var pill := MenuKit.pill("+%d %% par rapport au petit pack" % pct, MenuKit.TEXT, 15, Color(0.227, 0.122, 0.561))
 		pill.size_flags_horizontal = Control.SIZE_SHRINK_END
 		_slab_col.add_child(pill)
 	var best := best_affordable(Store.pack_gems_now(i))
@@ -369,12 +563,11 @@ func _fill_gems_slab() -> void:
 		_right(_kicker("De quoi t'offrir"))
 		_skin_row(best)
 	else:
-		var l := _txt("Ce pack complète un solde : le skin le moins cher coûte plus.", 17)
+		var l := _txt("Ce pack complète un solde : le skin le moins cher coûte plus.", 16)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_right(l)
-	_spacer()
 	action_button = _slab_button("Acheter · %s" % packs[i]["price"])
-	action_button.pressed.connect(func() -> void: buy_pack(selected))
+	action_button.pressed.connect(func() -> void: ask_pack(selected))
 	_slab_col.add_child(action_button)
 	_right(_kicker("Aucun avantage en jeu"))
 
@@ -412,6 +605,56 @@ static func _weapon_name(s: SkinData) -> String:
 	return w.display_name if w != null else "Arme"
 
 
+# --- Confirmations d'achat ----------------------------------------------------------------
+
+## Fenêtre de confirmation par-dessus la boutique (ShopScreen._open_modal), `on_ok` si confirmé.
+func _confirm(title: String, message: String, ok_text: String, on_ok: Callable) -> ConfirmPanel:
+	var m := ConfirmPanel.new(title, message, ok_text)
+	m.confirmed.connect(on_ok)
+	last_confirm = m
+	var n: Node = get_parent()
+	while n != null and not (n is ShopScreen):
+		n = n.get_parent()
+	if n is ShopScreen:
+		(n as ShopScreen)._open_modal(m)
+	else:
+		add_child(m)
+	MenuKit.sfx(&"tick")
+	return m
+
+
+## Pack de gemmes : confirmation (prix, gemmes créditées), puis achat.
+func ask_pack(i: int) -> ConfirmPanel:
+	var packs := Store.packs()
+	if i < 0 or i >= packs.size():
+		return null
+	return _confirm("Acheter ce pack ?", "%s gemmes pour %s.\nPaiement simulé (test)." % [
+		fmt(Store.pack_gems_now(i)), str(packs[i]["price"])], "Acheter", func() -> void: buy_pack(i))
+
+
+## Pack à contenu : confirmation, puis achat.
+func ask_bundle(id: StringName) -> ConfirmPanel:
+	for b: Dictionary in Store.bundles():
+		if StringName(str(b["id"])) == id:
+			return _confirm("Acheter ce pack ?", "Pack « %s » pour %s.\nPaiement simulé (test)." % [
+				str(b["name"]), str(b["price"])], "Acheter", func() -> void: buy_bundle(id))
+	return null
+
+
+## Pack d'or : confirmation (ou « pas assez de gemmes » → onglet Gemmes), puis achat.
+func ask_gold_pack(i: int) -> ConfirmPanel:
+	var list := Store.gold_packs()
+	if i < 0 or i >= list.size():
+		return null
+	var cost := int(list[i]["gems"])
+	if not Profile.can_afford(&"gems", cost):
+		MenuKit.sfx(&"error")
+		return _confirm("Pas assez de gemmes", "Il te manque %s gemmes pour ce pack d'or." % fmt(cost - Profile.gems),
+			"Voir les gemmes", func() -> void: open_tab.emit(&"gems"))
+	return _confirm("Acheter de l'or ?", "%s pièces d'or pour %s gemmes." % [fmt(int(list[i]["gold"])), fmt(cost)],
+		"Acheter", func() -> void: buy_gold_pack(i))
+
+
 func buy_pack(i: int) -> bool:
 	var ok := Store.purchase_pack(i)
 	MenuKit.sfx(&"gold_pickup" if ok else &"error")
@@ -419,6 +662,177 @@ func buy_pack(i: int) -> bool:
 		changed.emit()
 		rebuild()
 	return ok
+
+
+# --- Or contre gemmes -------------------------------------------------------------------
+
+## Cartes des packs d'or : pile de pièces qui grossit, montant, prix en gemmes.
+func _build_gold() -> void:
+	var col := VBoxContainer.new()
+	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	col.add_theme_constant_override("separation", 10)
+	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_left.add_child(col)
+	var grid := HBoxContainer.new()
+	grid.add_theme_constant_override("separation", 10)
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	col.add_child(grid)
+	var list := Store.gold_packs()
+	var art_ratio := clampf(Balance.get_float("menu", "shop_gem_art_ratio", 0.5), 0.2, 0.7)
+	for i: int in list.size():
+		var p: Dictionary = list[i]
+		var t := clampf(float(i) / maxf(1.0, list.size() - 1.0), 0.0, 1.0)
+		var on := i == selected
+		var card := _card(i, MenuKit.COIN.lerp(MenuKit.VIOLET, 0.35 * t))
+		grid.add_child(card)
+		var glow := PackGlow.new()
+		glow.name = "Glow"
+		glow.color = MenuKit.COIN
+		glow.strength = lerpf(0.16, 0.5, t) * (1.25 if on else 1.0)
+		glow.rays = 0 if i == 0 else 10 + 2 * i
+		glow.anchor_right = 1.0
+		glow.anchor_bottom = art_ratio + 0.08
+		card.add_child(glow)
+		var art := GoldPile.new()
+		art.name = "Art"
+		art.coins = gold_pile_size(i)
+		art.anchor_left = 0.08
+		art.anchor_right = 0.92
+		art.anchor_top = 0.08
+		art.anchor_bottom = art_ratio + 0.04
+		card.add_child(art)
+		var info := VBoxContainer.new()
+		info.name = "Info"
+		info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		info.anchor_top = art_ratio + 0.04
+		info.anchor_right = 1.0
+		info.anchor_bottom = 1.0
+		info.offset_bottom = -72
+		info.alignment = BoxContainer.ALIGNMENT_CENTER
+		info.add_theme_constant_override("separation", -4)
+		card.add_child(info)
+		var n := _big(fmt(int(p["gold"])), 52, MenuKit.COIN)
+		n.name = "Amount"
+		n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(n)
+		card.resized.connect(func() -> void:
+			n.add_theme_font_size_override("font_size", int(clampf(card.size.x * 0.21, 32.0, 60.0))))
+		var u := _kicker("Pièces d'or", Color(1, 1, 1, 0.65))
+		u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.add_child(u)
+		_price_button(card, i, "%s gemmes" % fmt(int(p["gems"])), "", on, func() -> void: ask_gold_pack(i))
+
+
+## Nombre de pièces dessinées pour le pack `i` (pile qui grossit).
+static func gold_pile_size(i: int) -> int:
+	return [1, 3, 6, 10][clampi(i, 0, 3)] if i < 4 else 10 + 2 * (i - 3)
+
+
+## Arme de l'armurerie la plus chère qu'un montant d'or permet d'acheter (null si aucune).
+static func best_weapon_for(gold: int) -> WeaponData:
+	var best: WeaponData = null
+	for w: WeaponData in WeaponCatalog.all():
+		if w.is_gadget() or w.unlock_mode != WeaponData.UNLOCK_SHOP or w.price_gold <= 0 or w.price_gold > gold:
+			continue
+		if best == null or w.price_gold > best.price_gold:
+			best = w
+	return best
+
+
+func _fill_gold_slab() -> void:
+	var list := Store.gold_packs()
+	if list.is_empty():
+		return
+	var i := clampi(selected, 0, list.size() - 1)
+	var p: Dictionary = list[i]
+	_right(_kicker("Or pour l'armurerie"))
+	var stage := Control.new()
+	stage.name = "SlabArt"
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stage.custom_minimum_size = Vector2(0, 120)
+	_slab_col.add_child(stage)
+	var glow := PackGlow.new()
+	glow.color = MenuKit.COIN
+	glow.strength = 0.5
+	glow.rays = 14
+	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	glow.offset_bottom = -40
+	stage.add_child(glow)
+	var art := GoldPile.new()
+	art.coins = gold_pile_size(i)
+	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	art.offset_bottom = -52
+	stage.add_child(art)
+	var amount := MenuKit.label(fmt(int(p["gold"])), 84, MenuKit.COIN, MenuKit.display(), 10)
+	amount.name = "Amount"
+	amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	amount.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	amount.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	amount.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	amount.offset_bottom = 8
+	stage.add_child(amount)
+	_right(_kicker("Pièces d'or"))
+	var w := best_weapon_for(int(p["gold"]))
+	if w != null:
+		_right(_kicker("De quoi acheter"))
+		var row := _txt("%s · %s (%s or)" % [w.display_name, w.get_rarity_name(), fmt(w.price_gold)], 17, MenuKit.TEXT, 600)
+		row.name = "WeaponHint"
+		_right(row)
+	_right(_txt("Ton solde : %s gemmes" % (DevMode.SYMBOL if DevMode.is_unlimited() else fmt(Profile.gems)), 16, Color(1, 1, 1, 0.75)))
+	action_button = _slab_button("Acheter · %s gemmes" % fmt(int(p["gems"])))
+	action_button.pressed.connect(func() -> void: ask_gold_pack(selected))
+	_slab_col.add_child(action_button)
+
+
+func buy_gold_pack(i: int) -> bool:
+	var ok := Store.purchase_gold_pack(i)
+	MenuKit.sfx(&"coin_spend" if ok else &"error")
+	if ok:
+		changed.emit()
+		rebuild()
+	return ok
+
+
+## Pile de pièces d'or (CurrencyArt.coin, repli : disque doré) : `coins` pièces en pyramide.
+class GoldPile extends Control:
+	var coins: int = 1:
+		set(v):
+			coins = maxi(v, 1)
+			queue_redraw()
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var tex := CurrencyArt.coin()
+		# Rangées de bas en haut : 4, 3, 2, 1 pièces au plus (pyramide), on remplit jusqu'à `coins`.
+		var rows: Array[int] = []
+		var left := coins
+		var width := 1
+		while width * (width + 1) / 2 < coins:
+			width += 1
+		for r in range(width, 0, -1):
+			var n := mini(r, left)
+			if n <= 0:
+				break
+			rows.append(n)
+			left -= n
+		var s := minf(size.x / float(width) * 0.95, size.y / (0.62 * rows.size() + 0.5))
+		var base_y := size.y - s * 0.5
+		for ri in rows.size():
+			var n: int = rows[ri]
+			var y := base_y - ri * s * 0.62
+			var x0 := size.x * 0.5 - (n - 1) * s * 0.5
+			for k in n:
+				var c := Vector2(x0 + k * s, y)
+				var r := Rect2(c - Vector2(s, s) * 0.5, Vector2(s, s))
+				if tex != null:
+					draw_texture_rect(tex, r, false)
+				else:
+					draw_circle(c, s * 0.45, MenuKit.COIN)
 
 
 # --- Packs à contenu -------------------------------------------------------------------
@@ -438,9 +852,8 @@ func _build_bundles() -> void:
 		grid.add_child(card)
 		var hero := _first_of_kind(b, SkinData.KIND_CHARACTER)
 		if hero != null:
-			var t := TextureRect.new()
+			var t := HeroPoseRect.make(hero)  # pose + arme principale tenue
 			t.name = "Hero"
-			t.texture = ShopScreen.cropped_preview(ShopScreen.pose_texture(hero))
 			t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			t.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -486,7 +899,9 @@ func _build_bundles() -> void:
 		ct.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		ct.max_lines_visible = 2
 		foot.add_child(ct)
-		_price_strip(card, "Valeur %s" % fmt(Store.bundle_value(b)), str(b["price"]), i == selected)
+		var bid: StringName = b["id"]
+		_price_button(card, i, str(b["price"]), "Valeur %s" % fmt(Store.bundle_value(b)), i == selected,
+			func() -> void: ask_bundle(bid))
 		if not avail:
 			card.modulate = Color(1, 1, 1, 0.55)
 
@@ -540,7 +955,7 @@ func _fill_bundles_slab() -> void:
 	var avail := Store.bundle_available(b["id"])
 	action_button = _slab_button("Acheter · %s" % b["price"] if avail else "Déjà acheté")
 	action_button.disabled = not avail
-	action_button.pressed.connect(func() -> void: buy_bundle(b["id"]))
+	action_button.pressed.connect(func() -> void: ask_bundle(b["id"]))
 	_slab_col.add_child(action_button)
 	_right(_kicker("Aucun avantage en jeu"))
 
@@ -715,8 +1130,7 @@ func _show_reveal(r: Dictionary) -> void:
 	glow.offset_bottom = -200
 	veil.add_child(glow)
 	if s.kind == SkinData.KIND_CHARACTER:
-		var t := TextureRect.new()
-		t.texture = ShopScreen.cropped_preview(ShopScreen.pose_texture(s))
+		var t := HeroPoseRect.make(s)  # pose + arme principale tenue
 		t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		t.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -790,6 +1204,8 @@ func _fill_slab() -> void:
 			_fill_bundles_slab()
 		MODE_CHESTS:
 			_fill_chests_slab()
+		MODE_GOLD:
+			_fill_gold_slab()
 		_:
 			_fill_gems_slab()
 
@@ -807,3 +1223,30 @@ class ChestGlow extends Control:
 		for i in 12:
 			var k := 1.0 - i / 12.0
 			draw_circle(c, r * k, Color(color, 0.05 + 0.03 * (1.0 - k)))
+
+
+## Lueur radiale (et rayons pour les gros packs) derrière l'illustration d'un pack de gemmes. Statique.
+class PackGlow extends Control:
+	var color: Color = MenuKit.GEM
+	## Alpha de la lueur au centre (0-1).
+	var strength: float = 0.3
+	## Nombre de rayons (0 = aucun).
+	var rays: int = 0
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var c := size * 0.5
+		var r := minf(size.x, size.y) * 0.58
+		if rays > 0:
+			var far := size.length()
+			var half := PI / float(rays) * 0.42
+			for k in rays:
+				var a := TAU * float(k) / float(rays) - PI * 0.5
+				draw_polygon(PackedVector2Array([c, c + Vector2.from_angle(a - half) * far, c + Vector2.from_angle(a + half) * far]),
+					PackedColorArray([Color(color, strength * 0.3), Color(color, 0.0), Color(color, 0.0)]))
+		for i in 14:
+			var k := 1.0 - float(i) / 14.0
+			draw_circle(c, r * k, Color(color, strength * 0.09 * (1.0 - k * 0.6)), true, -1.0, true)

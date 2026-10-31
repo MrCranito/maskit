@@ -60,13 +60,15 @@ func _on_gold(g: int, animate: bool = true) -> void:
 	_tw.parallel().tween_property(self, "scale", Vector2.ONE, 0.3).from(Vector2(1.12, 1.12)) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_tw.tween_callback(func() -> void:
-		_set_shown(g)
-		value_label.add_theme_color_override("font_color", MenuKit.TEXT))
+		_set_shown(g))
 
 
 func _set_shown(v: int) -> void:
 	shown = v
-	value_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else Economy.fmt(v)
+	var anim_color: Variant = value_label.get_theme_color("font_color") if _tw != null and _tw.is_running() else null
+	MenuKit.set_amount(value_label, v)
+	if anim_color != null:   # défilement en cours : garde la couleur gain / dépense
+		value_label.add_theme_color_override("font_color", anim_color)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -81,14 +83,22 @@ func _gui_input(event: InputEvent) -> void:
 ## Pièce d'or dessinée (disque doré, liseré, reflet, étoile gravée). Statique.
 class CoinIcon extends Control:
 	var tint: Color = GOLD_COIN
+	## false : toujours le dessin en code (comparaisons, tests du repli).
+	var use_art: bool = true
 
 	func _ready() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		resized.connect(queue_redraw)
 
 	func _draw() -> void:
 		var s: float = minf(size.x, size.y)
 		var c := size * 0.5
+		var tex := CurrencyArt.coin() if use_art else null
+		if tex != null:   # image peinte (rendu Blender) ; sinon le dessin en code ci-dessous
+			var k: float = s * CurrencyArt.ICON_ZOOM
+			CurrencyArt.draw_fit(self, tex, Rect2(c - Vector2(k, k) * 0.5, Vector2(k, k)))
+			return
 		var r := s * 0.46
 		draw_circle(c + Vector2(0, s * 0.04), r, tint.darkened(0.55), true, -1.0, true)
 		draw_circle(c, r, tint.darkened(0.15), true, -1.0, true)

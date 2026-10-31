@@ -1447,6 +1447,11 @@ func spawn_hazard(kind: StringName, pos: Vector2, params: Dictionary) -> EnemyHa
 
 
 ## Renfort appelé (sifflet du chef) : nouvel ennemi déjà alerté, enregistré pour le coop.
+## Vrai pour un ennemi appelé en renfort (sifflet, appel, invocation) pendant le raid.
+func is_reinforcement() -> bool:
+	return has_meta(&"reinforcement")
+
+
 func spawn_reinforcement(kind: StringName, pos: Vector2) -> Enemy:
 	var path := "res://data/enemies/%s.tres" % kind
 	if not is_inside_tree() or not ResourceLoader.exists(path):

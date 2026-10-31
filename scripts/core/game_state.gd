@@ -23,6 +23,8 @@ var world_path: String = ""
 var current_map: Resource = null
 ## Debug : heure UTC forcée (secondes Unix) pour la rotation des cartes ; 0 = heure réelle.
 var debug_time_override: int = 0
+## Arène de test (mode dev, TestArena) en cours : victimes non comptées, aucune fin de raid.
+var in_test_arena: bool = false
 
 
 func _ready() -> void:
@@ -34,6 +36,8 @@ func _ready() -> void:
 	_load_settings.call_deferred()
 	# Mode développeur (gemmes et or illimités) : builds debug uniquement, voir DevMode.
 	DevPanel.attach(self)
+	# Mesure de fluidité sur l'appareil (F5 ou appui à trois doigts), versions de test uniquement.
+	PerfOverlay.attach(self)
 
 
 ## Lance le raid côté profil : l'arsenal de départ quitte la réserve (perdu en cas de mort).
@@ -73,7 +77,7 @@ func map_modifier(key: String, default: Variant) -> Variant:
 
 ## Économie d'énergie (ancien interrupteur) : mode « éco » ou mode par défaut (FrameRate).
 func apply_power_saving(on: bool) -> void:
-	FrameRate.apply(FrameRate.MODE_ECO if on else FrameRate.MODE_MAX)
+	FrameRate.apply(FrameRate.MODE_ECO if on else FrameRate.default_mode())
 
 
 static func difficulty_name(value: int) -> String:

@@ -19,6 +19,8 @@ var since_shot: float = 999.0
 ## Emplacement d'équipement (grenade, mine, C4, drone) et charges restantes.
 var gadget: WeaponData = null
 var gadget_charges: int = 0
+## Arène de test (TestArena) : aucune munition ni charge d'équipement consommée.
+var infinite_ammo: bool = false
 
 
 func _init(slot_count: int = 3) -> void:
@@ -34,6 +36,13 @@ func resize(slot_count: int) -> void:
 
 func size() -> int:
 	return slots.size()
+
+
+## Chargeurs pleins dans tous les emplacements, rechargement annulé (remise à zéro de l'arène).
+func refill_all() -> void:
+	for i: int in slots.size():
+		ammo[i] = magazine_of(slots[i])
+	cancel_reload()
 
 
 static func magazine_of(w: WeaponData) -> int:
@@ -173,7 +182,8 @@ func has_gadget_charge() -> bool:
 func consume_gadget_charge() -> bool:
 	if not has_gadget_charge():
 		return false
-	gadget_charges -= 1
+	if not infinite_ammo:
+		gadget_charges -= 1
 	return true
 
 
@@ -239,7 +249,7 @@ func consume_shot() -> void:
 	cooldown = w.get_fire_interval()
 	since_shot = 0.0
 	bloom = minf(bloom + w.spread_bloom_per_shot * bloom_mult(), w.spread_bloom_max * bloom_mult())
-	if magazine_of(w) > 0:
+	if magazine_of(w) > 0 and not infinite_ammo:
 		ammo[current] = maxi(ammo[current] - 1, 0)
 
 

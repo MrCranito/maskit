@@ -6,6 +6,7 @@
 - Vérif compilation : `godot --headless --path . --import` puis `godot --headless --path . --quit`.
 - Vérif exécution de la scène principale : `godot --headless --path . --quit-after 300` (aucune erreur SCRIPT ERROR ne doit sortir).
 - Résolution de référence : 1280 x 720 (paysage uniquement).
+- Import des textures (taille de l'APK) : après l'ajout d'atlas, de textures de sol/murs ou d'un paquet pré-rendu, lancer `python tools/apply_texture_imports.py` puis réimporter. Pré-rendu : WebP avec perte (qualité 0,9), sauf `o_*.png` et `footprint.png` sans perte ; atlas d'ennemis, atlas de biome, sols et murs : Basis Universal (pas de VRAM brut, mode 2). Vérifié par `tests/test_texture_imports.gd`. `docs/`, `tools/`, `art/`, `server/`, `supabase/` ne sont jamais exportés (exclude_filter) : le jeu ne doit rien y charger.
 
 ## Autoloads (déjà écrits, ne pas modifier sans raison)
 - `EventBus` : signaux globaux (player_spawned, player_damaged, player_died, enemy_spawned, enemy_died, projectile_fired, debug_toggled).
@@ -162,7 +163,7 @@ Chaque biome fournit, à ces chemins :
 - Style : même pipeline Blender que le héros (`art/blender/rdm_common.py` : caméra orthographique 3/4 à 48°, matériaux toon, contour Freestyle), même échelle (héros ≈ 64 unités monde), règles de performance de la « Refonte » (atlas, peu de nœuds, pas de redessin par frame, aucune lumière dynamique).
 
 ## Refonte « Exfil Rush » (retour de test n°3) — CONTRAT ENTRE AGENTS
-Le jeu s'appelle désormais **Exfil Rush** (slogan : « Tire. Pille. Tire-toi. »). Le projet est dans
+Le jeu s'appelle désormais **Exfil Rush**. Le projet est dans
 `/home/claude/maskit` (dépôt GitHub MrCranito/maskit). **Les masques n'existent plus** : plus de
 MaskData, de choix de masque, d'aura, de portraits. Le héros est un personnage simple sans masque.
 Les ennemis « masqués » (outlaw, masked_grunt…) restent : ce sont des ennemis, pas le système.
@@ -296,7 +297,7 @@ Far West : ville dispersée dans le désert, rochers, train à l'arrêt (obstacl
 
 
 ## Nom du jeu
-Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Slogan : « Tire. Pille. Tire-toi. ». Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.
+Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.
 
 ## Refonte n°3 « méta-jeu, coop, station » (CONTRAT, 29/10)
 Quatre agents en parallèle. Propriété des fichiers :

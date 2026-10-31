@@ -1,6 +1,9 @@
 extends SceneTree
 ## Produit l'image de mini-carte d'un paquet pré-rendu (assets/prerender/<biome>/<seed>/minimap.webp)
-## en assemblant les tuiles t_*.webp réduites (facteur [minimap] pack_downscale, défaut 8).
+## en assemblant les tuiles t_*.webp réduites (facteur [minimap] pack_downscale de balance.cfg,
+## 4 = 18 px par case ; un 2e argument le remplace). WebP avec perte, qualité 0,9.
+## Import attendu (minimap.webp.import) : compress/mode=1 (avec perte) lossy_quality=0.9,
+## mipmaps/generate=true (la mini-carte affiche l'image réduite ~2× : sans mipmaps, crénelage).
 ## Usage : godot --headless --path . --script tools/make_minimap.gd -- res://assets/prerender/far_west/642439/ [facteur]
 
 func _initialize() -> void:
@@ -8,7 +11,9 @@ func _initialize() -> void:
 	var dir: String = args[0] if args.size() > 0 else "res://assets/prerender/far_west/642439/"
 	if not dir.ends_with("/"):
 		dir += "/"
-	var factor := int(args[1]) if args.size() > 1 else 8
+	var cfg := ConfigFile.new()
+	cfg.load("res://data/balance.cfg")
+	var factor := int(args[1]) if args.size() > 1 else int(cfg.get_value("minimap", "pack_downscale", 4))
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "map.json"))
 	var ip: Array = meta["image_px"]
 	var out := Image.create(int(ceil(float(ip[0]) / factor)), int(ceil(float(ip[1]) / factor)), false, Image.FORMAT_RGBA8)
@@ -28,6 +33,6 @@ func _initialize() -> void:
 		img.resize(w, h, Image.INTERPOLATE_LANCZOS)
 		out.blit_rect(img, Rect2i(0, 0, w, h), Vector2i(int(round(float(p[0]) / factor)), int(round(float(p[1]) / factor))))
 	var path := ProjectSettings.globalize_path(dir + "minimap.webp")
-	out.save_webp(path, true, 0.85)
+	out.save_webp(path, true, 0.9)
 	print("minimap ", out.get_size(), " -> ", path)
 	quit()

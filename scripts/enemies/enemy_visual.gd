@@ -312,6 +312,16 @@ func flash_hit() -> void:
 	_flash_left = FLASH_DURATION
 
 
+## Léger à-coup visuel (px) dans le sens du tir reçu, résorbé en quelques centièmes de seconde.
+## Purement visuel : la position de l'ennemi ne change pas.
+func hit_kick(dir: Vector2, px: float) -> void:
+	if _dying or _dead or px <= 0.0 or dir == Vector2.ZERO:
+		return
+	var k: Vector2 = dir.normalized() * px
+	if k.length_squared() > _kick.length_squared():
+		_kick = k
+
+
 ## Réaction au coup : flash + courte animation de recul (planches) ou écrasement (sprite).
 func play_hit() -> void:
 	if _dying or _dead:

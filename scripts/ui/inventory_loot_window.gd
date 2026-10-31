@@ -5,8 +5,11 @@ extends Control
 ## visible), petit libellé violet (objets · valeur en or), nom du conteneur en Anton, une ligne
 ## par objet triée par rareté (liseré de rareté, icône, nom, rareté · valeur, « PRENDRE »),
 ## jauge du sac (emplacements, poids), « TOUT PRENDRE » violet.
-## Se ferme quand le conteneur est vidé, quand on s'éloigne (cible d'interaction
-## perdue) ou via ✕. Le jeu continue (pas de pause) : la fouille reste risquée.
+## Se ferme quand le conteneur est vidé, via ✕, quand une autre cible d'interaction prend la
+## place, et tout seul (glissement + fondu) dès que le joueur s'éloigne : distance au conteneur
+## > portée d'interaction + portée propre du conteneur + marge d'hystérésis
+## ([loot] loot_window_close_margin), vérifiée toutes les [loot] loot_window_check_interval s.
+## Le jeu continue (pas de pause) : la fouille reste risquée.
 ## Reconstruite seulement quand le contenu change.
 
 const ROW_HEIGHT := 64.0
@@ -28,6 +31,10 @@ var _bag_label: Label = null
 var _bag_weight: Label = null
 var _bag_bar: ProgressBar = null
 var _tween: Tween = null
+var _range_timer: Timer = null
+var _closing: bool = false
+## Position de repos du panneau (restaurée après le glissement de fermeture).
+var _rest_x: float = 0.0
 
 
 func _ready() -> void:
@@ -36,6 +43,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 	_build()
+	_range_timer = Timer.new()
+	_range_timer.wait_time = maxf(LootDB.getf("loot_window_check_interval", 0.1), 0.02)
+	_range_timer.timeout.connect(check_distance)
+	add_child(_range_timer)
 	EventBus.container_opened.connect(_on_container_opened)
 	EventBus.interact_target_changed.connect(_on_target_changed)
 	EventBus.floor_changed.connect(func(_i: int) -> void: close())
@@ -166,7 +177,7 @@ func _build() -> void:
 
 
 func is_open() -> bool:
-	return visible
+	return visible and not _closing
 
 
 func _on_container_opened(c: Node2D, _entries: Array) -> void:
@@ -181,6 +192,13 @@ func open_for(c: LootContainer, inv: Inventory) -> void:
 	_full_label.visible = false
 	visibility_changed_for_action.emit(true)
 	_rebuild()
+	_range_timer.start()
+	if _closing:
+		# Rouvert pendant le fondu de fermeture : on repart d'un panneau visible.
+		_closing = false
+		visible = false
+		_panel.position.x = _rest_x
+		_panel.modulate.a = 1.0
 	if not visible:
 		visible = true
 		if _tween != null and _tween.is_valid():
@@ -193,16 +211,65 @@ func open_for(c: LootContainer, inv: Inventory) -> void:
 		_tween.tween_property(_panel, "position:x", to_x, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
-func close() -> void:
-	if visible:
+## Ferme la fenêtre ; `animated` : glissement vers la droite + fondu (le joueur s'éloigne).
+func close(animated: bool = false) -> void:
+	if visible and not _closing:
 		visibility_changed_for_action.emit(false)
-	visible = false
 	container = null
+	if _range_timer != null:
+		_range_timer.stop()
+	if _tween != null and _tween.is_valid():
+		_tween.kill()
+	if not animated or not visible or not is_inside_tree():
+		if _closing:
+			_panel.position.x = _rest_x
+		visible = false
+		_closing = false
+		_panel.modulate.a = 1.0
+		return
+	_closing = true
+	_rest_x = _panel.position.x
+	_tween = create_tween().set_parallel(true)
+	_tween.tween_property(_panel, "modulate:a", 0.0, 0.2)
+	_tween.tween_property(_panel, "position:x", _panel.position.x + 40.0, 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_tween.chain().tween_callback(func() -> void:
+		visible = false
+		_closing = false
+		_panel.modulate.a = 1.0
+		_panel.position.x = _rest_x)
+
+
+## Logique pure : le joueur est-il trop loin du conteneur ? (hystérésis : la fenêtre ne se ferme
+## qu'au-delà de la portée d'interaction + marge, jamais pile à la limite).
+static func out_of_range(distance: float, interact_range: float, reach: float, margin: float) -> bool:
+	return distance > interact_range + reach + maxf(margin, 0.0)
+
+
+## Fermeture automatique quand le joueur s'éloigne (appelée par le minuteur et sur perte de cible).
+func check_distance() -> void:
+	if not visible or _closing:
+		return
+	if container == null or not is_instance_valid(container) or not container.is_inside_tree():
+		close(true)
+		return
+	var p: Node2D = GameState.player
+	if p == null or not is_instance_valid(p) or not p.is_inside_tree():
+		return
+	var reach := float(container.call("get_interact_reach")) if container.has_method("get_interact_reach") else 0.0
+	if out_of_range(p.global_position.distance_to(container.global_position), LootDB.getf("interact_range", 78.0),
+			reach, LootDB.getf("loot_window_close_margin", 24.0)):
+		close(true)
 
 
 func _on_target_changed(t: Node) -> void:
-	if visible and t != container:
-		close()
+	if not visible or _closing or t == container:
+		return
+	if t != null:
+		# Une autre cible prend la place (le bouton action doit redevenir utilisable).
+		close(true)
+	else:
+		# Plus de cible : on ne ferme qu'au-delà de la marge (pas de clignotement en limite).
+		check_distance()
 
 
 func _rebuild() -> void:

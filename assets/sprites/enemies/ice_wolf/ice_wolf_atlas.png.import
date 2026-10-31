@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://civnqyr4c1wws"
-path.bptc="res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.bptc.ctex"
-path.astc="res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.astc.ctex"
+path="res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ice_wolf/ice_wolf_atlas.png"
-dest_files=["res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.bptc.ctex", "res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.astc.ctex"]
+dest_files=["res://.godot/imported/ice_wolf_atlas.png-e8fce620e88d9a31a9583eb3db5a1c56.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

@@ -39,6 +39,16 @@ until grep -q "^INT" "$WORK/int.log" 2>/dev/null; do
 		2>&1 | grep -v "Saved\|Fra:\|Deprecation\|use_nodes" | tee "$WORK/int.log" || true
 	sleep 2
 done
+# Passe « sol seul » (ground_pass.py, après occ, avant l'étalonnage) : g<id>.png + grounds.json,
+# reprenable (g<id>.png déjà rendus conservés). render.json est sauvegardé puis restauré : une
+# passe isolée le réécrirait sans la liste des bâtiments.
+until grep -q "^GND" "$WORK/gnd.log" 2>/dev/null; do
+	[ -f "$WORK/render.json" ] && cp "$WORK/render.json" "$WORK/render.json.keep"
+	flock "$BL" timeout "$SLICE" python3 tools/prerender/mall_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" gnd "$MARGIN" \
+		2>&1 | grep -v "Saved\|Fra:\|Deprecation\|use_nodes" | tee "$WORK/gnd.log" || true
+	[ -f "$WORK/render.json.keep" ] && mv "$WORK/render.json.keep" "$WORK/render.json"
+	sleep 2
+done
 # étalonnage calé sur la planche (originaux gardés en *_raw.png)
 python3 tools/prerender/mall_grade.py "$WORK"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82

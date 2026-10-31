@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cctm61tiak2lp"
-path.bptc="res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.bptc.ctex"
-path.astc="res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.astc.ctex"
+path="res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ss_security_droid/ss_security_droid_atlas.png"
-dest_files=["res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.bptc.ctex", "res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.astc.ctex"]
+dest_files=["res://.godot/imported/ss_security_droid_atlas.png-614d81fc2da2b9540d571275721b6572.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

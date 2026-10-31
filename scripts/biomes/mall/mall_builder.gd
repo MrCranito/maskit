@@ -1322,6 +1322,9 @@ func _build_ambience() -> void:
 		var ac := Vector2(_atrium.get_center()) * TS
 		add_glow(ac, TS * 4.5, 0.7, Color(1.0, 0.62, 0.32))
 		add_glow(ac + Vector2(-TS * 3, -TS * 2), TS * 2.5, 0.5, Color(1.0, 0.5, 0.6))
+	var flicker: Array = []
+	if layout.floor_index < 0:
+		flicker = _build_parking_lights()
 	var glows := GlowLayer.new()
 	glows.name = "Glows"
 	glows.glows = _glows
@@ -1332,7 +1335,48 @@ func _build_ambience() -> void:
 	glows.z_index = 45
 	glows.z_as_relative = false
 	add_child(glows)
+	if not flicker.is_empty():
+		var fl: Array = []
+		for g: Array in flicker:
+			fl.append([g[0], g[1], g[3], float(g[2]) * glows.strength])  # → [pos, rayon, couleur, intensité]
+		var tex: Texture2D = PropScript.ATLAS if PropScript.has_piece("glow") else null
+		var region := PropScript.piece_region("glow") if tex != null else Rect2()
+		var al := AmbientLights.create(tex, region, fl, [], [])
+		al.z_index = 46
+		al.z_as_relative = false
+		add_child(al)
 	_build_dust()
+
+
+## Parking (sous-sol) : néons de plafond froids en grille dans chaque zone praticable, flaques de
+## lumière au sol ; un sur [mall] parking_flicker_every grésille (renvoyé, absent de _glows).
+## Réglages : [mall] parking_light_step (cases), parking_light_radius (px), parking_light_strength,
+## parking_light_color.
+func _build_parking_lights() -> Array:
+	var step := maxi(int(Balance.get_value("mall", "parking_light_step", 4)), 2)
+	var radius := _cfg_f("parking_light_radius", 150.0)
+	var k := _cfg_f("parking_light_strength", 0.7)
+	var col := _cfg_c("parking_light_color", Color(0.78, 0.9, 1.0))
+	var every := int(Balance.get_value("mall", "parking_flicker_every", 6))
+	var flicker: Array = []
+	var n := 0
+	var seed_value := layout.size.x * 31 + layout.size.y * 7
+	for r: FloorLayout.Room in layout.rooms:
+		var y := r.rect.position.y + 1
+		while y < r.rect.end.y:
+			var x := r.rect.position.x + 1
+			while x < r.rect.end.x:
+				var c := Vector2i(mini(x + 1, r.rect.end.x - 1), mini(y + 1, r.rect.end.y - 1))
+				if FloorLayout.is_walkable_tile(layout.get_tile(c)):
+					n += 1
+					var g := [FloorLayout.cell_to_world(c), radius, k, col]
+					if every > 0 and (n + seed_value) % every == 0:
+						flicker.append(g)
+					else:
+						_glows.append(g)
+				x += step
+			y += step
+	return flicker
 
 
 ## Poussière / pollen en suspension dans la lumière (une seule couche de particules GPU).

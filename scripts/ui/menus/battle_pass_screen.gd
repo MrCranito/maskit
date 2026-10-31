@@ -72,7 +72,7 @@ func _ready() -> void:
 	MenuKit.apply_saved_settings()
 	MenuKit.music(&"western_hub")
 	bp = BattlePassSystem.get_instance()
-	_cell = Balance.get_float("battle_pass", "cell_size", 70.0)
+	_cell = Balance.get_float("battle_pass", "cell_size", 96.0)
 	_col_w = _cell + 14.0
 	var bg := ColorRect.new()
 	bg.color = MenuKit.NIGHT_DEEP
@@ -208,7 +208,7 @@ func _build_showcase() -> Control:
 	var p := PanelContainer.new()
 	p.name = "Showcase"
 	p.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	p.custom_minimum_size.y = 250
+	p.custom_minimum_size.y = Balance.get_float("battle_pass", "showcase_min_height", 200.0)
 	var st := CutBox.make(Color(0.047, 0.043, 0.1), 30.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
 	st.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
 	p.add_theme_stylebox_override("panel", st)
@@ -247,16 +247,16 @@ func _build_showcase() -> Control:
 	col.anchor_right = 0.7
 	col.anchor_bottom = 1.0
 	col.offset_right = -70
-	col.offset_top = 20
-	col.offset_bottom = -20
+	col.offset_top = 12
+	col.offset_bottom = -12
 	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 6)
+	col.add_theme_constant_override("separation", 4)
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stack.add_child(col)
 	_s_kicker = MenuKit.label("", 18, MenuKit.GOLD, MenuKit.nunito(600), 0)
 	_s_kicker.uppercase = true
 	col.add_child(_s_kicker)
-	_s_name = MenuKit.label("", 90, MenuKit.TEXT, MenuKit.display(), 0)
+	_s_name = MenuKit.label("", int(Balance.get_value("battle_pass", "showcase_name_size", 72)), MenuKit.TEXT, MenuKit.display(), 0)
 	_s_name.uppercase = true
 	_s_name.clip_text = true
 	_s_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -848,7 +848,7 @@ class PassCell extends Button:
 		icon_view.set_reward(r, true)
 		var n := int(r.get("amount", 0))
 		if str(r.get("type", "")) != "skin" and n > 1:
-			amount_label = MenuKit.label(_short(n), 13, MenuKit.TEXT, MenuKit.nunito(1000), 4)
+			amount_label = MenuKit.label(_short(n), roundi(px * 0.19), MenuKit.TEXT, MenuKit.nunito(1000), 4)
 			amount_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 			amount_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 			amount_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
@@ -856,9 +856,10 @@ class PassCell extends Button:
 			amount_label.offset_bottom = -1
 			amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			add_child(amount_label)
-		lock = PassGlyph.new(&"lock", Color(1, 1, 1, 0.7), 16)
-		lock.position = Vector2(4, 4)
-		lock.size = Vector2(18, 18)
+		var ls: float = roundf(px * 0.22)
+		lock = PassGlyph.new(&"lock", Color(1, 1, 1, 0.7), ls)
+		lock.position = Vector2(5, 5)
+		lock.size = Vector2(ls + 2, ls + 2)
 		add_child(lock)
 		check = PassGlyph.new(&"check", MenuKit.VIOLET_LIGHT, 30)
 		check.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
@@ -1009,7 +1010,7 @@ class TierNumber extends Control:
 		draw_string(f, Vector2(size.x * 0.5 - tw * 0.5, size.y * 0.5 + fs * 0.42), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
 
 	func _cell_w() -> float:
-		return Balance.get_float("battle_pass", "cell_size", 70.0)
+		return Balance.get_float("battle_pass", "cell_size", 96.0)
 
 
 ## Décor de la vitrine : le camp de Dust Creek (rendu du lobby) assombri, rayons et halo à la
@@ -1108,14 +1109,8 @@ class RewardIcon extends Control:
 			"skin":
 				var s := SkinData.get_skin(StringName(str(r.get("id", ""))))
 				if s != null and s.kind == SkinData.KIND_CHARACTER:
-					var tr := TextureRect.new()
-					var tex := ShopScreen.cropped_preview(ShopScreen.pose_texture(s))
-					if compact and tex is AtlasTexture:
-						# buste : moitié haute du personnage
-						var a := (tex as AtlasTexture).duplicate() as AtlasTexture
-						a.region = Rect2(a.region.position, Vector2(a.region.size.x, a.region.size.y * 0.58))
-						tex = a
-					tr.texture = tex
+					# pose + arme principale tenue ; compact : buste (moitié haute du personnage)
+					var tr := HeroPoseRect.make(s, null, compact)
 					tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 					tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 					tr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

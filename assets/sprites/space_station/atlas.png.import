@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dl7g1kftjpr3p"
-path.s3tc="res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.s3tc.ctex"
-path.etc2="res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.etc2.ctex"
+path="res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/space_station/atlas.png"
-dest_files=["res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.s3tc.ctex", "res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.etc2.ctex"]
+dest_files=["res://.godot/imported/atlas.png-999817154f8906338a8364ac93f5cc5c.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

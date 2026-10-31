@@ -201,7 +201,7 @@ func _draw() -> void:
 		var ts := _icon.get_size()
 		var k2 := ICON_SIZE / maxf(ts.x, ts.y)
 		var sz := ts * k2
-		draw_texture_rect(_icon, Rect2(c - sz * 0.5, sz), false, item.tint)
+		draw_texture_rect(_icon, Rect2(c - sz * 0.5, sz), false, LootVisuals.item_tint(item))
 	else:
 		draw_circle(c, 6.0, col)
 	if count > 1:
