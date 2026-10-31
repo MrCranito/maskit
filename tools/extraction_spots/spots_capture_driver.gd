@@ -97,7 +97,7 @@ func _describe(L: FloorLayout) -> void:
 		var c := r.rect.get_center()
 		_p("  room #%d [%s] %s rect=%s outdoor=%s dist=%s" % [r.id, r.type, r.name, r.rect, r.outdoor, dist.get(c, "?")])
 	for s: ExtractionPlan.Spec in L.extraction_specs:
-		_p("  zone %s cells0=%s dist=%.0f closes=%.0f emergency=%s" % [s.name, s.cells[0], s.distance, s.closes_at, s.emergency])
+		_p("  zone %s [%s %s] cells0=%s dist=%.0f closes=%.0f" % [s.name, s.kind, s.option, s.cells[0], s.distance, s.closes_at])
 	_plan_image(L, dist)
 
 
