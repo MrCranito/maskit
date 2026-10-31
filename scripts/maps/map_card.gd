@@ -64,6 +64,8 @@ const DEFAULT_MODIFIERS := {
 	"player_damage_mult": 1.0,
 	"player_hp_mult": 1.0,
 	"night": false,
+	## null : teinte [maps] night_tint ; Color : teinte de nuit propre à la carte.
+	"night_tint": null,
 	"fixed_seed": 0,
 }
 
