@@ -1,6 +1,6 @@
 extends GutTest
-## Monnaie peinte et onglet Gemmes de la boutique : images de art/blender/build_currency.py
-## chargées (gemme, pièce, illustrations des packs), repli sur le dessin en code sans image,
+## Monnaie peinte et onglet Gemmes de la boutique : images de tools/currency_cutout (planche
+## art/ui/monnaie_reference.png) chargées (gemme, pièce, packs de gemmes et d'or), repli sur le dessin en code sans image,
 ## rubans « Meilleure offre » / « Populaire » calculés, pack populaire choisi d'office, et tout
 ## l'onglet tient à l'écran en 1280 x 720 comme en 2000 x 923 (téléphone large).
 
@@ -40,6 +40,14 @@ func test_images_peintes_chargees() -> void:
 		assert_not_null(p, "Illustration du pack %d" % (i + 1))
 		if p != null:
 			assert_gte(p.get_width(), 256)
+	for i: int in CurrencyArt.PACK_IMAGES:
+		var g := CurrencyArt.gold_pack(i)
+		assert_not_null(g, "Illustration du pack d'or %d" % (i + 1))
+		if g != null:
+			assert_gte(g.get_width(), 256)
+		var art := ShopOffers.gold_art(i)
+		assert_true(art is TextureRect, "Pack d'or %d : image peinte" % (i + 1))
+		art.free()
 	assert_eq(CurrencyArt.pack(-3), CurrencyArt.pack(0), "Indice négatif : le plus petit pack")
 	assert_eq(CurrencyArt.pack(42), CurrencyArt.pack(CurrencyArt.PACK_IMAGES - 1), "Au-delà : la dernière illustration")
 
@@ -52,6 +60,10 @@ func test_repli_sans_image() -> void:
 	var art := ShopOffers.pack_art(0)
 	assert_true(art is GemIcon, "Sans illustration : une gemme dessinée")
 	art.free()
+	assert_null(CurrencyArt.gold_pack(0))
+	var pile := ShopOffers.gold_art(2)
+	assert_true(pile is ShopOffers.GoldPile, "Sans illustration : une pile de pièces dessinée")
+	pile.free()
 	# Les icônes se dessinent sans erreur, avec ou sans image (API et tailles inchangées).
 	for painted: bool in [true, false]:
 		CurrencyArt.enabled = painted

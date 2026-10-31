@@ -1,7 +1,7 @@
 class_name GemIcon
 extends Control
-## Gemme taillée : image peinte (CurrencyArt.gem, rendu Blender) si elle existe, sinon dessinée en code
-## (losange à facettes cyan). Dessin statique : redessiné seulement au redimensionnement.
+## Gemme taillée : image peinte (CurrencyArt.gem) si elle existe, sinon dessinée en code
+## (losange à facettes violet). Dessin statique : redessiné seulement au redimensionnement.
 
 @export var tint: Color = MenuKit.GEM
 ## false : toujours le dessin en code (comparaisons, tests du repli).
