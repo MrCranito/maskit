@@ -334,6 +334,13 @@ func get_state() -> PackedByteArray:
 	return _explored.duplicate()
 
 
+## Texture de la mémoire d'exploration (1 texel par case, L8 : 255 = explorée). Mise à jour ici
+## seulement quand des cases sont découvertes ; la mini-carte la lit telle quelle (pas de copie).
+## Nulle tant que le rendu n'est pas prêt.
+func get_explored_texture() -> Texture2D:
+	return _explored_tex
+
+
 func set_state(state: PackedByteArray) -> void:
 	if layout == null:
 		return
