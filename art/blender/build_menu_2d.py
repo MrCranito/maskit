@@ -181,22 +181,6 @@ def emblem(size: int, ring=CREAM, arrow=RED, outline: bool = True) -> Image.Imag
     return im.resize((size, size), Image.LANCZOS)
 
 
-def slogan_band(text: str, h: int) -> Image.Image:
-    f = nunito(int(h * 0.62), 900)
-    bb = f.getbbox(text)
-    tw = bb[2] - bb[0]
-    k = h * 0.35
-    W = int(tw + h * 1.5)
-    im = Image.new("RGBA", (W + 8, h + 8), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
-    pts = [(k, 0), (W, 0), (W - k, h), (0, h)]
-    d.polygon([(x + 4, y + 6) for x, y in pts], fill=INK + (220,))
-    d.polygon(pts, fill=(44, 16, 34, 255))
-    d.polygon([pts[0], pts[1], (W - k * 0.18, h * 0.18), (k * 0.82, h * 0.18)], fill=(255, 255, 255, 30))
-    d.text(((W - tw) / 2 - bb[0], (h - (bb[3] - bb[1])) / 2 - bb[1]), text, font=f, fill=CREAM)
-    return im
-
-
 def go_tag(h: int) -> Image.Image:
     """« GO » sur une étiquette rouge en forme de flèche (pointe à droite), comme RaidersLogo.GoTag."""
     txt = slanted_text("GO", int(h * 0.9), CREAM, max(3, h // 10), (64, 0, 10, 255))
@@ -214,15 +198,14 @@ def go_tag(h: int) -> Image.Image:
 
 def logo_lockup(width: int, with_emblem: bool = True) -> Image.Image:
     """Logo empilé « RaidersGo » : emblème au-dessus, « RAIDERS » incliné, étiquette « GO » en
-    flèche rouge, bande du slogan."""
+    flèche rouge."""
     title_size = int(width * 0.27)
     out = int(title_size * 0.13)
     l1 = slanted_text("RAIDERS", title_size, CREAM, out, INK + (255,), shadow=(int(out * 0.6), int(out * 1.0)), shadow_fill=RED_DARK + (255,))
     tag = go_tag(int(title_size * 0.95))
-    band = slogan_band("Tire. Pille. Tire-toi.", int(title_size * 0.4))
     em = emblem(int(title_size * 1.25)) if with_emblem else Image.new("RGBA", (1, int(title_size * 0.2)), (0, 0, 0, 0))
-    W = max(l1.width, tag.width, band.width, em.width) + 20
-    H = em.height + l1.height + tag.height + band.height + title_size
+    W = max(l1.width, tag.width, em.width) + 20
+    H = em.height + l1.height + tag.height + title_size
     im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     y = 0
     im.alpha_composite(em, ((W - em.width) // 2, y))
@@ -231,8 +214,6 @@ def logo_lockup(width: int, with_emblem: bool = True) -> Image.Image:
     y += l1.height - int(title_size * 0.05)
     tag_xy = ((W - tag.width) // 2 + int(title_size * 0.1), y)
     im.alpha_composite(tag, tag_xy)
-    y += tag.height + int(title_size * 0.02)
-    im.alpha_composite(band, ((W - band.width) // 2, y))
     bb = im.getbbox()
     logo_lockup.emblem_cy = (em.height / 2 - bb[1]) / (bb[3] - bb[1])
     logo_lockup.emblem_w = em.width / (bb[2] - bb[0])
