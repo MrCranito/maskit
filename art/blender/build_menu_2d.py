@@ -10,7 +10,7 @@ Sorties :
     assets/ui/menu/lobby/flame.png   flamme 192 x 320 (additif, déformée par shader dans le jeu)
     assets/ui/menu/lobby/flag_cloth.png  drapeau plat 512 x 320 (ondulé par shader dans le jeu)
     assets/ui/menu/lobby/smoke.png   bouffée douce 128 x 128 (blanc, alpha)
-    assets/ui/menu/app_icon_1024.png icône d'application (opaque, 1024 x 1024)
+    icône d'application : déléguée à art/icon/build_app_icon.py (toutes les tailles)
 Composition du démarrage lisible recadrée : le héros et le logo restent dans la bande centrale
 (recadrage portrait du LaunchScreen iOS ≈ 500 px de large au centre ; recadrage 19,5:9 de
 l'iPhone ≈ 1920 x 886 au centre).
@@ -268,39 +268,8 @@ def splash() -> None:
 
 
 def icon() -> None:
-    S = 1024
-    yy, xx = np.mgrid[0:S, 0:S].astype(np.float32)
-    t = yy / S
-    stops = [(0.0, (40, 30, 80)), (0.45, (150, 64, 110)), (0.72, (238, 128, 86)), (1.0, (252, 190, 110))]
-    arr = np.zeros((S, S, 3), np.float32)
-    for c in range(3):
-        arr[..., c] = np.interp(t, [s[0] for s in stops], [s[1][c] for s in stops])
-    g = np.exp(-(((xx - S * 0.5) / (S * 0.45)) ** 2 + ((yy - S * 0.62) / (S * 0.4)) ** 2))[..., None]
-    arr += np.array([255, 190, 120], np.float32) * g * 0.25
-    im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).convert("RGBA")
-    # grand emblème en filigrane derrière
-    em = emblem(int(S * 0.98), ring=(255, 235, 215), arrow=RED)
-    em.putalpha(em.getchannel("A").point(lambda v: int(v * 0.22)))
-    im.alpha_composite(em, (int(S * 0.01), int(S * 0.0)))
-    bust = Image.open(hero_shot(os.path.join(TMP, "hero_bust.png"), bust=True)).convert("RGBA")
-    bust = bust.crop(bust.getbbox())
-    bh = int(S * 0.9)
-    bust = bust.resize((int(bust.width * bh / bust.height), bh), Image.LANCZOS)
-    im.alpha_composite(bust, (int(S * 0.47) - bust.width // 2, S - bh + int(S * 0.03)))
-    # « GO » en flèche rouge, en haut à droite (lisible en petit)
-    tg = go_tag(int(S * 0.19))
-    im.alpha_composite(tg, (S - tg.width - int(S * 0.03), S - tg.height - int(S * 0.07)))
-    im.convert("RGB").save(os.path.join(MENU, "app_icon_1024.png"), optimize=True)
-    im.convert("RGB").resize((192, 192), Image.LANCZOS).save(os.path.join(MENU, "app_icon_192.png"), optimize=True)
-    # Android adaptatif : fond (dégradé + emblème en filigrane) et premier plan (buste, transparent)
-    bgi = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8)).convert("RGBA")
-    bgi.alpha_composite(em, (int(S * 0.01), 0))
-    bgi.convert("RGB").resize((432, 432), Image.LANCZOS).save(os.path.join(MENU, "app_icon_adaptive_bg_432.png"), optimize=True)
-    fg = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    bw2 = int(S * 0.6)   # zone sûre adaptative : 66 % central
-    b2 = bust.resize((bw2, int(bust.height * bw2 / bust.width)), Image.LANCZOS)
-    fg.alpha_composite(b2, ((S - bw2) // 2, int(S * 0.83) - b2.height))
-    fg.resize((432, 432), Image.LANCZOS).save(os.path.join(MENU, "app_icon_adaptive_fg_432.png"), optimize=True)
+    """L'icône d'application a son propre script (direction D) : art/icon/build_app_icon.py."""
+    subprocess.check_call([sys.executable, os.path.join(ROOT, "art", "icon", "build_app_icon.py")])
 
 
 def main() -> None:
