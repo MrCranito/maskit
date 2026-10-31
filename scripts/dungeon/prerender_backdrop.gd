@@ -241,6 +241,10 @@ func attach_to(builder: Node2D) -> void:
 	# (Ajout générique) Constructeur de biome : masque ses propres visuels remplacés par le rendu.
 	if builder.has_method("prerender_hide"):
 		builder.call("prerender_hide")
+	# (Ajout générique, carnaval) Teinte du rendu demandée par le constructeur (éclaircir une nuit
+	# trop sombre) : s'applique aux tuiles, intérieurs et tranches d'occultation.
+	if builder.has_method("prerender_tint"):
+		modulate = builder.call("prerender_tint")
 	var roofs: Array = builder.call("get_roofs") if builder.has_method("get_roofs") else []
 	var by_id := {}
 	for r: Node2D in roofs:

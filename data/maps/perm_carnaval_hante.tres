@@ -11,7 +11,8 @@ world_path = "res://data/worlds/world_04_haunted_carnival.tres"
 difficulty = 2
 accent_color = Color(0.78, 0.42, 1, 1)
 modifiers = {
-"night": true
+"night": true,
+"night_tint": Color(0.86, 0.84, 0.96, 1)
 }
 tags = PackedStringArray("Nuit", "Boss")
 reward_text = "Butin standard"

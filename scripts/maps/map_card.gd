@@ -19,6 +19,7 @@ extends Resource
 ##   player_damage_mult  dégâts de l'arme du joueur (×)
 ##   player_hp_mult      PV max du joueur (×)
 ##   night               true : teinte nuit sur le monde ([maps] night_tint)
+##   night_tint          (Color, facultatif) teinte nuit propre à la carte (remplace [maps] night_tint)
 ##   fixed_seed          ≠ 0 : même carte générée pour tous les joueurs
 
 const CATEGORY_PERMANENT := &"permanent"
@@ -63,6 +64,8 @@ const DEFAULT_MODIFIERS := {
 	"player_damage_mult": 1.0,
 	"player_hp_mult": 1.0,
 	"night": false,
+	## null : teinte [maps] night_tint ; Color : teinte de nuit propre à la carte.
+	"night_tint": null,
 	"fixed_seed": 0,
 }
 

@@ -5,7 +5,9 @@ extends Node2D
 ## l'atlas des décors du biome, ou dégradé radial de repli), dessinés une seule fois par groupe et animés par `modulate` :
 ##   - flicker : néons défaillants (sortis de la couche statique des lueurs) qui grésillent ;
 ##   - blink   : voyants (petits points vifs sur les panneaux muraux) qui clignotent ;
-##   - alarm   : gyrophares rouges discrets, pulsation lente.
+##   - alarm   : gyrophares rouges discrets, pulsation lente ;
+##   - steady  : lumières fixes (carnaval : lampadaires, guirlandes), jamais animées ni masquées
+##               par le test de brouillard (une flaque de lumière reste dans le décor mémorisé).
 ## Brouillard de guerre : la couche est sous le brouillard (z < 80), donc assombrie hors vue ;
 ## en plus, chaque lumière animée n'est dessinée que si sa case est visible du joueur
 ## (FogOfWar.is_cell_visible, test espacé de [ambient_lights] fog_refresh s) : rien ne
@@ -15,6 +17,7 @@ extends Node2D
 const GROUP_FLICKER := &"flicker"
 const GROUP_BLINK := &"blink"
 const GROUP_ALARM := &"alarm"
+const GROUP_STEADY := &"steady"
 
 var fog_refresh: float = 0.2
 var flicker_speed: float = 9.0
@@ -71,9 +74,10 @@ class Group extends Node2D:
 				Color(col.lightened(0.45), minf(alpha * k * 1.2, 1.0)))
 
 
-## Crée la couche. `flicker`, `blink`, `alarm` : listes de lumières [pos, rayon, couleur, intensité].
-## `tex` / `region` : sprite radial du halo (null = dégradé radial de repli).
-static func create(tex: Texture2D, region: Rect2, flicker: Array, blink: Array, alarm: Array) -> AmbientLights:
+## Crée la couche. `flicker`, `blink`, `alarm`, `steady` : listes de lumières [pos, rayon, couleur,
+## intensité]. `tex` / `region` : sprite radial du halo (null = dégradé radial de repli).
+static func create(tex: Texture2D, region: Rect2, flicker: Array, blink: Array, alarm: Array,
+		steady: Array = []) -> AmbientLights:
 	var al := AmbientLights.new()
 	al.name = "AmbientLights"
 	al._load_cfg()
@@ -85,6 +89,7 @@ static func create(tex: Texture2D, region: Rect2, flicker: Array, blink: Array, 
 	al._add_group(GROUP_FLICKER, flicker, 0.35)
 	al._add_group(GROUP_BLINK, blink, 0.45)
 	al._add_group(GROUP_ALARM, alarm, 0.3)
+	al._add_group(GROUP_STEADY, steady, 0.3)
 	return al
 
 
@@ -219,8 +224,9 @@ func _process(delta: float) -> void:
 func _refresh_visibility() -> void:
 	if _fog == null or not is_instance_valid(_fog):
 		_fog = _find_fog()
-	for g: Group in _groups.values():
-		if _fog == null:
+	for gname: StringName in _groups:
+		var g: Group = _groups[gname]
+		if _fog == null or gname == GROUP_STEADY:
 			g.all_visible = true
 			continue
 		g.all_visible = false
