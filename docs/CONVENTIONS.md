@@ -6,6 +6,7 @@
 - Vérif compilation : `godot --headless --path . --import` puis `godot --headless --path . --quit`.
 - Vérif exécution de la scène principale : `godot --headless --path . --quit-after 300` (aucune erreur SCRIPT ERROR ne doit sortir).
 - Résolution de référence : 1280 x 720 (paysage uniquement).
+- Import des textures (taille de l'APK) : après l'ajout d'atlas, de textures de sol/murs ou d'un paquet pré-rendu, lancer `python tools/apply_texture_imports.py` puis réimporter. Pré-rendu : WebP avec perte (qualité 0,9), sauf `o_*.png` et `footprint.png` sans perte ; atlas d'ennemis, atlas de biome, sols et murs : Basis Universal (pas de VRAM brut, mode 2). Vérifié par `tests/test_texture_imports.gd`. `docs/`, `tools/`, `art/`, `server/`, `supabase/` ne sont jamais exportés (exclude_filter) : le jeu ne doit rien y charger.
 
 ## Autoloads (déjà écrits, ne pas modifier sans raison)
 - `EventBus` : signaux globaux (player_spawned, player_damaged, player_died, enemy_spawned, enemy_died, projectile_fired, debug_toggled).

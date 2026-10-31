@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://g1vb8uaa1me4"
-path.bptc="res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.bptc.ctex"
-path.astc="res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.astc.ctex"
+path="res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/fw_bandit/fw_bandit_atlas.png"
-dest_files=["res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.bptc.ctex", "res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.astc.ctex"]
+dest_files=["res://.godot/imported/fw_bandit_atlas.png-a1dc0fb5b17b921b820c57bac76ec276.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

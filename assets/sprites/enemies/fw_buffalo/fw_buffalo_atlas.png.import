@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bnvyhmgcn3uur"
-path.bptc="res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.bptc.ctex"
-path.astc="res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.astc.ctex"
+path="res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/fw_buffalo/fw_buffalo_atlas.png"
-dest_files=["res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.bptc.ctex", "res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.astc.ctex"]
+dest_files=["res://.godot/imported/fw_buffalo_atlas.png-1be06f5c4317dca1d07922d38fdaf212.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

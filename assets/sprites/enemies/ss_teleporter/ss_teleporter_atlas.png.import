@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0c14ccdnim8p"
-path.bptc="res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.bptc.ctex"
-path.astc="res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.astc.ctex"
+path="res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ss_teleporter/ss_teleporter_atlas.png"
-dest_files=["res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.bptc.ctex", "res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.astc.ctex"]
+dest_files=["res://.godot/imported/ss_teleporter_atlas.png-cbc22aadb0618430cdad9a6ddd8d8ca3.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
