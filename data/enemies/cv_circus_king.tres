@@ -6,7 +6,7 @@
 script = ExtResource("1_edata")
 kind = &"cv_circus_king"
 display_name = "Le Roi du cirque"
-max_hp = 4400.0
+max_hp = 3400.0
 move_speed = 100.0
 body_radius = 54.0
 detection_radius = 800.0
@@ -22,7 +22,7 @@ awareness_decay = 0.02
 awareness_alert_threshold = 1.0
 attack_type = 0
 attack_range = 120.0
-attack_damage = 28.0
+attack_damage = 22.0
 attack_cooldown = 1.9
 attack_windup = 0.85
 aoe_radius = 150.0

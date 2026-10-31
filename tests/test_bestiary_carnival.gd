@@ -399,7 +399,7 @@ func test_boss_declare_avec_trois_phases() -> void:
 	assert_gt(float((d.phases[2] as Dictionary).get("damage_mult", 1.0)), 1.3, "phase 3 enragée")
 	assert_lt(float((d.phases[2] as Dictionary).get("cooldown_mult", 1.0)), 0.7, "phase 3 : compétences en rafale")
 	# « Vraiment très difficile » : plusieurs fois les PV d'une élite.
-	assert_gt(d.max_hp, 7.0 * _load(&"cv_fairground_being").max_hp)
+	assert_gt(d.max_hp, 6.0 * _load(&"cv_fairground_being").max_hp)
 
 
 func test_etre_forain_galvanise_ses_creatures() -> void:

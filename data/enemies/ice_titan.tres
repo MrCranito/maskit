@@ -6,7 +6,7 @@
 script = ExtResource("1_edata")
 kind = &"ice_titan"
 display_name = "Le Titan de glace"
-max_hp = 4200.0
+max_hp = 3300.0
 move_speed = 82.0
 body_radius = 56.0
 detection_radius = 800.0
@@ -21,7 +21,7 @@ hearing_gain = 3.0
 awareness_decay = 0.02
 attack_type = 0
 attack_range = 130.0
-attack_damage = 30.0
+attack_damage = 22.0
 attack_cooldown = 1.8
 attack_windup = 0.85
 aoe_radius = 160.0

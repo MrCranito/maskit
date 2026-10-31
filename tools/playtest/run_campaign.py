@@ -24,6 +24,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 MAPS = {"fw": "perm_dust_creek", "ss": "perm_station_kagami", "mall": "perm_galeries_lumiere"}
+WORLD_MAPS = {"fw": "perm_dust_creek", "ss": "perm_station_kagami", "mall": "perm_galeries_lumiere",
+              "cv": "perm_carnaval_hante", "ice": "perm_terres_gelees", "eg": "perm_pyramides_egypte"}
 PROFILES = ["prudent", "agressif", "fouilleur"]
 ELITES = {"fw": ["fw_deserter", "fw_buffalo"], "ss": ["ss_drone_tieur", "ss_atlas"],
           "mall": ["mall_violent", "mall_store_warden"]}
@@ -100,6 +102,23 @@ def plan(pass_name: str, rounds: int = 4) -> list[dict]:
                                  "tier": "moyen" if r < 5 else "equipe", "profile": "prudent",
                                  "seed": 7000 + n, "max_time": 240})
                     n += 1
+    elif pass_name == "mondes":
+        # Évaluation de difficulté des 6 mondes : 100 parties par carte = 75 raids (5 difficultés ×
+        # 3 profils × 5 tours) + 25 combats de boss (Normal et Difficile × 3 arsenaux).
+        n = 0
+        for w in WORLD_MAPS:
+            for rep in range(5):
+                for diff in range(5):
+                    for p in PROFILES:
+                        jobs.append({"mode": "raid", "map": WORLD_MAPS[w], "difficulty": diff, "profile": p,
+                                     "seed": 12000 + n, "max_time": 420})
+                        n += 1
+            for diff, reps in ((1, (4, 5, 4)), (2, (4, 4, 4))):
+                for tier, count in zip(TIERS, reps):
+                    for r in range(count):
+                        jobs.append({"mode": "boss", "map": WORLD_MAPS[w], "difficulty": diff, "tier": tier,
+                                     "profile": "agressif", "seed": 12000 + n, "max_time": 480})
+                        n += 1
     elif pass_name == "smoke":
         jobs = [{"mode": "raid", "map": MAPS["fw"], "difficulty": 1, "profile": "fouilleur", "seed": 11,
                  "max_time": 60}]
@@ -131,8 +150,11 @@ def run_job(godot: str, root: str, pass_name: str, job: dict, timeout: int) -> d
         args.append("--tier=" + job["tier"])
     if job.get("enemy"):
         args.append("--enemy=" + job["enemy"])
-    # Dossier de données Godot propre à la partie (Linux : XDG_DATA_HOME ; Windows : APPDATA).
+    # Dossier de données Godot propre à la partie (Linux : XDG_DATA_HOME ; Windows : APPDATA ;
+    # macOS : HOME, user:// étant sous ~/Library/Application Support).
     env = dict(os.environ, XDG_DATA_HOME=home, APPDATA=home)
+    if sys.platform == "darwin":
+        env["HOME"] = home
     last = ""
     for attempt in range(2):
         t0 = time.time()

@@ -19,6 +19,9 @@ func defaults() -> Dictionary:
 
 
 func can_use_extra(_dist: float, _sees: bool) -> bool:
+	# Un renfort ne siffle pas à son tour (sinon réaction en chaîne sans fin).
+	if e.has_meta(&"reinforcement"):
+		return false
 	return _alive_count() + int(f("count")) <= int(f("max_total"))
 
 
