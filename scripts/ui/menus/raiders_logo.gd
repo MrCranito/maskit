@@ -2,27 +2,24 @@ class_name RaidersLogo
 extends HBoxContainer
 ## Logo « RaidersGo » : emblème (viseur dont une flèche de sortie s'échappe) + « RAIDERS » en
 ## gros (Nunito Black incliné, gros contour, ombre rouge sombre) suivi de « GO » mis en valeur
-## dans une étiquette rouge en forme de flèche, + slogan sur une bande inclinée.
+## dans une étiquette rouge en forme de flèche.
 ## Même dessin que le logo de l'image de démarrage (art/blender/build_menu_2d.py).
 ## Tout est dessiné en code ; rien n'est redessiné à chaque frame.
 
 const GAME_NAME := "RaidersGo"
 const TITLE := "RAIDERS"
 const GO := "GO"
-const SLOGAN := "Tire. Pille. Tire-toi."
 
 var emblem: RaidersEmblem = null
 var title_label: Label = null
 var go_label: Label = null
 var go_tag: Control = null
-var slogan_label: Label = null
-var slogan_band: Control = null
 var _title_size: int = 96
 
 static var _slant_font: FontVariation = null
 
 
-func _init(title_size: int = 96, with_emblem: bool = true, with_slogan: bool = true) -> void:
+func _init(title_size: int = 96, with_emblem: bool = true) -> void:
 	_title_size = title_size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if title_size < 0:
@@ -61,21 +58,10 @@ func _init(title_size: int = 96, with_emblem: bool = true, with_slogan: bool = t
 	go_tag.custom_minimum_size = Vector2(gs.x + title_size * 0.62, title_size * 0.86)
 	go_label.position = Vector2(title_size * 0.14, (title_size * 0.86 - gs.y) * 0.5)
 	go_label.size = gs
-	slogan_band = SloganBand.new()
-	slogan_band.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	slogan_band.custom_minimum_size = Vector2(0, title_size * 0.42)
-	slogan_band.visible = with_slogan
-	col.add_child(slogan_band)
-	slogan_label = MenuKit.label(SLOGAN, maxi(13, int(title_size * 0.27)), MenuKit.TEXT, MenuKit.nunito(900), 0)
-	slogan_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	slogan_band.add_child(slogan_label)
-	slogan_label.position = Vector2(title_size * 0.32, 0)
-	slogan_band.custom_minimum_size.x = slogan_label.get_minimum_size().x + title_size * 0.64
-	slogan_label.size = Vector2(slogan_label.get_minimum_size().x, title_size * 0.42)
 
 
 ## Logotype plat de la direction « D » (lobby) : « RAIDERS » en Anton blanc, « GO » en violet
-## clair, sans emblème, étiquette ni slogan.
+## clair, sans emblème ni étiquette.
 static func wordmark(title_size: int) -> RaidersLogo:
 	var l := RaidersLogo.new(-1)
 	l._title_size = title_size
@@ -123,22 +109,3 @@ class GoTag extends Control:
 		draw_colored_polygon(pts, MenuKit.RED)
 		draw_colored_polygon(PackedVector2Array([pts[0], pts[1], Vector2(size.x - tip * 0.7, h * 0.15),
 			Vector2(k * 0.85, h * 0.15)]), Color(1, 0.55, 0.45, 0.45))
-
-
-## Bande rouge inclinée (parallélogramme) derrière le slogan.
-class SloganBand extends Control:
-	func _ready() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		resized.connect(queue_redraw)
-
-	func _draw() -> void:
-		var h: float = size.y
-		var k: float = h * 0.35
-		var pts := PackedVector2Array([Vector2(k, 0), Vector2(size.x, 0), Vector2(size.x - k, h), Vector2(0, h)])
-		var shadow := PackedVector2Array()
-		for p: Vector2 in pts:
-			shadow.append(p + Vector2(3, 4))
-		draw_colored_polygon(shadow, Color(0.04, 0.03, 0.09, 0.85))
-		draw_colored_polygon(pts, MenuKit.NIGHT_DEEP.lerp(MenuKit.RED_DARK, 0.35))
-		draw_colored_polygon(PackedVector2Array([pts[0], pts[1], Vector2(size.x - k * 0.18, h * 0.18),
-			Vector2(k * 0.82, h * 0.18)]), Color(1, 1, 1, 0.12))

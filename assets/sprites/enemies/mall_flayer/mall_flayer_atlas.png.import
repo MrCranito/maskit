@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://drymnxg5v72lj"
-path.bptc="res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.bptc.ctex"
-path.astc="res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.astc.ctex"
+path="res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/mall_flayer/mall_flayer_atlas.png"
-dest_files=["res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.bptc.ctex", "res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.astc.ctex"]
+dest_files=["res://.godot/imported/mall_flayer_atlas.png-52a98233c0de489de1ce29920e51e6e5.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

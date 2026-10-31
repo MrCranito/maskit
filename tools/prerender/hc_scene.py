@@ -3583,6 +3583,18 @@ if __name__ == "__main__":
         dt = render_occ(os.path.join(OUT, "occ.png"))
         info["renders"]["occ"] = {"px": [pw, ph], "s": round(dt, 1)}
         print("OCC", round(dt, 1), "s", flush=True)
+    if "gnd" in PASSES:
+        # Sol seul (ground_pass.py) : murs, haut du mur sud et toit du bâtiment masqués à leur tour.
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import ground_pass
+        frame(cam, -MARGIN, W + MARGIN, -MARGIN, H + MARGIN)
+
+        def _gnd_hide(bid):
+            names = {"%s_%d" % (p, bid) for p in ("walls", "roof", "front", "awning", "furn", "ruin")}
+            return [o for o in bpy.data.objects if o.name in names]
+        dt = ground_pass.render_ground(bpy, scene, OUT, _gnd_hide, render, os.environ.get("GND_ONLY", ""))
+        info["renders"]["ground_s"] = round(dt, 1)
+        print("GND", round(dt, 1), "s", flush=True)
     for p_ in PASSES:
         if p_.startswith("crop:"):
             a_ = [float(v) for v in p_[5:].split(";")]

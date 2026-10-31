@@ -18,6 +18,10 @@ func defaults() -> Dictionary:
 		"min_player_dist": 260.0}
 
 
+func summons() -> bool:
+	return true
+
+
 func can_use_extra(_dist: float, _sees: bool) -> bool:
 	# Un renfort ne siffle pas à son tour (sinon réaction en chaîne sans fin).
 	if e.has_meta(&"reinforcement"):

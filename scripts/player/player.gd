@@ -29,6 +29,8 @@ signal reload_started
 signal reload_finished(completed: bool)
 ## Équipement (grenade, mine, C4, drone) ou ses charges changés.
 signal gadget_changed
+## Emplacement rapide utilisé (HUD, touches quick_1..n) : message vide = succès, sinon raison du refus.
+signal quick_used(index: int, message: String)
 
 const LAYER_PLAYER := 2
 const MASK_WORLD := 1
@@ -44,6 +46,8 @@ const RUN_ANIMS: Array[StringName] = [&"run_e", &"run_se", &"run_s", &"run_sw", 
 const IDLE_ANIMS: Array[StringName] = [&"idle_e", &"idle_se", &"idle_s", &"idle_sw", &"idle_w", &"idle_nw", &"idle_n", &"idle_ne"]
 
 var hp: float = 100.0
+## Nom de l'auteur du dernier coup reçu (damage_source_name ; « Tué par … » de l'écran de fin).
+var last_hit_by: String = ""
 var max_hp: float = 100.0
 ## Conservé pour compatibilité (debug) : plus de ciblage automatique, toujours null.
 var current_target: Node2D = null
@@ -95,6 +99,8 @@ var _shells_enabled: bool = true
 var _invulnerable_left: float = 0.0
 var _is_moving: bool = false
 var _alive: bool = true
+## Arène de test (TestArena) : aucun dégât reçu.
+var god_mode: bool = false
 var _move_joystick: TouchJoystick = null
 var _aim_joystick: TouchJoystick = null
 var _joysticks_looked_up: bool = false
@@ -456,6 +462,20 @@ func _on_reload_started() -> void:
 			fx.shell(ground, visual.hand_height, aim_direction, false)
 
 
+## Emplacement rapide `i` du sac de raid (soin utilisé, équipement équipé). "" = succès.
+func use_quick(i: int) -> String:
+	if not _alive or net_downed:
+		return "Impossible pour l'instant."
+	var msg := ItemUse.use_quick(GameState.raid_inventory, i, self)
+	if msg.is_empty():
+		var it := GameState.raid_inventory.quick_item(i) if GameState.raid_inventory != null else null
+		_play_sfx(&"heal" if it == null or it.is_usable() else &"click")
+	else:
+		_play_sfx(&"error")
+	quick_used.emit(i, msg)
+	return msg
+
+
 ## Vitesse max effective (vitesse de base × arme tenue).
 func get_effective_speed() -> float:
 	var w: WeaponData = weapon
@@ -627,6 +647,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		switch_to(1)
 	elif event.is_action_pressed("weapon_3"):
 		switch_to(2)
+	elif event.is_action_pressed("quick_1"):
+		use_quick(0)
+	elif event.is_action_pressed("quick_2"):
+		use_quick(1)
 
 
 func _input(event: InputEvent) -> void:
@@ -764,9 +788,12 @@ func fire(dir: Vector2) -> void:
 		_salvo_timer = _salvo_interval
 		_salvo_dir = d0
 		count = 1
+	# Imprécision tirée UNE fois par tir (toute la gerbe d'un fusil à pompe tourne ensemble),
+	# puis plombs répartis régulièrement sur l'éventail (pellet_direction).
+	var center: Vector2 = d0.rotated(spread_offset(inacc))
 	for i: int in count:
 		var p: Projectile = projectile_pool.spawn(origin,
-			spread_direction(d0, i, count, w.spread_degrees, inacc), w, self, height)
+			pellet_direction(center, i, count, w.spread_degrees), w, self, height)
 		if p != null and homing != null:
 			p.set_homing(homing, weapon_homing(w))
 	_on_fired_feel(w, d0)
@@ -860,15 +887,35 @@ func _tick_salvo(delta: float) -> void:
 
 
 ## Logique pure : direction du projectile `i` sur `count` (éventail régulier de
-## `spread_deg` au total) + imprécision aléatoire ±`inaccuracy_deg`.
+## `spread_deg` au total) + imprécision aléatoire ±`inaccuracy_deg` (centrée, voir spread_offset).
 static func spread_direction(dir: Vector2, i: int, count: int, spread_deg: float, inaccuracy_deg: float) -> Vector2:
-	var offset: float = 0.0
-	if count > 1:
-		var spread: float = deg_to_rad(spread_deg)
-		offset = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
-	if inaccuracy_deg > 0.0:
-		offset += deg_to_rad(randf_range(-inaccuracy_deg, inaccuracy_deg))
-	return dir.rotated(offset)
+	return pellet_direction(dir.rotated(spread_offset(inaccuracy_deg)), i, count, spread_deg)
+
+
+## Écart aléatoire (radians) d'un tir d'imprécision ±`inaccuracy_deg` : loi triangulaire
+## (somme de deux tirages, [player] spread_center_weight = 1) — la plupart des balles partent
+## près du centre, jamais au-delà du cône affiché ; 0 = loi uniforme (ancien comportement).
+static func spread_offset(inaccuracy_deg: float) -> float:
+	if inaccuracy_deg <= 0.0:
+		return 0.0
+	var u: float = randf_range(-1.0, 1.0)
+	var tri: float = randf() + randf() - 1.0
+	var k: float = clampf(Balance.get_float("player", "spread_center_weight", 1.0), 0.0, 1.0)
+	return deg_to_rad(inaccuracy_deg * lerpf(u, tri, k))
+
+
+## Plomb `i` sur `count` : éventail régulier de `spread_deg` autour de `center`, avec un léger
+## décalage aléatoire limité à [player] pellet_jitter × l'écart entre deux plombs (motif
+## réparti, jamais de trous ni d'amas).
+static func pellet_direction(center: Vector2, i: int, count: int, spread_deg: float) -> Vector2:
+	if count <= 1 or spread_deg <= 0.0:
+		return center
+	var spread: float = deg_to_rad(spread_deg)
+	var gap: float = spread / float(count - 1)
+	var offset: float = lerpf(-spread * 0.5, spread * 0.5, float(i) / float(count - 1))
+	var j: float = clampf(Balance.get_float("player", "pellet_jitter", 0.3), 0.0, 0.5)
+	offset += randf_range(-j, j) * gap
+	return center.rotated(offset)
 
 
 ## Position monde du bout du canon pour une visée `dir` (calcul logique, non interpolé).
@@ -1052,11 +1099,12 @@ func get_hide_spot() -> Node:
 # --- Dégâts ------------------------------------------------------------------
 
 func take_damage(amount: float, _source: Node) -> void:
-	if not _alive or net_downed or _invulnerable_left > 0.0 or amount <= 0.0:
+	if not _alive or net_downed or _invulnerable_left > 0.0 or amount <= 0.0 or god_mode:
 		return
 	# Coop, invité : seuls les dégâts envoyés par l'hôte comptent.
 	if NetHooks.active and NetHooks.blocks_local_damage():
 		return
+	last_hit_by = damage_source_name(_source)
 	if PlaytestProbe.enabled:
 		PlaytestProbe.player_hit(minf(amount, hp), _source)
 	hp = maxf(hp - amount, 0.0)
@@ -1072,6 +1120,30 @@ func take_damage(amount: float, _source: Node) -> void:
 
 func is_alive() -> bool:
 	return _alive
+
+
+## Nom affiché de l'auteur d'un coup (« Tué par … » de l'écran de fin) : l'ennemi lui-même, ou
+## celui qui a tiré le projectile / posé la zone (propriétés shooter, owner_enemy, source…, ou un
+## parent) ; « Tourelle » ; "" si inconnu (piège, explosion de décor).
+static func damage_source_name(source: Node) -> String:
+	if source == null or not is_instance_valid(source):
+		return ""
+	var n: Node = source
+	for i in 4:
+		if n is Enemy:
+			var e := n as Enemy
+			return e.data.display_name if e.data != null else ""
+		for prop: StringName in [&"shooter", &"owner_enemy", &"source", &"enemy", &"caster", &"owner_node"]:
+			var v: Variant = n.get(prop)
+			if v is Enemy and is_instance_valid(v):
+				var ev := v as Enemy
+				return ev.data.display_name if ev.data != null else ""
+		if n.get_script() != null and String(n.get_script().resource_path).contains("turret"):
+			return "Tourelle"
+		if n.get_parent() == null:
+			break
+		n = n.get_parent()
+	return ""
 
 
 ## Statut infligé par un ennemi (PlayerStatus.KINDS) ; `from` = origine du coup (poussée du
@@ -1114,6 +1186,8 @@ func heal(amount: float) -> void:
 		hp = minf(hp + amount, max_hp)
 		if visual != null:
 			visual.hp_dirty()
+		# Montant 0 : mise à jour des PV du HUD sans effet de coup reçu.
+		EventBus.player_damaged.emit(0.0, hp, max_hp)
 
 
 func _die() -> void:

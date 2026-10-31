@@ -24,7 +24,7 @@ cd "$ROOT"
 flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "${GODOT_LOCK:-/tmp/maskit_godot.lock}" godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_02_space_station.tres
-flock "${BLENDER_LOCK:-/tmp/maskit_blender.lock}" python3 tools/prerender/ss_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+flock "${BLENDER_LOCK:-/tmp/maskit_blender.lock}" python3 tools/prerender/ss_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,gnd,int "$MARGIN"
 # Étalonnage calé sur la planche (originaux gardés en *_raw.png, relançable)
 python3 tools/prerender/ss_grade.py "$WORK"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82

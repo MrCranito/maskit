@@ -117,6 +117,39 @@ static func apply_host_lost(profile: Node, bag: Inventory) -> Dictionary:
 	return {"kept_weapons": kept, "lost_items": lost_items, "lost_value": lost_value}
 
 
-## PV ennemis en coop (× [net] coop_enemy_hp_mult).
+## PV ennemis en coop (barème à 2 joueurs, voir party_mult).
 static func coop_hp_mult() -> float:
-	return maxf(Balance.get_float("net", "coop_enemy_hp_mult", 1.6), 0.1)
+	return party_mult("enemy_hp", 2)
+
+
+# --- Difficulté selon le nombre de joueurs --------------------------------------------
+
+## Nombre de joueurs maximal prévu par le barème (le jeu en permet 2 aujourd'hui).
+const MAX_PARTY := 4
+## Tests : force le nombre de joueurs du prochain raid (0 = automatique).
+static var party_override: int = 0
+
+
+## Multiplicateur du barème [coop] <key>_<n> (enemy_density, enemy_hp, enemy_damage) pour
+## `players` joueurs (1..4). Solo : toujours 1 (aucun changement). Repli à 2 joueurs sur
+## l'ancien réglage [net] coop_enemy_hp_mult pour les PV.
+static func party_mult(key: String, players: int) -> float:
+	var n := clampi(players, 1, MAX_PARTY)
+	if n <= 1:
+		return 1.0
+	var fallback := 1.0
+	if key == "enemy_hp":
+		fallback = Balance.get_float("net", "coop_enemy_hp_mult", 1.6)
+	return maxf(Balance.get_float("coop", "%s_%d" % [key, n], fallback), 0.05)
+
+
+## Joueurs du raid qui démarre (lu par Raid._ready AVANT la génération, identique chez l'hôte
+## et l'invité : la seed et ce nombre suffisent à générer le même étage des deux côtés).
+## Salon coop : raid_info["players"] posé au lancement (2 par défaut) ; solo : 1.
+static func raid_party_size() -> int:
+	if party_override > 0:
+		return clampi(party_override, 1, MAX_PARTY)
+	var s := NetSession.current()
+	if s != null and s.raid_pending and s.in_room():
+		return clampi(int(s.raid_info.get("players", 2)), 1, MAX_PARTY)
+	return 2 if NetHooks.active else 1

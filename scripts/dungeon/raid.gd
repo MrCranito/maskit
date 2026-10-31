@@ -105,6 +105,12 @@ var _extraction_marker: Node2D = null
 ## Zones d'extraction de l'étage (ExtractionZone) et zone en cours de canalisation.
 var extraction_zones: Array[ExtractionZone] = []
 var _active_zone: ExtractionZone = null
+## Horloge du raid (s, hors pause) : durée de vie des zones d'extraction (ExtractionPlan).
+var raid_clock: float = 0.0
+## Zones déjà averties avant fermeture (nœud → true).
+var _warned_zones: Dictionary = {}
+## Calque plein écran de la canalisation (vignette, compte à rebours, flash final).
+var extraction_overlay: ExtractionOverlay = null
 var end_screen: RaidEndScreen = null
 ## Tourelles de l'étage courant (nœud → case) et cases des tourelles détruites.
 var turrets_container: Node2D = null
@@ -118,6 +124,8 @@ var _toast_panel: PanelContainer = null
 var _toast_label: Label = null
 var _toast_tween: Tween = null
 var _fade_rect: ColorRect = null
+## Arène de test (mode dev) : contrôleur attaché quand le monde est l'arène (TestArena).
+var test_arena: TestArena = null
 
 
 func _ready() -> void:
@@ -125,6 +133,12 @@ func _ready() -> void:
 	NoiseSources.clear()
 	run_seed = GameState.run_seed
 	difficulty = GameState.difficulty
+	# État de butin du raid précédent (cadavres, butin au sol, conteneurs) : effacé avant la
+	# construction de l'étage 0, qui restaure sinon ceux de la partie précédente.
+	LootManager.begin_raid(run_seed)
+	# Objets, icônes, sons et shaders préchargés : aucun chargement synchrone en jeu (RaidWarmup).
+	RaidWarmup.start(self)
+	party_size = CoopRules.raid_party_size()
 	_load_world()
 	_generate_floors()
 	_apply_map_modifiers()
@@ -138,8 +152,11 @@ func _ready() -> void:
 	_build_debug_world_draw()
 	_build_floor(current_floor)
 	_spawn_player(layout.player_spawn)
+	apply_camera_limits()
 	_build_ui()
 	_apply_map_player_modifiers()
+	if TestArena.is_arena_world(world) and DevMode.is_available():
+		test_arena = TestArena.attach(self)
 	_update_banner(true)
 	EventBus.player_died.connect(_on_player_died)
 	EventBus.debug_toggled.connect(_on_debug_toggled)
@@ -187,8 +204,9 @@ func _generate_floors() -> void:
 		if not floors.has(0) and not floors.is_empty():
 			push_warning("Raid: le générateur n'a pas produit d'étage 0.")
 		uses_generator = not floors.is_empty()
+		_plan_extractions()
 		if map_seed != 0 and floors.has(0):
-			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
+			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]), _prerender_rects(floors[0]))
 		# Bestiaire : un seul boss par raid, élites du monde (scripts/dungeon/bestiary_rules.gd).
 		if world is WorldData:
 			BestiaryRules.apply(floors, world as WorldData, run_seed, difficulty)
@@ -196,7 +214,29 @@ func _generate_floors() -> void:
 		if gen != null and world == null:
 			push_warning("Raid: générateur présent mais pas de monde, carte d'exemple.")
 		floors[0] = FloorLayout.make_sample()
+		_plan_extractions()
 	current_floor = 0 if floors.has(0) else int(floors.keys()[0])
+
+
+## Trois zones d'extraction à durée de vie par étage qui en a (ExtractionPlan). Graine du raid :
+## mêmes zones chez l'hôte et l'invité. Étage 0 pré-rendu : l'emprise rendue est évitée.
+func _plan_extractions() -> void:
+	for idx: int in floors.keys():
+		var l: FloorLayout = floors[idx]
+		var blocked: Array[Rect2] = _prerender_rects(l) if idx == 0 else ([] as Array[Rect2])
+		ExtractionPlan.apply(l, hash([run_seed, idx, "extraction"]), blocked)
+
+
+## Emprise rendue (rectangles monde infranchissables) du fond pré-rendu de l'étage 0, [] sans fond.
+func _prerender_rects(l: FloorLayout) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	if map_seed == 0 or world == null:
+		return out
+	var pb := PrerenderBackdrop.create(map_seed, l, StringName(world.get("biome")))
+	if pb != null:
+		out = pb.collision_rects()
+		pb.free()
+	return out
 
 
 func _load_module_scripts() -> void:
@@ -269,6 +309,30 @@ func _build_floor(index: int) -> void:
 	_apply_map_floor_modifiers()
 	_last_player_cell = Vector2i(-9999, -9999)
 	_cancel_extraction(false)
+	apply_camera_limits()
+
+
+## Caméra bornée aux limites de l'étage : on ne voit jamais au-delà du bord de la carte (bande
+## de brouillard unie). [camera] edge_margin = marge (px monde) autorisée au-delà du bord.
+func apply_camera_limits() -> void:
+	if layout == null or not is_instance_valid(player):
+		return
+	var cam := player.get_node_or_null("Camera2D") as Camera2D
+	if cam == null:
+		return
+	var r := camera_bounds()
+	cam.limit_left = int(r.position.x)
+	cam.limit_top = int(r.position.y)
+	cam.limit_right = int(r.end.x)
+	cam.limit_bottom = int(r.end.y)
+	cam.limit_smoothed = true
+
+
+## Rectangle (monde) visible par la caméra : l'étage entier, plus [camera] edge_margin.
+func camera_bounds() -> Rect2:
+	var ts := float(FloorLayout.TILE_SIZE)
+	var m := Balance.get_float("camera", "edge_margin", 0.0)
+	return Rect2(Vector2.ZERO, Vector2(layout.size) * ts).grow(m)
 
 
 func _build_world_root() -> void:
@@ -306,7 +370,11 @@ func _attach_prerender(index: int) -> void:
 
 ## (Test B) Carte pré-rendue = structure fixe : chaque ennemi est redéplacé sur une case
 ## libre de sa salle (tirage sur run_seed) pour que deux parties sur la même carte diffèrent.
-static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
+## La case tirée doit appartenir à la salle elle-même (pas à un bâtiment ni au chapiteau dont la
+## boîte recoupe une grande place) et être hors de l'emprise rendue `blocked` (rectangles monde de
+## PrerenderBackdrop.collision_rects : murs épais, gradins, rochers…). Un ennemi resté dans
+## l'emprise (case du peupleur, salle du boss) est poussé sur la case libre la plus proche.
+static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int, blocked: Array[Rect2] = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var busy := {}
@@ -314,6 +382,7 @@ static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
 		for sp: FloorLayout.Spawn in list:
 			for c: Vector2i in FloorLayout.spawn_cells(sp):
 				busy[c] = true
+	var solid := blocked_cells(blocked, Balance.get_float("raid", "spawn_clearance", 12.0))
 	for sp2: FloorLayout.Spawn in l.enemy_spawns:
 		var room := l.get_room(sp2.room_id) if sp2.room_id >= 0 else l.room_at(sp2.cell)
 		if room == null or room.type == &"boss":
@@ -322,13 +391,75 @@ static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
 			var c2 := Vector2i(rng.randi_range(room.rect.position.x, room.rect.end.x - 1),
 				rng.randi_range(room.rect.position.y, room.rect.end.y - 1))
 			var t := l.get_tile(c2)
-			if busy.has(c2) or c2.distance_to(l.player_spawn) < 8.0 \
-					or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+			if busy.has(c2) or solid.has(c2) or c2.distance_to(l.player_spawn) < 8.0 \
+					or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET) \
+					or cell_room_id(l, c2) != room.id:
 				continue
 			busy.erase(sp2.cell)
 			sp2.cell = c2
 			busy[c2] = true
 			break
+	if solid.is_empty():
+		return
+	for sp3: FloorLayout.Spawn in l.enemy_spawns:
+		if not solid.has(sp3.cell):
+			continue
+		var c3 := free_cell_near(l, sp3.cell, sp3.room_id if sp3.room_id >= 0 else cell_room_id(l, sp3.cell), solid, busy)
+		if c3 != sp3.cell:
+			busy.erase(sp3.cell)
+			sp3.cell = c3
+			busy[c3] = true
+
+
+## Salle d'une case : grille exacte du plan si le générateur en fournit une (méta « cell_rooms »,
+## Carnaval : chapiteau ovale), sinon la plus petite salle dont la boîte contient la case. -1 : aucune.
+static func cell_room_id(l: FloorLayout, c: Vector2i) -> int:
+	if l.has_meta(&"cell_rooms"):
+		var g: PackedInt32Array = l.get_meta(&"cell_rooms")
+		var i := c.y * l.size.x + c.x
+		return g[i] if l.in_bounds(c) and i < g.size() else -1
+	var r := l.room_at(c)
+	return r.id if r != null else -1
+
+
+## Cases dont le point d'apparition (centre) tombe dans un rectangle de `rects` élargi de `margin` px.
+static func blocked_cells(rects: Array[Rect2], margin: float) -> Dictionary:
+	var out := {}
+	var ts := float(FloorLayout.TILE_SIZE)
+	for r: Rect2 in rects:
+		var g := r.grow(margin)
+		for y in range(floori(g.position.y / ts - 0.5), ceili(g.end.y / ts - 0.5) + 1):
+			for x in range(floori(g.position.x / ts - 0.5), ceili(g.end.x / ts - 0.5) + 1):
+				var c := Vector2i(x, y)
+				if not out.has(c) and g.has_point(FloorLayout.cell_to_world(c)):
+					out[c] = true
+	return out
+
+
+## Case praticable libre la plus proche de `from` (anneaux de 1 à 6 cases), de préférence dans la
+## salle `room_id` ; `from` si aucune.
+static func free_cell_near(l: FloorLayout, from: Vector2i, room_id: int, solid: Dictionary, busy: Dictionary) -> Vector2i:
+	for same_room: bool in [true, false]:
+		for r in range(1, 7):
+			var best := from
+			var best_d := INF
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) != r:
+						continue
+					var c := from + Vector2i(dx, dy)
+					var t := l.get_tile(c)
+					if solid.has(c) or busy.has(c) or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+						continue
+					if same_room and room_id >= 0 and cell_room_id(l, c) != room_id:
+						continue
+					var d := Vector2(dx, dy).length()
+					if d < best_d:
+						best_d = d
+						best = c
+			if best != from:
+				return best
+	return from
 
 
 func _collect_doors() -> void:
@@ -666,14 +797,26 @@ func get_player_cell() -> Vector2i:
 func _on_player_died() -> void:
 	if _raid_over:
 		return
+	if test_arena != null:
+		test_arena.on_player_died()
+		return
 	_cancel_extraction(false)
-	var delay := Balance.get_float("raid", "death_screen_delay", Balance.get_float("raid", "reload_delay", 2.0))
-	get_tree().create_timer(delay).timeout.connect(_finish_death)
+	# Séquence de mort (scripts/ui/death_overlay.gd) puis écran de fin, en temps réel (ralenti).
+	var delay := DeathOverlay.outro_time()
+	if delay <= 0.0:
+		_finish_death.call_deferred()
+		return
+	DeathOverlay.play(self, player)
+	get_tree().create_timer(delay, true, false, true).timeout.connect(_finish_death)
 
 
 ## Abandon volontaire (menu pause, confirmation déjà faite) = mort immédiate.
 func abandon_raid() -> void:
 	if _raid_over:
+		return
+	# Arène de test : sortie libre, rien n'est perdu.
+	if test_arena != null:
+		test_arena.exit_to_menu()
 		return
 	if NetHooks.active:
 		NetHooks.note_abandon()
@@ -707,11 +850,52 @@ func _finish_extraction() -> void:
 	if _raid_over or not is_inside_tree():
 		return
 	_raid_over = true
-	_cancel_extraction(false)
+	var zone := _active_zone
+	_active_zone = null   # garde la zone et le calque pour la séquence de sortie
+	_extraction_time = -1.0
 	# Exemplaires tenus (WeaponData) : leurs affixes rejoignent la réserve avec eux.
 	var summary: Dictionary = Profile.finish_extraction(get_carried_weapons(), GameState.raid_inventory)
 	_end_raid_state()
-	_show_end_screen(true, summary)
+	await _play_extraction_outro(zone)
+	if is_inside_tree():
+		_show_end_screen(true, summary)
+
+
+## Durée de la séquence de sortie avant l'écran de fin ([extraction] outro_time, 0 = aucune).
+static func extraction_outro_time() -> float:
+	return maxf(Balance.get_float("extraction", "outro_time", 1.4), 0.0)
+
+
+## Séquence de sortie : la zone s'illumine, le joueur est aspiré dans la colonne de lumière
+## (monte, rétrécit, s'efface), la caméra se rapproche, flash plein écran, puis écran de fin.
+func _play_extraction_outro(zone: ExtractionZone) -> void:
+	var d := extraction_outro_time()
+	if d <= 0.0 or not is_inside_tree():
+		_free_extraction_overlay()
+		return
+	if zone != null and is_instance_valid(zone):
+		zone.play_success(d)
+	if extraction_overlay == null:
+		extraction_overlay = ExtractionOverlay.new()
+		add_child(extraction_overlay)
+	extraction_overlay.play_success(d)
+	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	if is_instance_valid(player):
+		var vis: Node2D = player.get(&"visual") as Node2D if player.get(&"visual") is Node2D else player
+		tw.tween_property(vis, "position:y", vis.position.y - Balance.get_float("extraction", "outro_rise", 90.0), d * 0.75).set_delay(d * 0.15)
+		tw.tween_property(vis, "scale", vis.scale * 0.55, d * 0.75).set_delay(d * 0.15)
+		tw.tween_property(vis, "modulate", Color(2.0, 2.4, 2.0, 0.0), d * 0.75).set_delay(d * 0.15)
+	var cam := get_viewport().get_camera_2d()
+	if cam != null:
+		tw.tween_property(cam, "zoom", cam.zoom * Balance.get_float("extraction", "outro_zoom", 1.18), d).set_ease(Tween.EASE_OUT)
+	await get_tree().create_timer(d, true).timeout
+	_free_extraction_overlay()
+
+
+func _free_extraction_overlay() -> void:
+	if extraction_overlay != null and is_instance_valid(extraction_overlay):
+		extraction_overlay.queue_free()
+	extraction_overlay = null
 
 
 ## Exemplaires tenus (affixes compris) : API joueur get_carried_weapons, sinon les ids
@@ -763,6 +947,10 @@ func _show_end_screen(success: bool, summary: Dictionary) -> void:
 	# Niveau de raider (permanent) : même barème que le pass, × [raider] xp_ratio.
 	var pxp: Variant = summary["pass_xp"]
 	summary["raider"] = Profile.add_raider_xp(RaiderProgress.raid_xp(int((pxp as Dictionary).get("xp", 0)) if pxp is Dictionary else 0))
+	# Bilan du raid (écran de fin) : éliminations et durée comptées par le pass, étage, tueur.
+	var pd: Dictionary = pxp if pxp is Dictionary else {}
+	summary["stats"] = {"kills": int(pd.get("kills", 0)), "time": float(pd.get("time", 0.0)), "floor": current_floor,
+		"killer": String(player.get(&"last_hit_by")) if not success and is_instance_valid(player) and player.get(&"last_hit_by") != null else ""}
 	if NetHooks.active and NetHooks.defer_end_screen(success, summary):
 		return  # Coop : spectateur du coéquipier, écran de fin plus tard.
 	end_screen = RaidEndScreen.create(success, summary)
@@ -777,6 +965,8 @@ func is_raid_over() -> bool:
 
 func _process(delta: float) -> void:
 	_stairs_cooldown = maxf(_stairs_cooldown - delta, 0.0)
+	if not _raid_over:
+		raid_clock += delta
 	if not is_instance_valid(player) or layout == null:
 		return
 	if fog != null and not _transitioning:
@@ -785,6 +975,7 @@ func _process(delta: float) -> void:
 	if cell != _last_player_cell:
 		_last_player_cell = cell
 		_update_banner(false)
+	_update_zone_clocks()
 	_update_extraction(cell, delta)
 
 
@@ -794,13 +985,58 @@ static func extraction_channel_time() -> float:
 	return maxf(Balance.get_float("extraction", "channel_time", 5.0), 0.05)
 
 
+## Durée de canalisation de la zone en cours (zone d'urgence : × emergency_channel_mult).
+func current_channel_time() -> float:
+	var t := extraction_channel_time()
+	if _active_zone != null and is_instance_valid(_active_zone) and _active_zone.emergency:
+		t *= maxf(Balance.get_float("extraction", "emergency_channel_mult", 2.0), 1.0)
+	return t
+
+
+## Avance l'horloge des zones de l'étage : avertissement avant fermeture, fermeture (la
+## canalisation en cours s'interrompt), ouverture de la zone d'urgence.
+func _update_zone_clocks() -> void:
+	if _raid_over:
+		return
+	for z: ExtractionZone in extraction_zones:
+		if not is_instance_valid(z):
+			continue
+		var before := z.state
+		var st := z.update_clock(raid_clock)
+		if st == before:
+			continue
+		match st:
+			ExtractionZone.State.CLOSING:
+				if not _warned_zones.has(z):
+					_warned_zones[z] = true
+					show_toast("L'extraction %s ferme dans %d s" % [z.zone_name, ceili(z.remaining_at(raid_clock))])
+			ExtractionZone.State.CLOSED:
+				if z == _active_zone:
+					_cancel_extraction(false)
+					show_toast("Extraction %s fermée : canalisation interrompue" % z.zone_name)
+				else:
+					show_toast("Extraction %s fermée" % z.zone_name)
+			ExtractionZone.State.OPEN:
+				if before == ExtractionZone.State.DORMANT:
+					show_toast("Extraction d'urgence ouverte : %s" % z.zone_name)
+
+
+## Zones ouvertes de l'étage courant.
+func get_open_extraction_zones() -> Array[ExtractionZone]:
+	var out: Array[ExtractionZone] = []
+	for z: ExtractionZone in extraction_zones:
+		if is_instance_valid(z) and z.is_open():
+			out.append(z)
+	return out
+
+
 func is_extracting() -> bool:
 	return _extraction_time >= 0.0
 
 
 ## Progression de la canalisation (0..1), 0 si aucune.
 func get_extraction_progress() -> float:
-	return clampf(_extraction_time / extraction_channel_time(), 0.0, 1.0) if is_extracting() else 0.0
+	return clampf(_extraction_time / current_channel_time(), 0.0, 1.0) if is_extracting() else 0.0
 
 
 func _update_extraction(cell: Vector2i, delta: float) -> void:
@@ -808,7 +1044,10 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 		return
 	var alive := (not player.has_method("is_alive") or bool(player.call("is_alive"))) \
 		and not (NetHooks.active and NetHooks.is_downed(player))
-	var on_zone := alive and layout.extraction_cells.has(cell)
+	var zone := get_extraction_zone_at(cell) if alive else null
+	var on_zone := zone != null and zone.is_open()
+	if is_extracting() and _active_zone != null and zone != _active_zone:
+		on_zone = false
 	if not on_zone:
 		if is_extracting():
 			_cancel_extraction(alive)
@@ -817,8 +1056,10 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 		_start_extraction()
 	_extraction_time += delta
 	if _active_zone != null and is_instance_valid(_active_zone):
-		_active_zone.set_progress(get_extraction_progress(), extraction_channel_time() - _extraction_time)
-	if _extraction_time >= extraction_channel_time():
+		_active_zone.set_progress(get_extraction_progress(), current_channel_time() - _extraction_time)
+	if extraction_overlay != null:
+		extraction_overlay.set_progress(get_extraction_progress(), current_channel_time() - _extraction_time)
+	if _extraction_time >= current_channel_time():
 		_finish_extraction()
 
 
@@ -828,7 +1069,14 @@ func _start_extraction() -> void:
 	_active_zone = get_extraction_zone_at(get_player_cell())
 	if _active_zone != null:
 		_active_zone.show_progress(true)
-	var n := alert_enemies_near(player.global_position, Balance.get_float("extraction", "alert_radius", 520.0))
+	if extraction_overlay == null:
+		extraction_overlay = ExtractionOverlay.new()
+		add_child(extraction_overlay)
+	extraction_overlay.set_progress(0.0, current_channel_time())
+	var alert_r := Balance.get_float("extraction", "alert_radius", 520.0)
+	if _active_zone != null and _active_zone.emergency:
+		alert_r *= Balance.get_float("extraction", "emergency_alert_mult", 1.5)
+	var n := alert_enemies_near(player.global_position, alert_r)
 	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
 
 
@@ -851,6 +1099,7 @@ func _cancel_extraction(notify: bool) -> void:
 	if _active_zone != null and is_instance_valid(_active_zone):
 		_active_zone.show_progress(false)
 	_active_zone = null
+	_free_extraction_overlay()
 	if notify and was and not _raid_over:
 		show_toast("Extraction interrompue")
 
@@ -868,7 +1117,9 @@ func _build_extraction_marker() -> void:
 	m.name = "ExtractionZones"
 	m.z_index = 1
 	floor_root.add_child(m)
-	for z: ExtractionZone in ExtractionZone.create_all(layout.extraction_cells):
+	var zones: Array[ExtractionZone] = ExtractionZone.create_from_specs(layout.extraction_specs) 		if not layout.extraction_specs.is_empty() else ExtractionZone.create_all(layout.extraction_cells)
+	for z: ExtractionZone in zones:
+		z.update_clock(raid_clock)
 		m.add_child(z)
 		extraction_zones.append(z)
 	_extraction_marker = m
@@ -972,7 +1223,8 @@ func _on_debug_toggled(_enabled: bool) -> void:
 	pass
 
 
-## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée.
+## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée,
+## F7 = horloge des extractions + 60 s.
 func _unhandled_input(event: InputEvent) -> void:
 	if not GameState.debug_enabled or _raid_over:
 		return
@@ -984,6 +1236,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F6:
 				get_viewport().set_input_as_handled()
 				_finish_death()
+			KEY_F7:
+				# Avance l'horloge des extractions d'une minute (tester les fermetures).
+				get_viewport().set_input_as_handled()
+				raid_clock += 60.0
 
 
 # --- UI -------------------------------------------------------------------------
@@ -1166,19 +1422,19 @@ func _build_banner() -> void:
 	ps.bg_color = Color(MenuKit.NIGHT_DEEP, 0.72)
 	ps.content_margin_left = 20
 	ps.content_margin_right = 20
-	ps.content_margin_top = 6
-	ps.content_margin_bottom = 7
+	ps.content_margin_top = 4
+	ps.content_margin_bottom = 5
 	panel.add_theme_stylebox_override("panel", ps)
 	center.add_child(panel)
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 0)
 	panel.add_child(vbox)
-	_banner_title = _make_label(18, Color.WHITE, false)
+	_banner_title = _make_label(16, Color.WHITE, false)
 	_banner_title.label_settings.font = MenuKit.nunito(600)
 	_banner_title.uppercase = true
 	vbox.add_child(_banner_title)
-	_banner_room = _make_label(15, Color(1, 1, 1, 0.6), false)
+	_banner_room = _make_label(13, Color(1, 1, 1, 0.6), false)
 	_banner_room.label_settings.font = MenuKit.nunito(500)
 	vbox.add_child(_banner_room)
 
@@ -1227,6 +1483,8 @@ func get_toast_text() -> String:
 
 ## Carte jouée (null = aucune).
 var map_card: MapCard = null
+## Joueurs du raid (1 en solo, 2 en coop) : densité d'ennemis × [coop] enemy_density_<n>.
+var party_size: int = 1
 
 
 ## Au lancement, après la génération : bonus de butin (LootRoller) et densité d'ennemis
@@ -1234,11 +1492,13 @@ var map_card: MapCard = null
 func _apply_map_modifiers() -> void:
 	map_card = GameState.current_map as MapCard
 	LootRoller.reset_map_bonus()
-	if map_card == null:
-		return
-	LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
-	LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
-	var density: float = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	var density: float = 1.0
+	if map_card != null:
+		LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
+		LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
+		density = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	# Coop : plus d'ennemis à plusieurs (même tirage chez l'hôte et l'invité : seed + nombre de joueurs).
+	density *= CoopRules.party_mult("enemy_density", party_size)
 	if is_equal_approx(density, 1.0):
 		return
 	for idx: Variant in floors:
@@ -1449,6 +1709,17 @@ func _debug_weapons_text() -> String:
 	return ", ".join(parts) if not parts.is_empty() else "aucune"
 
 
+func _debug_zones_text() -> String:
+	var parts := PackedStringArray()
+	for z: ExtractionZone in extraction_zones:
+		if not is_instance_valid(z):
+			continue
+		var t := "∞" if z.closes_at == INF else ExtractionZone.format_time(z.closes_at)
+		parts.append("%s%s %s→%s [%s]" % ["!" if z.emergency else "", z.zone_name,
+			ExtractionZone.format_time(z.opens_at), t, ExtractionZone.State.keys()[z.state]])
+	return ", ".join(parts) if not parts.is_empty() else "—"
+
+
 ## Encart près du joueur : seed, étage, modules branchés, armes, extraction.
 func _draw_debug_info(canvas: Node2D) -> void:
 	if not is_instance_valid(player):
@@ -1463,8 +1734,9 @@ func _draw_debug_info(canvas: Node2D) -> void:
 			get_alive_turrets().size(), get_destroyed_turret_cells().size()],
 		"Armes : %s" % _debug_weapons_text(),
 		"Extraction : %s (%.1f s) · F5 extraire · F6 mourir" % [
-			("%.1f / %.1f s" % [_extraction_time, extraction_channel_time()]) if is_extracting() else "—",
-			extraction_channel_time()],
+			("%.1f / %.1f s" % [_extraction_time, current_channel_time()]) if is_extracting() else "—",
+			current_channel_time()],
+		"Horloge %s · zones : %s · F7 +60 s" % [ExtractionZone.format_time(raid_clock), _debug_zones_text()],
 	])
 	var font := ThemeDB.fallback_font
 	var origin := player.global_position + Vector2(-150, -150)

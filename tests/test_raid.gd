@@ -218,10 +218,19 @@ func test_extraction_canalisee_puis_ecran_de_fin() -> void:
 	_raid._update_extraction(_raid.layout.player_spawn, 0.1)
 	assert_false(_raid.is_extracting(), "interrompue hors zone")
 	assert_eq(_raid.get_toast_text(), "Extraction interrompue")
+	assert_null(_raid.extraction_overlay, "calque retiré à l'interruption")
 	# Canalisation complète.
 	_raid._update_extraction(cell, 0.01)
+	assert_not_null(_raid.extraction_overlay, "calque d'extraction (compte à rebours)")
+	assert_eq(_raid.extraction_overlay.get_count_text(), str(ceili(t - 0.01)), "compte à rebours")
+	# Séquence de sortie coupée ([extraction] outro_time = 0) : l'écran de fin met le jeu en
+	# pause, ce qui figerait l'attente de GUT ; la séquence elle-même est testée à part.
+	var saved: Variant = Balance.get_value("extraction", "outro_time", 1.4)
+	Balance._config.set_value("extraction", "outro_time", 0.0)
 	_raid._update_extraction(cell, t + 0.1)
+	Balance._config.set_value("extraction", "outro_time", saved)
 	assert_true(_raid.is_raid_over(), "raid terminé")
+	assert_null(_raid.extraction_overlay, "calque retiré à la fin")
 	assert_not_null(_raid.end_screen, "écran de fin affiché")
 	assert_true(_raid.end_screen.success)
 	assert_eq(_raid.end_screen.get_title_text(), "Extraction réussie")
@@ -320,7 +329,7 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 	assert_true(mm.visible)
 	assert_gt(mm.explored_count(), 0, "zones explorées autour du joueur")
 	assert_lt(mm.explored_count(), _raid.layout.size.x * _raid.layout.size.y, "le reste reste dans le brouillard")
-	assert_not_null(mm.bg_texture, "fond (image du paquet ou cases)")
+	assert_true(mm.bg_texture != null or mm.has_vector_plan(), "fond (image du paquet ou plan vectoriel)")
 	assert_lte(mm.size.x, 190.0)
 	# Rect dans la zone sûre et sans chevaucher la vie / le sac.
 	var safe := HudSafeArea.safe_rect(mm)
@@ -329,7 +338,9 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 		var far := FloorLayout.cell_to_world(_raid.layout.extraction_cells[0])
 		if far.distance_to(_raid.player.global_position) > 20.0 * FloorLayout.TILE_SIZE:
 			assert_true(mm.is_arrow_visible(), "flèche vers l'extraction hors cadre")
-			assert_string_ends_with(mm.get_arrow_text(), " m")
+			# Distance, puis temps restant de la zone (zones à durée de vie).
+			assert_true(RegEx.create_from_string("^\\d+ m( · \\d+:\\d\\d)?$").search(mm.get_arrow_text()) != null,
+				"flèche : distance · temps restant (%s)" % mm.get_arrow_text())
 	mm.open_full_map()
 	await wait_process_frames(2)
 	assert_true(mm.is_full_map_open())
@@ -339,9 +350,75 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 	assert_false(get_tree().paused, "pause levée")
 
 
-func test_minimap_rendu_des_cases() -> void:
-	var tex := MiniMap.tile_texture(_raid.layout, 2)
-	assert_eq(tex.get_size(), Vector2(_raid.layout.size * 2))
+func _touch(idx: int, pos: Vector2, pressed: bool) -> InputEventScreenTouch:
+	var t := InputEventScreenTouch.new()
+	t.index = idx
+	t.position = pos
+	t.pressed = pressed
+	return t
+
+
+func _drag(idx: int, pos: Vector2) -> InputEventScreenDrag:
+	var d := InputEventScreenDrag.new()
+	d.index = idx
+	d.position = pos
+	return d
+
+
+func test_carte_plein_ecran_zoom_gestes_et_icones() -> void:
+	var mm := _raid.minimap
+	mm.open_full_map()
+	await wait_process_frames(3)
+	var fm := mm.full_map
+	assert_true(fm.zoom.is_min_zoom(), "ouverture : carte entière")
+	assert_true(fm.zoom_out_button.disabled, "− grisé au zoom min")
+	var icon_px := fm.view.player_mark.scale.x * fm.view.content.scale.x
+	fm.zoom_step(2.0)
+	assert_almost_eq(fm.zoom.zoom_factor(), 2.0, 0.001)
+	assert_false(fm.zoom_out_button.disabled)
+	assert_almost_eq(fm.view.player_mark.scale.x * fm.view.content.scale.x, icon_px, 0.0001,
+		"icône du joueur : taille écran constante")
+	# Recentrer (bouton) : joueur au centre, ou au plus près si près d'un bord.
+	fm.recenter()
+	var p := fm.player_position()
+	var expect := MapZoom.new()
+	expect.setup(fm.zoom.view_size, fm.zoom.world, fm.zoom.max_factor)
+	expect.scale = fm.zoom.scale
+	expect.center_on(p)
+	assert_almost_eq(fm.zoom.offset.distance_to(expect.offset), 0.0, 0.01, "recentré sur le joueur")
+	# Pincement à deux doigts (écartement ×1,5) au centre de la vue.
+	var vr := fm.view.get_global_rect()
+	var c := vr.get_center()
+	var s0 := fm.zoom.scale
+	fm._input(_touch(0, c - Vector2(40, 0), true))
+	fm._input(_touch(1, c + Vector2(40, 0), true))
+	fm._input(_drag(1, c + Vector2(60, 0)))
+	fm._input(_drag(0, c - Vector2(60, 0)))
+	assert_almost_eq(fm.zoom.scale, minf(s0 * 1.5, fm.zoom.max_scale()), 0.0001, "pincement : zoom ×1,5")
+	fm._input(_touch(1, c + Vector2(60, 0), false))
+	fm._input(_touch(0, c - Vector2(60, 0), false))
+	# Double-tap : retour sur le joueur après un déplacement.
+	fm.zoom.pan(Vector2(300, 200))
+	fm._input(_touch(0, c, true))
+	fm._input(_touch(0, c, false))
+	fm._input(_touch(0, c + Vector2(3, 2), true))
+	fm._input(_touch(0, c + Vector2(3, 2), false))
+	expect.scale = fm.zoom.scale
+	expect.center_on(p)
+	assert_almost_eq(fm.zoom.offset.distance_to(expect.offset), 0.0, 0.01, "double-tap : recentré")
+	assert_true(mm.is_full_map_open(), "un toucher sur la carte ne la ferme plus")
+	# Toucher hors du panneau : ferme.
+	fm._input(_touch(0, Vector2(2, 2), true))
+	fm._input(_touch(0, Vector2(2, 2), false))
+	assert_false(mm.is_full_map_open(), "toucher sur le voile = fermer")
+	assert_false(get_tree().paused)
+
+
+func test_minimap_plan_vectoriel_des_cases() -> void:
+	var g := MinimapPlan.Geometry.build(_raid.layout)
+	assert_gt(g.floor_rects.size() + g.street_rects.size(), 0, "pièces et rues en aplats")
+	assert_gt(g.edges.size(), 0, "murs en traits")
+	assert_eq(g.edges.size() % 2, 0, "segments par paires")
 
 
 func test_zone_sure_simulee() -> void:
@@ -375,3 +452,37 @@ func test_popups_de_butin_au_dessus_de_la_minimap() -> void:
 	assert_false(mm.is_full_map_open(), "ouvrir l'inventaire ferme la carte plein écran")
 	lh.inventory_screen.close()
 	assert_false(get_tree().paused)
+
+
+# --- Caméra bornée à la carte ------------------------------------------------------------
+
+func test_camera_bornee_aux_limites_de_l_etage() -> void:
+	var cam := _raid.player.get_node_or_null("Camera2D") as Camera2D
+	assert_not_null(cam)
+	var r := _raid.camera_bounds()
+	var ts := float(FloorLayout.TILE_SIZE)
+	assert_eq(cam.limit_left, int(r.position.x))
+	assert_eq(cam.limit_top, int(r.position.y))
+	assert_eq(cam.limit_right, int(r.end.x))
+	assert_eq(cam.limit_bottom, int(r.end.y))
+	assert_almost_eq(r.size.x, float(_raid.layout.size.x) * ts + 2.0 * Balance.get_float("camera", "edge_margin", 0.0), 0.5,
+		"largeur de l'étage")
+
+
+func test_sequence_de_sortie_avant_l_ecran_de_fin() -> void:
+	if _raid.layout.extraction_cells.is_empty():
+		pending("Pas de case d'extraction sur cet étage")
+		return
+	assert_gt(Raid.extraction_outro_time(), 0.0, "séquence de sortie réglée")
+	var cell: Vector2i = _raid.layout.extraction_cells[0]
+	_raid.place_player(cell)
+	_raid._update_extraction(cell, 0.01)
+	var zone := _raid.get_extraction_zone_at(cell)
+	assert_not_null(zone)
+	_raid._update_extraction(cell, Raid.extraction_channel_time() * 0.5)
+	assert_gt(zone.get_beam_alpha(), 0.0, "colonne de lumière pendant la canalisation")
+	_raid._update_extraction(cell, Raid.extraction_channel_time())
+	assert_true(_raid.is_raid_over())
+	assert_null(_raid.end_screen, "pas encore d'écran de fin : séquence de sortie en cours")
+	assert_not_null(_raid.extraction_overlay, "flash et « EXTRAIT » à l'écran")
+	assert_eq(_raid.extraction_overlay.get_count_text(), "EXTRAIT")

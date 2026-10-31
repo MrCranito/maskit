@@ -44,6 +44,32 @@ var _last_impact_msec: int = 0
 var _number_merge: Dictionary = {}
 const NUMBER_MERGE_MSEC := 140
 
+## Matières d'impact (balance.cfg [hit_fx]) : gerbe, couleurs et éclats selon la cible.
+const MAT_ORGANIC := &"organic"
+const MAT_METAL := &"metal"
+const MAT_HARD := &"hard"
+const MAT_ALIEN := &"alien"
+const MAT_ICE := &"ice"
+const MAT_ETHEREAL := &"ethereal"
+
+# Réglages des impacts ([hit_fx]), lus une fois par scène.
+var hit_marker: bool = true
+var hit_marker_size: float = 10.0
+var hit_marker_life: float = 0.16
+var hit_marker_color: Color = Color(1, 1, 1, 0.95)
+var hit_marker_kill_color: Color = Color(1.0, 0.3, 0.25, 1.0)
+var hit_flash_size: float = 20.0
+var kick_per_recoil: float = 0.7
+var kick_max_px: float = 6.0
+var wall_mark_life: float = 3.0
+var wall_mark_size: float = 2.2
+var _palettes: Dictionary = {}
+## Matière par kind d'ennemi (cache, balance.cfg [hit_fx]).
+static var _material_cache: Dictionary = {}
+static var _material_cfg_loaded: bool = false
+static var _material_by_sfx: Dictionary = {}
+static var _material_by_kind: Dictionary = {}
+
 
 static func get_or_create(tree: SceneTree) -> CombatFx:
 	if is_instance_valid(_instance) and _instance.is_inside_tree() and not _instance.is_queued_for_deletion() \
@@ -108,6 +134,65 @@ func _load_balance() -> void:
 	explosion_min_frac = Balance.get_float("projectile_fx", "explosion_min_damage_frac", 0.25)
 	explosion_self_mult = Balance.get_float("projectile_fx", "explosion_self_damage_mult", 0.25)
 	low_gravity_fx_mult = Balance.get_float("low_gravity", "fx_gravity_mult", 0.15)
+	hit_marker = bool(Balance.get_value("hit_fx", "hit_marker", true))
+	hit_marker_size = Balance.get_float("hit_fx", "hit_marker_size", 10.0)
+	hit_marker_life = Balance.get_float("hit_fx", "hit_marker_life", 0.16)
+	hit_marker_color = Balance.get_value("hit_fx", "hit_marker_color", hit_marker_color)
+	hit_marker_kill_color = Balance.get_value("hit_fx", "hit_marker_kill_color", hit_marker_kill_color)
+	hit_flash_size = Balance.get_float("hit_fx", "hit_flash_size", 20.0)
+	kick_per_recoil = Balance.get_float("hit_fx", "kick_per_recoil", 0.7)
+	kick_max_px = Balance.get_float("hit_fx", "kick_max_px", 6.0)
+	wall_mark_life = Balance.get_float("hit_fx", "wall_mark_life", 3.0)
+	wall_mark_size = Balance.get_float("hit_fx", "wall_mark_size", 2.2)
+	_palettes.clear()
+	for m: StringName in [MAT_ORGANIC, MAT_METAL, MAT_HARD, MAT_ALIEN, MAT_ICE, MAT_ETHEREAL]:
+		var c: Variant = Balance.get_value("hit_fx", "%s_colors" % m, null)
+		_palettes[m] = c if c is Array and (c as Array).size() >= 2 else [Color(0.75, 0.12, 0.1), Color(1.0, 0.86, 0.6)]
+
+
+## Matière d'impact de `target` : [hit_fx] kind_material (kind -> matière), sinon d'après le son de
+## blessure (sfx_material : metal_impact -> metal, hit_heavy -> hard...), sinon organique. Les
+## tourelles sont en métal.
+static func material_of(target: Object) -> StringName:
+	if target == null:
+		return MAT_ORGANIC
+	if target is Turret or target is EnemyHazard.TurretBody:
+		return MAT_METAL
+	var d: Variant = target.get("data")
+	if not (d is EnemyData):
+		return MAT_ORGANIC
+	var ed := d as EnemyData
+	if _material_cache.has(ed.kind):
+		return _material_cache[ed.kind]
+	_load_material_cfg()
+	var m: StringName = MAT_ORGANIC
+	if _material_by_kind.has(String(ed.kind)):
+		m = StringName(str(_material_by_kind[String(ed.kind)]))
+	elif _material_by_sfx.has(String(ed.get_sfx_hurt())):
+		m = StringName(str(_material_by_sfx[String(ed.get_sfx_hurt())]))
+	_material_cache[ed.kind] = m
+	return m
+
+
+static func _load_material_cfg() -> void:
+	if _material_cfg_loaded:
+		return
+	_material_cfg_loaded = true
+	var by_sfx: Variant = Balance.get_value("hit_fx", "sfx_material", {})
+	var by_kind: Variant = Balance.get_value("hit_fx", "kind_material", {})
+	_material_by_sfx = by_sfx if by_sfx is Dictionary else {}
+	_material_by_kind = by_kind if by_kind is Dictionary else {}
+
+
+## Vide le cache des matières (tests, rechargement de balance.cfg).
+static func reset_material_cache() -> void:
+	_material_cache.clear()
+	_material_cfg_loaded = false
+
+
+## Amplitude (px) du léger à-coup visuel d'un ennemi touché, d'après le recul de l'arme.
+func hit_kick_px(recoil_px: float) -> float:
+	return clampf(recoil_px * kick_per_recoil, 0.0, kick_max_px)
 
 
 ## Effets réduits (économie d'énergie ou réglage forcé).
@@ -133,20 +218,63 @@ func impact_wall(pos: Vector2, dir: Vector2, color: Color) -> void:
 		air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.12, 0.24), randf_range(1.2, 2.0), 1.0,
 			Color(1.0, 0.82, 0.4).lerp(color, 0.25))
 	ground.emit(FxLayer.Kind.DUST, pos + normal * 4.0, normal * 30.0, 0.45, 4.0, 9.0, Color(0.95, 0.9, 0.8, 0.5))
+	if wall_mark_life > 0.0:
+		# Petit impact de balle qui reste quelques secondes contre le mur.
+		ground.emit(FxLayer.Kind.SCORCH, pos, Vector2.ZERO, wall_mark_life, wall_mark_size, wall_mark_size,
+			Color(0.06, 0.05, 0.05, 0.75))
 	_play_impact_sfx(&"bullet_impact", pos)
 
 
-## Gerbe sur ennemi (dans le sens du tir) + numéro de dégâts flottant (cumulé par cible
-## `target_id` sur une courte fenêtre : une salve de plombs = un seul chiffre).
-func impact_enemy(pos: Vector2, dir: Vector2, amount: float, show_number: bool = true, target_id: int = 0) -> void:
-	air.emit(FxLayer.Kind.FLASH, pos, Vector2.ZERO, 0.07, 6.0, 11.0, Color(1.0, 0.95, 0.85, 0.85))
-	for i: int in count(enemy_spray_count):
-		var v: Vector2 = dir.rotated(randf_range(-0.7, 0.7)) * randf_range(90.0, 240.0)
-		if i % 2 == 0:
-			air.emit(FxLayer.Kind.DROPLET, pos, v * 0.6, randf_range(0.3, 0.5), randf_range(1.6, 2.6), 1.2,
-				Color(0.75, 0.12, 0.1, 0.95), randf_range(4.0, 14.0), randf_range(60.0, 160.0))
-		else:
-			air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.1, 0.2), 1.8, 1.0, Color(1.0, 0.86, 0.6))
+## Impact sur ennemi au point de contact `pos` : éclair blanc, gerbe à la matière de la cible
+## (étincelles et éclats pour le métal, giclée pour l'organique, poussière pour la pierre...),
+## hit-marker (rouge si le coup tue) et numéro de dégâts flottant (cumulé par cible `target_id`
+## sur une courte fenêtre : une salve de plombs = un seul chiffre).
+func impact_enemy(pos: Vector2, dir: Vector2, amount: float, show_number: bool = true, target_id: int = 0,
+		material: StringName = MAT_ORGANIC, killed: bool = false) -> void:
+	var pal: Array = _palettes.get(material, _palettes.get(MAT_ORGANIC, [Color.RED, Color.WHITE]))
+	var main: Color = pal[0]
+	var accent: Color = pal[1]
+	air.emit(FxLayer.Kind.FLASH, pos, Vector2.ZERO, 0.07, hit_flash_size * 0.45, hit_flash_size,
+		Color(1.0, 0.97, 0.9, 0.9))
+	var n: int = count(enemy_spray_count)
+	match material:
+		MAT_METAL:
+			# Gerbe d'étincelles renvoyée vers le tireur + éclats sombres qui retombent.
+			for i: int in n + 2:
+				var v: Vector2 = (-dir).rotated(randf_range(-1.3, 1.3)) * randf_range(160.0, 380.0)
+				air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.1, 0.22), randf_range(1.4, 2.2), 1.0,
+					accent if i % 3 != 0 else Color(1, 1, 1, 0.95))
+			for i: int in count(2, 1):
+				var v2: Vector2 = dir.rotated(randf_range(-1.0, 1.0)) * randf_range(60.0, 150.0)
+				air.emit(FxLayer.Kind.DEBRIS, pos, v2, randf_range(0.35, 0.55), randf_range(2.0, 3.0), 2.0,
+					main, randf_range(6.0, 16.0), randf_range(80.0, 170.0), randf() * TAU, randf_range(-14.0, 14.0))
+		MAT_HARD, MAT_ICE:
+			# Éclats + petit nuage de poussière (pierre, os, carapace, glace).
+			for i: int in n:
+				var v: Vector2 = (-dir).rotated(randf_range(-1.2, 1.2)) * randf_range(90.0, 220.0)
+				air.emit(FxLayer.Kind.DEBRIS, pos, v, randf_range(0.3, 0.5), randf_range(1.6, 2.8), 1.6,
+					main if i % 2 != 0 else accent, randf_range(6.0, 16.0), randf_range(60.0, 150.0),
+					randf() * TAU, randf_range(-12.0, 12.0))
+			air.emit(FxLayer.Kind.DUST, pos, -dir * 25.0, 0.4, 4.0, 11.0, Color(main, 0.45))
+		MAT_ETHEREAL:
+			for i: int in n:
+				var v: Vector2 = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(50.0, 150.0)
+				air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.18, 0.32), randf_range(1.6, 2.6), 1.0,
+					main if i % 2 != 0 else accent)
+			air.emit(FxLayer.Kind.RING, pos, Vector2.ZERO, 0.18, 4.0, 16.0, Color(main, 0.7), 0.0, 0.0, 2.0)
+		_:
+			# Organique / alien : giclée dans le sens du tir (sortie), quelques étincelles.
+			for i: int in n:
+				var v: Vector2 = dir.rotated(randf_range(-0.7, 0.7)) * randf_range(90.0, 240.0)
+				if i % 3 != 2:
+					air.emit(FxLayer.Kind.DROPLET, pos, v * 0.6, randf_range(0.3, 0.5), randf_range(1.6, 2.8), 1.2,
+						main, randf_range(4.0, 14.0), randf_range(60.0, 160.0))
+				else:
+					air.emit(FxLayer.Kind.SPARK, pos, v, randf_range(0.1, 0.2), 1.8, 1.0, accent)
+	if hit_marker:
+		air.emit(FxLayer.Kind.HITMARK, pos, Vector2.ZERO, hit_marker_life * (1.6 if killed else 1.0),
+			hit_marker_size, hit_marker_size * (1.7 if killed else 1.3),
+			hit_marker_kill_color if killed else hit_marker_color)
 	if show_number:
 		damage_number(pos + Vector2(0.0, -30.0), amount, false, target_id)
 

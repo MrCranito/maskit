@@ -40,6 +40,14 @@ func _ready() -> void:
 
 
 func _on_raid_started(seed_value: int) -> void:
+	begin_raid(seed_value)
+
+
+## Oublie tout l'état du raid précédent (conteneurs, cadavres, butin au sol). Appelé par
+## Raid._ready AVANT la construction du premier étage : sinon restore_floor recrée les cadavres
+## et le butin au sol de l'étage 0 de la partie précédente (autre carte comprise) et les
+## conteneurs aux mêmes clefs apparaissent déjà vidés. Rappelé (sans effet) par raid_started.
+func begin_raid(seed_value: int) -> void:
 	container_states.clear()
 	corpse_records.clear()
 	ground_records.clear()

@@ -1,8 +1,9 @@
 """Post-étalonnage du rendu de la Station Kagami (avant compose.py), sans re-rendu Blender.
 
 Usage : python3 tools/prerender/ss_grade.py <render_dir>
-Applique à render_dir/full.png ET à chaque b<id>_in.png (patchs d'intérieur, décalés de leur
-position dans l'image : même résultat pixel pour pixel, raccords invisibles) :
+Applique à render_dir/full.png ET à chaque b<id>_in.png et g<id>.png (patchs d'intérieur et de sol
+seul, grounds.json), décalés de leur position dans l'image : même résultat pixel pour pixel,
+raccords invisibles :
   - appariement de la luminance sur les quantiles de la colonne « Station spatiale » de la planche
     (docs/reference/cartes.png) : le rendu brut est trop plat (tons moyens tassés) ;
   - virage des tons : ombres bleu nuit, tons moyens gris neutres légèrement chauds (sols de la
@@ -197,4 +198,11 @@ if __name__ == "__main__":
         n = "b%d_in.png" % b["id"]
         if os.path.exists(os.path.join(SRC, n)):
             save(process(n, b["px"][0], b["px"][1]), n)
+    # patchs « sol seul » (passe gnd, ground_pass.py) : même décalage que dans full.png
+    _gp = os.path.join(SRC, "grounds.json")
+    if os.path.exists(_gp):
+        for e in json.load(open(_gp)):
+            n = "g%d.png" % e["id"]
+            if os.path.exists(os.path.join(SRC, n)):
+                save(process(n, e["px"][0], e["px"][1]), n)
     print("DONE grade")

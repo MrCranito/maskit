@@ -84,7 +84,34 @@ static func item_icon(item: ItemData) -> Texture2D:
 		return null
 	if item.is_weapon() and item.icon == null:
 		return weapon_icon(WeaponCatalog.get_weapon(item.weapon_id))
-	return icon(item.icon)
+	var art := item_art(item)
+	return art if art != null else icon(item.icon)
+
+
+## Dossier des icônes peintes des objets (art/blender/build_item_icons.py) : <id>.png.
+const ITEM_ART_DIR := "res://assets/ui/items/"
+
+
+## Icône peinte de l'objet (couleurs définitives, pas de teinte), null si elle n'existe pas.
+static func item_art(item: ItemData) -> Texture2D:
+	if item == null:
+		return null
+	if _art_cache.has(item.id):
+		return _art_cache[item.id]
+	var p := ITEM_ART_DIR + String(item.id) + ".png"
+	var tex: Texture2D = load_icon(p) if ResourceLoader.exists(p) else null
+	_art_cache[item.id] = tex
+	return tex
+
+
+static var _art_cache: Dictionary = {}
+
+
+## Teinte à appliquer à l'icône : blanc pour une icône peinte, sinon la teinte de l'objet (SVG blanc).
+static func item_tint(item: ItemData) -> Color:
+	if item == null:
+		return Color.WHITE
+	return Color.WHITE if item_art(item) != null else item.tint
 
 
 static func weapon_icon(w: WeaponData) -> Texture2D:

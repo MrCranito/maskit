@@ -80,7 +80,20 @@ func can_use(dist: float, sees: bool) -> bool:
 	var ratio := e.hp / maxf(e.max_hp, 0.01)
 	if ratio > f("hp_below") or ratio < f("hp_above"):
 		return false
+	# Un renfort n'appelle pas de renforts : sinon les appels en chaîne (loup qui siffle un
+	# loup qui siffle…) font croître la population sans limite. [enemy_skills] reinforcements_can_summon.
+	if summons() and e.is_reinforcement() and not reinforcements_can_summon():
+		return false
 	return can_use_extra(dist, sees)
+
+
+## Vrai pour une compétence qui fait apparaître des ennemis (sifflet, appel, invocation…).
+func summons() -> bool:
+	return false
+
+
+static func reinforcements_can_summon() -> bool:
+	return bool(Balance.get_value("enemy_skills", "reinforcements_can_summon", false))
 
 
 ## Conditions propres (à surcharger).

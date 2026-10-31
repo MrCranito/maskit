@@ -151,3 +151,41 @@ func test_panneau_dev_bascule() -> void:
 	assert_false(p.badge.visible)
 	DevMode.build_check = func() -> bool: return false
 	assert_null(DevPanel.attach(self), "aucun panneau hors build de développement")
+
+
+## Téléphone (pas de F3/F4) : interrupteur dans Options, seulement dans une version de test.
+func test_interrupteur_dans_les_options() -> void:
+	DevMode.build_check = func() -> bool: return true
+	var p := OptionsPanel.new()
+	add_child_autofree(p)
+	await wait_process_frames(2)
+	assert_not_null(p.dev_toggle, "interrupteur présent en version de test")
+	var before := DevMode.is_unlimited()
+	p.dev_toggle.button_pressed = not before
+	assert_eq(DevMode.is_unlimited(), not before, "bascule le mode")
+	DevMode.set_unlimited(before)
+	p.queue_free()
+	DevMode.build_check = func() -> bool: return false
+	var q := OptionsPanel.new()
+	add_child_autofree(q)
+	await wait_process_frames(2)
+	assert_null(q.dev_toggle, "absent d'une version publiée")
+	DevMode.build_check = Callable()
+
+
+
+## chore/apk-release : l'APK de test est exporté en release (GDScript plus rapide) avec le feature
+## tag « dev_apk », ajouté par android.yml seulement : le mode développeur y reste disponible.
+func test_apk_de_test_release_garde_le_mode_dev() -> void:
+	var src := FileAccess.get_file_as_string("res://scripts/core/dev_mode.gd")
+	assert_true(src.contains("OS.has_feature(\"dev_apk\")"), "feature tag dev_apk accepté par is_available()")
+	var wf := FileAccess.get_file_as_string("res://.github/workflows/android.yml")
+	if wf.is_empty():
+		pass_test("workflow non lisible depuis res:// (export)")
+		return
+	assert_true(wf.contains("--export-release \"Android\""), "APK de test exporté en release")
+	assert_true(wf.contains("custom_features=\"dev_apk\""), "feature tag ajouté au préréglage pendant le build")
+	var rel := FileAccess.get_file_as_string("res://.github/workflows/export.yml")
+	assert_false(rel.contains("dev_apk"), "jamais dans les exports de version")
+	var presets := FileAccess.get_file_as_string("res://export_presets.cfg")
+	assert_false(presets.contains("dev_apk"), "préréglages versionnés sans dev_apk")

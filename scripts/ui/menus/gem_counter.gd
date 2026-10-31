@@ -41,13 +41,13 @@ func _on_gems(g: int, animate: bool = true) -> void:
 		return
 	var old: int = _shown
 	_shown = g
-	value_label.text = DevMode.SYMBOL if DevMode.is_unlimited() else str(g)
+	MenuKit.set_amount(value_label, g)
 	if animate and old >= 0 and old != g and is_inside_tree():
 		pivot_offset = size * 0.5
 		var tw := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tw.tween_property(self, "scale", Vector2.ONE, 0.3).from(Vector2(1.15, 1.15))
 		value_label.add_theme_color_override("font_color", MenuKit.GEM if g > old else MenuKit.BAD)
-		tw.tween_callback(func() -> void: value_label.add_theme_color_override("font_color", MenuKit.TEXT))
+		tw.tween_callback(func() -> void: MenuKit.set_amount(value_label, _shown))
 
 
 func _gui_input(event: InputEvent) -> void:

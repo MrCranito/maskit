@@ -9,7 +9,10 @@ extends Node2D
 ##     assombri et teinté bleu nuit ; une zone jamais vue est quasi illisible ;
 ##     brume légère par-dessus (fog_darkened.gdshader, lit l'écran déjà dessiné) ;
 ##   mist (option B, « brume stylisée ») : brume bleu nuit → violet moins opaque,
-##     dégradé depuis le bord de vision, grain fin (fog_mist.gdshader).
+##     dégradé depuis le bord de vision, grain fin (fog_mist.gdshader) ;
+##   natural (« naturel ») : décor nuit lisible comme A, mais bord large et irrégulier,
+##     pénombre qui décroît au-delà du bord, lumière qui faiblit avec la distance
+##     (fog_natural.gdshader).
 ## Dans les deux cas, ennemis et conteneurs hors vue sont cachés (groupe fog_hideable).
 ##
 ## Logique (inchangée, sert à l'IA / la sauvegarde / les tests) : grille par case
@@ -41,12 +44,21 @@ extends Node2D
 
 const STYLE_DARKENED := &"darkened"
 const STYLE_MIST := &"mist"
+const STYLE_NATURAL := &"natural"
 const SHADERS := {
 	STYLE_DARKENED: preload("res://assets/shaders/fog_darkened.gdshader"),
 	STYLE_MIST: preload("res://assets/shaders/fog_mist.gdshader"),
+	STYLE_NATURAL: preload("res://assets/shaders/fog_natural.gdshader"),
+}
+## Seconde passe d'un style (même rectangle, nœud enfant FogAddPass, dessinée juste après) : le
+## style naturel s'écrit décor × F (passe principale, mélange multiplicatif) + B (passe additive),
+## sans lire l'écran (perf/brouillard-sans-copie, voir fog_natural_common.gdshaderinc).
+const ADD_PASS_SHADERS := {
+	STYLE_NATURAL: preload("res://assets/shaders/fog_natural_add.gdshader"),
 }
 ## Clés de [fog_<style>] lues par le script (les autres sont des uniformes du shader).
-const SCRIPT_STYLE_KEYS: Array[String] = ["halo_px"]
+## edge_feather_px : remplace [fog] edge_feather_px pour ce style s'il est présent.
+const SCRIPT_STYLE_KEYS: Array[String] = ["halo_px", "edge_feather_px"]
 const NOISE_PATH := "res://assets/textures/fog/fog_noise.png"
 const GROUP_HIDEABLE := &"fog_hideable"
 const GROUP_PLAYER := &"player"
@@ -131,6 +143,9 @@ var _wall_rects: Array[Rect2] = []  ## Rangées de murs / portes fermées en vue
 
 # Rendu.
 var _material: ShaderMaterial = null
+## Seconde passe (additive) du style courant, null si le style n'en a pas (ADD_PASS_SHADERS).
+var add_pass: FogAddPass = null
+var _add_material: ShaderMaterial = null
 var _mask_vp: SubViewport = null
 var _mask_drawer: MaskDrawer = null
 var _explored_image: Image = null
@@ -162,6 +177,15 @@ var _new_count: int = 0
 var _cast_ms: float = 0.0
 var _stamp: PackedInt32Array = PackedInt32Array()  ## Génération du dernier marquage
 var _gen: int = 0
+
+
+## Seconde passe du brouillard : le même rectangle que FogOfWar, avec son propre matériau.
+class FogAddPass extends Node2D:
+	var fog: FogOfWar = null
+
+	func _draw() -> void:
+		if fog != null:
+			fog._draw_fog_rect(self)
 
 
 ## Dessine le polygone de visibilité (+ toits vus) dans le SubViewport du masque.
@@ -248,7 +272,7 @@ func update_from(world_pos: Vector2) -> void:
 		return
 	_player_pos = world_pos
 	if _material != null:
-		_material.set_shader_parameter(&"player_pos", world_pos)
+		_set_param(&"player_pos", world_pos)
 	var cell := FloorLayout.world_to_cell(world_pos)
 	var forced := _dirty or not _has_origin
 	if cell != _last_cell or _dirty:
@@ -315,7 +339,7 @@ func reveal_all(on: bool) -> void:
 		return
 	_reveal_all = on
 	if _material != null:
-		_material.set_shader_parameter(&"reveal", 1.0 if on else 0.0)
+		_set_param(&"reveal", 1.0 if on else 0.0)
 	_hide_left = 0.0
 
 
@@ -326,6 +350,13 @@ func is_revealing_all() -> bool:
 ## Mémoire d'exploration de l'étage (1 octet par case : 1 = explorée).
 func get_state() -> PackedByteArray:
 	return _explored.duplicate()
+
+
+## Texture de la mémoire d'exploration (1 texel par case, L8 : 255 = explorée). Mise à jour ici
+## seulement quand des cases sont découvertes ; la mini-carte la lit telle quelle (pas de copie).
+## Nulle tant que le rendu n'est pas prêt.
+func get_explored_texture() -> Texture2D:
+	return _explored_tex
 
 
 func set_state(state: PackedByteArray) -> void:
@@ -376,6 +407,7 @@ func _load_balance() -> void:
 		st = STYLE_DARKENED
 	fog_style = st
 	halo_px = maxf(float(_style_cfg("halo_px", 0.0)), 0.0)
+	edge_feather_px = maxf(float(_style_cfg("edge_feather_px", edge_feather_px)), 0.0)
 
 
 ## Section des réglages de rendu du style courant.
@@ -390,20 +422,27 @@ func _style_cfg(key: String, default: Variant) -> Variant:
 	return bal.call(&"get_value", style_section(), key, default)
 
 
+## Uniforme transmis à la passe principale et à la seconde passe (si le style en a une).
+func _set_param(param: StringName, value: Variant) -> void:
+	if _material != null:
+		_material.set_shader_parameter(param, value)
+	if _add_material != null:
+		_add_material.set_shader_parameter(param, value)
+
+
 func _apply_shader_params() -> void:
 	if _material == null:
 		return
-	var m := _material
-	m.set_shader_parameter(&"map_size_px", Vector2(_w, _h) * TS)
-	m.set_shader_parameter(&"view_radius_px", float(view_radius) * TS)
+	_set_param(&"map_size_px", Vector2(_w, _h) * TS)
+	_set_param(&"view_radius_px", float(view_radius) * TS)
 	# Uniformes du style : toutes les clés de [fog_<style>] (sauf celles du script).
 	var bal: Node = _autoload(&"Balance")
 	if bal != null and bal.has_method(&"get_section_keys"):
 		for key: String in bal.call(&"get_section_keys", style_section()):
 			if not SCRIPT_STYLE_KEYS.has(key):
-				m.set_shader_parameter(StringName(key), bal.call(&"get_value", style_section(), key))
-	m.set_shader_parameter(&"reveal", 1.0 if _reveal_all else 0.0)
-	m.set_shader_parameter(&"player_pos", _player_pos)
+				_set_param(StringName(key), bal.call(&"get_value", style_section(), key))
+	_set_param(&"reveal", 1.0 if _reveal_all else 0.0)
+	_set_param(&"player_pos", _player_pos)
 
 
 func _on_debug_toggled(enabled: bool) -> void:
@@ -737,6 +776,7 @@ func _build_render() -> void:
 		_material = ShaderMaterial.new()
 		material = _material
 	_material.shader = SHADERS[fog_style]
+	_build_add_pass()
 	if _noise_tex == null and ResourceLoader.exists(NOISE_PATH):
 		_noise_tex = load(NOISE_PATH) as Texture2D
 	# Masque de visibilité : SubViewport couvrant toute la carte, basse résolution.
@@ -764,11 +804,31 @@ func _build_render() -> void:
 	_mask_drawer.scale = Vector2(float(vp_size.x) / map_px.x, float(vp_size.y) / map_px.y)
 	# Mémoire d'exploration : 1 texel par case (filtre linéaire = bords doux).
 	_rebuild_explored_image()
-	_material.set_shader_parameter(&"vis_mask", _mask_vp.get_texture())
-	_material.set_shader_parameter(&"explored_map", _explored_tex)
-	_material.set_shader_parameter(&"mist_noise", _noise_tex)
+	_set_param(&"vis_mask", _mask_vp.get_texture())
+	_set_param(&"explored_map", _explored_tex)
+	_set_param(&"mist_noise", _noise_tex)
 	_apply_shader_params()
 	_request_mask_redraw()
+
+
+## Seconde passe du style courant (créée, ou retirée si le style n'en a pas).
+func _build_add_pass() -> void:
+	if not ADD_PASS_SHADERS.has(fog_style):
+		if add_pass != null:
+			add_pass.queue_free()
+		add_pass = null
+		_add_material = null
+		return
+	if add_pass == null:
+		add_pass = FogAddPass.new()
+		add_pass.name = "FogAddPass"
+		add_pass.fog = self
+		add_child(add_pass)
+	if _add_material == null:
+		_add_material = ShaderMaterial.new()
+	_add_material.shader = ADD_PASS_SHADERS[fog_style]
+	add_pass.material = _add_material
+	add_pass.queue_redraw()
 
 
 func _rebuild_explored_image() -> void:
@@ -781,7 +841,7 @@ func _rebuild_explored_image() -> void:
 	if _explored_tex == null or Vector2i(_explored_tex.get_size()) != Vector2i(_w, _h):
 		_explored_tex = ImageTexture.create_from_image(_explored_image)
 		if _material != null:
-			_material.set_shader_parameter(&"explored_map", _explored_tex)
+			_set_param(&"explored_map", _explored_tex)
 	else:
 		_explored_tex.update(_explored_image)
 	_explored_dirty = false
@@ -796,10 +856,15 @@ func _request_mask_redraw() -> void:
 
 ## Rectangle du brouillard : la carte + une grande marge (tout l'écran est couvert).
 func _draw() -> void:
+	_draw_fog_rect(self)
+
+
+## Rectangle du brouillard (toute la carte + marge), dessiné par FogOfWar et par sa seconde passe.
+func _draw_fog_rect(ci: CanvasItem) -> void:
 	if layout == null:
 		return
 	var r := Rect2(Vector2.ZERO, Vector2(_w, _h) * TS).grow(OUTER_MARGIN)
-	draw_rect(r, Color.WHITE)
+	ci.draw_rect(r, Color.WHITE)
 
 
 ## Appelé par MaskDrawer._draw : polygone en éventail, plusieurs passes décalées

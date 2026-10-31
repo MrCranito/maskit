@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cf1nc500nuw2h"
-path.bptc="res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.bptc.ctex"
-path.astc="res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.astc.ctex"
+path="res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/fw_marauder/fw_marauder_atlas.png"
-dest_files=["res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.bptc.ctex", "res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.astc.ctex"]
+dest_files=["res://.godot/imported/fw_marauder_atlas.png-bc167cab6b2a674015c3b012bcd4023e.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

@@ -22,6 +22,7 @@ var _feed: VBoxContainer = null
 
 func _ready() -> void:
 	name = "InventoryHud"
+	add_to_group(&"inventory_hud")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	set_process(false)
@@ -82,7 +83,7 @@ func _place_safe() -> void:
 	bag_button.offset_bottom = m.y + InventoryBagButton.SIZE.y
 	_feed.offset_left = m.x
 	_feed.offset_right = m.x + 360.0
-	_feed.offset_top = m.y + 68.0
+	_feed.offset_top = m.y + 54.0
 	_feed.offset_bottom = _feed.offset_top + FEED_MAX * 44.0
 	align_pause_button()
 
@@ -122,6 +123,10 @@ func _on_inventory_toggled(open: bool) -> void:
 	if open:
 		loot_window.close()
 	action_button.set_suppressed(open)
+	# Le bouton pause (frère, dessiné au-dessus) chevaucherait l'en-tête de l'inventaire.
+	var pb := get_parent().get_node_or_null(^"PauseMenu/PauseButton") as Control if get_parent() != null else null
+	if pb != null:
+		pb.visible = not open
 
 
 func _on_item_picked_up(item: Resource, count: int) -> void:
@@ -178,7 +183,7 @@ func _push_feed(text: String, color: Color, item: ItemData, duration: float = FE
 	if tex != null:
 		var ic := TextureRect.new()
 		ic.texture = tex
-		ic.modulate = item.tint
+		ic.modulate = LootVisuals.item_tint(item)
 		ic.custom_minimum_size = Vector2(26, 26)
 		ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

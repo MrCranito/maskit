@@ -1,8 +1,9 @@
 """Post-étalonnage du rendu Far West / Dust Creek (avant compose.py), sans re-rendu Blender.
 
 Usage : python3 tools/prerender/fw_grade.py <render_dir>
-Applique à render_dir/full.png ET à chaque b<id>_in.png (patchs d'intérieur, décalés de leur
-position dans l'image : même résultat pixel pour pixel, raccords invisibles) :
+Applique à render_dir/full.png ET à chaque b<id>_in.png et g<id>.png (patchs d'intérieur et de sol
+seul, grounds.json), décalés de leur position dans l'image : même résultat pixel pour pixel,
+raccords invisibles :
   - appariement de la luminance sur les quantiles de la colonne « Far West » de la planche
     docs/reference/cartes.png (contraste, ombres, hautes lumières) ;
   - sable tiré vers l'ocre orangé de la planche, ombres portées brun chaud (pas noires ni bleues) ;
@@ -164,4 +165,11 @@ if __name__ == "__main__":
         n = "b%d_in.png" % b["id"]
         if os.path.exists(os.path.join(SRC, n)):
             process(n, b["px"][0], b["px"][1]).save(os.path.join(SRC, n))
+    # patchs « sol seul » (passe gnd, ground_pass.py) : même décalage que dans full.png
+    _gp = os.path.join(SRC, "grounds.json")
+    if os.path.exists(_gp):
+        for e in json.load(open(_gp)):
+            n = "g%d.png" % e["id"]
+            if os.path.exists(os.path.join(SRC, n)):
+                process(n, e["px"][0], e["px"][1]).save(os.path.join(SRC, n))
     print("DONE grade")
