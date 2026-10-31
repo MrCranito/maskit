@@ -30,7 +30,7 @@ import sys, json, math, random, time, os
 import bpy, bmesh
 from mathutils import Vector, Matrix, Euler, noise as mnoise
 
-A = sys.argv[1:]
+A = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]  # blender -b --python … -- args
 LAYOUT = json.load(open(A[0]))
 OUT = A[1]
 PPC = int(A[2]) if len(A) > 2 else 24
@@ -156,6 +156,14 @@ def balance_roofs():
     while blue < n * 0.55 and others:
         others.pop()["roof_style"] = "tin_blue"
         blue += 1
+    # Planche « cartes » : tôle galvanisée grise dominante, ~1/4 de toits en planches délavées,
+    # un ou deux toits rouges.
+    tins = [b for b in bl if b.get("roof_style") in ("tin_blue", "")]
+    rng.shuffle(tins)
+    for b in tins[:int(n * 0.22)]:
+        b["roof_style"] = "plank"
+    for b in tins[int(n * 0.22):int(n * 0.38)]:
+        b["roof_style"] = "tin_grey"
 
 
 balance_roofs()
@@ -241,6 +249,13 @@ class NT:
         m.operation = "MULTIPLY"
         self._in(m.inputs[0], v)
         m.inputs[1].default_value = s if isinstance(s, tuple) else (s, s, s)
+        return m.outputs[0]
+
+    def vadd(self, a, b):
+        m = self.n("ShaderNodeVectorMath")
+        m.operation = "ADD"
+        self._in(m.inputs[0], a)
+        self._in(m.inputs[1], b)
         return m.outputs[0]
 
     def smooth(self, v, a, b, c=0.0, d=1.0):
@@ -427,11 +442,11 @@ def mat_rock(name="rock"):
     n = s.noise(o, 2.5, 6, 0.6)
     t = s.add(s.add(s.mul(band, 0.28), s.mul(fine, 0.08)), s.mul(n, 0.6))
     groove = s.smooth(fine, 0.75, 1.0)
-    col = s.ramp(t, [(0.15, (0.17, 0.09, 0.045)), (0.45, (0.36, 0.21, 0.11)), (0.7, (0.52, 0.35, 0.21)), (0.95, (0.64, 0.48, 0.33))])
+    col = s.ramp(t, [(0.15, (0.20, 0.09, 0.04)), (0.45, (0.42, 0.21, 0.09)), (0.7, (0.60, 0.35, 0.17)), (0.95, (0.72, 0.48, 0.27))])
     geo = s.n("ShaderNodeNewGeometry")
     _, _, nz = s.sep(geo.outputs["Normal"])
     top = s.smooth(nz, 0.55, 0.9)
-    col = s.mix(s.mul(top, 0.3), col, (0.66, 0.46, 0.28))
+    col = s.mix(s.mul(top, 0.3), col, (0.74, 0.47, 0.25))
     bv = s.noise(o, 0.35, 2)
     col = s.mix(s.mul(s.smooth(bv, 0.4, 0.65), 0.35), col, (0.40, 0.20, 0.09))
     col = s.mix(s.mul(groove, 0.35), col, (0.16, 0.07, 0.035))
@@ -509,7 +524,7 @@ def mat_ground(mask_path, ext):
     big = s.noise(o, 0.045, 3, 0.5)
     mid = s.noise(o, 0.28, 5, 0.55)
     t = s.add(s.mul(big, 0.65), s.mul(mid, 0.35))
-    col = s.ramp(t, [(0.30, (0.66, 0.40, 0.14)), (0.5, (0.80, 0.53, 0.22)), (0.72, (0.88, 0.64, 0.33))])
+    col = s.ramp(t, [(0.30, (0.58, 0.31, 0.11)), (0.5, (0.74, 0.43, 0.17)), (0.72, (0.84, 0.54, 0.25))])
     # taches plus grises / plus rouges
     p2 = s.noise(o, 0.16, 4)
     col = s.mix(s.mul(s.smooth(p2, 0.58, 0.72), 0.3), col, (0.52, 0.34, 0.19))
@@ -517,14 +532,14 @@ def mat_ground(mask_path, ext):
     # chemins : plus sombres, plus lisses, bords irréguliers
     en = s.noise(o, 1.4, 4)
     path = s.smooth(s.add(mr, s.mul(s.sub(en, 0.5), 0.5)), 0.25, 0.65)
-    pcol = s.mix(s.noise(o, 0.8, 4), (0.74, 0.52, 0.31), (0.84, 0.62, 0.40))
+    pcol = s.mix(s.noise(o, 0.8, 4), (0.76, 0.46, 0.22), (0.86, 0.56, 0.30))
     col = s.mix(s.mul(path, 0.9), col, pcol)
     # bord de chemin : liseré plus sombre (terre tassée)
     edge_p = s.mul(s.smooth(path, 0.15, 0.45), s.smooth(path, 0.75, 0.45))
     col = s.mix(s.mul(edge_p, 0.3), col, (0.46, 0.28, 0.13))
     # ornières (A) : deux lignes sombres
     rut = s.smooth(ma, 0.2, 0.8)
-    col = s.mix(s.mul(rut, 0.6), col, (0.30, 0.18, 0.09))
+    col = s.mix(s.mul(rut, 0.75), col, (0.32, 0.18, 0.08))
     # cour piétinée (B) : un peu plus sombre et grise
     yard = s.smooth(s.add(mb_, s.mul(s.sub(en, 0.5), 0.4)), 0.2, 0.8)
     col = s.mix(s.mul(yard, 0.6), col, (0.40, 0.26, 0.15))
@@ -533,7 +548,11 @@ def mat_ground(mask_path, ext):
     col = s.mix(s.mul(rk, 0.6), col, (0.44, 0.24, 0.12))
     # détail moyen : plaques craquelées sombres / claires (lecture « peinte » de la maquette)
     md = s.noise(o, 2.2, 6, 0.65)
-    col = s.mix(s.mul(s.smooth(md, 0.48, 0.7), 0.75), col, (0.38, 0.22, 0.10))
+    col = s.mix(s.mul(s.smooth(md, 0.48, 0.7), 0.8), col, (0.34, 0.18, 0.08))
+    # taches sombres « peintes » (terre brûlée, broussailles sèches) comme sur la planche
+    blot = s.noise(s.vadd(o, s.vmul(s.noise(o, 0.6, 3, col=True), 0.8)), 0.75, 5, 0.6)
+    col = s.mix(s.mul(s.smooth(blot, 0.54, 0.64), 0.5), col, (0.32, 0.16, 0.06))
+    col = s.mix(s.mul(s.smooth(blot, 0.44, 0.36), 0.3), col, (0.90, 0.60, 0.32))
     md2 = s.noise(o, 6.0, 5, 0.7)
     col = s.mix(s.mul(s.smooth(md2, 0.55, 0.8), 0.35), col, (0.34, 0.20, 0.10))
     col = s.mix(s.mul(s.smooth(md, 0.44, 0.3), 0.45), col, (0.74, 0.55, 0.36))
@@ -557,7 +576,7 @@ def mat_ground(mask_path, ext):
     # hors chemins : terrain plus sombre et plus texturé (comme la maquette)
     offp = s.sub(1.0, path)
     rough_t = s.noise(o, 1.1, 6, 0.7)
-    col = s.mix(s.mul(offp, s.mul(s.smooth(rough_t, 0.45, 0.65), 0.45)), col, (0.48, 0.29, 0.13))
+    col = s.mix(s.mul(offp, s.mul(s.smooth(rough_t, 0.42, 0.62), OFFPATH)), col, (0.44, 0.25, 0.11))
     # grandes plages claires / foncées (balayage)
     lg = s.noise(s.vmul(o, (1.0, 2.2, 1.0)), 0.35, 4, 0.55)
     col = s.mix(s.mul(s.smooth(lg, 0.56, 0.7), 0.4), col, (0.52, 0.31, 0.14))
@@ -566,6 +585,8 @@ def mat_ground(mask_path, ext):
     sp = s.noise(o, 18.0, 3, 0.7)
     col = s.mix(s.mul(s.smooth(sp, 0.64, 0.74), 0.15), col, (0.40, 0.24, 0.12))
     col = s.mix(s.mul(s.smooth(sp, 0.36, 0.28), 0.25), col, (0.92, 0.70, 0.45))
+    sp2 = s.noise(o, 26.0, 2, 0.6)
+    col = s.mix(s.mul(s.smooth(sp2, 0.62, 0.72), 0.3 * MICRO), col, (0.33, 0.18, 0.08))
     # assombrissement de contact (AO) au pied des murs, rochers, objets
     gao = s.n("ShaderNodeAmbientOcclusion")
     gao.inputs["Distance"].default_value = 1.2
@@ -585,7 +606,23 @@ def mat_ground(mask_path, ext):
     h = s.add(s.mul(h, flat), s.mul(peb, 0.9))
     h = s.add(h, s.mul(rut, -0.8))
     h = s.add(h, s.mul(s.noise(o, 0.12, 2), 3.0))
-    return s.done(col, 0.97, s.bump(h, 0.35, 0.04))
+    h = s.add(h, s.mul(s.smooth(blot, 0.52, 0.66), 0.6))
+    # micro-relief lisible à 72 px/case sous la lumière rasante : grain, gravillons bombés, rides
+    vg = s.voronoi(s.vmul(o, (1.0, 1.0, 1.0)), 7.0, "Distance")
+    gmask = s.smooth(s.noise(o, 0.9, 3), 0.4, 0.62)
+    h = s.add(h, s.mul(s.mul(s.smooth(vg, 0.32, 0.0), gmask), 0.55 * MICRO))
+    h = s.add(h, s.mul(s.noise(o, 13.0, 3, 0.6), 0.45 * MICRO))
+    wv2 = s.n("ShaderNodeTexWave")
+    wv2.inputs["Scale"].default_value = 3.2
+    wv2.inputs["Distortion"].default_value = 5.0
+    wv2.inputs["Detail"].default_value = 2
+    mp2 = s.n("ShaderNodeMapping")
+    mp2.inputs["Rotation"].default_value = (0, 0, -0.35)
+    s.l(o, mp2.inputs[0])
+    s.l(mp2.outputs[0], wv2.inputs["Vector"])
+    rip = s.mul(s.mul(wv2.outputs["Fac"], s.smooth(s.noise(o, 0.35, 2), 0.5, 0.68)), s.mul(flat, 0.32 * MICRO))
+    h = s.add(h, rip)
+    return s.done(col, 0.97, s.bump(h, GROUND_BUMP, 0.04))
 
 
 def build_materials():
@@ -598,8 +635,9 @@ def build_materials():
     mat_wood_boards("siding_cream", [(0.0, (0.36, 0.30, 0.22)), (0.5, (0.46, 0.39, 0.29)), (1.0, (0.52, 0.45, 0.34))], pw=0.13, vertical=False, L=3.0, wear=0.5)
     # planchers, terrasses, toits en planches, bois divers
     mat_wood_boards("floor", [(0.0, (0.17, 0.10, 0.06)), (0.5, (0.25, 0.15, 0.09)), (1.0, (0.31, 0.20, 0.12))], pw=0.17, L=1.8, dirt=False, vertical=False, wear=0.2)
-    mat_wood_boards("deck", [(0.0, (0.20, 0.15, 0.10)), (0.5, (0.32, 0.24, 0.17)), (1.0, (0.42, 0.33, 0.24))], pw=0.24, L=1.6, gap=0.045, dirt=False, wear=0.5)
-    mat_wood_boards("roof_planks", [(0.0, (0.07, 0.055, 0.045)), (0.5, (0.13, 0.10, 0.08)), (1.0, (0.19, 0.15, 0.12))], pw=0.3, L=1.8, gap=0.05, dirt=False, wear=0.6, bump=0.9)
+    mat_wood_boards("deck", [(0.0, (0.26, 0.20, 0.14)), (0.5, (0.40, 0.31, 0.22)), (1.0, (0.50, 0.40, 0.30))], pw=0.24, L=1.6, gap=0.045, dirt=False, wear=0.5)
+    mat_wood_boards("deck_v", [(0.0, (0.26, 0.20, 0.14)), (0.5, (0.40, 0.31, 0.22)), (1.0, (0.50, 0.40, 0.30))], pw=0.24, L=1.6, gap=0.045, dirt=False, wear=0.5, vertical=True)
+    mat_wood_boards("roof_planks", [(0.0, (0.12, 0.095, 0.075)), (0.5, (0.21, 0.17, 0.135)), (1.0, (0.29, 0.24, 0.19))], pw=0.3, L=1.8, gap=0.05, dirt=False, wear=0.6, bump=0.9)
     mat_wood_boards("wood", [(0.0, (0.18, 0.11, 0.065)), (0.5, (0.26, 0.17, 0.10)), (1.0, (0.33, 0.22, 0.14))], pw=0.12, L=1.0, dirt=False, wear=0.3)
     mat_wood_boards("wood_grey", [(0.0, (0.20, 0.17, 0.14)), (0.5, (0.29, 0.25, 0.21)), (1.0, (0.36, 0.32, 0.27))], pw=0.12, L=1.0, dirt=False, wear=0.5)
     mat_wood_boards("crate", [(0.0, (0.28, 0.18, 0.10)), (0.5, (0.38, 0.26, 0.15)), (1.0, (0.45, 0.32, 0.19))], pw=0.1, L=0.6, dirt=False, vertical=False, wear=0.2)
@@ -612,11 +650,12 @@ def build_materials():
     mat_simple("sign", (0.30, 0.25, 0.17), 0.85, var=0.4, scale=8.0)
     mat_simple("sign_red", (0.25, 0.05, 0.035), 0.85, var=0.4, scale=8.0)
     # toitures
-    mat_tin("tin_blue", (0.055, 0.063, 0.085), (0.085, 0.095, 0.12), rust=0.3)
-    mat_tin("tin_grey", (0.055, 0.055, 0.06), (0.09, 0.088, 0.09), rust=0.45)
-    mat_tin("tin_rust", (0.085, 0.05, 0.035), (0.12, 0.075, 0.05), rust=0.55)
-    mat_tin("tin_red", (0.14, 0.035, 0.03), (0.19, 0.055, 0.045), rust=0.5)
+    mat_tin("tin_blue", (0.19, 0.20, 0.22), (0.28, 0.29, 0.31), rust=0.35, paint_loss=0.3)
+    mat_tin("tin_grey", (0.19, 0.19, 0.19), (0.29, 0.285, 0.28), rust=0.45, paint_loss=0.2)
+    mat_tin("tin_rust", (0.15, 0.085, 0.05), (0.21, 0.12, 0.07), rust=0.6)
+    mat_tin("tin_red", (0.20, 0.045, 0.035), (0.28, 0.07, 0.05), rust=0.5)
     mat_tin("tin_dark", (0.10, 0.10, 0.11), (0.15, 0.15, 0.16), rust=0.3)
+    mat_tin("car_roof", (0.24, 0.06, 0.04), (0.32, 0.09, 0.06), rust=0.4)
     mat_shingle("shingle", [(0.0, (0.08, 0.065, 0.055)), (0.5, (0.13, 0.10, 0.08)), (1.0, (0.18, 0.14, 0.11))])
     mat_shingle("shingle_red", [(0.0, (0.15, 0.05, 0.035)), (0.5, (0.22, 0.07, 0.05)), (1.0, (0.28, 0.11, 0.07))])
     # minéral, végétal, divers
@@ -624,7 +663,8 @@ def build_materials():
     mat_stone_blocks("stone_blocks", (0.42, 0.40, 0.38))
     mat_stone_blocks("brick", (0.30, 0.11, 0.06))
     mat_simple("stone", (0.40, 0.36, 0.33), 0.9, var=0.4, scale=6.0, bump=0.5)
-    mat_simple("gravel", (0.20, 0.16, 0.13), 0.95, var=0.6, scale=40.0, c2=(0.33, 0.27, 0.22), bump=1.0)
+    mat_simple("gravel", (0.26, 0.21, 0.17), 0.95, var=0.6, scale=40.0, c2=(0.40, 0.33, 0.27), bump=1.0)
+    mat_wood_boards("tie", [(0.0, (0.12, 0.085, 0.06)), (0.5, (0.19, 0.14, 0.10)), (1.0, (0.25, 0.20, 0.15))], pw=0.3, L=4.0, dirt=False, wear=0.55)
     mat_simple("pebble", (0.30, 0.19, 0.12), 0.9, var=0.5, scale=10)
     mat_simple("iron", (0.06, 0.06, 0.065), 0.5, metal=0.7, var=0.3)
     mat_simple("rust_iron", (0.16, 0.08, 0.04), 0.7, metal=0.4, var=0.5, scale=8, c2=(0.06, 0.05, 0.05))
@@ -632,8 +672,8 @@ def build_materials():
     mat_simple("boiler", (0.10, 0.10, 0.11), 0.38, metal=0.65, var=0.35, c2=(0.05, 0.05, 0.055))
     mat_simple("brass", (0.45, 0.30, 0.10), 0.35, metal=0.9)
     mat_simple("red_paint", (0.20, 0.045, 0.03), 0.75, var=0.4)
-    mat_wood_boards("car_red", [(0.0, (0.17, 0.05, 0.035)), (0.5, (0.23, 0.07, 0.05)), (1.0, (0.28, 0.10, 0.07))], pw=0.14, L=3.0, dirt=False, wear=0.35)
-    mat_wood_boards("car_brown", [(0.0, (0.15, 0.08, 0.05)), (0.5, (0.21, 0.12, 0.08)), (1.0, (0.26, 0.16, 0.10))], pw=0.14, L=3.0, dirt=False, wear=0.35)
+    mat_wood_boards("car_red", [(0.0, (0.28, 0.055, 0.035)), (0.5, (0.36, 0.08, 0.05)), (1.0, (0.44, 0.12, 0.07))], pw=0.14, L=3.0, dirt=False, wear=0.25)
+    mat_wood_boards("car_brown", [(0.0, (0.20, 0.06, 0.045)), (0.5, (0.27, 0.085, 0.06)), (1.0, (0.33, 0.12, 0.08))], pw=0.14, L=3.0, dirt=False, wear=0.3)
     mat_simple("canvas", (0.30, 0.29, 0.26), 0.9, var=0.4, scale=5.0)
     mat_simple("cloth_red", (0.30, 0.05, 0.04), 0.9)
     mat_simple("sack", (0.42, 0.34, 0.22), 0.95, var=0.35, scale=9.0)
@@ -1159,10 +1199,18 @@ def build_building(b):
             cut.box(xx, YS, 0.0, xx + 1, YS + t, 0.32, sid)
     cut.box(X0, YS - 0.02, 0.32, X1, YS + t + 0.02, 0.38, "trim")
     # cloisons intérieures
+    # (continues : chaque case de cloison se prolonge vers ses voisines murées, hauteur basse
+    # pour garder l'intérieur lisible en vue de dessus quand le toit s'efface)
+    PH = min(H1 * 0.98, PART_H)
     for yy in range(y + 1, y + h - 1):
         for xx in range(x + 1, x + w - 1):
             if tile(xx, yy) == 3:
-                walls.box(xx + 0.1, Y(yy + 1) + 0.1, 0.0, xx + 0.9, Y(yy) - 0.1, H1 * 0.98, "siding_h")
+                l_ = 0.0 if tile(xx - 1, yy) == 3 else 0.3
+                r_ = 1.0 if tile(xx + 1, yy) == 3 else 0.7
+                u_ = 0.0 if tile(xx, yy - 1) == 3 else 0.3
+                d_ = 1.0 if tile(xx, yy + 1) == 3 else 0.7
+                walls.box(xx + l_, Y(yy + d_), 0.0, xx + r_, Y(yy + u_), PH, "siding_brown")
+                walls.box(xx + l_ - 0.03, Y(yy + d_) - 0.03, PH, xx + r_ + 0.03, Y(yy + u_) + 0.03, PH + 0.06, "trim")
     # plinthes / angles
     for (cx_, cy_) in ((X0, YS), (X1, YS), (X0, YN), (X1, YN)):
         tgt = tall if cy_ == YS else walls
@@ -1213,12 +1261,31 @@ def build_building(b):
         ridge_x = rng.random() < 0.75
     else:
         ridge_x = rng.random() < 0.15
-    span = mh if ridge_x else mw
-    rise = min(0.32 * span + 0.15, 1.7)
-    if style in ("plank", "shingle"):
-        rise *= 1.1
     has_ff = side == "S" and (arch in FALSE_FRONT or rng.random() < 0.28)
-    top = gable(roof, mx0, my0, mx1, my1, H1, rmat, ridge_x, rise, 0.24, gm, rng, ov_s=(-0.02 if has_ff else None))
+    # Planche « cartes » : les grands bâtiments se lisent comme des corps accolés (toits à deux
+    # pans juxtaposés, matières et hauteurs différentes), pas comme une grange d'un seul tenant.
+    secs = []
+    if not ridge_x and mw >= 9:
+        k_ = int(round(mw * rng.uniform(0.42, 0.58)))
+        secs = [(mx0, mx0 + k_, my0, my1), (mx0 + k_, mx1, my0, my1)]
+    elif ridge_x and mh >= 9:
+        k_ = int(round(mh * rng.uniform(0.42, 0.58)))
+        secs = [(mx0, mx1, my0, my0 + k_), (mx0, mx1, my0 + k_, my1)]
+    else:
+        secs = [(mx0, mx1, my0, my1)]
+    top = H1
+    sec_info = []
+    for si, (sx0, sx1, sy0, sy1) in enumerate(secs):
+        smat = rmat if si == 0 or rng.random() < 0.4 else rng.choice(["roof_planks", "tin_grey", "tin_blue", "tin_rust"])
+        span = (sy1 - sy0) if ridge_x else (sx1 - sx0)
+        rise = min(0.32 * span + 0.15, 1.7) * (1.0 if si == 0 else rng.uniform(0.8, 0.95))
+        if smat in ("roof_planks", "shingle"):
+            rise *= 1.1
+        dz = 0.0 if si == 0 else rng.uniform(-0.2, 0.05)
+        t_ = gable(roof, sx0, sy0, sx1, sy1, H1 + dz, smat, ridge_x, rise, 0.24 if len(secs) == 1 else 0.12, gm, rng,
+                   ov_s=(-0.02 if has_ff else None))
+        top = max(top, t_)
+        sec_info.append((sx0, sx1, sy0, sy1, H1 + dz, rise))
     # pignons/annexes
     if annex:
         s_, k = annex
@@ -1231,33 +1298,37 @@ def build_building(b):
             shed(roof, X0, YS, mx0, YN, zh, zl, sec_mat, "W")
         else:
             shed(roof, X0, my1, X1, YN, zh, zl, sec_mat, "N")
-    # rapiéçages, trous, cheminées, tuyaux
-    for _ in range(rng.randint(1, 4)):
-        px = rng.uniform(mx0 + 0.4, mx1 - 1.4)
-        py = rng.uniform(my0 + 0.3, my1 - 1.2)
-        pm = rng.choice(["tin_rust", "tin_grey", "roof_planks", "tin_blue"])
-        if ridge_x:
-            ym = (my0 + my1) / 2
-            on_s = py < ym
-            zz = lambda yv: H1 + rise * (1 - abs(yv - ym) / ((my1 - my0) / 2)) + 0.09
-            pl, ph_ = (py, min(py + rng.uniform(0.5, 1.0), ym - 0.05)) if on_s else (max(py, ym + 0.05), py + rng.uniform(0.5, 1.0))
-            if ph_ - pl < 0.2:
-                continue
-            pw_ = rng.uniform(0.6, 1.3)
-            roof.poly([(px, pl, zz(pl)), (px + pw_, pl, zz(pl)), (px + pw_, ph_, zz(ph_)), (px, ph_, zz(ph_))][::(1 if on_s else -1)], pm,
-                      [(0, 0), (pw_, 0), (pw_, ph_ - pl), (0, ph_ - pl)][::(1 if on_s else -1)])
-        else:
-            xm_ = (mx0 + mx1) / 2
-            hw = (mx1 - mx0) / 2
-            zx = lambda xv: H1 + rise * (1 - abs(xv - xm_) / hw) + 0.09
-            pw_ = rng.uniform(0.5, 1.0)
-            ln = rng.uniform(0.7, 1.6)
-            on_w = px + pw_ / 2 < xm_
-            xa_, xb_ = (px, min(px + pw_, xm_ - 0.05)) if on_w else (max(px, xm_ + 0.05), px + pw_)
-            if xb_ - xa_ < 0.2:
-                continue
-            pts_ = [(xa_, py, zx(xa_)), (xb_, py, zx(xb_)), (xb_, py + ln, zx(xb_)), (xa_, py + ln, zx(xa_))]
-            roof.poly(pts_ if True else pts_[::-1], pm, [(0, 0), (0, xb_ - xa_), (ln, xb_ - xa_), (ln, 0)])
+    # rapiéçages, trous, cheminées, tuyaux (par corps de toit)
+    for (mx0, mx1, my0, my1, Hz, rise) in sec_info:
+        if mx1 - mx0 < 2.0 or my1 - my0 < 1.8:
+            continue
+        for _ in range(rng.randint(1, 4)):
+            px = rng.uniform(mx0 + 0.4, mx1 - 1.4)
+            py = rng.uniform(my0 + 0.3, my1 - 1.2)
+            pm = rng.choice(["tin_rust", "tin_grey", "roof_planks", "tin_blue", "tin_rust"])
+            if ridge_x:
+                ym = (my0 + my1) / 2
+                on_s = py < ym
+                zz = lambda yv: Hz + rise * (1 - abs(yv - ym) / ((my1 - my0) / 2)) + 0.09
+                pl, ph_ = (py, min(py + rng.uniform(0.5, 1.0), ym - 0.05)) if on_s else (max(py, ym + 0.05), py + rng.uniform(0.5, 1.0))
+                if ph_ - pl < 0.2:
+                    continue
+                pw_ = rng.uniform(0.6, 1.3)
+                roof.poly([(px, pl, zz(pl)), (px + pw_, pl, zz(pl)), (px + pw_, ph_, zz(ph_)), (px, ph_, zz(ph_))][::(1 if on_s else -1)], pm,
+                          [(0, 0), (pw_, 0), (pw_, ph_ - pl), (0, ph_ - pl)][::(1 if on_s else -1)])
+            else:
+                xm_ = (mx0 + mx1) / 2
+                hw = (mx1 - mx0) / 2
+                zx = lambda xv: Hz + rise * (1 - abs(xv - xm_) / hw) + 0.09
+                pw_ = rng.uniform(0.5, 1.0)
+                ln = rng.uniform(0.7, 1.6)
+                on_w = px + pw_ / 2 < xm_
+                xa_, xb_ = (px, min(px + pw_, xm_ - 0.05)) if on_w else (max(px, xm_ + 0.05), px + pw_)
+                if xb_ - xa_ < 0.2:
+                    continue
+                pts_ = [(xa_, py, zx(xa_)), (xb_, py, zx(xb_)), (xb_, py + ln, zx(xb_)), (xa_, py + ln, zx(xa_))]
+                roof.poly(pts_, pm, [(0, 0), (0, xb_ - xa_), (ln, xb_ - xa_), (ln, 0)])
+    mx0, mx1, my0, my1 = sec_info[0][0], sec_info[-1][1], sec_info[0][2], sec_info[-1][3]
     if rng.random() < 0.75:
         cxp = rng.uniform(mx0 + 0.6, mx1 - 0.6)
         cyp = rng.uniform(my0 + 0.4, my1 - 0.4)
@@ -1335,6 +1406,22 @@ def build_building(b):
     # ---------------- objets
     ob = walls.to_object("walls_%d" % b["id"], "world")
     floor.to_object("floor_%d" % b["id"], "world")
+    # trottoirs de planches (plats, praticables : sous le plan de coupe du masque) le long des
+    # pignons est / ouest, comme les planchers qui entourent les maisons de la planche
+    for (xs_, sgn_) in ((x - 1, -1), (x + w, 1)):
+        if side in ("E", "W") and ((sgn_ > 0) == (side == "E")):
+            continue
+        if rng.random() > BOARDWALK_P:
+            continue
+        run_ = [yy for yy in range(y, y + h) if tile(xs_, yy) == 1 and (xs_, yy) not in rail_set]
+        if len(run_) < 3:
+            continue
+        xa_ = xs_ + (0.08 if sgn_ > 0 else 0.1)
+        xb_ = xs_ + (0.9 if sgn_ > 0 else 0.92)
+        ya_, yb_ = Y(run_[-1] + 1) + 0.05, Y(run_[0]) - 0.05
+        porch.box(xa_, ya_, 0.0, xb_, yb_, 0.1, "deck_v")
+        porch.box(xa_ - 0.03, ya_, 0.0, xa_ + 0.05, yb_, 0.11, "trim")
+        porch.box(xb_ - 0.05, ya_, 0.0, xb_ + 0.03, yb_, 0.11, "trim")
     porch.to_object("porch_%d" % b["id"], "world")
     for mbx, nm in ((roof, "roof"), (tall, "front"), (aw, "awning")):
         if mbx.F:
@@ -1348,17 +1435,69 @@ def build_interior_furniture(b, rng):
     """Mobilier simple (si le layout ne fournit pas de props intérieurs)."""
     x, y, w, h = b["rect"]
     mb = MB()
-    has = any(bld_cells.get((p["cell"][0], p["cell"][1])) is b for p in LAYOUT["props"])
-    if has or b.get("arch") == "ruin":
+    if b.get("arch") == "ruin":
         return
-    if w >= 5 and h >= 5 and rng.random() < 0.7:
+    has = any(bld_cells.get((p["cell"][0], p["cell"][1])) is b for p in LAYOUT["props"])
+    if not has and w >= 5 and h >= 5 and rng.random() < 0.7:
         cx, cy = x + w / 2, Y(y + h / 2)
         mb.box(cx - 0.9, cy - 0.6, 0.03, cx + 0.9, cy + 0.6, 0.04, "rug")
         prop(mb, "table_chairs", cx, cy, 1, 1, rng)
-    for i in range(rng.randint(1, 3)):
-        xx = rng.uniform(x + 1.2, x + w - 1.2)
-        prop(mb, rng.choice(["shelf", "barrel", "crate_stack", "dresser"]), xx, Y(y) - 0.85, 1, 1, rng)
+    # Mobilier adossé : seulement dans la partie libre des cases de mur nord / est / ouest
+    # (cases non praticables du plan : aucune collision nouvelle), hors portes.
+    kinds = ["shelf", "barrel", "crate_stack", "dresser", "bookcase", "barrel", "sacks", "stove", "bottle_shelf"]
+    xx = x + 1.0 + rng.uniform(0.0, 0.6)
+    while xx < x + w - 1.2:
+        if tile(int(xx), y) == 3 and rng.random() < 0.7:
+            prop(mb, rng.choice(kinds), xx + 0.3, Y(y) - 0.74, 1, 1, rng)
+        xx += rng.uniform(1.1, 1.9)
+    # sol : planches, papiers, paille, taches (plats, sous le plan de coupe du masque)
+    for _ in range(int(w * h * 0.25)):
+        px, py = rng.uniform(x + 1.1, x + w - 1.1), Y(rng.uniform(y + 1.1, y + h - 1.1))
+        r = rng.random()
+        if r < 0.4:
+            mb.box(px - 0.4, py - 0.05, 0.03, px + 0.4, py + 0.05, 0.05, "wood_grey", rot=rng.uniform(0, 3.14), piv=(px, py))
+        elif r < 0.65:
+            mb.box(px - 0.12, py - 0.09, 0.03, px + 0.12, py + 0.09, 0.036, "trim_white", rot=rng.uniform(0, 3.14), piv=(px, py))
+        elif r < 0.85:
+            mb.box(px - 0.3, py - 0.2, 0.03, px + 0.3, py + 0.2, 0.04, "hay", rot=rng.uniform(0, 3.14), piv=(px, py))
+        else:
+            mb.cyl(px, py, 0.03, 0.04, rng.uniform(0.2, 0.4), "doorway", 12)
+    if w >= 6 and h >= 6 and rng.random() < 0.6:
+        cx, cy = x + w / 2 + rng.uniform(-1, 1), Y(y + h / 2 + rng.uniform(-1, 1))
+        mb.box(cx - 1.1, cy - 0.7, 0.03, cx + 1.1, cy + 0.7, 0.045, "rug")
     mb.to_object("furn_%d" % b["id"], "world")
+    # lampes à pétrole : flaques de lumière chaude à l'intérieur (visibles quand le toit s'efface,
+    # et un peu par les portes et fenêtres)
+    if IN_FILL > 0:
+        # éclairage d'ambiance sous le toit (lumière diffuse des fentes et fenêtres) : l'intérieur
+        # reste lisible en jeu même à l'ombre de son toit (passe « int »)
+        H1_ = int(b.get("stories", 1)) * STORY
+        fd = bpy.data.lights.new("fill_%d" % b["id"], "AREA")
+        fd.shape = "RECTANGLE"
+        fd.size, fd.size_y = w - 0.06, h - 0.06
+        fd.energy = IN_FILL * w * h
+        fd.color = (1.0, 0.78, 0.55)
+        fo = bpy.data.objects.new("fill_%d" % b["id"], fd)
+        fo.location = (x + w / 2, Y(y + h / 2), H1_ + 0.12)
+        fo.visible_camera = False
+        fo.visible_glossy = False
+        coll("world").objects.link(fo)
+    if LAMP_W > 0:
+        n_l = 1 if w * h < 40 else 2
+        for i in range(n_l):
+            lx = x + w * ((i + 1) / (n_l + 1)) + rng.uniform(-0.5, 0.5)
+            ly = Y(y + h * rng.uniform(0.35, 0.65))
+            ld = bpy.data.lights.new("lamp_%d_%d" % (b["id"], i), "POINT")
+            ld.energy = LAMP_W * rng.uniform(0.8, 1.2)
+            ld.color = (1.0, 0.58, 0.28)
+            ld.shadow_soft_size = 0.15
+            lo = bpy.data.objects.new("lamp_%d_%d" % (b["id"], i), ld)
+            lo.location = (lx, ly, 1.25)
+            coll("world").objects.link(lo)
+            mb2 = MB()
+            mb2.cyl(lx, ly, 0.0, 1.0, 0.03, "iron", 6)
+            mb2.cyl(lx, ly, 1.0, 1.18, 0.07, "window_lit", 8)
+            mb2.to_object("furn_lamp_%d_%d" % (b["id"], i), "world")
 
 
 # ======================================================================= rochers
@@ -1498,6 +1637,44 @@ def rock_formation(mb, cells, height, rng):
         mb.sphere(cx + math.cos(a) * rr, cy + math.sin(a) * rr, r * 0.15, r, "rock", sub=1, sx=1.2, sz=0.5, jitter=0.25, rng=rng)
     prof = [rmax] * 24
     return (cx, cy, [(cx, cy, top_z, 1.0)], prof, rmax)
+
+
+def boulder_pile(mb, veg, cx, cy, R, height, rng):
+    """Amas de gros rochers arrondis (marges hors carte, non rognés) façon planche : 3 à 6 colonnes
+    de galettes bombées, la plus haute au centre, buisson au sommet et au pied."""
+    n = rng.randint(3, 6)
+    tops = []
+    for i in range(n):
+        a = rng.uniform(0, math.tau)
+        d = 0.0 if i == 0 else R * rng.uniform(0.45, 0.85)
+        px, py = cx + math.cos(a) * d, cy + math.sin(a) * d
+        r = R * (0.7 if i == 0 else rng.uniform(0.38, 0.55))
+        hcol = height * (1.0 if i == 0 else rng.uniform(0.35, 0.7))
+        z = 0.0
+        rx, ry = r * rng.uniform(1.0, 1.25), r * rng.uniform(0.9, 1.05)
+        while z < hcol and rx > 0.45:
+            hh = rng.uniform(0.5, 0.8)
+            slab(mb, px, py, z, rx, ry, hh, rng, rng.uniform(0, math.pi), 36)
+            z += hh * 0.88
+            k = rng.uniform(0.88, 0.98) if z < hcol * 0.7 else rng.uniform(0.68, 0.82)
+            rx *= k
+            ry *= k
+        tops.append((px, py, z, rx))
+    px, py, z, rx = tops[0]
+    if rng.random() < 0.7:
+        for k_ in range(rng.randint(3, 6)):
+            a_ = rng.uniform(0, math.tau)
+            d_ = rng.uniform(0, rx * 0.5)
+            veg.sphere(px + math.cos(a_) * d_, py + math.sin(a_) * d_, z + rng.uniform(0.0, 0.2), rng.uniform(0.25, 0.45), "foliage",
+                       sub=2, sz=0.8, nscale=2.5, rng=rng)
+    for _ in range(rng.randint(1, 3)):
+        a = rng.uniform(0, math.tau)
+        shrub(veg, cx + math.cos(a) * R * 1.1, cy + math.sin(a) * R * 1.1, rng.uniform(0.9, 1.4), rng)
+    for _ in range(int(5 + R * 4)):
+        a = rng.uniform(0, math.tau)
+        rr = R * rng.uniform(0.9, 1.5)
+        r = rng.uniform(0.05, 0.2)
+        mb.sphere(cx + math.cos(a) * rr, cy + math.sin(a) * rr, r * 0.15, r, "rock", sub=1, sx=1.2, sz=0.6, jitter=0.25, rng=rng)
 
 
 def scree(mb, cells, height, rng):
@@ -1944,7 +2121,7 @@ def build_clutter():
         rng.shuffle(cand)
         used = 0
         for c in cand:
-            if used >= max(3, int((w + h) * 0.6)):
+            if used >= max(3, int((w + h) * CLUTTER_K)):
                 break
             if not ok(c) or any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 2 for u in placed):
                 continue
@@ -1953,7 +2130,7 @@ def build_clutter():
             used += 1
             clutter_cluster(mb, c[0] + 0.5, Y(c[1]) - 0.5, rng, rng.randint(2, 4), spread=(0.16, 0.14), wagons=False)
     # grappes libres dans les cours (cases non-chemin proches des bâtiments)
-    for (cx_, cy_), b in list(bld_cells.items())[::6]:
+    for (cx_, cy_), b in list(bld_cells.items())[::4]:
         for _ in range(2):
             c = (cx_ + rng.randint(-4, 4), cy_ + rng.randint(-4, 4))
             if not ok(c) or any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 2 for u in placed):
@@ -1961,12 +2138,54 @@ def build_clutter():
             blocked.add(c)
             placed.append(c)
             clutter_cluster(mb, c[0] + 0.5, Y(c[1]) - 0.5, rng, rng.randint(2, 3), spread=(0.16, 0.14), wagons=False)
+    # couverts isolés dans les rues et places (planche : caisses, tonneaux, foin, bric-à-brac
+    # éparpillés partout ; légende « Couverts ») : une case chacun, espacés d'au moins 4 cases
+    opens = [(xx, yy) for yy in range(2, H - 2) for xx in range(2, W - 2)]
+    rng.shuffle(opens)
+    n_open = 0
+    for c in opens:
+        if n_open >= int(W * H * OPEN_COVER_K):
+            break
+        if not ok(c) or any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 4 for u in placed):
+            continue
+        blocked.add(c)
+        placed.append(c)
+        n_open += 1
+        clutter_cluster(mb, c[0] + 0.5, Y(c[1]) - 0.5, rng, rng.randint(2, 4), spread=(0.18, 0.15), wagons=False)
+    # charrettes abandonnées (2 cases, couvert) : planche « cartes », chariots dans les rues
+    n_cart = 0
+    rng.shuffle(opens)
+    for c in opens:
+        if n_cart >= N_CARTS:
+            break
+        vert = rng.random() < 0.35
+        c2 = (c[0], c[1] + 1) if vert else (c[0] + 1, c[1])
+        if any(abs(c[0] - u[0]) + abs(c[1] - u[1]) < 5 for u in placed) or not ok(c):
+            continue
+        blocked.add(c)
+        if not ok(c2):
+            blocked.discard(c)
+            continue
+        blocked.add(c2)
+        placed += [c, c2]
+        n_cart += 1
+        st = len(mb.V)
+        if vert:
+            wagon(mb, c[0] + 0.5, Y(c[1]) - 1.0, math.pi / 2 + rng.uniform(-0.15, 0.15), rng, covered=False)
+            cells_fit(mb, st, [c[0], c[1], 1, 2], margin=0.03, zlo=0.0, zcut=9.0)
+        else:
+            wagon(mb, c[0] + 1.0, Y(c[1]) - 0.5, rng.choice([0.0, math.pi]) + rng.uniform(-0.15, 0.15), rng, covered=False)
+            cells_fit(mb, st, [c[0], c[1], 2, 1], margin=0.03, zlo=0.0, zcut=9.0)
+    print("CLUTTER", len(placed), "cases, couverts", n_open, "charrettes", n_cart, flush=True)
     mb.to_object("clutter", "world")
     global CLUTTER_CELLS
     CLUTTER_CELLS = sorted(placed)
 
 
 CLUTTER_CELLS = []
+CLUTTER_K = float(os.environ.get("FW_CLUTTER_K", "0.7"))
+N_CARTS = int(os.environ.get("FW_CARTS", "9"))
+OPEN_COVER_K = float(os.environ.get("FW_OPEN_COVER_K", "0.007"))
 
 
 # ======================================================================= repères (éolienne, château d'eau, puits)
@@ -2054,10 +2273,15 @@ def water_tower(mb, cx, cy, s=1.0):
 
 def well(mb, cx, cy, s=1.0):
     R = 0.85 * s
-    mb.cyl(cx, cy, 0, 0.8, R, "stone_blocks", 24)
-    mb.cyl(cx, cy, 0.8, 0.9, R + 0.06, "stone", 24)
-    mb.cyl(cx, cy, 0.5, 0.86, R - 0.16, "doorway", 20)
-    mb.cyl(cx, cy, 0.52, 0.55, R - 0.2, "water", 20)
+    # margelle creuse (anneau de blocs) : on voit l'eau sombre au fond depuis la caméra
+    n = 22
+    for k in range(n):
+        a = (k + 0.5) / n * math.tau
+        L_ = R * math.tau / n * 0.55
+        mb.box(cx - L_, cy + R - 0.24, 0, cx + L_, cy + R, 0.8, "stone_blocks", rot=a - math.pi / 2, piv=(cx, cy))
+        mb.box(cx - L_ * 1.05, cy + R - 0.28, 0.8, cx + L_ * 1.05, cy + R + 0.05, 0.9, "stone", rot=a - math.pi / 2 + 0.03, piv=(cx, cy))
+    mb.cyl(cx, cy, 0.0, 0.3, R - 0.2, "doorway", 20)
+    mb.cyl(cx, cy, 0.3, 0.32, R - 0.22, "water", 20)
     for k in range(14):
         a = k / 14 * math.tau
         mb.box(cx + math.cos(a) * R * 1.25 - 0.18, cy + math.sin(a) * R * 1.25 - 0.13, 0, cx + math.cos(a) * R * 1.25 + 0.18, cy + math.sin(a) * R * 1.25 + 0.13, 0.05, "stone", rot=a)
@@ -2143,7 +2367,7 @@ def build_rails():
             n = int((b_ - a) / 0.42)
             for i in range(n):
                 px = a + 0.21 + i * 0.42
-                mb.box(px - 0.13, yc - 1.75, 0.06, px + 0.13, yc + 1.75, 0.15, "wood_dark", rot=RNG.uniform(-0.03, 0.03))
+                mb.box(px - 0.13, yc - 1.75, 0.06, px + 0.13, yc + 1.75, 0.15, "tie", rot=RNG.uniform(-0.03, 0.03))
             for sg in (-1, 1):
                 mb.box(a, yc + sg * 1.26 - 0.07, 0.15, b_, yc + sg * 1.26 + 0.07, 0.29, "steel")
         else:
@@ -2153,7 +2377,7 @@ def build_rails():
             n = int((b_ - a) / 0.42)
             for i in range(n):
                 py = Y(a) - 0.21 - i * 0.42
-                mb.box(xc - 0.95, py - 0.1, 0.06, xc + 0.95, py + 0.1, 0.14, "wood_dark")
+                mb.box(xc - 0.95, py - 0.1, 0.06, xc + 0.95, py + 0.1, 0.14, "tie")
             for sg in (-1, 1):
                 mb.box(xc + sg * 0.55 - 0.05, Y(b_), 0.14, xc + sg * 0.55 + 0.05, Y(a), 0.24, "steel")
     mb.to_object("rails", "world")
@@ -2231,7 +2455,7 @@ def train_car(mb, kind, rect, rng):
                 a = math.pi * j / n
                 ring.append(mb.bm.verts.new((px, yc + math.cos(a) * 0.95, top + math.sin(a) * 0.22)))
             rings.append(ring)
-        mi = mb.mi("tin_rust" if kind != "boxcar_dark" else "tin_dark")
+        mi = mb.mi("car_roof" if kind != "boxcar_dark" else "tin_dark")
         for j in range(n):
             f = mb.bm.faces.new((rings[0][j], rings[0][j + 1], rings[1][j + 1], rings[1][j]))
             f.material_index = mi
@@ -2329,8 +2553,8 @@ def build_ground():
         onpath = c in path_set
         r = rng.random()
         if r < 0.45:
-            if rng.random() < 0.18:
-                sc.sphere(x, Y(y), 0.0, rng.uniform(0.06, 0.14), rng.choice(["pebble", "rock", "stone"]), sub=1, sz=0.5, jitter=0.35, rng=rng)
+            if rng.random() < 0.5:
+                sc.sphere(x, Y(y), 0.0, rng.uniform(0.04, 0.12), rng.choice(["pebble", "rock", "pebble", "rock", "stone"]), sub=1, sz=0.5, jitter=0.35, rng=rng)
         elif onpath:
             continue
         elif r < 0.64:
@@ -2344,6 +2568,23 @@ def build_ground():
             for i in range(rng.randint(1, 3)):
                 sc.box(x - 0.35, Y(y) - 0.04, 0, x + 0.35, Y(y) + 0.04, 0.03, "wood_grey", rot=rng.uniform(0, 3.14),
                        piv=(x + rng.uniform(-0.2, 0.2), Y(y)))
+    # végétation plus fournie dans les terrains vagues (planche : arbres ronds, yuccas, gros
+    # buissons) ; traversable en jeu (hors masque d'emprise), jamais sur les rues ni les abords
+    for yy in range(0, H):
+        for xx in range(0, W):
+            c = (xx, yy)
+            if tile(xx, yy) != 1 or c in path_set or c in occupied or c in rail_set or c in game_cells:
+                continue
+            if any((xx + dx, yy + dy) in bld_cells for dx in (-2, -1, 0, 1, 2) for dy in (-2, -1, 0, 1, 2)):
+                continue
+            r = rng.random()
+            if r < VEG_K * 0.25:
+                tree(sc, xx + rng.uniform(0.3, 0.7), Y(yy) - rng.uniform(0.3, 0.7), rng.uniform(0.8, 1.2), rng,
+                     rng.choice(["tree", "joshua", "joshua", "dead"]))
+            elif r < VEG_K:
+                for k_ in range(rng.randint(2, 4)):
+                    shrub(sc, xx + rng.uniform(0.1, 0.9), Y(yy) - rng.uniform(0.1, 0.9), rng.uniform(1.1, 1.6), rng,
+                          rng.choice(["foliage", "foliage2", "sage", "dry"]))
     # marges hors carte : rochers + végétation (décor pur)
     rk = MB()
     for yy in range(-MARGIN - 2, H + MARGIN + 2, 3):
@@ -2351,9 +2592,11 @@ def build_ground():
             if -1 <= xx <= W and -1 <= yy <= H:
                 continue
             hv = rng.random()
-            if hv < 0.3:
-                cells = [[xx + i, yy + j] for i in range(rng.randint(2, 4)) for j in range(rng.randint(2, 3))]
-                rock_formation(rk, cells, rng.uniform(0.8, 2.0), rng)
+            if hv < 0.2:
+                boulder_pile(rk, sc, xx + rng.uniform(0.5, 2.5), Y(yy) - rng.uniform(0.5, 2.5), rng.uniform(1.6, 2.8),
+                             rng.uniform(0.9, 1.7), rng)
+            elif hv < 0.3:
+                tree(sc, xx + rng.uniform(0, 3), Y(yy) - rng.uniform(0, 3), rng.uniform(1.0, 1.5), rng, rng.choice(["tree", "tree", "joshua"]))
             elif hv < 0.55:
                 shrub(sc, xx + rng.uniform(0, 3), Y(yy) - rng.uniform(0, 3), rng.uniform(0.8, 1.3), rng)
     sc.to_object("scatter", "world")
@@ -2467,6 +2710,15 @@ def setup_render():
     sc = scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
+    # CYCLES_DEVICE=METAL / CUDA / OPTIX : rendu GPU (tools/prerender/mac_env.sh), CPU par défaut
+    gpu = os.environ.get("CYCLES_DEVICE", "CPU")
+    if gpu != "CPU":
+        prefs = bpy.context.preferences.addons["cycles"].preferences
+        prefs.compute_device_type = gpu
+        prefs.get_devices()
+        for d in prefs.devices:
+            d.use = d.type == gpu
+        sc.cycles.device = "GPU"
     sc.cycles.samples = SAMPLES
     sc.cycles.use_denoising = True
     sc.cycles.max_bounces = 4
@@ -2489,7 +2741,7 @@ def setup_render():
     sc.world = w
     w.use_nodes = True
     bg = w.node_tree.nodes["Background"]
-    bg.inputs[0].default_value = (0.28, 0.32, 0.58, 1)
+    bg.inputs[0].default_value = SKY_COL
     bg.inputs[1].default_value = SKY
     sun = bpy.data.lights.new("sun", "SUN")
     sun.energy = SUN_E
@@ -2518,6 +2770,16 @@ SKY = float(os.environ.get("FW_SKY", "1.0"))
 SAT = float(os.environ.get("FW_SAT", "1.32"))
 CON = float(os.environ.get("FW_CON", "1.08"))
 LIFT = float(os.environ.get("FW_LIFT", "22"))
+PART_H = float(os.environ.get("FW_PART_H", "1.35"))
+IN_FILL = float(os.environ.get("FW_IN_FILL", "3.0"))
+LAMP_W = float(os.environ.get("FW_LAMP_W", "60"))
+INT_ROOF_SHADOW = os.environ.get("FW_INT_ROOF_SHADOW", "1") == "1"
+BOARDWALK_P = float(os.environ.get("FW_BOARDWALK_P", "0.55"))
+OFFPATH = float(os.environ.get("FW_OFFPATH", "0.6"))
+VEG_K = float(os.environ.get("FW_VEG_K", "0.05"))
+MICRO = float(os.environ.get("FW_MICRO", "1.0"))
+GROUND_BUMP = float(os.environ.get("FW_GROUND_BUMP", "0.6"))
+SKY_COL = tuple(float(v) for v in os.environ.get("FW_SKY_COL", "0.42,0.40,0.52,1").split(","))
 
 
 def frame(co, x0, x1, y0, y1, tilt=None, ppc=None):
@@ -2876,6 +3138,31 @@ if __name__ == "__main__":
             frame(cam, *a_)
             dt = render(os.path.join(OUT, "crop_%d_%d.png" % (a_[0], a_[2])))
             print("CROP", round(dt, 1), "s", flush=True)
+        if p_.startswith("pv:"):
+            # vue en perspective (vignettes / carte du hub) : pv:cx;cy;dist;yaw°;pitch°;lens;w;h
+            # cible (cx, cy) au sol en cases ; pitch = angle depuis la verticale ; yaw = 0 → caméra au sud
+            a_ = [float(v) for v in p_[3:].split(";")]
+            cxv, cyv, dist, yaw, pitch, lens, wv_, hv_ = a_
+            pc = bpy.data.cameras.new("pv")
+            pc.type = "PERSP"
+            pc.lens = lens
+            pc.clip_start = 0.1
+            pc.clip_end = 800
+            po = bpy.data.objects.new("pv", pc)
+            scene.collection.objects.link(po)
+            tgt = Vector((cxv, Y(cyv), 0.6))
+            yr, pr = math.radians(yaw), math.radians(pitch)
+            d = Vector((math.sin(yr) * math.sin(pr), -math.cos(yr) * math.sin(pr), math.cos(pr)))
+            po.location = tgt + d * dist
+            po.rotation_euler = (-d).to_track_quat("-Z", "Y").to_euler()
+            old = scene.camera
+            scene.camera = po
+            scene.render.resolution_x, scene.render.resolution_y = int(wv_), int(hv_)
+            scene.render.pixel_aspect_x = scene.render.pixel_aspect_y = 1.0
+            scene.render.use_border = False
+            dt = render(os.path.join(OUT, "pv_%d_%d_%d.png" % (cxv, cyv, yaw)))
+            scene.camera = old
+            print("PV", round(dt, 1), "s", flush=True)
         if p_.startswith("view:"):
             a_ = [float(v) for v in p_[5:].split(";")]
             frame(cam, a_[0], a_[1], a_[2], a_[3], math.radians(a_[4]), int(a_[5]))
@@ -2898,7 +3185,13 @@ if __name__ == "__main__":
             objs_off = [o for o in bpy.data.objects if o.name in ("roof_%d" % bid, "front_%d" % bid, "awning_%d" % bid)]
             objs_on = [o for o in bpy.data.objects if o.name == "cut_%d" % bid]
             for o in objs_off:
-                o.hide_render = True
+                # invisible à la caméra mais garde son ombre : intérieur à l'ombre du toit,
+                # éclairé par les lampes et la lumière des ouvertures (lecture « intérieur »)
+                if INT_ROOF_SHADOW:
+                    o.visible_camera = False
+                    o.visible_glossy = False
+                else:
+                    o.hide_render = True
             for o in objs_on:
                 o.hide_render = False
             x, y, w, h = b["rect"]
@@ -2912,6 +3205,8 @@ if __name__ == "__main__":
             tb += render(os.path.join(OUT, "b%d_in.png" % bid))
             for o in objs_off:
                 o.hide_render = False
+                o.visible_camera = True
+                o.visible_glossy = True
             for o in objs_on:
                 o.hide_render = True
             info["buildings"].append({"id": bid, "rect": b["rect"],

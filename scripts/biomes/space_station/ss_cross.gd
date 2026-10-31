@@ -165,11 +165,11 @@ static func _try(rng: RandomNumberGenerator, simple: bool, lifts: Dictionary) ->
 		var top := _mod(fl, &"", "narrow_" + sfx)
 		top.roof = true
 		var lm := _mod(lift, &"elevator", "lift_" + sfx)
-		lm.roof = true
+		lm.roof = Cfg.geti("cross_roof_lifts", 0) == 1
 		lm.type = FloorLayout.ROOM_REST
 		lm.arch = &"ss_lift"
 		var cm := _mod(clo, &"closet", "closet_" + sfx)
-		cm.roof = true
+		cm.roof = Cfg.geti("cross_roof_closets", 0) == 1
 		cm.type = FloorLayout.ROOM_LOOT
 		var mm := _mod(mach, &"generator", "mach_" + sfx)
 		mm.roof = true
@@ -229,6 +229,8 @@ static func _try(rng: RandomNumberGenerator, simple: bool, lifts: Dictionary) ->
 				m2.key = Deck.KEY_LAB
 				m2.name = String(Deck.ROLE_NAMES[&"lab_vault"])
 			else:
+				# Flanc ouvert (pas de toit) : pièce éclairée visible comme sur la planche.
+				m2.roof = Cfg.geti("cross_roof_flank", 0) == 1
 				m2.role = &"server_room" if rng.randf() < 0.6 else &"infirmary"
 				m2.type = FloorLayout.ROOM_LOOT if rng.randf() < 0.6 else FloorLayout.ROOM_REST
 				m2.name = String(Deck.ROLE_NAMES[m2.role])
