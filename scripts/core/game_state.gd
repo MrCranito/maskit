@@ -23,6 +23,8 @@ var world_path: String = ""
 var current_map: Resource = null
 ## Debug : heure UTC forcée (secondes Unix) pour la rotation des cartes ; 0 = heure réelle.
 var debug_time_override: int = 0
+## Arène de test (mode dev, TestArena) en cours : victimes non comptées, aucune fin de raid.
+var in_test_arena: bool = false
 
 
 func _ready() -> void:

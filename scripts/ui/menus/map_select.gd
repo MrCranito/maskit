@@ -216,6 +216,8 @@ func _build_detail() -> Control:
 func refresh_rotation() -> void:
 	var now: int = MapRotation.now()
 	entries = MapRotation.offered_cards(now)
+	# Mode dev : l'arène de test, en plus de la rotation (TestArena.rotation_entries).
+	entries.append_array(TestArena.rotation_entries())
 	next_event = {} if MapRotation.is_restricted() else MapRotation.next_event(now)
 	_period_end = _compute_period_end(now)
 	var keep: Dictionary = _find_entry(last_selected_id)
@@ -454,7 +456,7 @@ func _show_detail(e: Dictionary) -> void:
 
 func _refresh_launch() -> void:
 	var card: MapCard = selected_entry.get("card") as MapCard
-	launch_button.text = "Choisir mon arsenal"
+	launch_button.text = "Entrer dans l'arène" if TestArena.is_arena_card(card) else "Choisir mon arsenal"
 	if card == null:
 		launch_button.disabled = true
 		_d_status.text = "Choisis une carte"
@@ -472,7 +474,8 @@ func _refresh_launch() -> void:
 		_d_status.text = "Niveau de raider %d requis" % RaiderProgress.required_level(card.id)
 	else:
 		launch_button.disabled = false
-		_d_status.text = "Étape suivante : tes armes"
+		_d_status.text = "Mode dev : rien ne compte, sortie libre" if TestArena.is_arena_card(card) \
+			else "Étape suivante : tes armes"
 
 
 func _refresh_detail_time(now: int) -> void:
@@ -505,8 +508,12 @@ func launch_selected() -> bool:
 	if card == null or launch_button.disabled:
 		MenuKit.sfx(&"error")
 		return false
-	GameState.set_current_map(card)
 	MenuKit.sfx(&"confirm")
+	# Arène de test : pas d'arsenal de départ, entrée directe (rien ne quitte la réserve).
+	if TestArena.is_arena_card(card):
+		TestArena.launch(self, card)
+		return true
+	GameState.set_current_map(card)
 	if next_scene != "":
 		MenuKit.go_to(self, next_scene)
 	return true

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="WorldData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dungeon/world_data.gd" id="1_world"]
+
+[resource]
+script = ExtResource("1_world")
+id = &"world_test_arena"
+display_name = "Arène de test"
+biome = &"test_arena"
+palette = {
+"extraction": Color(0.3, 0.85, 0.45, 0.45),
+"floor": Color(0.075, 0.08, 0.13, 1),
+"shadow": Color(0.12, 0.15, 0.28, 1),
+"street": Color(0.075, 0.08, 0.13, 1),
+"void": Color(0.024, 0.027, 0.05, 1),
+"wall": Color(0.03, 0.035, 0.06, 1)
+}
+floors_min = 1
+floors_max = 1
+generator_path = "res://scripts/dungeon/arena/arena_generator.gd"
+builder_path = "res://scripts/dungeon/arena/arena_builder.gd"
+floor_names = {
+0: "Arène"
+}

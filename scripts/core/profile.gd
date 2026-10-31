@@ -584,6 +584,10 @@ func record_kill(kind: StringName) -> Array[StringName]:
 func _on_enemy_died(enemy: Node, _pos: Vector2 = Vector2.ZERO) -> void:
 	if enemy == null or not enemy.is_in_group(&"enemy_units"):
 		return
+	# Arène de test (mode dev) : rien ne compte pour les déblocages.
+	var gs: Node = get_node_or_null(^"/root/GameState")
+	if gs != null and bool(gs.get("in_test_arena")):
+		return
 	var d: Variant = enemy.get(&"data")
 	if d is Resource and (d as Resource).get(&"kind") != null:
 		record_kill(StringName(str((d as Resource).get(&"kind"))))

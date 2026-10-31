@@ -124,6 +124,8 @@ var _toast_panel: PanelContainer = null
 var _toast_label: Label = null
 var _toast_tween: Tween = null
 var _fade_rect: ColorRect = null
+## Arène de test (mode dev) : contrôleur attaché quand le monde est l'arène (TestArena).
+var test_arena: TestArena = null
 
 
 func _ready() -> void:
@@ -153,6 +155,8 @@ func _ready() -> void:
 	apply_camera_limits()
 	_build_ui()
 	_apply_map_player_modifiers()
+	if TestArena.is_arena_world(world) and DevMode.is_available():
+		test_arena = TestArena.attach(self)
 	_update_banner(true)
 	EventBus.player_died.connect(_on_player_died)
 	EventBus.debug_toggled.connect(_on_debug_toggled)
@@ -793,6 +797,9 @@ func get_player_cell() -> Vector2i:
 func _on_player_died() -> void:
 	if _raid_over:
 		return
+	if test_arena != null:
+		test_arena.on_player_died()
+		return
 	_cancel_extraction(false)
 	# Séquence de mort (scripts/ui/death_overlay.gd) puis écran de fin, en temps réel (ralenti).
 	var delay := DeathOverlay.outro_time()
@@ -806,6 +813,10 @@ func _on_player_died() -> void:
 ## Abandon volontaire (menu pause, confirmation déjà faite) = mort immédiate.
 func abandon_raid() -> void:
 	if _raid_over:
+		return
+	# Arène de test : sortie libre, rien n'est perdu.
+	if test_arena != null:
+		test_arena.exit_to_menu()
 		return
 	if NetHooks.active:
 		NetHooks.note_abandon()

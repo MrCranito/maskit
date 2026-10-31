@@ -135,7 +135,12 @@ func get_biome() -> StringName:
 
 
 func biome_name() -> String:
-	return String(BIOME_NAMES.get(get_biome(), "Monde inconnu"))
+	if BIOME_NAMES.has(get_biome()):
+		return String(BIOME_NAMES[get_biome()])
+	# Monde hors registre des biomes (arène de test du mode dev) : son nom affiché.
+	var w: Resource = load(world_path) if is_available() else null
+	var n: String = String(w.get("display_name")) if w != null and w.get("display_name") != null else ""
+	return n if not n.is_empty() else "Monde inconnu"
 
 
 ## Vignette : propre à la carte, sinon celle du biome, sinon null.
