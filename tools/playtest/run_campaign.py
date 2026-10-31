@@ -30,6 +30,10 @@ PROFILES = ["prudent", "agressif", "fouilleur"]
 ELITES = {"fw": ["fw_deserter", "fw_buffalo"], "ss": ["ss_drone_tieur", "ss_atlas"],
           "mall": ["mall_violent", "mall_store_warden"]}
 TIERS = ["debutant", "moyen", "equipe"]
+# Passe escalier : arsenal de raid et arsenaux des combats de boss attendus dans chaque monde.
+ESCALIER = {"fw": ("commun", ["commun"]), "ss": ("commun", ["commun", "rare"]), "mall": ("rare", ["rare"]),
+            "cv": ("rare", ["rare", "epique"]), "ice": ("epique", ["epique"]),
+            "eg": ("epique", ["epique", "legendaire"])}
 
 
 def plan(pass_name: str, rounds: int = 4) -> list[dict]:
@@ -128,12 +132,30 @@ def plan(pass_name: str, rounds: int = 4) -> list[dict]:
                     jobs.append({"mode": "boss", "map": WORLD_MAPS[w], "difficulty": 1, "tier": tier,
                                  "profile": "agressif", "seed": 13000 + n, "max_time": 480})
                     n += 1
+    elif pass_name == "escalier":
+        # Escalier de difficulté (option A) : chaque monde à la difficulté de sa carte, avec les
+        # arsenaux attendus à ce stade. 20 combats de boss par arsenal + 18 raids (3 profils × 6).
+        n = 0
+        for w, (raid_tier, boss_tiers) in ESCALIER.items():
+            for tier in boss_tiers:
+                for r in range(20):
+                    jobs.append({"mode": "boss", "map": WORLD_MAPS[w], "difficulty": -1, "tier": tier,
+                                 "profile": "agressif", "seed": 14000 + n, "max_time": 480})
+                    n += 1
+            for rep in range(6):
+                for p in PROFILES:
+                    jobs.append({"mode": "raid", "map": WORLD_MAPS[w], "difficulty": -1, "tier": raid_tier,
+                                 "profile": p, "seed": 14000 + n, "max_time": 420})
+                    n += 1
     elif pass_name == "smoke":
         jobs = [{"mode": "raid", "map": MAPS["fw"], "difficulty": 1, "profile": "fouilleur", "seed": 11,
                  "max_time": 60}]
     for i, j in enumerate(jobs):
-        j["id"] = "%s_%03d_%s_%s_d%d_%s" % (pass_name, i, j["mode"], j["map"].replace("perm_", ""),
-                                             j["difficulty"], j.get("enemy") or j.get("tier") or j["profile"])
+        d = "dc" if j["difficulty"] < 0 else "d%d" % j["difficulty"]
+        j["id"] = "%s_%03d_%s_%s_%s_%s" % (pass_name, i, j["mode"], j["map"].replace("perm_", ""), d,
+                                            j.get("enemy") or j.get("tier") or j["profile"])
+        if j["mode"] == "raid" and j.get("tier"):
+            j["id"] += "_" + j["profile"]
     return jobs
 
 

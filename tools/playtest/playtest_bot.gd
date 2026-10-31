@@ -248,6 +248,9 @@ func _setup() -> void:
 		_abort("carte introuvable : " + card_path)
 		return
 	GameState.set_current_map(card, false)
+	# --difficulty=-1 : difficulté de la carte (MapCard.difficulty), comme dans le jeu.
+	if difficulty < 0:
+		difficulty = GameState.difficulty
 	GameState.difficulty = clampi(difficulty, 0, 4)
 	GameState.run_seed = seed_value
 	GameState.raid_inventory = Inventory.from_balance()

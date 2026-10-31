@@ -223,8 +223,8 @@ static func difficulty_mult(key: String, diff: int) -> float:
 func _apply_difficulty() -> void:
 	if not data.has_meta(&"difficulty_scaled"):
 		var d := data.duplicate() as TurretData
-		d.max_hp = data.max_hp * difficulty_mult("hp_mult", difficulty)
-		d.damage = data.damage * difficulty_mult("damage_mult", difficulty)
+		d.max_hp = data.max_hp * difficulty_mult("hp_mult", difficulty) * Enemy.world_mult("hp_mult")
+		d.damage = data.damage * difficulty_mult("damage_mult", difficulty) * Enemy.world_mult("damage_mult")
 		d.lock_time = data.lock_time * difficulty_mult("lock_time_mult", difficulty)
 		d.cooldown = data.cooldown * difficulty_mult("cooldown_mult", difficulty)
 		d.set_meta(&"difficulty_scaled", true)

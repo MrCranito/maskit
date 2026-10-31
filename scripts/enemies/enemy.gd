@@ -303,7 +303,7 @@ func _ready() -> void:
 		data = EnemyData.new()
 	_load_balance()
 	_load_difficulty()
-	max_hp = data.max_hp * boss_hp_scale()
+	max_hp = data.max_hp * hp_scale()
 	hp = max_hp
 	spawn_position = global_position
 	last_seen_position = global_position
@@ -423,7 +423,7 @@ func _tf(key: String, default: float) -> float:
 ## Multiplicateurs de difficulté (n'altèrent pas `data` : PV et vitesse de base inchangés).
 func _load_difficulty() -> void:
 	var d: int = clampi(int(GameState.get("difficulty")) if GameState.get("difficulty") != null else 1, 0, 4)
-	diff_damage_mult = _diff_at("damage_mult", d, [0.75, 1.0, 1.12, 1.25, 1.4])
+	diff_damage_mult = _diff_at("damage_mult", d, [0.75, 1.0, 1.12, 1.25, 1.4]) * world_mult("damage_mult")
 	diff_windup_mult = _diff_at("windup_mult", d, [1.25, 1.0, 0.94, 0.88, 0.8])
 	diff_cooldown_mult = _diff_at("cooldown_mult", d, [1.2, 1.0, 0.92, 0.85, 0.75])
 	diff_spread_mult = _diff_at("spread_mult", d, [1.4, 1.0, 0.9, 0.8, 0.65])
@@ -432,6 +432,25 @@ func _load_difficulty() -> void:
 	skill_check_interval = EnemySkills.cfg("check_interval", 0.3)
 	reactive_check_interval = EnemySkills.cfg("reactive_check_interval", 0.12)
 	skill_gap = EnemySkills.cfg("skill_gap", 1.2)
+
+
+## Échelle des PV : difficulté du raid (boss seulement) × escalier du monde ([world_scaling]).
+func hp_scale() -> float:
+	return boss_hp_scale() * world_mult("hp_mult")
+
+
+## Escalier de difficulté par monde ([world_scaling] key, dictionnaire id du monde → multiplicateur ;
+## monde absent ou inconnu = 1). Le monde est celui de la carte du raid (GameState.world_path).
+static func world_mult(key: String, world_id: String = "") -> float:
+	if world_id.is_empty():
+		var path: Variant = GameState.get("world_path") if GameState != null else null
+		world_id = String(path).get_file().get_basename() if path != null else ""
+	if world_id.is_empty():
+		return 1.0
+	var v: Variant = Balance.get_value("world_scaling", key, {})
+	if v is Dictionary and (v as Dictionary).has(world_id):
+		return maxf(float((v as Dictionary)[world_id]), 0.05)
+	return 1.0
 
 
 ## Multiplicateur des PV d'un boss selon la difficulté du raid ([boss] hp_mult) ; 1 sinon.
@@ -1663,7 +1682,7 @@ func apply_modifiers(hp_mult: float, damage_mult: float, speed_mult: float, awar
 	if data.has_meta(&"variant_rolled"):
 		d.set_meta(&"variant_rolled", true)
 	data = d
-	max_hp = d.max_hp * boss_hp_scale()
+	max_hp = d.max_hp * hp_scale()
 	hp = max_hp * ratio
 	if _health_bar != null:
 		_health_bar.queue_redraw()
@@ -1676,7 +1695,7 @@ func set_variant(new_data: EnemyData) -> void:
 	var d := new_data.duplicate() as EnemyData
 	d.set_meta(&"variant_rolled", true)
 	data = d
-	max_hp = d.max_hp * boss_hp_scale()
+	max_hp = d.max_hp * hp_scale()
 	hp = max_hp
 	if not is_inside_tree():
 		return

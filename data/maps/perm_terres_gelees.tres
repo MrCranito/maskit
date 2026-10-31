@@ -10,4 +10,5 @@ description = "Un continent prisonnier des glaces. Des bases abandonnées, des l
 world_path = "res://data/worlds/world_05_frozen_lands.tres"
 accent_color = Color(0.5, 0.85, 1, 1)
 tags = PackedStringArray("Classique", "Glace")
+difficulty = 2
 reward_text = "Butin standard"
