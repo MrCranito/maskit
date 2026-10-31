@@ -54,7 +54,9 @@ func test_chaque_arme_a_feu_a_un_sprite_tenu_et_un_json_valide() -> void:
 		# Canon vers la droite : la bouche est devant la prise en main, dans le quart droit de l'image.
 		assert_gt(muzzle.x, grip.x, "%s : bouche devant la poignée" % w.id)
 		assert_gt(muzzle.x, tsize.x * 0.75, "%s : bouche à l'avant de l'image" % w.id)
-		assert_almost_eq(float(d.get("scale", 0.0)), 0.45, 0.001, "%s : échelle des armes tenues" % w.id)
+		# 0.45, ou 0.225 pour les armes HD (deux fois plus de pixels, même taille en jeu).
+		var sc := float(d.get("scale", 0.0))
+		assert_true(is_equal_approx(sc, 0.45) or is_equal_approx(sc, 0.225), "%s : échelle des armes tenues (%s)" % [w.id, sc])
 		assert_eq(int(d.get("rarity", -1)), w.rarity, "%s : rareté du rendu = rareté de l'arme" % w.id)
 
 
@@ -65,7 +67,8 @@ func test_chaque_arme_a_feu_a_son_icone() -> void:
 		if not ResourceLoader.exists(p):
 			continue
 		var tex := load(p) as Texture2D
-		assert_eq(tex.get_size() if tex != null else Vector2.ZERO, Vector2(ICON_SIZE), "%s : icône 256x128" % w.id)
+		var isz := tex.get_size() if tex != null else Vector2.ZERO
+		assert_true(isz == Vector2(ICON_SIZE) or isz == Vector2(ICON_SIZE) * 2.0, "%s : icône 256x128 ou 512x256 (%s)" % [w.id, isz])
 		# L'icône résolue par le catalogue est bien celle de l'arme (pas celle de la catégorie).
 		assert_eq(WeaponCatalog.icon_for(w), tex, "%s : WeaponCatalog.icon_for" % w.id)
 

@@ -184,7 +184,9 @@ func test_sprites_et_icones_armes() -> void:
 		var icon := load("res://assets/ui/weapons/%s.png" % wid) as Texture2D
 		assert_not_null(icon, "icône d'arme manquante : %s" % wid)
 		if icon != null:
-			assert_eq(Vector2i(icon.get_size()), Vector2i(256, 128), "taille d'icône : %s" % wid)
+			# 256 × 128, ou 512 × 256 pour les armes refaites en HD (art/blender/weapons_hd.py).
+			assert_true(Vector2i(icon.get_size()) in [Vector2i(256, 128), Vector2i(512, 256)],
+				"taille d'icône : %s (%s)" % [wid, icon.get_size()])
 
 
 func test_sprites_au_sol_des_gadgets() -> void:
