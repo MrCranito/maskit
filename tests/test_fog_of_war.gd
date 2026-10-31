@@ -328,9 +328,20 @@ func test_shaders_single_pass_budget() -> void:
 	# Coût mobile : une passe, aucune boucle, au plus 6 lectures de texture par style.
 	var common := FileAccess.get_file_as_string("res://assets/shaders/fog_common.gdshaderinc")
 	assert_ne(common, "", "Partie commune lisible")
+	# Le style naturel passe par fog_natural_common (deux passes sans lecture de l'écran) : chaque
+	# passe est vérifiée avec son fichier inclus.
+	var natural_common := FileAccess.get_file_as_string("res://assets/shaders/fog_natural_common.gdshaderinc")
+	var passes: Dictionary = {}
 	for style: StringName in FogOfWar.SHADERS:
-		var sh: Shader = FogOfWar.SHADERS[style]
+		passes[String(style)] = FogOfWar.SHADERS[style]
+	for style: StringName in FogOfWar.ADD_PASS_SHADERS:
+		passes[String(style) + " (passe 2)"] = FogOfWar.ADD_PASS_SHADERS[style]
+	for style: String in passes:
+		var sh: Shader = passes[style]
 		var code := sh.code
+		if code.contains("fog_natural_common.gdshaderinc"):
+			code += "
+" + natural_common
 		assert_true(code.contains("fog_common.gdshaderinc"), "%s inclut la partie commune" % style)
 		var full := _strip_comments(code + "\n" + common)
 		var reads := full.count("texture(")
@@ -345,3 +356,26 @@ func _strip_comments(src: String) -> String:
 		var i := line.find("//")
 		out.append(line if i < 0 else line.substr(0, i))
 	return "\n".join(out)
+
+
+## perf/brouillard-sans-copie : le style naturel ne lit plus l'écran (copie plein écran à chaque
+## image, très coûteuse sur mobile) ; il est rendu en deux passes (× F puis + B) aux mêmes uniformes.
+func test_natural_style_two_passes_without_screen_read() -> void:
+	var fog := _fog_with_style("natural")
+	assert_not_null(fog.add_pass, "seconde passe créée pour le style naturel")
+	var add_mat := fog.add_pass.material as ShaderMaterial
+	assert_not_null(add_mat)
+	assert_eq(add_mat.shader, FogOfWar.ADD_PASS_SHADERS[FogOfWar.STYLE_NATURAL])
+	var main_mat := fog.material as ShaderMaterial
+	for key: String in ["shade_tint", "mist_density", "desat_keep", "map_size_px", "view_radius_px"]:
+		assert_eq(add_mat.get_shader_parameter(StringName(key)), main_mat.get_shader_parameter(StringName(key)),
+			"uniforme %s identique dans les deux passes" % key)
+	assert_eq(add_mat.get_shader_parameter(&"vis_mask"), main_mat.get_shader_parameter(&"vis_mask"))
+	for sh: Shader in [main_mat.shader, add_mat.shader]:
+		assert_false(_strip_comments(sh.code).contains("hint_screen_texture"), "aucune lecture de l'écran (%s)" % sh.resource_path)
+	var inc := FileAccess.get_file_as_string("res://assets/shaders/fog_natural_common.gdshaderinc")
+	assert_false(_strip_comments(inc).contains("hint_screen_texture"), "partie commune : aucune lecture de l'écran")
+	assert_true(main_mat.shader.code.contains("blend_mul"), "passe 1 multiplicative")
+	assert_true(add_mat.shader.code.contains("blend_premul_alpha"), "passe 2 additive")
+	# Les autres styles n'ont pas de seconde passe.
+	assert_null(_fog_with_style("mist").add_pass)
