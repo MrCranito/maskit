@@ -67,7 +67,7 @@ func _ready() -> void:
 	st.bg_color = Color(0.024, 0.027, 0.05, 0.78)
 	st.set_content_margin_all(8)
 	_box.add_theme_stylebox_override("panel", st)
-	_box.position = Vector2(8, 8)
+	_box.position = Vector2(16, 96)  # sous la jauge de vie
 	add_child(_box)
 	var col := VBoxContainer.new()
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
