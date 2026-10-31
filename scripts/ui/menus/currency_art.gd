@@ -1,11 +1,13 @@
 class_name CurrencyArt
 extends RefCounted
-## Images peintes de la monnaie (rendus 3D « toon peint » de art/blender/build_currency.py) :
-## gemme, pièce d'or et illustrations des packs de gemmes, dans assets/ui/currency/.
+## Images peintes de la monnaie, dans assets/ui/currency/ : gemme, pièce d'or et illustrations des
+## packs de gemmes et d'or, découpées dans la planche art/ui/monnaie_reference.png par
+## tools/currency_cutout/currency_cutout.gd.
 ## Chaque accès renvoie null si l'image manque : les icônes retombent alors sur leur dessin en code.
 
 const DIR := "res://assets/ui/currency/"
-## Nombre d'illustrations de packs (gems_pack_1 … gems_pack_N) ; au-delà, la dernière est reprise.
+## Nombre d'illustrations de packs (gems_pack_1 … gems_pack_N, gold_pack_1 … gold_pack_N) ; au-delà,
+## la dernière est reprise.
 const PACK_IMAGES := 4
 ## Les images gardent une marge pour leur lueur : les icônes les dessinent un peu plus grandes que
 ## leur boîte pour occuper la même place que l'ancien dessin (le débordement est la lueur).
@@ -38,6 +40,11 @@ static func coin() -> Texture2D:
 ## Illustration du pack de gemmes d'indice `i` (0 = le plus petit), de plus en plus généreuse.
 static func pack(i: int) -> Texture2D:
 	return texture("gems_pack_%d" % clampi(i + 1, 1, PACK_IMAGES))
+
+
+## Illustration du pack d'or d'indice `i` (quelques pièces, sac, coffre, montagne d'or).
+static func gold_pack(i: int) -> Texture2D:
+	return texture("gold_pack_%d" % clampi(i + 1, 1, PACK_IMAGES))
 
 
 ## Dessine `tex` centrée dans `rect` en gardant ses proportions.

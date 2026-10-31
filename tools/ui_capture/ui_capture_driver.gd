@@ -5,7 +5,7 @@ extends Node
 
 ## Options : --only=menu (seulement le menu principal, <prefix>menu.png), --only=cartes (choix de la
 ## carte, filtre Permanentes : <prefix>cartes.png puis <prefix>carte_<id>.png pour chaque carte de --maps=a,b),
-## --prefix=xxx,
+## --only=monnaie (menu, boutique Gemmes / Or, pass de combat : <prefix>monnaie_*.png), --prefix=xxx,
 ## --insets=g,h,d,b (encoche simulée, px de fenêtre : HudSafeArea.debug_insets),
 ## --pass_tier=N (pass de combat au palier N + moitié du suivant, en mémoire), --dev=0|1 (ressources illimitées),
 ## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire),
@@ -60,6 +60,9 @@ func _ready() -> void:
 	if only == "arsenal_clef":
 		_run_arsenal_key.call_deferred()
 		return
+	if only == "monnaie":
+		_run_currency.call_deferred()
+		return
 	_run.call_deferred()
 
 
@@ -91,6 +94,30 @@ func _run_menu() -> void:
 		(mm.slab as MainMenu.DeploySlab).held = true
 		await _sleep(0.1)
 	await _shot(prefix + "menu")
+	get_tree().quit(0)
+
+
+## Visuels de la monnaie : menu principal (compteurs), onglets Gemmes et Or de la boutique (dernier
+## pack choisi aussi), pass de combat. <prefix>monnaie_*.png
+func _run_currency() -> void:
+	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
+	await _sleep(2.5)
+	await _shot(prefix + "monnaie_menu")
+	get_tree().change_scene_to_file(MenuKit.SHOP_SCENE)
+	await _sleep(1.5)
+	for tab: StringName in [&"gems", &"gold"]:
+		get_tree().current_scene.call(&"show_tab", tab)
+		await _sleep(0.8)
+		await _shot(prefix + "monnaie_boutique_" + String(tab))
+		var offers: Variant = get_tree().current_scene.get(&"offers")
+		if offers is ShopOffers:
+			var n := Store.packs().size() if tab == &"gems" else Store.gold_packs().size()
+			(offers as ShopOffers).select(n - 1)
+			await _sleep(0.6)
+			await _shot(prefix + "monnaie_boutique_" + String(tab) + "_dernier")
+	get_tree().change_scene_to_file(MenuKit.BATTLE_PASS_SCENE)
+	await _sleep(2.0)
+	await _shot(prefix + "monnaie_pass")
 	get_tree().quit(0)
 
 

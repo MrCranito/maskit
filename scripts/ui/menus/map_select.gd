@@ -1,10 +1,11 @@
 class_name MapSelect
 extends Control
 ## « Choisis ta carte » (ouvert par « Jouer ») :
-##   haut  : retour, titre, puces de filtre par catégorie (Toutes / Événements / Hebdo /
-##           Mensuelle / Permanentes) ;
-##   centre: toutes les cartes disponibles d'un coup d'œil, en grandes vignettes sur deux
-##           rangées défilables horizontalement (l'événement en cours en grand à gauche) ;
+##   haut  : retour, titre, puces de filtre par catégorie (Toutes + [maps] categories :
+##           Événements / Permanentes) ;
+##   centre: toutes les cartes disponibles d'un coup d'œil, rangées par difficulté, en grandes
+##           vignettes par colonnes de 2, défilables horizontalement (l'événement en cours en
+##           grand à gauche) ;
 ##   bas   : panneau compact de la carte choisie (nom, biome, modificateurs en puces
 ##           vertes/rouges, récompense, minuteur) + gros bouton « Choisir mon arsenal ».
 ## Sélection au tap (animation), deuxième tap = bouton d'action. Le bouton ouvre l'écran
@@ -12,12 +13,13 @@ extends Control
 ## Rotation : MapRotation (inchangée). Minuteurs : Timer 1×/s ; liste reconstruite quand une
 ## période se termine. Monde absent → « Bientôt », non jouable.
 
-const FILTERS: Array[StringName] = [&"all", &"event", &"weekly", &"monthly", &"permanent"]
 const FILTER_TITLES := {
 	&"all": "Toutes", &"event": "Événements", &"weekly": "Hebdo",
 	&"monthly": "Mensuelle", &"permanent": "Permanentes",
 }
 const GAP := 12
+## Vignettes par colonne (grandes vignettes, défilement horizontal au-delà de la largeur).
+const ROWS := 2
 
 ## Dernière carte sélectionnée / dernier filtre (conservés au retour de l'arsenal).
 static var last_selected_id: StringName = &""
@@ -49,8 +51,6 @@ var _d_reward: Label = null
 var _d_status: Label = null
 var _period_end: int = 0
 var _tile_h: float = 0.0
-## Rangées de petites vignettes (2 ou 3, choisi pour tout afficher sans défiler si possible).
-var rows: int = 2
 
 
 func _ready() -> void:
@@ -121,7 +121,7 @@ func _build() -> void:
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(chips)
 	var group := ButtonGroup.new()
-	for f: StringName in FILTERS:
+	for f: StringName in filters():
 		var accent: Color = MenuKit.GOLD if f == &"all" else (MapTile.CATEGORY_BADGE[f][1] as Color)
 		var b := MenuKit.chip(String(FILTER_TITLES[f]), accent, group)
 		b.toggled.connect(func(on: bool) -> void:
@@ -147,11 +147,7 @@ func _build() -> void:
 	_scroll.resized.connect(func() -> void:
 		if not is_inside_tree():
 			return
-		if _best_rows() != rows:
-			_fill()
-			if not selected_entry.is_empty():
-				select_entry(selected_entry, false)
-		elif absf(_scroll.size.y - _tile_h) > 1.0:
+		if absf(_scroll.size.y - _tile_h) > 1.0:
 			_layout_tiles())
 
 	root.add_child(_build_detail())
@@ -223,7 +219,7 @@ func refresh_rotation() -> void:
 	var keep: Dictionary = _find_entry(last_selected_id)
 	if not keep.is_empty():
 		selected_entry = keep
-	var f: StringName = last_filter if FILTERS.has(last_filter) else &"all"
+	var f: StringName = last_filter if filters().has(last_filter) else &"all"
 	current_filter = &""
 	set_filter(f)
 	if not keep.is_empty() and _tile_for(keep) != null:
@@ -281,7 +277,8 @@ func set_filter(f: StringName) -> void:
 	_scroll.scroll_horizontal = 0
 
 
-## Crée les vignettes du filtre courant : événement en cours en grand, puis colonnes de 2.
+## Crée les vignettes du filtre courant : événement en cours en grand, puis les autres par
+## difficulté croissante (sorted_by_difficulty), en colonnes de ROWS vignettes.
 func _fill() -> void:
 	for c: Node in _strip.get_children():
 		_strip.remove_child(c)
@@ -295,6 +292,7 @@ func _fill() -> void:
 			featured = e
 		else:
 			rest.append(e)
+	rest = sorted_by_difficulty(rest)
 	var show_next: bool = not next_event.is_empty() and (current_filter == &"all" or current_filter == MapCard.CATEGORY_EVENT)
 	if featured.is_empty() and show_next:
 		_add_tile(next_event, MapTile.Mode.FEATURED, true, _strip)
@@ -302,10 +300,10 @@ func _fill() -> void:
 		_add_tile(featured, MapTile.Mode.FEATURED, false, _strip)
 		if show_next:
 			rest.push_front(next_event)
-	rows = _best_rows()
+	# Colonnes de ROWS vignettes, de gauche à droite : la difficulté monte de colonne en colonne.
 	var col: VBoxContainer = null
 	for i: int in rest.size():
-		if i % rows == 0:
+		if i % ROWS == 0:
 			col = VBoxContainer.new()
 			col.add_theme_constant_override("separation", GAP)
 			col.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -322,21 +320,32 @@ func _fill() -> void:
 	_wire_focus()
 
 
-## Nombre de rangées : 2 si tout tient en largeur, sinon 3 (si tout tient), sinon 2 (défilement).
-func _best_rows() -> int:
-	var n: int = entries_of(current_filter).size() + (1 if not next_event.is_empty() else 0)
-	var w: float = _scroll.size.x if _scroll != null and _scroll.size.x > 0.0 else 1200.0
-	for r: int in [2, 3]:
-		if _strip_width(r, n) <= w + 1.0:
-			return r
-	return 2
+## Puces de filtre : Toutes + les catégories proposées (MapRotation.enabled_categories).
+static func filters() -> Array[StringName]:
+	var out: Array[StringName] = [&"all"]
+	out.append_array(MapRotation.enabled_categories())
+	return out
 
 
-## Largeur totale de la rangée pour `r` rangées et `n` vignettes (dont une mise en avant).
-func _strip_width(r: int, n: int) -> float:
-	var sz: Array[Vector2] = _tile_sizes(r)
-	var cols: int = ceili(maxf(n - 1, 0) / float(r))
-	return sz[0].x + cols * (sz[1].x + GAP)
+## Cartes rangées par difficulté croissante (MapCard.difficulty), puis dans l'ordre des mondes
+## (data/worlds/world_01…, world_02…) ; l'arène de test du mode dev en dernier. Tri stable.
+static func sorted_by_difficulty(list: Array[Dictionary]) -> Array[Dictionary]:
+	var keyed: Array = []
+	for i: int in list.size():
+		var card := list[i].get("card") as MapCard
+		var arena := 1 if TestArena.is_arena_card(card) else 0
+		var diff: int = card.difficulty if card != null else 99
+		var world: String = card.world_path.get_file() if card != null else ""
+		keyed.append([arena, diff, world, i])
+	keyed.sort_custom(func(a: Array, b: Array) -> bool:
+		for k: int in 4:
+			if a[k] != b[k]:
+				return a[k] < b[k]
+		return false)
+	var out: Array[Dictionary] = []
+	for k: Array in keyed:
+		out.append(list[int(k[3])])
+	return out
 
 
 ## [taille mise en avant, taille compacte] pour `r` rangées.
@@ -351,7 +360,7 @@ func _tile_sizes(r: int) -> Array[Vector2]:
 ## Taille des vignettes d'après la hauteur disponible.
 func _layout_tiles() -> void:
 	_tile_h = _scroll.size.y
-	var sz: Array[Vector2] = _tile_sizes(rows)
+	var sz: Array[Vector2] = _tile_sizes(ROWS)
 	for t: MapTile in tiles:
 		t.custom_minimum_size = sz[0] if t.mode == MapTile.Mode.FEATURED else sz[1]
 
@@ -384,7 +393,7 @@ func _tile_for(e: Dictionary) -> MapTile:
 func _wire_focus() -> void:
 	if tiles.is_empty():
 		return
-	for f: StringName in FILTERS:
+	for f: StringName in filters():
 		var b: Button = filter_chips[f]
 		b.focus_neighbor_bottom = b.get_path_to(tiles[0])
 	launch_button.focus_neighbor_top = launch_button.get_path_to(tiles[0])

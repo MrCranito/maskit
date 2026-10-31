@@ -694,9 +694,7 @@ func _build_gold() -> void:
 		glow.anchor_right = 1.0
 		glow.anchor_bottom = art_ratio + 0.08
 		card.add_child(glow)
-		var art := GoldPile.new()
-		art.name = "Art"
-		art.coins = gold_pile_size(i)
+		var art := gold_art(i)
 		art.anchor_left = 0.08
 		art.anchor_right = 0.92
 		art.anchor_top = 0.08
@@ -722,6 +720,24 @@ func _build_gold() -> void:
 		u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		info.add_child(u)
 		_price_button(card, i, "%s gemmes" % fmt(int(p["gems"])), "", on, func() -> void: ask_gold_pack(i))
+
+
+## Illustration d'un pack d'or (image peinte, sinon une pile de pièces dessinée qui grossit).
+static func gold_art(i: int) -> Control:
+	var tex := CurrencyArt.gold_pack(i)
+	if tex == null:
+		var pile := GoldPile.new()
+		pile.name = "Art"
+		pile.coins = gold_pile_size(i)
+		return pile
+	var t := TextureRect.new()
+	t.name = "Art"
+	t.texture = tex
+	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	t.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return t
 
 
 ## Nombre de pièces dessinées pour le pack `i` (pile qui grossit).
@@ -760,8 +776,7 @@ func _fill_gold_slab() -> void:
 	glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	glow.offset_bottom = -40
 	stage.add_child(glow)
-	var art := GoldPile.new()
-	art.coins = gold_pile_size(i)
+	var art := gold_art(i)
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.offset_bottom = -52
 	stage.add_child(art)
