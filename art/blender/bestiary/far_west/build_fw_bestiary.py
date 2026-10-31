@@ -68,10 +68,15 @@ def board(path: str, kinds: list) -> None:
     W = 250 + cell * 5
     img = Image.new("RGBA", (W, cell * len(rows) + 20), (18, 26, 46, 255))
     dr = ImageDraw.Draw(img)
-    try:
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-        small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
-    except OSError:
+    font = small = None
+    for bold, reg in (("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+                      ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf")):
+        try:
+            font, small = ImageFont.truetype(bold, 20), ImageFont.truetype(reg, 14)
+            break
+        except OSError:
+            continue
+    if font is None:
         font = small = ImageFont.load_default()
     for r, (k, tiles) in enumerate(rows):
         y = 10 + r * cell
@@ -96,7 +101,7 @@ def board(path: str, kinds: list) -> None:
 
 
 def main() -> None:
-    args = sys.argv[1:]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     fac = factories()
     kinds = args[args.index("--kinds") + 1].split(",") if "--kinds" in args else [k for k in ORDER if k in fac]
     os.makedirs(S.TMP_DIR, exist_ok=True)

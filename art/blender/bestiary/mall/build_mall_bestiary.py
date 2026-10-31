@@ -84,40 +84,46 @@ COMMON_MATS = {
 
 SPEC: dict[str, dict] = {
     "mall_zombie": {
-        "name": "Zombie", "rig": "human", "frame": 192, "scale": 1.0, "head": 1.16, "leg": 0.80,
-        "torso": (0.98, 0.92), "arm": 0.90, "arm_len": 1.08, "hunch": 0.30, "fps_run": 9, "top_key": "skin",
+        "name": "Zombie", "rig": "human", "frame": 192, "scale": 1.04, "head": 0.98, "leg": 0.90,
+        "torso": (0.94, 0.80), "arm": 0.80, "arm_len": 1.20, "hunch": 0.30, "fps_run": 9, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#6a7064", "#1e1c36", "#8e9682"), ("#5e4858", "#1a1028", "#7e6274"),
-                             ("#76705e", "#262036", "#9a9078")], 5.0),
-            "wound": ("#6e1424", "#2a0618", "#9a2232"),
+            "skin": ("pat", [("#8c6448", "#2e1a26", "#b0825e"), ("#5e3630", "#1e0c16", "#7e4a3e"),
+                             ("#9a7656", "#2e1c26", "#bc966e")], 7.5),
+            "rot": ("#4a2a2a", "#180a12", "#6a3c36"),
+            "wound": ("#8a1622", "#2e0612", "#b8263a"),
             "mouth": ("#2a0814", "#100208", "#4a1222"),
-            "shirt": ("pat", [("#4e4a60", "#16142c", "#6c6888"), ("#3e3a50", "#100e24", "#5a5672")], 6.0),
-            "pants": "jeans",
-            "shoe": ("#3a3032", "#100c14", "#5a4c4e"),
-            "eye_glow": "!#f0f0a0",
-            "hair": ("#2a2226", "#0c080c", "#46383c"),
+            "shirt": ("#6e6460", "#221a24", "#948a84"),
+            "pants": ("pat", [("#3a3a42", "#101018", "#5a5a66"), ("#2c2c34", "#0a0a12", "#46464e")], 6.0),
+            "shoe": ("#2e2624", "#0e0a0c", "#4a3e3a"),
+            "eye_glow": "!#f4e8b0",
+            "hair": ("#2a2024", "#0c080c", "#463438"),
+            "nail": ("#d8ccb0", "#5a4a50", "#f4ead0"),
         },
     },
     "mall_flayer": {
-        "name": "Écorcheur", "rig": "human", "frame": 192, "scale": 1.04, "head": 0.98, "leg": 0.86,
-        "torso": (0.86, 0.80), "arm": 0.76, "arm_len": 1.22, "hunch": 0.42, "fps_run": 16, "top_key": "skin",
+        "name": "Écorcheur", "rig": "human", "frame": 192, "scale": 1.04, "head": 0.92, "leg": 0.92,
+        "torso": (0.84, 0.74), "arm": 0.70, "arm_len": 1.24, "hunch": 0.50, "fps_run": 16, "top_key": "skin",
+        "pants_key": "skin", "shin_key": "legdark",
         "mats": {
-            "skin": ("pat", [("#a4462e", "#3a0e24", "#d8704c"), ("#7e2e28", "#2a0a1e", "#ac4c3c"),
-                             ("#c06a4a", "#44162a", "#e8946a")], 7.0),
+            "skin": ("pat", [("#80402e", "#280a1a", "#aa5e42"), ("#6a2e26", "#1e0814", "#8e4434"),
+                             ("#8e5038", "#2e1020", "#b46a4c")], 14.0),
+            "legdark": ("pat", [("#5a2a24", "#1a0612", "#7a3c30"), ("#4a2020", "#140610", "#64302a")], 12.0),
             "sinew": ("#6a1c22", "#22061a", "#9a3036"),
             "pants": ("#2e2430", "#0c0812", "#4a3c4a"),
-            "shoe": ("#2e2430", "#0c0812", "#4a3c4a"),
-            "blade": ("#3a2a30", "#0e0810", "#6a4a52"),
-            "blade_edge": "!#ff2a3a",
-            "eye_glow": "!#ffc040",
+            "shoe": ("#4a2020", "#140610", "#64302a"),
+            "blade": ("#b8a48c", "#4a3036", "#e8d8bc"),
+            "blade_edge": "!#ff3a2a",
+            "eye_glow": "!#ffd040",
+            "mouth": ("#2a0814", "#100208", "#4a1222"),
         },
     },
     "mall_security_bot": {
-        "name": "Sécurité robot", "rig": "human", "frame": 192, "scale": 1.08, "head": 1.10, "leg": 0.82,
-        "torso": (1.22, 1.10), "arm": 1.22, "arm_len": 1.0, "hunch": 0.04, "fps_run": 12,
+        "name": "Sécurité robot", "rig": "human", "frame": 192, "scale": 1.10, "head": 0.94, "leg": 0.86,
+        "torso": (1.26, 1.10), "arm": 1.30, "arm_len": 1.02, "hunch": 0.10, "fps_run": 12,
         "mats": {
-            "armor": ("#3e4862", "#121630", "#6e7ea4"),
-            "armor_dark": ("#262a3c", "#0a0c1a", "#44485e"),
+            "armor": ("#3c4558", "#10131e", "#74849e"),
+            "armor_dark": ("#22262f", "#08090f", "#3e4452"),
+            "trim": ("#7a8494", "#262a36", "#b4bccb"),
             "joint": ("#1c1e2a", "#08080e", "#383a4a"),
             "visor": "!#ff2434",
             "light_red": "!#ff3a2a",
@@ -128,77 +134,83 @@ SPEC: dict[str, dict] = {
         },
     },
     "mall_clone": {
-        "name": "Clone", "rig": "human", "frame": 192, "scale": 1.0, "head": 1.24, "leg": 0.82,
-        "torso": (0.96, 0.94), "arm": 0.92, "arm_len": 1.0, "hunch": 0.10, "fps_run": 15,
-        "sleeve_key": "jacket", "shoulder_key": "jacket",
+        "name": "Clone", "rig": "human", "frame": 192, "scale": 1.02, "head": 1.04, "leg": 0.88,
+        "torso": (1.04, 0.96), "arm": 1.06, "arm_len": 1.04, "hunch": 0.14, "fps_run": 15,
+        "sleeve_key": "jacket", "shoulder_key": "jacket", "hand_key": "skin",
         "mats": {
-            "hoodie": ("pat", [("#34324a", "#0e0c20", "#56547a"), ("#2a2840", "#0a0818", "#46446a")], 6.0),
-            "jacket": ("#3c3c54", "#10102a", "#62628a"),
-            "shirt": ("#8a1e2e", "#320818", "#c03040"),
-            "pants": "jeans",
+            "hoodie": ("#2a2a34", "#0a0a14", "#46465a"),
+            "jacket": ("pat", [("#545c72", "#141828", "#7c86a0"), ("#464e62", "#101422", "#6a7490")], 9.0),
+            "shirt": ("pat", [("#a02232", "#300814", "#cc3646"), ("#3a161c", "#0a0408", "#5a2428")], 24.0),
+            "pants": ("pat", [("#2a3448", "#0a0e1e", "#465674"), ("#222a3c", "#080a18", "#3a4662")], 7.0),
             "shoe": ("#262230", "#0a0810", "#443e52"),
             "face": ("#0c0a14", None, None),
             "eye_glow": "!#d27aff",
-            "pack": ("#3e3a32", "#12100e", "#625a4c"),
-            "skin": ("#6a5a6a", "#241a30", "#8a7888"),
+            "skin": ("#5a3e34", "#1e1018", "#7a5646"),
             "blade": ("#9aa0b4", "#30344a", "#e4e8f4"),
             "smoke": "!#9a4aff",
         },
     },
     "mall_brute": {
-        "name": "Gros brute", "rig": "human", "frame": 256, "scale": 1.42, "head": 1.22, "leg": 0.74,
-        "torso": (1.62, 1.34), "arm": 1.70, "arm_len": 1.16, "hunch": 0.24, "belly": 0.6, "fps_run": 10, "top_key": "skin",
+        "name": "Gros brute", "rig": "human", "frame": 256, "scale": 1.42, "head": 1.02, "leg": 0.74,
+        "torso": (1.66, 1.30), "arm": 1.74, "arm_len": 1.16, "hunch": 0.30, "belly": 0.5, "fps_run": 10, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#7e6c70", "#20142e", "#a28e8e"), ("#6a5660", "#1a1028", "#8a747e"),
-                             ("#76646e", "#1e1230", "#988290")], 4.0),
-            "vein": ("#6a2a5a", "#260a2a", "#9a4a86"),
-            "pants": ("pat", [("#3a3044", "#100c1c", "#5e5070"), ("#30283a", "#0c0816", "#4c4060")], 6.0),
+            "skin": ("pat", [("#b08070", "#3a1e2a", "#d4a28c"), ("#9a6458", "#2e1222", "#ba7e6e"),
+                             ("#bc8e7e", "#3e2230", "#deb09c")], 9.0),
+            "vein": ("#6a2a3a", "#260a1a", "#9a4a56"),
+            "pants": ("pat", [("#3a3238", "#100c12", "#5a4e56"), ("#2e2830", "#0c080e", "#4a4048")], 6.0),
             "shoe": ("#2a2228", "#0a080c", "#463a40"),
-            "bracer": ("#5e626e", "#1c1e2c", "#9a9eae"),
+            "bracer": ("#34343c", "#0c0c12", "#55565f"),
             "chain": ("#8a8c98", "#2a2c3e", "#d0d2dc"),
-            "eye_glow": "!#ff4a3a",
+            "eye_glow": "!#ffb040",
             "wound": ("#8e1a2c", "#36081e", "#c02a3a"),
-            "metal": ("#6a6e7e", "#1e2032", "#a8acbc"),
+            "metal": ("#42444e", "#121218", "#666874"),
+            "cloth": ("#8a1e24", "#2e0610", "#b0303a"),
+            "stitch": ("#2a1418", "#0a0408", "#4a2a2e"),
         },
     },
     "mall_night_spider": {
-        "name": "Nuit blanche", "rig": "spider", "frame": 192, "scale": 1.22, "fps_run": 18,
-        "legs": 4, "body_z": 0.40, "femur": 0.56, "tibia": 0.66, "spread": 0.80,
+        "name": "Nuit blanche", "rig": "spider", "frame": 192, "scale": 1.18, "fps_run": 18,
+        "legs": 4, "body_z": 0.44, "femur": 0.66, "tibia": 0.74, "spread": 0.92,
         "mats": {
-            "carapace": ("pat", [("#4a2a72", "#140a2a", "#7a52b0"), ("#3a2060", "#100822", "#62409a")], 5.0),
-            "leg": ("#4a2e72", "#140a2a", "#7e5ab4"),
-            "leg_tip": ("#2e1c4a", "#0c061c", "#5e3e8e"),
-            "glow": "!#c35cff",
-            "glow_soft": "!#8a3aff",
-            "eye_glow": "!#ff3a7a",
-            "fang": ("#d8c8e0", "#5a4a6a", "#ffffff"),
+            "carapace": ("pat", [("#3a2e6a", "#0c0a24", "#6a56b4"), ("#4a307a", "#120a2a", "#7a52c0")], 6.0),
+            "leg": ("#28264a", "#08081c", "#4a4884"),
+            "leg_tip": ("#1e1c3a", "#060616", "#3c3a6e"),
+            "glow": "!#b45cff",
+            "glow_soft": "!#ff6a3a",
+            "eye_glow": "!#d070ff",
+            "eye_small": "!#ff7a3a",
+            "fang": ("#e08a4a", "#5a2a20", "#ffc080"),
         },
     },
     "mall_violent": {
-        "name": "Le Violent", "rig": "human", "frame": 224, "scale": 1.22, "head": 1.08, "leg": 0.80,
-        "torso": (1.36, 1.10), "arm": 1.36, "arm_len": 1.18, "hunch": 0.36, "fps_run": 15, "top_key": "skin",
+        "name": "Le Violent", "rig": "human", "frame": 224, "scale": 1.22, "head": 0.94, "leg": 0.84,
+        "torso": (1.40, 1.12), "arm": 1.30, "arm_len": 1.24, "hunch": 0.42, "fps_run": 15, "top_key": "skin",
         "mats": {
-            "skin": ("pat", [("#9a4036", "#2e0a1e", "#c2604c"), ("#7e3030", "#26081a", "#a24840"),
-                             ("#a84c44", "#34102a", "#cc6e5e")], 5.0),
-            "vein": ("#6a1a3a", "#22061a", "#9a2e52"),
+            "skin": ("pat", [("#8e4c3c", "#2a0c1a", "#b86e56"), ("#7a3c30", "#220a16", "#9e5644"),
+                             ("#9a5844", "#30101e", "#c07a60")], 18.0),
+            "vein": ("#5a1a2a", "#1e0612", "#8a2e40"),
             "tattoo": "!#ff4ad2",
-            "pants": ("#2a2030", "#0a0610", "#463650"),
-            "shoe": ("#2a2030", "#0a0610", "#463650"),
+            "pants": ("pat", [("#3a2424", "#0e0608", "#5a3a36"), ("#2a1a1c", "#0a0406", "#46302e")], 7.0),
+            "shoe": ("#2a1a1c", "#0a0406", "#46302e"),
             "strap": ("#3a2a22", "#0e0808", "#5a4436"),
-            "claw": ("#e8dcc4", "#6a5a6e", "#ffffff"),
-            "eye_glow": "!#ffd040",
-            "metal": ("#7a7e92", "#24263e", "#c8ccdc"),
+            "claw": ("#c8b49a", "#4a3440", "#eedcc0"),
+            "eye_glow": "!#fff0c0",
+            "metal": ("#5a5c6a", "#1a1a26", "#8e92a2"),
+            "mouth": ("#2a0814", "#100208", "#4a1222"),
+            "socket": ("#2a0e14", "#0e0408", "#44181e"),
         },
     },
     "mall_store_warden": {
-        "name": "Le Gardien de magasin", "rig": "human", "frame": 224, "scale": 1.18, "head": 1.10, "leg": 0.84,
+        "name": "Le Gardien de magasin", "rig": "human", "thigh_key": "armor_dark", "frame": 224, "scale": 1.18, "head": 1.10, "leg": 0.84,
         "torso": (1.28, 1.08), "arm": 1.18, "arm_len": 1.02, "hunch": 0.02, "fps_run": 12,
         "mats": {
-            "armor": ("#c41e2c", "#4a0820", "#ee4a4a"),
+            "armor": ("#c41e2c", "#4a0820", "#ff5a52"),
             "armor_dark": ("#22222c", "#08080e", "#40404e"),
             "white": ("#e8e6ee", "#7a7894", "#ffffff"),
             "joint": ("#1a1a22", "#06060a", "#34343e"),
-            "visor": "!#ff2a2a",
+            "visor": "!#e8f4ff",
+            "faceplate": ("#b08a5a", "#3e2a22", "#ecc890"),
+            "trim": ("#22222c", "#08080e", "#40404e"),
             "light_red": "!#ff3a2a",
             "gun": ("#2a2c36", "#0a0a12", "#4e505e"),
             "pants": ("#22222c", "#08080e", "#40404e"),
@@ -211,20 +223,22 @@ SPEC: dict[str, dict] = {
         "name": "L'Omnistore", "rig": "boss", "frame": 384, "scale": 1.5, "fps_run": 12, "cam_dz": 0.25,
         "out_scale": 0.72, "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
         "mats": {
-            "flesh": ("pat", [("#7e1e3e", "#2a0626", "#b23a62"), ("#561a4e", "#1a0626", "#80306e"),
-                              ("#962a46", "#30082a", "#c84a6a")], 3.5),
-            "flesh_dark": ("#3e0e2e", "#14041a", "#5e1e46"),
-            "leg": ("pat", [("#2c2232", "#0a0610", "#504058"), ("#3a1a30", "#10060e", "#5e2a4a")], 4.0),
+            "flesh": ("pat", [("#5a1a30", "#1a0418", "#86304a"), ("#3a1428", "#100412", "#5a2440"),
+                              ("#6e2236", "#22061c", "#9a3c56")], 5.0),
+            "flesh_dark": ("#2a0c22", "#0c0410", "#46183a"),
+            "chitin": ("#2a2232", "#08060e", "#4e4260"),
+            "leg": ("pat", [("#2a2030", "#08060e", "#4c3e58"), ("#3a1a2e", "#0e040e", "#5c2a48")], 4.0),
+            "vein_glow": "!#ff2e5a",
             "claw": ("#d8c8d4", "#5a4a62", "#ffffff"),
             "tooth": ("#f2e8cc", "#7a6a7a", "#ffffff"),
             "maw": "!#ff2e56",
             "gum": ("#a01c3a", "#3a0620", "#d03a5a"),
             "frame_tv": ("#1c1a24", "#06060a", "#3a3646"),
-            "screen": "!#d892ff",
-            "screen2": "!#ffffff",
-            "screen3": "!#ff5aa8",
+            "screen": "!#c8a0ff",
+            "screen2": "!#f0e8ff",
+            "screen3": "!#e070ff",
             "neon": "!#ff3ad0",
-            "eye_glow": "!#ffe060",
+            "eye_glow": "!#ff5ac8",
             "cable": ("#1e1a22", "#06040a", "#3a3442"),
             "tag": ("#e8e2d0", "#7a7488", "#ffffff"),
         },
@@ -611,52 +625,82 @@ class Human(Rig):
 
 # ------------------------------------------------------------------------------- zombie
 class Zombie(Human):
+    """Zombie de la planche : client torse nu, chair brun-ocre pourrissante, côtes et muscles secs,
+    jean sombre ceinturé, cheveux courts, bouche béante, bras longs aux mains crochues."""
+
     def build_head(self, head) -> None:
-        self.skull(head, "skin", jaw=0.12)
-        self.eyes(head, "eye_glow", r=(0.028, 0.010, 0.020), brow_key="hair", angle=0.1)
-        self.part("nose", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.170, 0.175),
-                  scale=(0.03, 0.03, 0.03)), "skin", head)
-        # mâchoire pendante, bouche sombre
-        self.part("mouth", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.150, 0.095),
-                  scale=(0.045, 0.025, 0.028)), "mouth", head, nofs=True)
+        # crâne émacié : pommettes creuses, mâchoire longue
+        self.skull(head, "skin", sx=0.165, sy=0.172, sz=0.200, jaw=0.30)
+        self.eyes(head, "eye_glow", z=0.236, x=0.060, y=-0.150, r=(0.024, 0.010, 0.016), brow_key="rot", angle=0.3)
         for sx in (1, -1):
-            self.part("ear", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.178 * sx, 0.0, 0.19),
-                      scale=(0.025, 0.04, 0.05)), "skin", head)
+            self.part("socket", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.060 * sx, -0.140, 0.236),
+                      scale=(0.040, 0.020, 0.030)), "rot", head)
+            self.part("cheek", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.085 * sx, -0.125, 0.150),
+                      scale=(0.030, 0.030, 0.040)), "rot", head)
+            self.part("ear", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.165 * sx, 0.0, 0.20),
+                      scale=(0.022, 0.036, 0.046)), "skin", head)
+        self.part("nose", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.168, 0.185),
+                  scale=(0.026, 0.028, 0.034)), "skin", head)
+        # bouche béante, dents
+        self.part("mouth", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.146, 0.098),
+                  scale=(0.056, 0.030, 0.050)), "mouth", head, nofs=True)
+        for k in range(4):
+            self.part("tooth", C.bm_xform(C.bm_box(0.016, 0.012, 0.020), loc=(-0.03 + 0.02 * k, -0.168, 0.135)),
+                      "tooth", head, nofs=True)
+        # cheveux courts, sombres, clairsemés
+        hair = C.bm_sphere(18, 10, 1.0)
+        for v in hair.verts:
+            x, y, z = v.co
+            lim = 0.55 + 0.45 * max(0.0, -y)
+            if z < lim:
+                z = lim + (z - lim) * 0.12
+            v.co = Vector((x * 0.170, y * 0.178 + 0.012, z * 0.198 + 0.208))
+        self.part("hair", hair, "hair", head)
+
+    def build_arms(self, spine) -> None:
+        super().build_arms(spine)
+        # mains crochues : doigts longs et ongles
+        for side in ("L", "R"):
+            fa = self.j["fa" + side]
+            for k in range(4):
+                x = (k - 1.5) * 0.024
+                self.part("finger" + side, C.bm_tube([(x, -0.02, -self.ll - 0.03), (x * 1.2, -0.05, -self.ll - 0.09),
+                                                      (x * 1.2, -0.08, -self.ll - 0.12)], [0.014, 0.011, 0.004], seg=5),
+                          "nail", fa)
 
     def dress(self) -> None:
         sp = self.j["spine"]
         pel = self.j["pelvis"]
         tw, td = self.TW, self.TD
-        # chemise déchirée : lambeaux sur le torse (ventre et côtes visibles devant)
-        sh = []
-        for z, r1, r2 in ((0.10, 0.205, 0.150), (0.24, 0.236, 0.160), (0.40, 0.232, 0.150)):
-            sh.append(C.ellipse(0, 0.0, z, r1 * tw + 0.012, r2 * td + 0.012, 20))
-        shirt = C.bm_loft(sh, cap_start=False, cap_end=False)
-        for f in list(shirt.faces):
-            c = f.calc_center_median()
-            if c.y < -0.08 * td and abs(c.x) < 0.13 * tw and c.z < 0.34:
-                shirt.faces.remove(f)
-        self.part("shirt", shirt, "shirt", sp, thick=0.012)
-        # lambeaux pendants
-        for k, (x, z) in enumerate(((0.16, 0.10), (-0.18, 0.12), (0.08, 0.08), (-0.10, 0.06))):
-            sx = 1 if x > 0 else -1
-            self.part("rag%d" % k, C.bm_tube([(x * tw, -0.12 * td, z), (x * tw * 1.05, -0.14 * td, z - 0.08),
-                                              (x * tw * 1.1 + 0.02 * sx, -0.13 * td, z - 0.16)],
-                                             [0.035, 0.03, 0.006], seg=6, flat=0.3, up=(0, 1, 0)), "shirt", sp)
-        # côtes et plaies
-        for k in range(3):
-            self.part("rib", C.bm_xform(C.bm_box(0.13, 0.014, 0.014, bevel=0.004),
-                      loc=(0.03, -0.152 * td, 0.20 + 0.045 * k), rot=(0, 0.15, 0)), "bone", sp)
-        self.part("wound1", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(-0.07, -0.150 * td, 0.12),
-                  scale=(0.05, 0.02, 0.06)), "wound", sp, nofs=True)
-        self.part("wound2", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.15 * tw, -0.10, 0.30),
-                  scale=(0.04, 0.03, 0.05)), "wound", sp, nofs=True)
-        # ceinture et jean déchiré
-        self.part("belt", C.bm_xform(C.bm_cyl(18, 0.222 * tw, 0.222 * tw, 0.05), loc=(0, 0, 0.05),
-                  scale=(1, 0.74 * td / tw, 1)), "strap", pel)
+        # torse nu : pectoraux, abdominaux secs, côtes saillantes et taches de pourriture
+        for sx in (1, -1):
+            self.part("pec", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.085 * sx * tw, -0.105 * td, 0.33),
+                      scale=(0.095 * tw, 0.055, 0.065)), "skin", sp)
+            self.part("abline", C.bm_xform(C.bm_box(0.008, 0.01, 0.20), loc=(0.0, -0.150 * td, 0.16)),
+                      "rot", sp, nofs=True)
+            for k in range(3):
+                self.part("rib", C.bm_tube(C.bezier((0.07 * sx, -0.135 * td, 0.27 - 0.05 * k),
+                                                    (0.13 * sx * tw, -0.13 * td, 0.26 - 0.05 * k),
+                                                    (0.18 * sx * tw, -0.07, 0.25 - 0.05 * k),
+                                                    (0.20 * sx * tw, 0.0, 0.24 - 0.05 * k), 5),
+                                           [0.008] * 5, seg=5), "skin", sp)
+        for k, (x, z, w, h) in enumerate(((-0.10, 0.30, 0.05, 0.05), (0.12, 0.12, 0.04, 0.06), (0.03, 0.40, 0.04, 0.03),
+                                          (-0.15, 0.10, 0.035, 0.05))):
+            self.part("rotspot", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(x * tw, -0.142 * td, z),
+                      scale=(w, 0.018, h)), "rot" if k % 2 else "wound", sp, nofs=True)
+        self.part("woundSide", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.17 * tw, -0.07, 0.20),
+                  scale=(0.03, 0.05, 0.06)), "wound", sp, nofs=True)
+        # lambeau de chemise grise pendu à l'épaule gauche
+        self.part("rag", C.bm_tube([(0.17 * tw, 0.02, 0.44), (0.20 * tw, 0.10, 0.30), (0.19 * tw, 0.12, 0.16)],
+                                   [0.06, 0.05, 0.02], seg=6, flat=0.25, up=(1, 0, 0)), "shirt", sp)
+        # ceinture et jean sombre déchiré
+        self.part("belt", C.bm_xform(C.bm_cyl(18, 0.205 * tw, 0.205 * tw, 0.05), loc=(0, 0, 0.05),
+                  scale=(1, 0.86 * td / tw, 1)), "strap", pel)
+        self.part("buckle", C.bm_xform(C.bm_box(0.05, 0.02, 0.04, bevel=0.006), loc=(0, -0.152 * td, 0.05)),
+                  "metal", pel)
         for side in ("L", "R"):
             self.part("rip", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.09, -0.02),
-                      scale=(0.05, 0.02, 0.06)), "skin", self.j["knee" + side], nofs=True)
+                      scale=(0.05, 0.02, 0.05)), "wound", self.j["knee" + side], nofs=True)
 
     def arms_rest(self, b: float = 0.0) -> None:
         # bras ballants, un peu en avant, une main tendue
@@ -665,7 +709,7 @@ class Zombie(Human):
         self.arm_ik("R", s["R"] + Vector((-0.02, -0.30, -0.16 + 0.02 * b)), self.R_POLE)
 
     def idle_extra(self, t: float) -> None:
-        self.j["neck"].rotation_euler = (-0.1, 0.0, 0.22 + 0.05 * math.sin(t))
+        self.j["neck"].rotation_euler = (-0.42, 0.0, 0.18 + 0.05 * math.sin(t))
 
     def pose_run(self, i: int, n: int) -> None:
         # démarche traînante : boiterie, bras tendus vers l'avant
@@ -682,7 +726,7 @@ class Zombie(Human):
         sh = self.shoulder
         self.arm_ik("L", sh["L"] + Vector((0.02, -0.36, -0.06 + 0.03 * s)), self.L_POLE)
         self.arm_ik("R", sh["R"] + Vector((-0.02, -0.38, -0.02 - 0.03 * s)), self.R_POLE)
-        j["neck"].rotation_euler = (-0.05, 0.0, 0.25)
+        j["neck"].rotation_euler = (-0.35, 0.0, 0.2)
 
     def pose_attack(self, i: int, n: int) -> None:
         # agrippe à deux mains puis mord / griffe vers le bas
@@ -703,53 +747,94 @@ class Zombie(Human):
 
 # ------------------------------------------------------------------------------- écorcheur
 class Flayer(Human):
+    """Écorcheur de la planche : écorché brun-rouge aux muscles à vif, tête allongée vers l'avant
+    (museau denté), très voûté, longues lames d'os à lueur rouge sortant des avant-bras."""
+
     def build_head(self, head) -> None:
-        # crâne allongé, mâchoire saillante, sans peau
-        self.skull(head, "skin", sx=0.160, sy=0.190, sz=0.175, jaw=0.05)
-        self.eyes(head, "eye_glow", z=0.235, x=0.06, y=-0.165, r=(0.03, 0.012, 0.016), brow_key="sinew", angle=0.5)
-        self.part("jaw", C.bm_xform(C.bm_box(0.15, 0.12, 0.07, bevel=0.025), loc=(0, -0.11, 0.08)), "sinew", head)
-        for k in range(5):
-            x = -0.05 + 0.025 * k
-            self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.010, 0.0, 0.04), loc=(x, -0.17, 0.11),
-                      rot=(math.pi, 0, 0)), "bone", head, nofs=True)
-        for sx in (1, -1):
-            self.part("cheek", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.11 * sx, -0.12, 0.16),
-                      scale=(0.04, 0.05, 0.05)), "bone", head)
+        # crâne allongé vers l'avant, front fuyant
+        sk = C.bm_sphere(22, 14, 1.0)
+        for v in sk.verts:
+            x, y, z = v.co
+            if y < 0:
+                z -= 0.25 * (-y) * (1 + z) * 0.5
+                x *= 1.0 - 0.30 * (-y)
+            v.co = Vector((x * 0.145, y * 0.215 - 0.03, z * 0.150 + 0.205))
+        self.part("skull", sk, "skin", head)
+        self.part("crest", C.bm_tube([(0, 0.10, 0.30), (0, -0.02, 0.36), (0, -0.14, 0.30)], [0.03, 0.035, 0.015],
+                                     seg=6, flat=0.5, up=(1, 0, 0)), "sinew", head)
+        self.eyes(head, "eye_glow", z=0.235, x=0.058, y=-0.175, r=(0.032, 0.014, 0.020), brow_key="sinew", angle=0.55)
+        # museau denté : gueule ouverte
+        sn = C.bm_sphere(14, 10, 1.0)
+        for v in sn.verts:
+            x, y, z = v.co
+            v.co = Vector((x * 0.085 * (1 + 0.3 * y), y * 0.13 - 0.22, z * 0.055 + 0.18))
+        self.part("snout", sn, "skin", head)
+        self.part("jaw", C.bm_xform(C.bm_box(0.13, 0.20, 0.045, bevel=0.02), loc=(0, -0.21, 0.085),
+                  rot=(0.35, 0, 0)), "sinew", head)
+        self.part("mouth", C.bm_xform(C.bm_box(0.11, 0.16, 0.05), loc=(0, -0.24, 0.125), rot=(0.15, 0, 0)),
+                  "mouth", head, nofs=True)
+        for k in range(6):
+            x = -0.05 + 0.02 * k
+            self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.011, 0.0, 0.045), loc=(x, -0.32, 0.15),
+                      rot=(math.pi, 0, 0)), "tooth", head, nofs=True)
+            self.part("toothL", C.bm_xform(C.bm_cyl(5, 0.010, 0.0, 0.04), loc=(x * 0.9, -0.30, 0.09)),
+                      "tooth", head, nofs=True)
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        # muscles et tendons apparents
+        # cou projeté vers l'avant, tête basse entre les épaules
+        self.j["neck"].location = (0, -0.10, 0.38)
+        # muscles à vif : pectoraux, côtes et tendons
         for sx in (1, -1):
-            self.part("pec", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.09 * sx * tw, -0.12 * td, 0.32),
-                      scale=(0.10, 0.06, 0.07)), "skin", sp)
+            self.part("pec", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.085 * sx * tw, -0.11 * td, 0.32),
+                      scale=(0.095 * tw, 0.055, 0.065)), "skin", sp)
             for k in range(3):
-                self.part("tendon", C.bm_tube(C.bezier((0.05 * sx, -0.14 * td, 0.24 - 0.07 * k),
-                                                       (0.12 * sx, -0.15 * td, 0.23 - 0.07 * k),
-                                                       (0.16 * sx * tw, -0.11 * td, 0.22 - 0.07 * k),
-                                                       (0.19 * sx * tw, -0.04, 0.21 - 0.07 * k), 5),
-                                              [0.012] * 5, seg=5), "sinew", sp)
-        # colonne vertébrale saillante (épines)
+                self.part("tendon", C.bm_tube(C.bezier((0.04 * sx, -0.13 * td, 0.24 - 0.06 * k),
+                                                       (0.10 * sx, -0.14 * td, 0.23 - 0.06 * k),
+                                                       (0.16 * sx * tw, -0.10 * td, 0.22 - 0.06 * k),
+                                                       (0.19 * sx * tw, -0.04, 0.21 - 0.06 * k), 5),
+                                              [0.011] * 5, seg=5), "sinew", sp)
+            # tendons des cuisses
+            self.part("thighSinew", C.bm_tube([(0.0, -0.10, -0.04), (0.0, -0.11, -0.16), (0.0, -0.09, -0.28)],
+                                              [0.02, 0.025, 0.015], seg=5), "sinew", self.j["hip" + ("L" if sx > 0 else "R")])
+        # colonne vertébrale saillante (épines d'os)
         for k in range(6):
-            self.part("spike", C.bm_xform(C.bm_cyl(6, 0.022, 0.0, 0.08), loc=(0, 0.14 * td, 0.06 + 0.07 * k),
-                      rot=(-1.2, 0, 0)), "bone", sp)
-        self.part("loin", C.bm_xform(C.bm_cyl(14, 0.21 * tw, 0.20 * tw, 0.10), loc=(0, 0, -0.03),
-                  scale=(1, 0.78, 1)), "pants", self.j["pelvis"])
-        # lames rouges aux avant-bras (le long de l'avant-bras puis au-delà de la main)
+            self.part("spike", C.bm_xform(C.bm_cyl(6, 0.022, 0.0, 0.08), loc=(0, 0.13 * td, 0.06 + 0.07 * k),
+                      rot=(-1.2, 0, 0)), "blade", sp)
+        # pagne sombre en lambeaux
+        self.part("loin", C.bm_xform(C.bm_cyl(14, 0.19 * tw, 0.17 * tw, 0.09), loc=(0, 0, -0.03),
+                  scale=(1, 0.80, 1)), "pants", self.j["pelvis"])
+        self.part("loinFlap", C.bm_xform(C.bm_box(0.10, 0.02, 0.12), loc=(0, -0.14, -0.10)), "pants", self.j["pelvis"])
+        # lames d'os à lueur rouge : naissent à l'avant-bras et dépassent largement la main, courbées
         for side, sx in (("L", 1), ("R", -1)):
             fa = self.j["fa" + side]
-            pts = [(0.0, -0.03, -0.05), (0.02 * sx, -0.06, -self.ll - 0.06), (0.04 * sx, -0.10, -self.ll - 0.22),
-                   (0.03 * sx, -0.18, -self.ll - 0.36)]
-            self.part("blade" + side, C.bm_tube(pts, [0.05, 0.065, 0.05, 0.0], seg=8, flat=0.32, up=(1, 0, 0)),
+            pts = [(0.0, -0.02, -0.04), (0.03 * sx, -0.05, -self.ll - 0.04), (0.06 * sx, -0.08, -self.ll - 0.22),
+                   (0.07 * sx, -0.16, -self.ll - 0.40), (0.05 * sx, -0.28, -self.ll - 0.50)]
+            self.part("blade" + side, C.bm_tube(pts, [0.035, 0.05, 0.042, 0.026, 0.0], seg=8, flat=0.30, up=(1, 0, 0)),
                       "blade", fa, grp="blades")
-            self.part("edge" + side, C.bm_tube([(x, y - 0.035, z) for (x, y, z) in pts[1:]], [0.030, 0.028, 0.0],
+            self.part("edge" + side, C.bm_tube([(x, y - 0.03, z) for (x, y, z) in pts[1:]], [0.022, 0.024, 0.016, 0.0],
                       seg=6, flat=0.6, up=(1, 0, 0)), "blade_edge", fa, nofs=True, grp="blades")
-        self.muzzle_ref = ("edgeR", (0.03 * -1, -0.20, -self.ll - 0.36))
+        self.muzzle_ref = ("edgeR", (0.05 * -1, -0.31, -self.ll - 0.50))
+
+    def rest(self) -> None:
+        super().rest()
+        # museau tendu vers l'avant malgré le dos voûté
+        self.j["head"].rotation_euler = (-0.62, 0, 0)
+
+    def idle_extra(self, t: float) -> None:
+        # accroupi, prêt à bondir : genoux fléchis, bassin bas
+        j = self.j
+        j["pelvis"].location.z -= 0.07
+        j["hipL"].rotation_euler.x -= 0.45
+        j["hipR"].rotation_euler.x -= 0.35
+        j["kneeL"].rotation_euler.x = 0.85
+        j["kneeR"].rotation_euler.x = 0.75
 
     def arms_rest(self, b: float = 0.0) -> None:
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.14, -0.14, -0.30 + 0.02 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.14, -0.14, -0.30 + 0.02 * b)), self.R_POLE)
+        self.arm_ik("L", s["L"] + Vector((0.24, -0.16, -0.24 + 0.02 * b)), self.L_POLE)
+        self.arm_ik("R", s["R"] + Vector((-0.24, -0.16, -0.24 + 0.02 * b)), self.R_POLE)
 
     def arms_run(self, s: float) -> None:
         sh = self.shoulder
@@ -787,24 +872,28 @@ class SecBot(Human):
     ARMOR = "armor"
 
     def build_head(self, head) -> None:
+        # casque arrondi gris acier, visière noire à deux optiques rouges, mentonnière
         A = self.ARMOR
         hb = C.bm_sphere(20, 14, 1.0)
         for v in hb.verts:
             x, y, z = v.co
-            v.co = Vector((x * 0.19, y * 0.19, z * 0.18 + 0.20))
+            v.co = Vector((x * 0.18, y * 0.19, z * 0.19 + 0.21))
         self.part("helmet", hb, A, head)
-        # visière : bandeau en V, émissive
-        vis = C.bm_box(0.26, 0.05, 0.06, bevel=0.015)
-        for v in vis.verts:
-            v.co.y -= 0.12 * (v.co.x ** 2) * 6
-        self.part("visorFrame", C.bm_xform(C.bm_box(0.30, 0.06, 0.10, bevel=0.02), loc=(0, -0.15, 0.20)),
-                  "armor_dark", head)
-        self.part("visor", C.bm_xform(vis, loc=(0, -0.185, 0.205)), "visor", head, nofs=True)
-        self.part("jaw", C.bm_xform(C.bm_box(0.20, 0.10, 0.08, bevel=0.02), loc=(0, -0.10, 0.08)), "armor_dark", head)
         for sx in (1, -1):
-            self.part("earCap", C.bm_xform(C.bm_cyl(12, 0.05, 0.05, 0.04), loc=(0.19 * sx, 0, 0.19),
-                      rot=(0, math.pi / 2, 0)), "joint", head)
-        self.part("crest", C.bm_xform(C.bm_box(0.04, 0.26, 0.05, bevel=0.012), loc=(0, 0.0, 0.38)), "armor_dark", head)
+            self.part("helmSeam", C.bm_xform(C.bm_box(0.012, 0.30, 0.02), loc=(0.06 * sx, 0.01, 0.375), rot=(0, 0.3 * sx, 0)),
+                      "armor_dark", head)
+        self.part("visorFrame", C.bm_xform(C.bm_box(0.29, 0.07, 0.09, bevel=0.025), loc=(0, -0.15, 0.22)),
+                  "armor_dark", head)
+        for sx in (1, -1):
+            self.part("optic", C.bm_xform(C.bm_cyl(14, 0.042, 0.042, 0.03), loc=(0.068 * sx, -0.19, 0.224),
+                      rot=(math.pi / 2, 0, 0)), "visor", head, nofs=True)
+            self.part("earCap", C.bm_xform(C.bm_cyl(12, 0.05, 0.05, 0.04), loc=(0.18 * sx, -0.01, 0.20),
+                      rot=(0, math.pi / 2, 0)), "trim", head)
+        self.part("visorBar", C.bm_xform(C.bm_box(0.25, 0.02, 0.034), loc=(0, -0.188, 0.224)), "visor", head, nofs=True)
+        self.part("jaw", C.bm_xform(C.bm_box(0.20, 0.11, 0.09, bevel=0.025), loc=(0, -0.10, 0.09)), A, head)
+        for k in range(3):
+            self.part("grill", C.bm_xform(C.bm_box(0.12, 0.01, 0.012), loc=(0, -0.158, 0.07 + 0.022 * k)),
+                      "armor_dark", head)
 
     def build_torso(self, pelvis, spine) -> None:
         A = self.ARMOR
@@ -819,11 +908,15 @@ class SecBot(Human):
             if v.co.y < 0:
                 v.co.y -= 0.03 * (1 - abs(v.co.x) / (0.22 * tw))
         self.part("chest", C.bm_xform(chest, loc=(0, -0.01, 0.30)), A, spine)
-        self.part("chestPlate", C.bm_xform(C.bm_box(0.22 * tw, 0.04, 0.14, bevel=0.02), loc=(0, -0.17 * td, 0.30)),
+        self.part("chestPlate", C.bm_xform(C.bm_box(0.06 * tw, 0.04, 0.20, bevel=0.015), loc=(0, -0.175 * td, 0.30)),
                   "armor_dark", spine)
-        self.part("badge", C.bm_xform(C.bm_box(0.06, 0.02, 0.05, bevel=0.01), loc=(0.07 * tw, -0.19 * td, 0.34)),
-                  "light_red", spine, nofs=True)
         self.part("collar", C.bm_xform(C.bm_cyl(14, 0.11, 0.10, 0.08), loc=(0, 0.0, 0.46)), "joint", spine)
+        for k in range(2):
+            self.part("abPlate", C.bm_xform(C.bm_box(0.20 * tw, 0.05, 0.05, bevel=0.015), loc=(0, -0.12 * td, 0.07 + 0.06 * k)),
+                      A, spine)
+        for sx in (1, -1):
+            self.part("pecPlate", C.bm_xform(C.bm_box(0.17 * tw, 0.05, 0.13, bevel=0.03), loc=(0.10 * sx * tw, -0.165 * td, 0.33),
+                      rot=(0, 0, -0.12 * sx)), A, spine)
         self.part("backpack", C.bm_xform(C.bm_box(0.30 * tw, 0.12, 0.24, bevel=0.03), loc=(0, 0.17 * td, 0.30)),
                   "armor_dark", spine)
         for sx in (1, -1):
@@ -840,8 +933,10 @@ class SecBot(Human):
             for v in pad.verts:
                 if v.co.z < -0.3:
                     v.co.z = -0.3
-            self.part("pauldron" + side, C.bm_xform(pad, loc=(0.03 * sx, 0, 0.02),
-                      scale=(0.13 * aw, 0.13 * aw, 0.12 * aw)), self.ARMOR, ua)
+            self.part("pauldron" + side, C.bm_xform(pad, loc=(0.04 * sx, 0, 0.03),
+                      scale=(0.15 * aw, 0.14 * aw, 0.13 * aw)), self.ARMOR, ua)
+            self.part("pauldronRim" + side, C.bm_xform(C.bm_torus(16, 5, 0.12 * aw, 0.014), loc=(0.04 * sx, 0, -0.005),
+                      scale=(1.15, 1.05, 1)), "trim", ua)
             self.part("uarm" + side, C.bm_xform(C.bm_cyl(10, 0.06 * aw, 0.055 * aw, 0.20 * al),
                       loc=(0, 0, -0.10 * al)), "joint", ua)
             self.part("elbow" + side, C.bm_xform(C.bm_sphere(10, 8, 0.065 * aw), loc=(0, 0, 0)), "joint", fa)
@@ -869,7 +964,7 @@ class SecBot(Human):
             hip = j["hip" + side] = joint("hip" + side, pelvis, (0.12 * sx * bw, 0, -0.04))
             knee = j["knee" + side] = joint("knee" + side, hip, (0, 0, -0.36 * LEG))
             self.part("thigh" + side, C.bm_xform(C.bm_box(0.15 * bw, 0.16 * bw, 0.34 * LEG, bevel=0.03),
-                      loc=(0, 0, -0.17 * LEG)), self.ARMOR, hip)
+                      loc=(0, 0, -0.17 * LEG)), self.S.get("thigh_key", self.ARMOR), hip)
             self.part("kneeCap" + side, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.05, 0.0),
                       scale=(0.075, 0.06, 0.07)), "armor_dark", knee)
             self.part("shin" + side, C.bm_xform(C.bm_box(0.13 * bw, 0.15 * bw, 0.30 * LEG, bevel=0.03),
@@ -879,10 +974,10 @@ class SecBot(Human):
                       loc=(0, -0.05, fz + 0.03)), "armor_dark", knee)
 
     def dress(self) -> None:
-        # bande blanche « SECURITY » sur le torse (lisible) et lumières dorsales
+        # voyant rouge sur le plastron, lumières dorsales
         sp = self.j["spine"]
-        self.part("stripe", C.bm_xform(C.bm_box(0.42 * self.TW, 0.02, 0.03, bevel=0.005),
-                  loc=(0, -0.172 * self.TD, 0.20)), "stripe", sp)
+        self.part("badge", C.bm_xform(C.bm_box(0.05, 0.02, 0.03, bevel=0.008), loc=(0.11 * self.TW, -0.215 * self.TD, 0.38)),
+                  "light_red", sp, nofs=True)
         for sx in (1, -1):
             self.part("backLight", C.bm_xform(C.bm_sphere(8, 6, 0.025), loc=(0.11 * sx * self.TW, 0.24 * self.TD, 0.42)),
                       "light_red", sp, nofs=True)
@@ -923,71 +1018,79 @@ class SecBot(Human):
 
 # ------------------------------------------------------------------------------- clone
 class Clone(Human):
+    """Clone de la planche : capuche sombre relevée, visage dans l'ombre (peau mate, yeux violets
+    discrets), blouson gris-bleu usé ouvert sur un t-shirt rouge rayé, jean sombre, aura d'illusion."""
+
     def build_head(self, head) -> None:
-        # visage dans l'ombre de la capuche : seuls les yeux violets brillent
-        self.skull(head, "skin")
-        self.part("faceShadow", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.10, 0.19),
-                  scale=(0.15, 0.08, 0.16)), "face", head)
-        self.eyes(head, "eye_glow", z=0.215, x=0.055, y=-0.182, r=(0.028, 0.012, 0.016), brow=False)
+        self.skull(head, "skin", sx=0.165, sy=0.168, sz=0.190, jaw=0.18)
+        self.part("faceShadow", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.06, 0.26),
+                  scale=(0.15, 0.10, 0.06)), "face", head)
+        self.eyes(head, "eye_glow", z=0.215, x=0.055, y=-0.160, r=(0.020, 0.010, 0.010), brow=False)
+        self.part("nose", C.bm_xform(C.bm_sphere(10, 7, 1.0), loc=(0, -0.168, 0.170),
+                  scale=(0.028, 0.03, 0.032)), "skin", head)
+        self.part("beard", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.105, 0.085),
+                  scale=(0.12, 0.08, 0.06)), "hoodie", head)
         hood = C.bm_sphere(22, 14, 1.0)
         for v in hood.verts:
             x, y, z = v.co
             if y < 0:
-                z += 0.12 * (-y)
-            v.co = Vector((x * 0.225, y * 0.215 + 0.02, z * 0.235 + 0.215))
+                z += 0.10 * (-y)
+            v.co = Vector((x * 0.215, y * 0.215 + 0.03, z * 0.235 + 0.215))
         for f in list(hood.faces):
             c = f.calc_center_median()
-            if c.y < -0.08 and c.z < 0.36 and abs(c.x) < 0.17:
+            if c.y < -0.06 and c.z < 0.34 and abs(c.x) < 0.15:
                 hood.faces.remove(f)
         for v in list(hood.verts):
             if not v.link_faces:
                 hood.verts.remove(v)
         self.part("hood", hood, "hoodie", head, thick=0.02)
-        self.part("hoodRim", C.bm_xform(C.bm_torus(20, 6, 0.17, 0.022), loc=(0, -0.14, 0.24),
-                  rot=(math.pi / 2 + 0.25, 0, 0), scale=(1.0, 1.15, 1)), "hoodie", head)
+        self.part("hoodRim", C.bm_xform(C.bm_torus(20, 6, 0.155, 0.020), loc=(0, -0.15, 0.23),
+                  rot=(math.pi / 2 + 0.30, 0, 0), scale=(1.0, 1.2, 1)), "hoodie", head)
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        # veste ouverte sur un t-shirt rouge
+        # t-shirt rouge rayé : le torse de base (« shirt ») ; blouson gris-bleu ouvert, rembourré
         cs = []
-        for z, r1, r2 in ((-0.02, 0.212, 0.160), (0.20, 0.232, 0.170), (0.36, 0.240, 0.165), (0.44, 0.19, 0.14)):
-            cs.append(C.ellipse(0, 0.0, z, r1 * tw + 0.02, r2 * td + 0.02, 20))
+        for z, r1, r2 in ((-0.04, 0.214, 0.162), (0.18, 0.238, 0.176), (0.34, 0.250, 0.172), (0.45, 0.20, 0.15)):
+            cs.append(C.ellipse(0, 0.0, z, r1 * tw + 0.024, r2 * td + 0.024, 20))
         cbm = C.bm_loft(cs, cap_start=False, cap_end=False)
         for f in list(cbm.faces):
             c = f.calc_center_median()
-            if c.y < -0.10 * td and abs(c.x) < 0.09 * tw:
+            if c.y < -0.10 * td and abs(c.x) < 0.085 * tw:
                 cbm.faces.remove(f)
-        self.part("jacket", cbm, "jacket", sp, thick=0.016)
+        self.part("jacket", cbm, "jacket", sp, thick=0.022)
+        # col relevé et capuche du sweat dans le dos
+        self.part("collar", C.bm_xform(C.bm_torus(18, 6, 0.15, 0.035), loc=(0, 0.01, 0.45), scale=(1.1, 1.0, 1)),
+                  "jacket", sp)
+        self.part("hoodBack", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0.16 * td, 0.42), scale=(0.15, 0.06, 0.08)),
+                  "hoodie", sp)
         for sx in (1, -1):
-            self.part("zip", C.bm_xform(C.bm_box(0.012, 0.012, 0.42), loc=(0.085 * sx * tw, -0.19 * td, 0.20)),
+            self.part("zip", C.bm_xform(C.bm_box(0.012, 0.012, 0.42), loc=(0.088 * sx * tw, -0.20 * td, 0.20)),
                       "metal_dark", sp)
-        # sac à dos (comme un pillard) et sangles
-        self.part("pack", C.bm_xform(C.bm_box(0.30 * tw, 0.16, 0.32, bevel=0.05), loc=(0, 0.24 * td, 0.26)),
-                  "pack", sp)
-        self.part("packFlap", C.bm_xform(C.bm_box(0.28 * tw, 0.06, 0.12, bevel=0.03), loc=(0, 0.31 * td, 0.38)),
-                  "pack", sp)
-        for sx in (1, -1):
-            self.part("packStrap", C.bm_tube(C.bezier((0.10 * sx, 0.15 * td, 0.44), (0.12 * sx, -0.10, 0.48),
-                                                      (0.13 * sx, -0.19 * td, 0.32), (0.12 * sx, -0.17 * td, 0.12), 6),
-                                             [0.02] * 6, seg=5, flat=0.4), "strap", sp)
+            self.part("pocket", C.bm_xform(C.bm_box(0.09, 0.02, 0.06, bevel=0.01), loc=(0.15 * sx * tw, -0.17 * td, 0.08),
+                      rot=(0, 0, -0.2 * sx)), "jacket", sp)
+            self.part("cordon", C.bm_xform(C.bm_cyl(6, 0.008, 0.008, 0.12), loc=(0.03 * sx, -0.19 * td, 0.40)),
+                      "hoodie", sp)
         # couteau (main droite)
         fa = self.j["faR"]
         g = joint("w_knife", fa, (0, 0, -self.ll))
-        blade = C.bm_box(0.012, 0.26, 0.05, bevel=0.004)
+        blade = C.bm_box(0.012, 0.24, 0.045, bevel=0.004)
         for v in blade.verts:
-            if v.co.y < -0.08:
-                v.co.z *= max(0.1, 1.0 - (-v.co.y - 0.08) / 0.06)
-        self.part("blade", C.bm_xform(blade, loc=(0, -0.17, 0.0)), "blade", g, grp="knife")
+            if v.co.y < -0.07:
+                v.co.z *= max(0.1, 1.0 - (-v.co.y - 0.07) / 0.06)
+        self.part("blade", C.bm_xform(blade, loc=(0, -0.16, 0.0)), "blade", g, grp="knife")
         self.part("handle", C.bm_xform(C.bm_cyl(8, 0.022, 0.024, 0.10), loc=(0, 0.0, 0), rot=(math.pi / 2, 0, 0)),
                   "strap", g, grp="knife")
         self.knife = g
-        self.muzzle_ref = ("blade", (0, -0.30, 0))
-        # traînée d'illusion (fumée violette) au bas de la veste, sans contour
-        for k in range(5):
-            a = -0.6 + 0.3 * k
-            self.part("wisp", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.24 * math.sin(a) * tw, 0.10 + 0.08 * math.cos(a), -0.02),
-                      scale=(0.04, 0.03, 0.02)), "smoke", sp, nofs=True)
+        self.muzzle_ref = ("blade", (0, -0.28, 0))
+        # aura d'illusion (éclats violets) autour du corps, sans contour
+        rnd = random.Random(11)
+        for k in range(12):
+            a = -0.2 - 1.5 * rnd.random() if k % 3 else 0.4 + 1.2 * rnd.random()
+            self.part("wisp", C.bm_xform(C.bm_box(0.012 + 0.02 * rnd.random(), 0.01, 0.04 + 0.08 * rnd.random()),
+                      loc=(0.38 * math.sin(a) * tw, -0.02 + 0.10 * math.cos(a), -0.15 + 0.62 * rnd.random()),
+                      rot=(0, 0, a)), "smoke", sp, nofs=True)
 
     def set_knife(self, rot) -> None:
         self.knife.rotation_euler = rot
@@ -1035,22 +1138,25 @@ class Clone(Human):
 # ------------------------------------------------------------------------------- gros brute
 class Brute(Human):
     def build_head(self, head) -> None:
-        # petite tête enfoncée dans les épaules, front bas, mâchoire énorme
-        self.skull(head, "skin", sx=0.19, sy=0.18, sz=0.17, jaw=-0.25)
-        self.eyes(head, "eye_glow", z=0.215, x=0.06, y=-0.165, r=(0.026, 0.012, 0.016), brow_key="skin", angle=0.45)
-        self.part("browRidge", C.bm_xform(C.bm_box(0.24, 0.06, 0.05, bevel=0.02), loc=(0, -0.15, 0.26)), "skin", head)
-        self.part("jaw", C.bm_xform(C.bm_box(0.26, 0.16, 0.10, bevel=0.04), loc=(0, -0.08, 0.06)), "skin", head)
+        # petite tête chauve enfoncée dans les épaules, cicatrices recousues, gueule ouverte
+        self.skull(head, "skin", sx=0.17, sy=0.17, sz=0.17, jaw=-0.25)
+        self.eyes(head, "eye_glow", z=0.215, x=0.058, y=-0.160, r=(0.024, 0.012, 0.014), brow_key="skin", angle=0.45)
+        self.part("browRidge", C.bm_xform(C.bm_box(0.22, 0.06, 0.05, bevel=0.02), loc=(0, -0.14, 0.255)), "skin", head)
+        self.part("jaw", C.bm_xform(C.bm_box(0.22, 0.15, 0.08, bevel=0.035), loc=(0, -0.08, 0.05)), "skin", head)
+        self.part("maw", C.bm_xform(C.bm_box(0.13, 0.04, 0.05, bevel=0.012), loc=(0, -0.155, 0.11)), "wound", head,
+                  nofs=True)
+        for k in range(5):
+            self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.011, 0.0, 0.035), loc=(-0.05 + 0.025 * k, -0.17, 0.135),
+                      rot=(math.pi, 0, 0)), "tooth", head, nofs=True)
         for sx in (1, -1):
-            self.part("tusk", C.bm_xform(C.bm_cyl(6, 0.016, 0.0, 0.06), loc=(0.07 * sx, -0.16, 0.12)), "bone", head)
-            self.part("lump", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.10 * sx, 0.04, 0.33),
-                      scale=(0.06, 0.06, 0.04)), "skin", head)
-        self.part("scar", C.bm_xform(C.bm_box(0.012, 0.01, 0.10), loc=(0.05, -0.17, 0.22), rot=(0, 0.4, 0)),
-                  "wound", head, nofs=True)
+            self.part("tusk", C.bm_xform(C.bm_cyl(6, 0.016, 0.0, 0.06), loc=(0.065 * sx, -0.16, 0.10)), "bone", head)
+        self.part("scar", C.bm_tube([(-0.08, -0.12, 0.34), (0.0, -0.16, 0.30), (0.10, -0.14, 0.22)], [0.008] * 3,
+                                    seg=4), "stitch", head)
 
     def build_torso(self, pelvis, spine) -> None:
         super().build_torso(pelvis, spine)
         tw, td = self.TW, self.TD
-        # trapèzes énormes et pectoraux
+        # trapèzes énormes, pectoraux, veines et plaies recousues
         for sx in (1, -1):
             self.part("trap", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0.12 * sx * tw, 0.03, 0.43),
                       scale=(0.14 * tw, 0.12, 0.10)), "skin", spine)
@@ -1058,38 +1164,47 @@ class Brute(Human):
                       scale=(0.12 * tw, 0.07 * td, 0.09)), "skin", spine)
             self.part("vein", C.bm_tube(C.bezier((0.04 * sx, -0.17 * td, 0.12), (0.10 * sx, -0.18 * td, 0.18),
                                                  (0.15 * sx * tw, -0.14 * td, 0.26), (0.20 * sx * tw, -0.10, 0.36), 6),
-                                        [0.012] * 6, seg=5), "vein", spine)
-        for k in range(2):
-            for sx in (1, -1):
-                self.part("abs", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.05 * sx, -0.19 * td, 0.10 + 0.08 * k),
-                          scale=(0.045, 0.03, 0.035)), "skin", spine)
+                                        [0.010] * 6, seg=5), "vein", spine)
+        for k in range(3):
+            self.part("stitchSeam", C.bm_xform(C.bm_box(0.012, 0.012, 0.06), loc=(-0.12 * tw + 0.04 * k, -0.20 * td, 0.20 + 0.01 * k),
+                      rot=(0, 0.9, 0)), "stitch", spine)
+        self.part("woundChest", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.14 * tw, -0.17 * td, 0.16),
+                  scale=(0.05, 0.02, 0.04)), "wound", spine, nofs=True)
 
     def dress(self) -> None:
         pel = self.j["pelvis"]
         tw, td = self.TW, self.TD
         self.part("belt", C.bm_xform(C.bm_cyl(18, 0.23 * tw ** 0.8, 0.23 * tw ** 0.8, 0.06), loc=(0, 0, 0.06),
                   scale=(1, 0.76 * td / tw ** 0.8, 1)), "strap", pel)
-        # chaîne en bandoulière
+        self.part("buckle", C.bm_xform(C.bm_box(0.07, 0.02, 0.05, bevel=0.01), loc=(0, -0.19 * td, 0.06)), "metal", pel)
+        # pagne rouge en lambeaux devant
+        self.part("cloth", C.bm_tube([(0, -0.17 * td, 0.04), (0, -0.19 * td, -0.08), (0.01, -0.18 * td, -0.20)],
+                                     [0.09, 0.085, 0.06], seg=6, flat=0.2, up=(0, 1, 0)), "cloth", pel)
+        # sangle de cuir en bandoulière
         sp = self.j["spine"]
-        for k in range(14):
-            a = 2 * math.pi * k / 14
-            x, y = math.sin(a) * 0.24 * tw, -math.cos(a) * 0.18 * td
-            z = 0.22 + 0.16 * math.sin(a)
-            self.part("link", C.bm_xform(C.bm_torus(8, 4, 0.025, 0.008), loc=(x, y, z), rot=(0, 1.2, a)), "chain", sp)
-        # bracelets de métal et poings de béton
+        pts = []
+        for k in range(9):
+            a = -math.pi * 0.5 + math.pi * k / 8
+            pts.append((0.25 * tw * math.sin(a), -0.24 * td * math.cos(a), 0.24 + 0.17 * math.sin(a)))
+        self.part("strapX", C.bm_tube(pts, [0.034] * 9, seg=5, flat=0.4), "strap", sp)
+        # gantelets de fer rivetés (avant-bras + poings)
         for side in ("L", "R"):
             fa = self.j["fa" + side]
-            self.part("bracer" + side, C.bm_xform(C.bm_cyl(12, 0.085 * self.AW, 0.085 * self.AW, 0.09),
-                      loc=(0, 0, -0.13 * self.AL)), "bracer", fa)
-            self.part("fist" + side, C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -self.ll),
-                      scale=(0.10 * self.AW, 0.09 * self.AW, 0.09 * self.AW)), "skin", fa)
-        # épaulière de métal riveté (gauche) et sangle
-        self.part("pad", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.03, 0.0, 0.05), scale=(0.15, 0.14, 0.10)),
-                  "metal", self.j["uaL"])
-        for k in range(4):
-            a = -0.9 + 0.6 * k
-            self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.016), loc=(0.03 + 0.13 * math.sin(a), -0.12 * math.cos(a), 0.10)),
-                      "chain", self.j["uaL"])
+            self.part("bracer" + side, C.bm_xform(C.bm_cyl(12, 0.095 * self.AW, 0.105 * self.AW, 0.17 * self.AL),
+                      loc=(0, 0, -0.10 * self.AL)), "bracer", fa)
+            for k in range(3):
+                a = 2 * math.pi * k / 3
+                self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.015),
+                          loc=(0.105 * self.AW * math.cos(a), 0.105 * self.AW * math.sin(a), -0.10 * self.AL)),
+                          "chain", fa)
+            self.part("fist" + side, C.bm_xform(C.bm_box(0.18 * self.AW, 0.17 * self.AW, 0.15 * self.AW, bevel=0.04),
+                      loc=(0, 0, -self.ll)), "metal", fa)
+        # épaulières de métal (deux), genouillères
+        for side, sx in (("L", 1), ("R", -1)):
+            self.part("pad" + side, C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.03 * sx, 0.0, 0.05), scale=(0.15, 0.14, 0.10)),
+                      "metal", self.j["ua" + side])
+            self.part("kneePad" + side, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.08, 0.0),
+                      scale=(0.08, 0.05, 0.08)), "metal", self.j["knee" + side])
         self.muzzle_ref = ("fistR", (0, 0, -self.ll))
 
     def arms_rest(self, b: float = 0.0) -> None:
@@ -1131,19 +1246,30 @@ class Brute(Human):
 
 # ------------------------------------------------------------------------------- le Violent (élite)
 class Violent(Brute):
+    """Le Violent (planche) : mutant écorché brun-rouge, très voûté, crâne chauve aux orbites creuses
+    et yeux blancs, gueule béante dentée, pantalon sombre en lambeaux, griffes osseuses."""
+
     def build_head(self, head) -> None:
-        self.skull(head, "skin", sx=0.17, sy=0.18, sz=0.18, jaw=-0.15)
-        self.eyes(head, "eye_glow", z=0.22, x=0.06, y=-0.168, r=(0.03, 0.012, 0.018), brow_key="vein", angle=0.5)
-        self.part("jaw", C.bm_xform(C.bm_box(0.22, 0.14, 0.09, bevel=0.035), loc=(0, -0.09, 0.07)), "skin", head)
-        self.part("mouth", C.bm_xform(C.bm_box(0.15, 0.02, 0.04, bevel=0.01), loc=(0, -0.165, 0.10)), "vein", head,
-                  nofs=True)
-        for k in range(6):
-            x = -0.06 + 0.024 * k
-            self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.010, 0.0, 0.035), loc=(x, -0.172, 0.13),
-                      rot=(math.pi, 0, 0)), "claw", head, nofs=True)
+        self.skull(head, "skin", sx=0.165, sy=0.175, sz=0.185, jaw=0.05)
         for sx in (1, -1):
-            self.part("tattooHead", C.bm_xform(C.bm_box(0.012, 0.01, 0.12), loc=(0.11 * sx, -0.13, 0.30),
-                      rot=(0.5, 0, 0.5 * sx)), "tattoo", head, nofs=True)
+            self.part("socket", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.060 * sx, -0.140, 0.235),
+                      scale=(0.048, 0.025, 0.040)), "socket", head)
+            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.060 * sx, -0.158, 0.235),
+                      scale=(0.024, 0.012, 0.020)), "eye_glow", head, nofs=True)
+            self.part("ear", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.160 * sx, -0.01, 0.21),
+                      scale=(0.02, 0.04, 0.05)), "skin", head)
+        self.part("brow", C.bm_xform(C.bm_box(0.20, 0.05, 0.035, bevel=0.015), loc=(0, -0.145, 0.275)), "skin", head)
+        # gueule béante
+        self.part("jaw", C.bm_xform(C.bm_box(0.17, 0.13, 0.07, bevel=0.03), loc=(0, -0.08, 0.035), rot=(0.25, 0, 0)),
+                  "skin", head)
+        self.part("mouth", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.140, 0.105), scale=(0.075, 0.035, 0.060)),
+                  "mouth", head, nofs=True)
+        for k in range(5):
+            x = -0.048 + 0.024 * k
+            self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.011, 0.0, 0.035), loc=(x, -0.165, 0.150),
+                      rot=(math.pi, 0, 0)), "claw", head, nofs=True)
+            self.part("toothL", C.bm_xform(C.bm_cyl(5, 0.010, 0.0, 0.03), loc=(x * 0.9, -0.155, 0.065)),
+                      "claw", head, nofs=True)
 
     def dress(self) -> None:
         pel = self.j["pelvis"]
@@ -1151,29 +1277,35 @@ class Violent(Brute):
         tw, td = self.TW, self.TD
         self.part("belt", C.bm_xform(C.bm_cyl(18, 0.23 * tw ** 0.8, 0.23 * tw ** 0.8, 0.06), loc=(0, 0, 0.06),
                   scale=(1, 0.76 * td / tw ** 0.8, 1)), "strap", pel)
-        # sangles croisées, plaque d'épaule, tatouages néon roses
-        for sx in (1, -1):
-            pts = []
-            for k in range(9):
-                a = -math.pi * 0.5 + math.pi * k / 8
-                pts.append((sx * (0.22 * tw * math.sin(a)), -0.19 * td * math.cos(a) * 0.95, 0.24 + 0.17 * sx * math.sin(a)))
-            self.part("strap", C.bm_tube(pts, [0.022] * 9, seg=5, flat=0.4), "strap", sp)
-        self.part("pad", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.02, 0.0, 0.06), scale=(0.14, 0.13, 0.09)),
-                  "metal", self.j["uaL"])
-        for k in range(4):
-            self.part("tattoo", C.bm_xform(C.bm_box(0.10, 0.008, 0.012), loc=(-0.10 * tw, -0.178 * td, 0.12 + 0.06 * k),
-                      rot=(0, 0.3 * (-1) ** k, 0)), "tattoo", sp, nofs=True)
-        # griffes acérées (3 par main)
+        for k, x in enumerate((-0.12, 0.0, 0.13)):
+            self.part("rag", C.bm_tube([(x * tw, -0.18 * td, 0.02), (x * tw * 1.05, -0.19 * td, -0.08),
+                                        (x * tw * 1.1, -0.17 * td, -0.16 - 0.03 * k)], [0.05, 0.045, 0.01],
+                                       seg=6, flat=0.25, up=(0, 1, 0)), "pants", pel)
+        # tatouages néon roses (discrets) sur l'épaule et l'avant-bras gauches
+        for k in range(3):
+            self.part("tattoo", C.bm_xform(C.bm_box(0.09, 0.008, 0.012), loc=(-0.13 * tw, -0.178 * td, 0.30 + 0.05 * k),
+                      rot=(0, 0.4 * (-1) ** k, 0)), "tattoo", sp, nofs=True)
+        # griffes osseuses (3 par main, longues à droite)
         for side, sx in (("L", 1), ("R", -1)):
             fa = self.j["fa" + side]
+            ln = 1.25 if side == "R" else 1.0
             self.part("fist" + side, C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -self.ll),
-                      scale=(0.09 * self.AW, 0.08 * self.AW, 0.09 * self.AW)), "skin", fa)
+                      scale=(0.085 * self.AW, 0.075 * self.AW, 0.09 * self.AW)), "skin", fa)
             for k in range(3):
                 x = (k - 1) * 0.04
-                self.part("claw" + side, C.bm_tube([(x, -0.03, -self.ll - 0.04), (x * 1.3, -0.10, -self.ll - 0.18),
-                                                    (x * 1.4, -0.24, -self.ll - 0.28)], [0.032, 0.022, 0.0], seg=6),
+                self.part("claw" + side, C.bm_tube([(x, -0.03, -self.ll - 0.04), (x * 1.3, -0.10 * ln, -self.ll - 0.18 * ln),
+                                                    (x * 1.4, -0.24 * ln, -self.ll - 0.28 * ln)], [0.028, 0.019, 0.0], seg=6),
                           "claw", fa)
-        self.muzzle_ref = ("clawR", (0, -0.24, -self.ll - 0.28))
+        self.muzzle_ref = ("clawR", (0, -0.30, -self.ll - 0.35))
+
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.55, 0, 0)
+
+    def arms_rest(self, b: float = 0.0) -> None:
+        s = self.shoulder
+        self.arm_ik("L", s["L"] + Vector((0.16, -0.18, -0.34 + 0.02 * b)), self.L_POLE)
+        self.arm_ik("R", s["R"] + Vector((-0.18, -0.22, -0.30 + 0.02 * b)), self.R_POLE)
 
     def pose_attack(self, i: int, n: int) -> None:
         # griffes acérées : bras armé en arrière (0-2), ruée et double griffure (3), suivi (4-5)
@@ -1199,33 +1331,40 @@ class Warden(SecBot):
     ARMOR = "armor"
 
     def build_head(self, head) -> None:
-        # casque rouge et blanc, visière rouge, crête blanche
+        # casque rouge à bande blanche centrale, masque facial métal doré, yeux blancs lumineux
         hb = C.bm_sphere(20, 14, 1.0)
         for v in hb.verts:
             x, y, z = v.co
-            v.co = Vector((x * 0.18, y * 0.19, z * 0.20 + 0.21))
+            v.co = Vector((x * 0.18, y * 0.19, z * 0.19 + 0.22))
         self.part("helmet", hb, "armor", head)
-        self.part("helmetStripe", C.bm_xform(C.bm_box(0.07, 0.36, 0.06, bevel=0.02), loc=(0, 0.0, 0.39)), "white", head)
-        self.part("face", C.bm_xform(C.bm_box(0.26, 0.08, 0.20, bevel=0.03), loc=(0, -0.14, 0.17)), "white", head)
-        self.part("visor", C.bm_xform(C.bm_box(0.24, 0.03, 0.05, bevel=0.012), loc=(0, -0.185, 0.22)), "visor", head,
-                  nofs=True)
-        self.part("mouthGrill", C.bm_xform(C.bm_box(0.12, 0.03, 0.06, bevel=0.01), loc=(0, -0.182, 0.10)),
-                  "armor_dark", head)
+        arc = [(0.0, 0.192 * math.sin(a), 0.22 + 0.192 * math.cos(a)) for a in [-1.0 + 0.4 * k for k in range(6)]]
+        self.part("helmetStripe", C.bm_tube(arc, [0.045] * 6, seg=6, flat=0.30, up=(0, 0, 1)), "white", head)
         for sx in (1, -1):
             self.part("earCap", C.bm_xform(C.bm_cyl(12, 0.05, 0.05, 0.04), loc=(0.18 * sx, 0, 0.20),
                       rot=(0, math.pi / 2, 0)), "joint", head)
+            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.052 * sx, -0.192, 0.225),
+                      scale=(0.030, 0.012, 0.016)), "visor", head, nofs=True)
+        face = C.bm_sphere(16, 12, 1.0)
+        for v in face.verts:
+            x, y, z = v.co
+            v.co = Vector((x * 0.135, min(y, 0.0) * 0.09 - 0.11, z * 0.13 + 0.17))
+        self.part("face", face, "faceplate", head)
+        self.part("mouthGrill", C.bm_xform(C.bm_box(0.08, 0.03, 0.04, bevel=0.01), loc=(0, -0.195, 0.11)),
+                  "armor_dark", head)
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        self.part("chestWhite", C.bm_xform(C.bm_box(0.30 * tw, 0.04, 0.10, bevel=0.02), loc=(0, -0.175 * td, 0.38)),
-                  "white", sp)
-        self.part("logo", C.bm_xform(C.bm_box(0.16, 0.02, 0.04, bevel=0.008), loc=(0, -0.19 * td, 0.38)), "armor_dark",
-                  sp)
+        # plastron noir à logo blanc, flancs rouges
+        self.part("chestBlack", C.bm_xform(C.bm_box(0.40 * tw, 0.06, 0.30, bevel=0.04), loc=(0, -0.185 * td, 0.29)),
+                  "armor_dark", sp)
+        self.part("logo", C.bm_xform(C.bm_box(0.18, 0.02, 0.04, bevel=0.006), loc=(0.02, -0.22 * td, 0.34)), "white", sp)
+        self.part("logoDot", C.bm_xform(C.bm_cyl(10, 0.024, 0.024, 0.02), loc=(-0.10, -0.22 * td, 0.34),
+                  rot=(math.pi / 2, 0, 0)), "white", sp)
         for sx in (1, -1):
             self.part("backLight", C.bm_xform(C.bm_sphere(8, 6, 0.025), loc=(0.11 * sx * tw, 0.24 * td, 0.42)),
                       "light_red", sp, nofs=True)
-            self.part("shoulderStripe", C.bm_xform(C.bm_box(0.04, 0.20, 0.03), loc=(0.03 * sx, 0, 0.13)), "white",
+            self.part("shoulderStripe", C.bm_xform(C.bm_box(0.04, 0.20, 0.03), loc=(0.03 * sx, 0, 0.14)), "white",
                       self.j["ua" + ("L" if sx > 0 else "R")])
 
     def build_arms(self, spine) -> None:
@@ -1245,7 +1384,7 @@ class Warden(SecBot):
                       loc=(0, 0, -0.10 * al)), "joint", ua)
             self.part("elbow" + side, C.bm_xform(C.bm_sphere(10, 8, 0.065 * aw), loc=(0, 0, 0)), "joint", fa)
             self.part("farm" + side, C.bm_xform(C.bm_cyl(10, 0.085 * aw, 0.075 * aw, 0.18 * al),
-                      loc=(0, 0, -0.09 * al)), "white", fa)
+                      loc=(0, 0, -0.09 * al)), "armor_dark", fa)
             self.part("hand" + side, C.bm_xform(C.bm_box(0.08 * aw, 0.07 * aw, 0.08 * aw, bevel=0.02),
                       loc=(0, 0, -self.ll + 0.01)), "joint", fa)
         g = self.rifle = joint("w_rifle", spine, (0, 0, 0))
@@ -1302,31 +1441,42 @@ class Spider(Rig):
         j["fangs"] = fangs = joint("fangs", th, (0, -0.24, -0.02))
         # céphalothorax
         self.part("thoraxM", C.bm_xform(C.bm_sphere(18, 12, 1.0), scale=(0.20, 0.24, 0.13)), "carapace", th)
-        self.part("headM", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.20, 0.02), scale=(0.13, 0.11, 0.10)),
+        self.part("headM", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.24, 0.07), scale=(0.22, 0.19, 0.16)),
                   "carapace", th)
+        # plaques de chitine sur le céphalothorax
+        for sx in (1, -1):
+            self.part("plate", C.bm_xform(C.bm_box(0.08, 0.20, 0.03, bevel=0.012), loc=(0.07 * sx, 0.0, 0.11),
+                      rot=(0, 0.35 * sx, 0)), "leg", th)
         # abdomen : grosse goutte, motif lumineux en chevrons
         ab = C.bm_sphere(20, 14, 1.0)
         for v in ab.verts:
             x, y, z = v.co
             k = 1.0 + 0.25 * y
-            v.co = Vector((x * 0.30 * k, y * 0.38 + 0.30, z * 0.26 * k + 0.08))
+            v.co = Vector((x * 0.23 * k, y * 0.29 + 0.25, z * 0.20 * k + 0.07))
         self.part("abdomen", ab, "carapace", abd)
-        for k in range(4):
-            y = 0.18 + 0.12 * k
-            w = 0.20 - 0.03 * k
-            self.part("chev%d" % k, C.bm_tube([(-w, y + 0.04, 0.26 - 0.02 * k), (0, y - 0.03, 0.33 - 0.03 * k),
-                                               (w, y + 0.04, 0.26 - 0.02 * k)], [0.022, 0.026, 0.022], seg=6, flat=0.5),
+        # plaques segmentées de l'abdomen, jointures lumineuses violettes
+        for k in range(3):
+            y = 0.12 + 0.11 * k
+            self.part("seg%d" % k, C.bm_xform(C.bm_cyl(16, 0.19 - 0.035 * k, 0.17 - 0.035 * k, 0.03),
+                      loc=(0, y, 0.20 - 0.025 * k), rot=(math.pi / 2 - 0.5, 0, 0), scale=(1, 0.8, 1)), "leg", abd)
+            self.part("seam%d" % k, C.bm_tube([(-0.14 + 0.03 * k, y + 0.06, 0.20 - 0.03 * k), (0, y + 0.015, 0.285 - 0.03 * k),
+                                               (0.14 - 0.03 * k, y + 0.06, 0.20 - 0.03 * k)], [0.012, 0.016, 0.012], seg=6),
                       "glow", abd, nofs=True)
-        self.part("spot", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.66, 0.16), scale=(0.07, 0.05, 0.06)),
-                  "glow_soft", abd, nofs=True)
+        self.part("spot", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.47, 0.20), scale=(0.05, 0.04, 0.03)),
+                  "glow", abd, nofs=True)
+        # nervures lumineuses du céphalothorax
         for sx in (1, -1):
-            for k in range(3):
-                self.part("dot", C.bm_xform(C.bm_sphere(8, 6, 0.03), loc=(0.20 * sx - 0.03 * sx * k, 0.22 + 0.13 * k,
-                          0.24 - 0.03 * k)), "glow", abd, nofs=True)
+            self.part("vein", C.bm_tube([(0.05 * sx, -0.30, 0.22), (0.08 * sx, -0.20, 0.23), (0.10 * sx, -0.06, 0.15)],
+                                        [0.010, 0.012, 0.008], seg=5), "glow", th, nofs=True)
         # yeux (grappe rouge-rose)
-        for (x, z, r) in ((0.045, 0.07, 0.030), (-0.045, 0.07, 0.030), (0.085, 0.05, 0.020), (-0.085, 0.05, 0.020),
-                          (0.03, 0.105, 0.016), (-0.03, 0.105, 0.016)):
-            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, r), loc=(x, -0.29, z)), "eye_glow", th, nofs=True)
+        # deux grands yeux violets lumineux + petits yeux orange
+        for sx in (1, -1):
+            self.part("eye", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0.085 * sx, -0.35, 0.15),
+                      scale=(0.082, 0.055, 0.070)), "eye_glow", th, nofs=True)
+            self.part("eyeRim", C.bm_xform(C.bm_torus(14, 5, 0.075, 0.014), loc=(0.085 * sx, -0.345, 0.15),
+                      rot=(math.pi / 2 - 0.5, 0, 0)), "leg", th)
+            self.part("eyeS", C.bm_xform(C.bm_sphere(8, 6, 0.020), loc=(0.16 * sx, -0.34, 0.06)), "eye_small", th, nofs=True)
+            self.part("eyeS", C.bm_xform(C.bm_sphere(8, 6, 0.016), loc=(0.04 * sx, -0.40, 0.05)), "eye_small", th, nofs=True)
         # chélicères / crocs
         for sx in (1, -1):
             self.part("chel", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.04 * sx, -0.04, -0.02),
@@ -1347,11 +1497,11 @@ class Spider(Rig):
                 lo = qjoint("leg_l" + name, th, (0, 0, 0))
                 self.part("femur" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L1 * 0.5), (0, 0, -self.L1)],
                                                     [0.050, 0.046, 0.040], seg=8), "leg", u)
-                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.046), loc=(0, 0, 0)), "glow_soft", lo, nofs=True)
+                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.030), loc=(0, 0, 0)), "glow_soft", lo, nofs=True)
                 self.part("tibia" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L2 * 0.55), (0, 0, -self.L2 * 0.9),
                                                      (0, 0, -self.L2)], [0.040, 0.032, 0.016, 0.0], seg=8), "leg_tip", lo)
                 self.part("band" + name, C.bm_xform(C.bm_cyl(8, 0.036, 0.036, 0.03), loc=(0, 0, -self.L2 * 0.45)),
-                          "glow", lo, nofs=True)
+                          "leg", lo)
                 self.legs_def.append({"name": name, "u": u, "l": lo, "hip": hip, "rest": rest, "sx": sx, "k": k,
                                       "phase": 0.0 if (k + (0 if sx > 0 else 1)) % 2 == 0 else math.pi})
         self.muzzle_ref = ("fang", (0.0, -0.08, -0.17))
@@ -1475,11 +1625,11 @@ class Omnistore(Rig):
         j["body"] = body = joint("body", root, (0, 0, 0))
         body.scale = (self.S["scale"],) * 3
         j["torso"] = to = joint("torso", body, (0, 0, self.BZ))
-        j["head"] = hd = joint("head", to, (0, -0.46, 0.16))
-        hd.scale = (1.3,) * 3
+        j["head"] = hd = joint("head", to, (0, -0.60, 0.26))
+        hd.scale = (1.75,) * 3
         j["jaw"] = jw = joint("jaw", hd, (0, 0.02, -0.06))
-        j["tvs"] = tv = joint("tvs", to, (0, 0.22, 0.78))
-        tv.scale = (1.35,) * 3
+        j["tvs"] = tv = joint("tvs", to, (0, 0.24, 0.80))
+        tv.scale = (1.6,) * 3
         # masse de chair : corps bossu
         bm = C.bm_sphere(26, 18, 1.0)
         rnd = random.Random(3)
@@ -1492,10 +1642,20 @@ class Omnistore(Rig):
             a = rnd.uniform(0, 2 * math.pi)
             p = Vector((0.52 * math.cos(a), 0.12 + 0.55 * math.sin(a), rnd.uniform(-0.05, 0.38)))
             self.part("bulb", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=p, scale=(0.16, 0.16, 0.13)), "flesh", to)
-        # côtes / plaques osseuses sur le dos
+        # plaques de chitine sombre sur le dos et veines lumineuses rouges
         for k in range(5):
             self.part("ridge", C.bm_xform(C.bm_cyl(8, 0.05, 0.0, 0.22), loc=(0.25 * (-1) ** k, 0.05 + 0.12 * k, 0.48),
-                      rot=(-0.5, 0.4 * (-1) ** k, 0)), "claw", to)
+                      rot=(-0.5, 0.4 * (-1) ** k, 0)), "chitin", to)
+        for k in range(4):
+            self.part("plateBack", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0.0, -0.10 + 0.22 * k, 0.50 - 0.04 * k),
+                      scale=(0.34 - 0.03 * k, 0.12, 0.08)), "chitin", to)
+        for k in range(6):
+            a = rnd.uniform(0, 2 * math.pi)
+            pts = []
+            for t in range(6):
+                aa = a + 0.18 * t
+                pts.append((0.66 * math.cos(aa), 0.12 + 0.74 * math.sin(aa), 0.22 - 0.06 * t + 0.03 * math.sin(3 * t)))
+            self.part("veinG", C.bm_tube(pts, [0.024] * 6, seg=5), "vein_glow", to, nofs=True)
         # néons (tubes roses) enroulés sur la masse
         for k, (z, r, a0, a1) in enumerate(((0.05, 0.64, -2.2, 0.9), (0.28, 0.56, -0.6, 2.4))):
             pts = []
@@ -1547,8 +1707,11 @@ class Omnistore(Rig):
             self.part("tvScr%d" % k, C.bm_xform(C.bm_box(0.32 * s, 0.02, 0.22 * s, bevel=0.01), loc=(0, -0.135 * s, 0.0)),
                       key, g, nofs=True, grp="screens")
             # « bruit » et symbole d'étoile (motif sombre) sur l'écran
-            self.part("tvStar%d" % k, C.bm_xform(C.bm_box(0.10 * s, 0.01, 0.10 * s), loc=(0, -0.15 * s, 0.0),
-                      rot=(0, math.pi / 4, 0)), "frame_tv", g, nofs=True, grp="screens")
+            for r in (0.0, math.pi / 4):
+                self.part("tvStar%d" % k, C.bm_xform(C.bm_box(0.16 * s, 0.01, 0.025 * s), loc=(0, -0.15 * s, 0.0),
+                          rot=(0, r, 0)), "screen2", g, nofs=True, grp="screens")
+                self.part("tvStar%d" % k, C.bm_xform(C.bm_box(0.16 * s, 0.01, 0.025 * s), loc=(0, -0.15 * s, 0.0),
+                          rot=(0, r + math.pi / 2, 0)), "screen2", g, nofs=True, grp="screens")
             self.part("tvDead%d" % k, C.bm_xform(C.bm_box(0.32 * s, 0.02, 0.22 * s, bevel=0.01), loc=(0, -0.134 * s, 0.0)),
                       "frame_tv", g, grp="dead_screens")
             self.part("cable%d" % k, C.bm_tube(C.bezier((0, 0.12 * s, -0.12 * s), (0, 0.25, -0.30),
@@ -1579,6 +1742,16 @@ class Omnistore(Rig):
                           rot=(math.pi, 0, 0)), "claw", lo2)
                 self.legs_def.append({"name": name, "u": u, "l": lo2, "hip": hip, "rest": rest, "sx": sx, "k": k,
                                       "phase": 0.0 if (k + (0 if sx > 0 else 1)) % 2 == 0 else math.pi})
+        # queue de scorpion segmentée, recourbée au-dessus du dos (planche)
+        j["tail"] = tl = joint("tail", to, (0.0, 0.70, 0.20))
+        tpts = C.bezier((0, 0, 0), (0.0, 0.55, 0.30), (0.0, 0.60, 1.10), (0.0, 0.10, 1.35), 9)
+        for k in range(len(tpts) - 1):
+            r = 0.15 - 0.012 * k
+            self.part("tailSeg", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=tpts[k], scale=(r, r, r * 0.9)), "chitin", tl)
+            self.part("tailVein", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=Vector(tpts[k]) + Vector((0, 0.02, r * 0.8)),
+                      scale=(r * 0.35, r * 0.35, r * 0.15)), "vein_glow", tl, nofs=True)
+        self.part("stinger", C.bm_tube([tpts[-1], (0.0, -0.05, 1.30), (0.0, -0.18, 1.18)], [0.08, 0.05, 0.0], seg=8),
+                  "claw", tl)
         # deux bras-faux avant (griffes) partant sous la gueule
         self.arms = []
         for sx in (1, -1):
@@ -1613,9 +1786,10 @@ class Omnistore(Rig):
         to = self.j["torso"]
         to.location = (0, 0, self.BZ)
         to.rotation_euler = (0, 0, 0)
-        self.j["head"].rotation_euler = (0, 0, 0)
-        self.j["jaw"].rotation_euler = (0.15, 0, 0)
+        self.j["head"].rotation_euler = (-0.45, 0, 0)
+        self.j["jaw"].rotation_euler = (0.45, 0, 0)
         self.j["tvs"].rotation_euler = (0, 0, 0)
+        self.j["tail"].rotation_euler = (0, 0, 0)
         self.j["body"].location = (0, 0, 0)
         self.j["body"].rotation_euler = (0, 0, 0)
         self.show("screens", True)
@@ -1631,8 +1805,9 @@ class Omnistore(Rig):
         to = self.j["torso"]
         to.location.z = self.BZ - 0.03 * (1 + math.sin(t))
         to.rotation_euler = (0.03 * math.sin(t), 0, 0.03 * math.sin(t + 1))
-        self.j["jaw"].rotation_euler = (0.20 + 0.12 * max(0.0, math.sin(t)), 0, 0)
+        self.j["jaw"].rotation_euler = (0.45 + 0.12 * max(0.0, math.sin(t)), 0, 0)
         self.j["tvs"].rotation_euler = (0.04 * math.sin(t + 0.8), 0, 0.05 * math.sin(t))
+        self.j["tail"].rotation_euler = (0.06 * math.sin(t + 1.6), 0.08 * math.sin(t), 0)
         self.set_arms(0.08 * math.sin(t), 0.05 * math.sin(t + 1))
         self.place_legs(self.feet_rest())
 
@@ -1661,6 +1836,7 @@ class Omnistore(Rig):
         self.j["jaw"].rotation_euler = ((0.4, 0.7, 0.85, 0.9, 0.5, 0.25)[i], 0, 0)
         self.set_arms((-0.6, -1.1, -1.25, 0.6, 0.4, 0.0)[i], (0.1, 0.2, 0.25, -0.1, -0.05, 0.0)[i])
         self.j["tvs"].rotation_euler = (0.1 * rear, 0, 0)
+        self.j["tail"].rotation_euler = ((-0.10, -0.25, -0.30, 0.35, 0.25, 0.05)[i], 0, 0)
         feet = self.feet_rest()
         if i == 3 or i == 4:
             for L in self.legs_def:
@@ -1688,6 +1864,7 @@ class Omnistore(Rig):
         to.rotation_euler = (0.25 * e - 0.2 * (1 - e) * (t < 0.2), 0.25 * e, 0.1 * e)
         self.j["jaw"].rotation_euler = (0.9 - 0.5 * e, 0, 0)
         self.j["tvs"].rotation_euler = (0.5 * e, 0.3 * e, 0)
+        self.j["tail"].rotation_euler = (0.9 * e, 0.4 * e, 0)
         self.set_arms(0.9 * e - 0.6 * (1 - e), 0.3 * e)
         if t > 0.6:
             self.show("screens", False)
@@ -1996,11 +2173,19 @@ def presentation_sheet(kinds) -> None:
     """Planche de présentation (captures de PR) : idle 3/4 face + attaque + cadavre, à l'échelle du jeu,
     sur fond nuit violet, depuis les images déjà rendues (TMP_DIR)."""
     from PIL import Image, ImageDraw, ImageFont
-    fb = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    fr = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-    title_f = ImageFont.truetype(fb, 30)
-    name_f = ImageFont.truetype(fb, 17)
-    sub_f = ImageFont.truetype(fr, 13)
+
+    def font(paths, size):
+        for fp in paths:
+            if os.path.exists(fp):
+                return ImageFont.truetype(fp, size)
+        return ImageFont.load_default()
+    fb = [os.path.join(ROOT, "assets", "fonts", "anton", "Anton-Regular.ttf"),
+          "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]
+    fr = [os.path.join(ROOT, "assets", "fonts", "space_grotesk", "SpaceGrotesk-Variable.ttf"),
+          "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
+    title_f = font(fb, 30)
+    name_f = font(fb, 17)
+    sub_f = font(fr, 13)
     cols = 3
     cell_w, cell_h = 440, 330
     rows = (len(kinds) + cols - 1) // cols
@@ -2050,7 +2235,7 @@ def presentation_sheet(kinds) -> None:
 
 
 def main() -> None:
-    args = sys.argv[1:]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     kinds = args[args.index("--kinds") + 1].split(",") if "--kinds" in args else KINDS
     os.makedirs(TMP_DIR, exist_ok=True)
     if "--sheet" in args:

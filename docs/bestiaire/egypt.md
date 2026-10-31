@@ -19,7 +19,9 @@ or et lapis-lazuli, bronze, sable ocre ; accents émissifs (yeux ambrés, disque
 | `Viper` (anneaux enroulés + cou dressé = un tube refait à chaque pose, capuchon ocellé ; rampe allongée en course) | Vipère des sables |
 
 ```
-flock /home/claude/.blender_render.lock python3 art/blender/bestiary/egypt/build_eg_bestiary.py [--kinds eg_skeleton,...]
+source tools/prerender/mac_env.sh     # macOS : python3 = Blender 5.2, GPU Metal, verrous
+flock "$BLENDER_LOCK" python3 art/blender/bestiary/egypt/build_eg_bestiary.py [--kinds eg_skeleton,...]
+... --preview s,se --elev 12 --kinds eg_lizard                 # aperçu de face (comparaison à la planche)
 ... --preview se,n --anim idle:0,attack:3 --kinds eg_mummy     # aperçu rapide (RDM_TMP)
 ... --repack --kinds eg_skeleton                               # atlas + méta depuis les images rendues
 ... --sheet                                                    # planche de présentation (captures)
@@ -27,10 +29,34 @@ flock /home/claude/.blender_render.lock python3 art/blender/bestiary/egypt/build
 Animations : idle (6), run (8), attack (6 : 0-2 élan, 2 tenue du télégraphe, 3 coup / tir, 4-5 retour),
 hit (3), death (8, dernière image = cadavre) × 8 directions. Cadre 192 px ; momie et élites 224 px ;
 boss rendu 448 px (échelle ×2,5 : ≈ 2,5 fois un squelette en jeu) stocké à 62 % (`world_per_px` 0,94
-compensé, atlas 2048 × 3268 < 8192) avec idle 4 / run 6 / death 6 images. Silhouette du boss : grand
-némès rayé or / lapis, masque d'or, large collier ousekh, cape sombre, sceptre au disque solaire, halo
-doré émissif. La planche de présentation le montre à l'échelle du jeu à côté d'un squelette.
+compensé, atlas 2048 × 3268 < 8192) avec idle 4 / run 6 / death 6 images. Silhouette du boss : némès rayé
+or / noir, masque d'or, cuirasse d'or segmentée, large collier ousekh, cape sombre, deux sceptres au
+disque solaire (un par main, levés et abattus ensemble à l'attaque). La planche de présentation le montre à l'échelle du jeu à côté d'un squelette.
 Sorties : `assets/sprites/enemies/<kind>/` (`_atlas.png` compression VRAM, `_frames.tres`, `_meta.json`).
+
+## Refonte des modèles (ressemblance à la planche)
+Chaque modèle a été comparé à son illustration (colonne de droite de la planche) : aperçu de face
+(`--preview s,se --elev 12`) et à l'angle du jeu, noté sur 6 critères (silhouette, palette, matières,
+accessoires, posture, lisibilité). Règle : note ≥ 7,5 → gardé, sinon remodelé. Les 9 modèles d'origine
+(proportions « chibi », grosse tête, couleurs pâles) étaient tous sous 7,5 et ont été refaits ; comparaisons
+finales dans `captures/egypt/comparaison_<kind>.png` (planche à gauche, rendus de face puis en jeu).
+
+| Kind | Avant | Après | Changements principaux |
+|---|---|---|---|
+| `eg_skeleton` | 4 | 7,6 | proportions héroïques (petite tête, longs bras), os épais ambrés, cage thoracique à 6 côtes, orbites creuses, accroupi genoux écartés, **deux** khopesh, pagne sombre en lambeaux |
+| `eg_scarab` | 4,5 | 7,6 | carapace bleu nuit presque noire à nervures d'or, tête large à deux cornes recourbées, gueule béante rougeoyante à crocs, pattes trapues |
+| `eg_lizard` | 3,5 | 7,3 | corps massif, avant-train dressé, tête anguleuse (couronne d'épines, arcades, crocs, gueule ouverte), épines dorsales os, bandes brunes, cuisses musclées — plafonne (voir limites) |
+| `eg_archer` | 4 | 7,6 | crâne nu (coiffe bleue retirée), grand arc recourbé tendu sur le côté, flèche encochée, campé jambes écartées |
+| `eg_mummy` | 3,5 | 7,5 | lin souillé brun-gris, visage décharné visible (orbites, yeux, bouche à dents), dos voûté, bandelettes serrées, bras lourds écartés, griffes |
+| `eg_viper` | 3 | 7,5 | brun-ocre à bandes sombres (2e matériau par anneau), ventre crème devant le cou, cou dressé en S, grosse tête triangulaire, gueule rougeoyante, crochets |
+| `eg_shadow_warrior` | 5 | 7,5 | chacal noir bleuté, oreilles et museau allongés, yeux bleu pâle, cuirasse d'écailles acier, pagne sombre, **masse-sceptre** tenue droite (remplace le khopesh) |
+| `eg_sun_priest` | 3,5 | 7,6 | capuche drapée sur visage de momie, robe brun-ocre brodée d'or, mantelet doré, flamme solaire dans la main tendue, bâton au soleil enflammé |
+| `eg_pharaoh` | 4 | 7,5 | voir silhouette du boss ci-dessus (halo retiré, némès or / noir, cuirasse d'or, deux sceptres) |
+
+Limites : le lézard reste à 7,3 après 6 tentatives — le tube unique du corps (refait à chaque pose) donne
+une tête et un cou plus lisses que la créature écailleuse de la planche, et la vue de face (tête vers la
+caméra) écrase sa silhouette de profil. Stats, hitbox et échelle (`data/enemies/eg_*.tres`) inchangées :
+mêmes cadres, même `world_per_px`.
 
 ## Monstres communs (rangée 1 = plus simples, rangée 2 = plus durs)
 
@@ -117,6 +143,7 @@ voile d'ombre, bénédiction, éruption solaire, phases du boss (réveil des mor
 
 ## Captures (`docs/bestiaire/captures/egypt/`)
 - `planche_modeles_egypt.png` — les 9 modèles (idle, attaque, cadavre).
+- `comparaison_<kind>.png` — illustration de la planche à gauche, rendu de face puis à l'angle du jeu.
 - `en_jeu_classiques_repos.png`, `en_jeu_classiques_combat_0..3.png` — les 6 communs ;
   `competences_telegraphes.png`, `competences_effets.png` — piège, pluie de flèches, bandelette,
   crachat de venin, embuscade sous le sable ; `momie_effondree.png`, `momie_relevee.png` — résurrection ;

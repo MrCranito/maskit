@@ -1,7 +1,7 @@
 # Bestiaire — Carnaval hanté (« Le parc maudit »)
 
 D'après la colonne de gauche de `docs/reference/bestiaire_mondes_4_6.png` (CANARVAL HANTÉ). Agent
-Carnaval, branche `feature/bestiaire-mondes-4-6`. Le monde n'a pas encore de carte : le bestiaire est
+Carnaval, branches `feature/bestiaire-mondes-4-6` puis `feature/refonte-bestiaires`. Le monde n'a pas encore de carte : le bestiaire est
 décrit dans `data/bestiary/carnival.tres` (`BestiaryData`), prêt à être recopié dans le WorldData.
 
 ## Pipeline Blender
@@ -20,7 +20,7 @@ toon peints que le héros (`art/blender/rdm_common.py`). Lumière de nuit légè
 
 ```
 export RDM_CV_TMP=<dossier temporaire>          # rendus intermédiaires (défaut /tmp/rdm_cv_bestiary)
-flock /home/claude/.blender_render.lock python3 art/blender/bestiary/carnival/build_cv_bestiary.py [--kinds cv_lost_clown,...]
+flock "$BLENDER_LOCK" python3 art/blender/bestiary/carnival/build_cv_bestiary.py [--kinds cv_lost_clown,...]
 ... --preview s,se --anim idle:0,attack:3 --kinds cv_acrobat     # aperçu rapide
 ... --repack --kinds cv_lost_clown                               # atlas + méta depuis les images rendues
 ... --sheet                                                      # planche de présentation (captures)
@@ -31,6 +31,35 @@ cheval qui glisse au pied de sa barre) × 8 directions. Cadre 192 px ; Manège e
 Grosse peluche 256 px. Boss : rendu 384 px stocké à 72 % (`world_per_px` compensé dans la méta),
 idle 4 / run 6 / death 6 images (atlas mobile < 8192 px).
 Sorties : `assets/sprites/enemies/<kind>/` (`_atlas.png` compression VRAM, `_frames.tres`, `_meta.json`).
+
+### Refonte des modèles (31/10, branche `feature/refonte-bestiaires`)
+Chaque modèle a été comparé à son illustration (colonne de gauche de la planche) et noté sur 6
+critères (silhouette, palette, matières, accessoires, posture, lisibilité) ; tous étaient sous 7,5 et
+ont été refaits jusqu'à ≥ 7,5 :
+- **Clown égaré** : crâne chauve pâle, grosses touffes rousses, orbites noires, sourire plein de dents,
+  collerette tricolore, veste grise sur gilet rayé rouge-orangé, mains griffues ensanglantées, ballons
+  orange et noir, posture accroupie.
+- **Acrobate sanguinaire** : bonnet de bouffon violet / rouge à grelots, masque blanc aux orbites
+  noires, buste crème au losange rouge, manches prune, collants fauves, longue perche à faucille
+  tenue à deux mains, garde basse jambes écartées.
+- **Chien de cirque** : molosse-hyène gris tacheté, avant massif, caparaçon orangé (épaulières,
+  poitrail, brassards), épines roses, oreilles en cornes, gueule béante pleine de crocs tournée vers
+  le joueur (plus de chapeau ni de collerette).
+- **Manège fantôme** : cheval de bois gris lavande à volutes claires, crinière sombre, bride dorée et
+  rubans orangés, tête haute, avant cabré ; socle sombre à ampoules orangées.
+- **Pénombre** : capuche pointue, visage noir aux yeux orangés, cape large en lambeaux, braises et
+  boucle sur la poitrine, longue lame droite basse, ballons orange et rouge.
+- **Grosse peluche** : fourrure brun-rouge usée, yeux pâles possédés sous des sourcils froncés,
+  collerette à pétales fauves, cœur rouge cousu, bouton recousu sur la joue.
+- **L'Être forain** : redingote de cuir noir longue à haut col, gilet orange incandescent, ruban
+  orange lumineux sur le haut-de-forme, visage gris violacé fendu de fissures orangées.
+- **Le Clown de feu** : chevelure de langues de feu (rouge / orange / jaune), visage blanc aux orbites
+  noires, sourire carnassier, costume charbon semé de braises, boule de feu tenue en avant.
+- **Le Roi du cirque** : visage blanc aux yeux rouges, couronne d'or, cheveux gris lavande, triple
+  collerette blanche et violette, épaulières et plastron sombres bordés d'or, robe courte ouverte,
+  sceptre à orbe sombre cerclé de feu, grande roue rouge-orangé.
+Gabarits, cadres et données (`data/enemies/cv_*.tres`) inchangés. Aperçu d'évaluation :
+`--hipreview s,se --anim idle:0 --kinds <kind>` (rendu ×2 conservé dans `RDM_CV_TMP`).
 
 ## Monstres communs (rangée 1 = plus simples, rangée 2 = plus durs)
 

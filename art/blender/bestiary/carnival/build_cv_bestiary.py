@@ -16,15 +16,17 @@ Usage (depuis la racine du projet ; rendus : passer par le verrou flock du proje
     ... --sheet                                                         # planche de présentation
 
 Bestiaire (ids) :
-    cv_lost_clown        Clown égaré : animateur possédé, collerette, ballons rouge et noir
-    cv_acrobat           Acrobate sanguinaire : arlequin longiligne, chapeau à grelots, faucille
-    cv_circus_dog        Chien de cirque : molosse griffu à collerette de clown (quadrupède)
-    cv_ghost_carousel    Manège fantôme : cheval de bois hanté sur sa barre dorée (quadrupède)
-    cv_penumbra          Pénombre : silhouette encapuchonnée, yeux rouges, lame courbe, ballons
-    cv_big_plush         Grosse peluche : ours en peluche géant possédé, coutures, rembourrage
-    cv_fairground_being  L'Être forain (élite) : maître de piste au haut-de-forme, canne dorée
-    cv_fire_clown        Le Clown de feu (élite) : clown en flammes, boules de feu
-    cv_circus_king       Le Roi du cirque (boss) : clown géant couronné, sceptre, grande roue de néon
+    cv_lost_clown        Clown égaré : crâne chauve, touffes rousses, collerette tricolore, ballons orange et noir
+    cv_acrobat           Acrobate sanguinaire : bouffon violet / rouge, masque blanc, perche à faucille
+    cv_circus_dog        Chien de cirque : molosse-hyène gris, caparaçon orangé, épines, gueule béante
+    cv_ghost_carousel    Manège fantôme : cheval de bois gris lavande, crinière sombre, sur sa barre dorée
+    cv_penumbra          Pénombre : capuche pointue, yeux orangés, cape en lambeaux, longue lame, ballons
+    cv_big_plush         Grosse peluche : ours brun-rouge possédé, collerette à pétales, cœur cousu
+    cv_fairground_being  L'Être forain (élite) : haut-de-forme, redingote noire, gilet incandescent, canne
+    cv_fire_clown        Le Clown de feu (élite) : chevelure de flammes, visage blanc, boule de feu
+    cv_circus_king       Le Roi du cirque (boss) : couronne, triple collerette, sceptre, grande roue de feu
+
+Aperçu d'évaluation (rendu ×2 conservé) : ... --hipreview s,se --anim idle:0 --kinds cv_acrobat
 
 Animations (8 directions) : idle, run, attack, hit, death.
 attack : images 0-2 = élan (l'image 2 est tenue pendant le télégraphe), 3 = coup / tir, 4-5 = retour.
@@ -57,167 +59,193 @@ RUFF = {"ruff_a": ("#f0d050", "#6a3a3a", "#fff2a0"), "ruff_b": ("#c8222e", "#4a0
 
 SPEC: dict[str, dict] = {
     "cv_lost_clown": {
-        "name": "Clown égaré", "rig": "human", "frame": 192, "scale": 1.02, "head": 1.22, "leg": 0.80,
-        "torso": (1.06, 1.00), "arm": 0.98, "arm_len": 1.06, "hunch": 0.18, "belly": 0.4, "fps_run": 11,
-        "top_key": "costume", "hand_key": "glove",
-        "mats": dict(RUFF, **{
-            "face": ("#d6ccd0", "#4a3a5e", "#f4eef0"),
-            "skin": ("#d6ccd0", "#4a3a5e", "#f4eef0"),
+        "name": "Clown égaré", "rig": "human", "frame": 192, "scale": 1.02, "head": 1.30, "leg": 0.78,
+        "torso": (1.10, 1.00), "arm": 1.02, "arm_len": 1.10, "hunch": 0.36, "belly": 0.3, "fps_run": 11,
+        "top_key": "costume", "sleeve_key": "jacket", "shoulder_key": "jacket", "hand_key": "glove",
+        "mats": {
+            "ruff_a": ("#eea43a", "#6a3018", "#ffd27a"),
+            "ruff_b": ("#c0262a", "#46081a", "#f05040"),
+            "ruff_c": ("#7a3a8a", "#240a36", "#a860c0"),
+            "face": ("#ddd4d2", "#4e3e5e", "#f8f2f0"),
+            "skin": ("#ddd4d2", "#4e3e5e", "#f8f2f0"),
             "nose": ("#e01a2a", "#5a0618", "#ff5a5a"),
-            "lips": ("#a80c22", "#3a0212", "#e02a3a"),
-            "makeup": ("#1a1020", "#08040c", "#30203a"),
-            "hair": ("pat", [("#e2401c", "#5a0e1a", "#ff7a3a"), ("#c02a1a", "#4a0a18", "#ee5a2a")], 9.0),
-            "costume": ("pat", [("#c4202c", "#46081e", "#ee4a4a"), ("#e8dcc8", "#6a5a74", "#ffffff")], 3.0),
-            "pants": ("pat", [("#4a2a6a", "#160a2a", "#74489e"), ("#3a1e58", "#100620", "#5e3a88")], 6.0),
-            "shoe": ("#d0202a", "#4a0618", "#ff4a4a"),
-            "glove": ("#efe8e0", "#6a6078", "#ffffff"),
+            "lips": ("#7a0818", "#2a0208", "#b01a2a"),
+            "makeup": ("#1a0e18", "#08040a", "#2e1a2a"),
+            "hair": ("pat", [("#b8381e", "#440a14", "#e0602a"), ("#962a1a", "#360812", "#c84a22")], 9.0),
+            "costume": ("pat", [("#c42a22", "#46081e", "#ee5a3a"), ("#e8862a", "#5a2410", "#ffb04a")], 3.0),
+            "jacket": ("pat", [("#5e5258", "#1a1220", "#8a7c84"), ("#4a3e46", "#140c18", "#6e6068")], 6.0),
+            "pants": ("pat", [("#463a40", "#140c14", "#6a5a62"), ("#3a2e36", "#100810", "#5a4a52")], 6.0),
+            "shoe": ("#a01a22", "#3a0612", "#d83a3a"),
+            "glove": ("#b02a26", "#3e0614", "#e04a3a"),
+            "blood": ("#8a0a18", "#2e0208", "#c01a26"),
             "pompom": ("#f2eee6", "#7a7090", "#ffffff"),
-            "eye_glow": "!#ffd23a",
-            "balloon_a": ("#e01c2c", "#5a0418", "#ff6a6a"),
-            "balloon_b": ("#26202e", "#0a060e", "#5a4a6a"),
+            "eye_glow": "!#fff0c0",
+            "balloon_a": ("#e8661c", "#5a1a08", "#ffa050"),
+            "balloon_b": ("#2a2430", "#0a060e", "#6a5a78"),
             "string": ("#d8d0c8", "#5a5060", "#ffffff"),
-        }),
+        },
     },
     "cv_acrobat": {
-        "name": "Acrobate sanguinaire", "rig": "human", "frame": 192, "scale": 1.04, "head": 1.04, "leg": 0.96,
-        "torso": (0.80, 0.78), "arm": 0.78, "arm_len": 1.20, "hunch": 0.22, "fps_run": 16, "stride": 1.0,
-        "top_key": "suit_a", "sleeve_key": "suit_b", "pants_key": "suit_a", "hand_key": "glove",
+        "name": "Acrobate sanguinaire", "rig": "human", "frame": 192, "scale": 1.04, "head": 1.20, "leg": 0.98,
+        "torso": (0.82, 0.78), "arm": 0.80, "arm_len": 1.22, "hunch": 0.30, "fps_run": 16, "stride": 1.0,
+        "top_key": "suit_b", "sleeve_key": "suit_a", "shoulder_key": "suit_a", "pants_key": "tights",
+        "hand_key": "glove",
         "mats": {
-            "suit_a": ("#c01e2c", "#40061c", "#ee4a4a"),
-            "suit_b": ("#e6dcc4", "#6a5a74", "#ffffff"),
-            "diamond": ("#221628", "#08040c", "#3e2a48"),
-            "mask": ("#efe6da", "#6e5e7a", "#ffffff"),
-            "skin": ("#efe6da", "#6e5e7a", "#ffffff"),
+            "suit_a": ("#5a1e4a", "#1e0618", "#8a3a72"),
+            "suit_b": ("#e6d8c0", "#6a5468", "#fff6e6"),
+            "tights": ("pat", [("#b8642c", "#4a1a14", "#e08a46"), ("#8a4220", "#30100c", "#b0602e")], 5.0),
+            "tights_b": ("#4a1a40", "#160410", "#723262"),
+            "hat_a": ("#6a2c96", "#200a36", "#9c58c8"),
+            "hat_b": ("#b81e2c", "#40061a", "#ee4a4a"),
+            "diamond": ("#b01a2a", "#3e0412", "#e03a40"),
+            "mask": ("#e8e0d4", "#6a5a72", "#ffffff"),
+            "skin": ("#e8e0d4", "#6a5a72", "#ffffff"),
             "makeup": ("#140a18", "#060208", "#2a1a30"),
             "lips": ("#b0101e", "#3a0210", "#e02a3a"),
             "glove": ("#2a1e30", "#0a060e", "#46364e"),
-            "shoe": ("#2a1e30", "#0a060e", "#46364e"),
+            "shoe": ("#3a1a30", "#0e040c", "#5a3050"),
             "bell": ("#e8b830", "#6a3a18", "#fff090"),
             "blade": ("#a8aec0", "#343a52", "#eef2fa"),
             "blood": ("#8a0a1c", "#300210", "#c01a2a"),
-            "pole": ("#3a2420", "#100808", "#5e3e32"),
+            "pole": ("#8a5a32", "#2a140c", "#b88050"),
             "eye_glow": "!#ff2a3a",
         },
     },
     "cv_circus_dog": {
         "name": "Chien de cirque", "rig": "quad", "frame": 192, "scale": 1.34, "fps_run": 17,
-        "height": 0.50, "length": 0.78, "girth": (0.19, 0.20), "leg": (0.27, 0.29), "hip_x": 0.13,
-        "neck_len": 0.20, "head_len": 0.34,
-        "mats": dict(RUFF, **{
-            "fur": ("pat", [("#7a4a30", "#22101e", "#a8683e"), ("#4e2e22", "#180a14", "#70442e"),
-                            ("#94582e", "#2a1220", "#c07a40")], 6.0),
-            "fur_dark": ("#2e1c1c", "#0c0608", "#4a3028"),
-            "belly": ("#b88a5e", "#4a2a30", "#dcae78"),
-            "muzzle": ("#2a1a1a", "#0a0406", "#46302a"),
-            "gum": ("#9a1a2e", "#360614", "#cc3a4a"),
-            "brass": ("#d6a03a", "#5a3218", "#ffe08a"),
-            "eye_glow": "!#ff3a2a",
-            "hat": ("#6a2aa0", "#1e0a36", "#9e5ad8"),
-            "hat_band": "!#ff4ad0",
-        }),
+        "height": 0.52, "length": 0.70, "girth": (0.22, 0.22), "leg": (0.28, 0.29), "hip_x": 0.15,
+        "neck_len": 0.18, "head_len": 0.30, "leg_r": 0.08, "jaw_idle": 0.75,
+        "profile": [(0.00, 0.55, 0.60, 0.00), (0.12, 0.80, 0.82, 0.01), (0.35, 0.86, 0.90, 0.02), (0.60, 1.08, 1.10, 0.04),
+                    (0.80, 1.22, 1.22, 0.06), (0.94, 1.08, 1.06, 0.06), (1.0, 0.62, 0.62, 0.05)],
+        "mats": {
+            "fur": ("pat", [("#857668", "#2a1e22", "#b0a090"), ("#64564c", "#1e1418", "#8a7a6c"),
+                            ("#a06a42", "#2e1812", "#c88a52")], 9.0),
+            "fur_dark": ("#46383a", "#140c10", "#665656"),
+            "belly": ("#8a7a7e", "#2e2430", "#b0a0a4"),
+            "muzzle": ("#9a8c84", "#2e2428", "#c4b6aa"),
+            "gum": ("#b01e2a", "#3e0610", "#e04a4a"),
+            "maw": ("#3a0610", "#120204", "#5a1018"),
+            "armor": ("pat", [("#b0641e", "#3e1a0c", "#e0943e"), ("#7a3e16", "#2a1008", "#a8602a")], 12.0),
+            "brass": ("#e0a83a", "#5a3218", "#ffe08a"),
+            "spike": ("#c86a72", "#4a1a26", "#f09aa0"),
+            "eye_glow": "!#ff8a1a",
+        },
     },
     "cv_ghost_carousel": {
         "name": "Manège fantôme", "rig": "carousel", "frame": 224, "scale": 1.20, "fps_run": 10,
-        "height": 0.78, "length": 0.86, "girth": (0.19, 0.22), "leg": (0.27, 0.27), "hip_x": 0.12,
-        "neck_len": 0.34, "head_len": 0.40,
+        "height": 0.80, "length": 0.84, "girth": (0.20, 0.24), "leg": (0.27, 0.27), "hip_x": 0.12, "leg_r": 0.062,
+        "neck_len": 0.52, "head_len": 0.44,
         "mats": {
-            "coat": ("pat", [("#d8d0e8", "#5a4a7a", "#ffffff"), ("#c4b8dc", "#4a3a6e", "#eee8ff")], 4.0),
-            "fur": ("pat", [("#d8d0e8", "#5a4a7a", "#ffffff"), ("#c4b8dc", "#4a3a6e", "#eee8ff")], 4.0),
-            "fur_dark": ("#8a7ea8", "#2a2048", "#b4a8d4"),
-            "belly": ("#d8d0e8", "#5a4a7a", "#ffffff"),
-            "muzzle": ("#b8aed0", "#3e3260", "#dcd4f0"),
-            "mane": ("pat", [("#7a3ab0", "#220a40", "#b070ee"), ("#4a2a7a", "#140a2a", "#7a4ab0")], 7.0),
-            "saddle": ("#b01a30", "#3e0418", "#e84050"),
-            "gold": ("#e0aa3a", "#6a3a18", "#fff0a0"),
-            "crack": ("#3a2a50", "#100820", "#5a4a70"),
-            "eye_glow": "!#d070ff",
-            "neon": "!#b04aff",
-            "neon_red": "!#ff3a5a",
-            "gum": ("#6a3a7a", "#200a2a", "#9a5aaa"),
-            "brass": ("#e0aa3a", "#6a3a18", "#fff0a0"),
+            "coat": ("pat", [("#aea2b8", "#3e3452", "#dcd2e6"), ("#9a8ea8", "#342a48", "#c8bcd6"),
+                             ("#c4bacc", "#4a405e", "#ece4f4")], 5.0),
+            "fur": ("pat", [("#aea2b8", "#3e3452", "#dcd2e6"), ("#9a8ea8", "#342a48", "#c8bcd6")], 5.0),
+            "fur_dark": ("#8a7e98", "#2a2240", "#b0a4c0"),
+            "belly": ("#aea2b8", "#3e3452", "#dcd2e6"),
+            "muzzle": ("#7e7290", "#261e38", "#a498b4"),
+            "swirl": ("#e2dcea", "#6a6080", "#ffffff"),
+            "mane": ("pat", [("#4e4660", "#14101e", "#726a86"), ("#3a3248", "#0e0a16", "#5a5270")], 7.0),
+            "saddle": ("#6a1a24", "#24060c", "#962a32"),
+            "gold": ("#d89a3a", "#5a3018", "#ffd88a"),
+            "ribbon": ("#d0461e", "#4a120a", "#ff7a3a"),
+            "crack": ("#3a2e4a", "#100818", "#5a4a6a"),
+            "socket": ("#1e1626", "#08040c", "#30243a"),
+            "eye_glow": "!#ff9a3a",
+            "neon": "!#ff8a2a",
+            "neon_red": "!#ff5a2a",
+            "gum": ("#4a3a5a", "#140a1e", "#6a5a7a"),
+            "brass": ("#d89a3a", "#5a3018", "#ffd88a"),
         },
     },
     "cv_penumbra": {
-        "name": "Pénombre", "rig": "human", "frame": 192, "scale": 1.08, "head": 1.14, "leg": 0.86,
-        "torso": (0.98, 0.92), "arm": 0.86, "arm_len": 1.16, "hunch": 0.34, "fps_run": 16,
+        "name": "Pénombre", "rig": "human", "frame": 192, "scale": 1.08, "head": 1.02, "leg": 0.86,
+        "torso": (1.18, 0.96), "arm": 0.92, "arm_len": 1.20, "hunch": 0.30, "fps_run": 16,
         "top_key": "cloak", "sleeve_key": "cloak", "hand_key": "claw_hand",
         "mats": {
-            "cloak": ("pat", [("#262234", "#08060e", "#423c58"), ("#1c1828", "#06040a", "#36304a")], 5.0),
-            "cloak_in": ("#120c18", "#040206", "#241a2c"),
-            "face": ("#06040a", None, None),
+            "cloak": ("pat", [("#3a2c3e", "#0c0610", "#5a4660"), ("#2c2232", "#08040c", "#46384e"),
+                              ("#4a3036", "#120808", "#6a4a4e")], 6.0),
+            "cloak_in": ("#160c1a", "#060208", "#2a1a30"),
+            "face": ("#08060c", None, None),
             "skin": ("#2a2232", "#0a060e", "#443850"),
             "claw_hand": ("#2a2232", "#0a060e", "#443850"),
-            "pants": ("#16121e", "#060408", "#2a2434"),
-            "shoe": ("#16121e", "#060408", "#2a2434"),
-            "blade": ("#7e8496", "#262a3c", "#d0d6e6"),
-            "blade_edge": "!#ff3a4a",
-            "eye_glow": "!#ff2a2a",
-            "balloon_a": ("#a01022", "#3a0212", "#e0303a"),
-            "balloon_b": ("#7a0a1a", "#2a020c", "#b0202e"),
+            "pants": ("#1e1622", "#08040a", "#342a3a"),
+            "shoe": ("#1e1622", "#08040a", "#342a3a"),
+            "blade": ("#6e7486", "#22263a", "#c0c6d6"),
+            "blade_edge": "!#ff5a3a",
+            "ember": "!#ff8a2a",
+            "brass": ("#c88a3a", "#4a2a14", "#f0b860"),
+            "eye_glow": "!#ff5a1a",
+            "balloon_a": ("#d8642a", "#4a1a0a", "#ff9a5a"),
+            "balloon_b": ("#a8202a", "#3a0610", "#e04a4a"),
             "string": ("#9890a0", "#3a3444", "#d0c8d8"),
             "wisp": "!#7a3aff",
         },
     },
     "cv_big_plush": {
-        "name": "Grosse peluche", "rig": "human", "frame": 256, "scale": 1.46, "head": 1.62, "leg": 0.66,
-        "torso": (1.50, 1.36), "arm": 1.62, "arm_len": 0.96, "hunch": 0.12, "belly": 0.9, "fps_run": 10,
+        "name": "Grosse peluche", "rig": "human", "frame": 256, "scale": 1.46, "head": 1.66, "leg": 0.66,
+        "torso": (1.50, 1.36), "arm": 1.62, "arm_len": 0.96, "hunch": 0.16, "belly": 0.9, "fps_run": 10,
         "stride": 0.55, "top_key": "fur", "sleeve_key": "fur", "pants_key": "fur", "hand_key": "fur",
         "shin_key": "fur",
-        "mats": dict(RUFF, **{
-            "fur": ("pat", [("#b0706c", "#3a1428", "#d8968a"), ("#9a5a5c", "#301024", "#c27c78"),
-                            ("#bc7a72", "#421830", "#e2a092")], 9.0),
-            "skin": ("pat", [("#b0706c", "#3a1428", "#d8968a"), ("#9a5a5c", "#301024", "#c27c78")], 9.0),
-            "cream": ("#ead2b6", "#7a5a6a", "#fff0dc"),
+        "mats": {
+            "ruff_a": ("#c8955a", "#4a2a1a", "#ecc088"),
+            "ruff_b": ("#9a4e26", "#36140a", "#c87040"),
+            "fur": ("pat", [("#8e4a42", "#2e0e18", "#b8685a"), ("#743a36", "#260a14", "#9a5248"),
+                            ("#a2584a", "#341220", "#c87a66")], 11.0),
+            "skin": ("pat", [("#8e4a42", "#2e0e18", "#b8685a"), ("#743a36", "#260a14", "#9a5248")], 11.0),
+            "cream": ("#d2b08e", "#6a4a46", "#f0d4b0"),
             "nose": ("#2a1418", "#0a0406", "#4a2a2e"),
             "button": ("#1a1418", "#06040a", "#3e343c"),
             "stitch": ("#2a1a26", "#0a0408", "#46303e"),
             "stuffing": ("#f4efe6", "#8a8098", "#ffffff"),
-            "shoe": ("pat", [("#b0706c", "#3a1428", "#d8968a"), ("#9a5a5c", "#301024", "#c27c78")], 9.0),
-            "eye_glow": "!#ff2030",
+            "heart": ("#c01a2a", "#46061a", "#f04a4a"),
+            "shoe": ("pat", [("#8e4a42", "#2e0e18", "#b8685a"), ("#743a36", "#260a14", "#9a5248")], 11.0),
+            "eye_glow": "!#ffe8b0",
             "claw": ("#efe4d0", "#6a5a6a", "#ffffff"),
-        }),
+        },
     },
     "cv_fairground_being": {
-        "name": "L'Être forain", "rig": "human", "frame": 224, "scale": 1.24, "head": 1.02, "leg": 0.92,
-        "torso": (1.16, 1.00), "arm": 1.04, "arm_len": 1.12, "hunch": 0.10, "fps_run": 13,
+        "name": "L'Être forain", "rig": "human", "frame": 224, "scale": 1.24, "head": 1.06, "leg": 0.92,
+        "torso": (1.22, 1.02), "arm": 1.06, "arm_len": 1.12, "hunch": 0.14, "fps_run": 13,
         "top_key": "vest", "sleeve_key": "coat", "shoulder_key": "coat", "hand_key": "glove",
         "mats": {
-            "skin": ("#7a8092", "#22243c", "#a6aabc"),
-            "coat": ("pat", [("#2c1e36", "#0a0610", "#4a3658"), ("#241830", "#08040c", "#3e2c4c")], 5.0),
-            "coat_in": ("#7a0e22", "#2a0210", "#b0203a"),
-            "vest": ("#9a1828", "#36061a", "#d03040"),
-            "shirt": ("#e6e0d8", "#6a6478", "#ffffff"),
+            "skin": ("#5e5468", "#1a1226", "#8a7e94"),
+            "coat": ("pat", [("#262028", "#08060a", "#463c48"), ("#1e1a22", "#060408", "#3a3240")], 5.0),
+            "coat_in": ("#3a2a30", "#100a0c", "#5a4248"),
+            "vest": ("pat", [("#c0461a", "#4a120a", "#f07a2a"), ("#8a2a12", "#320a06", "#c04a1a")], 6.0),
+            "shirt": ("#d8c8b8", "#6a5a5a", "#fff0e0"),
             "gold": ("#e0aa3a", "#6a3a18", "#fff0a0"),
             "hat": ("#1a141e", "#060408", "#34283a"),
-            "hat_band": ("#b81a2c", "#40061a", "#ee3a48"),
+            "hat_band": "!#ff7a2a",
             "pants": ("pat", [("#2a2230", "#0a080e", "#463a50"), ("#3a2a40", "#0e0a14", "#58465e")], 9.0),
             "shoe": ("#1a141e", "#060408", "#34283a"),
-            "glove": ("#e8e2da", "#6a6478", "#ffffff"),
+            "glove": ("#2a2028", "#0a060a", "#463a44"),
             "cane": ("#2a1a14", "#0a0604", "#4a3226"),
-            "eye_glow": "!#ff3a2a",
-            "lips": ("#3a0a18", "#120206", "#5a1a2a"),
-            "neon": "!#ff4a3a",
+            "eye_glow": "!#ffa030",
+            "crack": "!#ff7a20",
+            "lips": ("#2a0a12", "#0e0206", "#4a1a22"),
+            "neon": "!#ff6a2a",
         },
     },
     "cv_fire_clown": {
-        "name": "Le Clown de feu", "rig": "human", "frame": 224, "scale": 1.18, "head": 1.18, "leg": 0.82,
-        "torso": (1.16, 1.04), "arm": 1.10, "arm_len": 1.06, "hunch": 0.14, "belly": 0.3, "fps_run": 12,
-        "top_key": "costume", "hand_key": "glove",
+        "name": "Le Clown de feu", "rig": "human", "frame": 224, "scale": 1.18, "head": 1.24, "leg": 0.82,
+        "torso": (1.16, 1.04), "arm": 1.10, "arm_len": 1.08, "hunch": 0.30, "belly": 0.3, "fps_run": 12,
+        "top_key": "costume", "sleeve_key": "costume", "hand_key": "glove",
         "mats": {
-            "face": ("#e8dcd2", "#6a4a5a", "#ffffff"),
-            "skin": ("#e8dcd2", "#6a4a5a", "#ffffff"),
+            "face": ("#e8ddd6", "#6a4a5a", "#ffffff"),
+            "skin": ("#e8ddd6", "#6a4a5a", "#ffffff"),
             "soot": ("#1e1216", "#080406", "#3a2428"),
-            "nose": ("#e0301a", "#5a0a10", "#ff7a3a"),
+            "nose": ("#c8301a", "#4a0a10", "#ff6a3a"),
             "lips": ("#2a0a0e", "#0e0204", "#4a1418"),
-            "costume": ("pat", [("#2a1a1e", "#0a0608", "#4a3034"), ("#e0601a", "#5a1a10", "#ff9a3a")], 3.0),
+            "costume": ("pat", [("#2e2024", "#0a0608", "#4e3a3e"), ("#3e2a26", "#100808", "#5e423a"),
+                                ("#a0401a", "#3a1208", "#d06a2a")], 5.0),
             "pants": ("pat", [("#2a1a1e", "#0a0608", "#4a3034"), ("#3a2026", "#100608", "#5a3a3e")], 6.0),
             "shoe": ("#2a1a1e", "#0a0608", "#4a3034"),
             "glove": ("#2a1a1e", "#0a0608", "#4a3034"),
-            "ruff_a": ("#f08a20", "#6a2a10", "#ffc060"),
-            "ruff_b": ("#1e1216", "#080406", "#3a2428"),
-            "fire": "!#ff6a12",
+            "ruff_a": ("#e0782a", "#5a2410", "#ffb060"),
+            "ruff_b": ("#3a2426", "#0e0608", "#5a3a3a"),
+            "fire": "!#ff7a14",
             "fire_core": "!#ffe060",
-            "ember": "!#ff3a10",
+            "fire_edge": "!#d8280c",
+            "ember": "!#ff5a10",
             "eye_glow": "!#ffe040",
             "tooth": ("#f2e4c4", "#7a6a5a", "#ffffff"),
         },
@@ -229,28 +257,31 @@ SPEC: dict[str, dict] = {
         "anims": {"idle": (4, 6, True), "run": (6, 10, True), "death": (6, 9, False)},
         "top_key": "robe", "sleeve_key": "robe", "hand_key": "glove",
         "mats": {
-            "face": ("#efe8e4", "#6a5a78", "#ffffff"),
-            "skin": ("#efe8e4", "#6a5a78", "#ffffff"),
-            "nose": ("#e01a2a", "#5a0618", "#ff5a5a"),
-            "lips": ("#9a0a20", "#340210", "#d02a3a"),
+            "face": ("#ece4e4", "#6a5a78", "#ffffff"),
+            "skin": ("#ece4e4", "#6a5a78", "#ffffff"),
+            "nose": ("#c81a2a", "#4a0618", "#ff5a5a"),
+            "lips": ("#5a0614", "#200208", "#8a1424"),
             "makeup": ("#1a1020", "#08040c", "#30203a"),
-            "hair": ("pat", [("#e0301c", "#5a0e1a", "#ff6a3a"), ("#b0201a", "#400818", "#e04a2a")], 9.0),
-            "robe": ("pat", [("#8e1430", "#300414", "#c42a4a"), ("#6a1040", "#22041a", "#9a2a64")], 4.0),
-            "cape_in": ("#3a1060", "#10041e", "#6a2aa0"),
-            "ermine": ("#f2eee8", "#7a7090", "#ffffff"),
+            "hair": ("pat", [("#b8b0c8", "#4a4060", "#e2dcf0"), ("#9a90b0", "#3a3050", "#c8c0dc")], 9.0),
+            "robe": ("pat", [("#3a3044", "#100a16", "#5e5068"), ("#2e2636", "#0c0812", "#4c4058")], 5.0),
+            "armor": ("#4a4252", "#141020", "#7a7084"),
+            "cape_in": ("#6a0e1e", "#22040a", "#9a2030"),
+            "ermine": ("#e6e0ec", "#6a6080", "#ffffff"),
             "spot": ("#16121a", "#060408", "#2a2430"),
             "gold": ("#e2ac3a", "#6a3a18", "#fff0a0"),
-            "jewel": "!#ff2a4a",
-            "ruff_a": ("#f2eee8", "#7a7090", "#ffffff"),
-            "ruff_b": ("#c8222e", "#4a0820", "#f04a4a"),
-            "pants": ("pat", [("#3a1050", "#10041a", "#5e2a80"), ("#2a0c3a", "#0c0414", "#4a2066")], 6.0),
-            "shoe": ("#c8222e", "#4a0820", "#f04a4a"),
-            "glove": ("#efe8e4", "#6a6078", "#ffffff"),
-            "orb": "!#ff2a5a",
-            "wheel": "!#ff3050",
-            "wheel_b": "!#c060ff",
-            "wheel_frame": ("#2a1a30", "#0a060e", "#4a3656"),
-            "eye_glow": "!#ffe040",
+            "jewel": "!#ff2a3a",
+            "ruff_a": ("#e8e2ee", "#6a6080", "#ffffff"),
+            "ruff_b": ("#8a5ab0", "#2a1040", "#b888dc"),
+            "ruff_c": ("#4a2a6a", "#160822", "#6e4a94"),
+            "pants": ("pat", [("#2a2232", "#0a080e", "#463a50"), ("#221a2a", "#08060c", "#3a3044")], 6.0),
+            "shoe": ("#2a2232", "#0a080e", "#463a50"),
+            "glove": ("#3a3044", "#100a16", "#5e5068"),
+            "orb": ("#1e1418", "#060204", "#4a2e34"),
+            "orb_glow": "!#ff4a1a",
+            "wheel": "!#ff3a2a",
+            "wheel_b": "!#ff9a2a",
+            "wheel_frame": ("#2a1a24", "#0a0608", "#4a3040"),
+            "eye_glow": "!#ff2a1a",
             "tooth": ("#f2e8cc", "#7a6a7a", "#ffffff"),
         },
     },
@@ -288,7 +319,7 @@ class CvHuman(M.Human):
             zz = z + tilt * (-math.cos(a))
             self.part("ruff%d" % k, C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(x, y, zz),
                       rot=(0.5 * math.cos(a), 0.5 * math.sin(a), 0), scale=(size * 1.25, size * 1.25, size * 0.7)),
-                      keys[k % 2], parent)
+                      keys[k % len(keys)], parent)
 
     def balloons(self, keys=("balloon_a", "balloon_b"), side: str = "L", height: float = 0.78) -> None:
         """Ballons tenus à la main (`side`) : groupe « balloon », replacé sur la main à chaque pose."""
@@ -321,20 +352,21 @@ class CvHuman(M.Human):
         self.show("balloon", not hide)
 
     def flame(self, parent, loc, size: float, name: str = "flame", lean=(0.0, 0.0), outer: str = "fire",
-              inner: str = "fire_core") -> None:
-        """Flamme (cône émissif double) ; vacille à chaque pose (after_pose → flicker)."""
+              inner: str = "fire_core", tall: float = 2.4, edge: str | None = None) -> None:
+        """Flamme (cône émissif double, ou triple avec `edge`) ; vacille à chaque pose (after_pose → flicker)."""
         if not hasattr(self, "flames"):
             self.flames = []
         g = joint(name + "J", parent, loc)
         g.rotation_euler = (lean[0], lean[1], 0)
-        for key, k in ((outer, 1.0), (inner, 0.55)):
+        layers = ((outer, 1.0), (inner, 0.55)) if edge is None else ((edge, 1.0), (outer, 0.72), (inner, 0.40))
+        for key, k in layers:
             bm = C.bm_sphere(10, 8, 1.0)
             for v in bm.verts:
                 if v.co.z > 0:
                     w = 1.0 - v.co.z
-                    v.co.x *= 0.15 + 0.85 * w
-                    v.co.y *= 0.15 + 0.85 * w
-                    v.co.z *= 2.4
+                    v.co.x *= 0.08 + 0.92 * w ** 1.4
+                    v.co.y *= 0.08 + 0.92 * w ** 1.4
+                    v.co.z *= tall
             self.part(name, C.bm_xform(bm, loc=(0, -0.01 * (1 - k), 0), scale=(size * k, size * k, size * k)),
                       key, g, nofs=True, grp="flames")
         self.flames.append((g, len(self.flames)))
@@ -359,50 +391,89 @@ class CvHuman(M.Human):
 
 # ------------------------------------------------------------------------------- clown égaré
 class LostClown(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        # tête relevée vers le joueur (visage lisible sous la caméra 3/4)
+        self.j["head"].rotation_euler = (-0.42, 0, 0)
+
     def build_head(self, head) -> None:
-        self.skull(head, "face", jaw=0.10)
-        self.eyes(head, "eye_glow", r=(0.034, 0.014, 0.028), brow_key="makeup", angle=0.6)
+        head.location = (0, -0.04, 0.05)
+        self.skull(head, "face", jaw=0.06)
+        # orbites creusées sombres, petites pupilles pâles
         for sx in (1, -1):
-            # maquillage en losange autour des yeux
-            self.part("paint", C.bm_xform(C.bm_box(0.075, 0.01, 0.13), loc=(0.066 * sx, -0.163, 0.232),
-                      rot=(0, 0.785, 0)), "makeup", head, nofs=True)
-        # bouche béante sombre derrière le sourire
-        self.part("mouthDark", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.158, 0.115), scale=(0.10, 0.02, 0.04)),
+            self.part("socket", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.066 * sx, -0.150, 0.232),
+                      scale=(0.060, 0.03, 0.052), rot=(0, 0.35 * sx, 0)), "makeup", head, nofs=True)
+            self.part("brow", C.bm_xform(C.bm_box(0.085, 0.03, 0.022, bevel=0.006), loc=(0.062 * sx, -0.158, 0.282),
+                      rot=(0, -0.5 * sx, 0)), "makeup", head)
+            # rides du front
+        for k in range(2):
+            self.part("wrinkle", C.bm_tube(C.bezier((-0.08, -0.150, 0.33 + 0.03 * k), (-0.03, -0.162, 0.32 + 0.03 * k),
+                                                    (0.03, -0.162, 0.32 + 0.03 * k), (0.08, -0.150, 0.33 + 0.03 * k), 6),
+                                           [0.005] * 6, seg=4), "makeup", head, nofs=True)
+        self.eyes(head, "eye_glow", r=(0.022, 0.010, 0.020), brow=False, y=-0.172, x=0.068)
+        # grande bouche béante sombre, sourire carnassier plein de dents
+        self.part("mouthDark", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, -0.152, 0.105), scale=(0.13, 0.03, 0.055)),
                   "makeup", head, nofs=True)
+        self.grin(head, w=0.135, z=0.095, curve=0.06)
+        for k in range(7):
+            u = (k + 0.5) / 7
+            x = -0.10 + 0.20 * u
+            self.part("toothL", C.bm_xform(C.bm_box(0.020, 0.012, 0.024), loc=(x, -0.166, 0.072 + 0.03 * (2 * u - 1) ** 2)),
+                      "tooth", head, nofs=True)
         for sx in (1, -1):
-            # touffes de cheveux rouges sur les côtés (crâne chauve)
-            for k, (dy, dz, r) in enumerate(((0.04, 0.24, 0.07), (0.08, 0.17, 0.065), (-0.01, 0.30, 0.055))):
-                self.part("hair", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.175 * sx, dy, dz),
-                          scale=(r * 1.2, r, r)), "hair", head)
-        self.part("nose", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.19, 0.175), scale=(0.048, 0.044, 0.046)),
+            # grosses touffes de cheveux roux sur les côtés (crâne chauve)
+            for k, (dx, dy, dz, r) in enumerate(((0.0, 0.04, 0.23, 0.072), (0.02, 0.09, 0.15, 0.066), (-0.03, 0.02, 0.30, 0.05),
+                                                  (-0.02, 0.12, 0.26, 0.058))):
+                self.part("hair", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=((0.19 + dx) * sx, dy, dz),
+                          scale=(r * 1.25, r, r * 1.05)), "hair", head)
+        self.part("nose", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.195, 0.175), scale=(0.05, 0.046, 0.048)),
                   "nose", head)
-        self.grin(head, w=0.115, z=0.10, curve=0.05)
 
     def build_legs(self, pelvis) -> None:
         super().build_legs(pelvis)
         for side in ("L", "R"):
-            self.part("bigShoe" + side, C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.11, self.foot_z + 0.02),
-                      scale=(0.11, 0.21, 0.075)), "shoe", self.j["knee" + side])
+            self.part("bigShoe" + side, C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.09, self.foot_z + 0.01),
+                      scale=(0.10, 0.17, 0.065)), "shoe", self.j["knee" + side])
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        self.ruff(sp, 0.44, 0.17 * tw, n=14, size=0.068, tilt=0.03)
+        # grande collerette à trois couleurs, qui déborde sur les épaules
+        self.ruff(sp, 0.37, 0.25 * tw, n=18, keys=("ruff_a", "ruff_b", "ruff_a", "ruff_c"), size=0.082, sy=0.86, tilt=0.12)
+        self.ruff(sp, 0.41, 0.17 * tw, n=12, keys=("ruff_b", "ruff_a"), size=0.06, sy=0.86, tilt=0.12)
+        # veste ouverte grise sur le gilet rayé
+        coat = C.bm_loft([C.ellipse(0, 0.0, z, r1 * tw + 0.02, r2 * td + 0.02, 22)
+                          for z, r1, r2 in ((0.0, 0.19, 0.145), (0.18, 0.205, 0.153), (0.34, 0.236, 0.162))],
+                         cap_start=False, cap_end=False)
+        for f in list(coat.faces):
+            c = f.calc_center_median()
+            if c.y < -0.06 * td and abs(c.x) < 0.12 * tw:
+                coat.faces.remove(f)
+        self.part("coat", coat, "jacket", sp, thick=0.014)
         for k in range(3):
-            self.part("pompom", C.bm_xform(C.bm_sphere(10, 8, 0.035), loc=(0, -0.19 * td - 0.02 * self.BELLY, 0.30 - 0.11 * k)),
+            self.part("pompom", C.bm_xform(C.bm_sphere(10, 8, 0.03), loc=(0, -0.19 * td - 0.02 * self.BELLY, 0.30 - 0.10 * k)),
                       "pompom", sp)
+        # éclaboussures de sang
+        for k, (x, z, r) in enumerate(((0.06, 0.14, 0.04), (-0.05, 0.24, 0.03), (0.02, 0.05, 0.035))):
+            self.part("blood", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(x, -0.19 * td - 0.01, z), scale=(r, 0.012, r * 1.4)),
+                      "blood", sp, nofs=True)
         self.part("belt", C.bm_xform(C.bm_cyl(18, 0.22 * tw, 0.22 * tw, 0.05), loc=(0, 0, 0.05),
                   scale=(1, 0.76 * td / tw, 1)), "makeup", self.j["pelvis"])
         for side in ("L", "R"):
-            self.part("cuff" + side, C.bm_xform(C.bm_torus(14, 6, 0.07 * self.AW, 0.02), loc=(0, 0, -0.16 * self.AL)),
+            self.part("cuff" + side, C.bm_xform(C.bm_torus(14, 6, 0.075 * self.AW, 0.022), loc=(0, 0, -0.15 * self.AL)),
                       "ruff_a", self.j["fa" + side])
-        self.balloons(side="L")
+            for k in range(3):
+                x = (k - 1) * 0.03
+                self.part("claw" + side, C.bm_tube([(x, -0.03, -self.ll - 0.04), (x * 1.3, -0.07, -self.ll - 0.11)],
+                                                   [0.013, 0.0], seg=5), "tooth", self.j["fa" + side])
+        self.balloons(side="L", height=0.70)
         self.muzzle_ref = ("handR", (0, 0, -self.ll))
 
     def arms_rest(self, b: float = 0.0) -> None:
+        # bras tendus vers l'avant, griffes prêtes (la main gauche tient les ballons)
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.12, -0.12, -0.18 + 0.015 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.06, -0.20, -0.30 + 0.015 * b)), self.R_POLE)
+        self.arm_ik("L", s["L"] + Vector((0.14, -0.26, -0.08 + 0.015 * b)), self.L_POLE)
+        self.arm_ik("R", s["R"] + Vector((-0.12, -0.30, -0.20 + 0.015 * b)), self.R_POLE)
 
     def arms_run(self, s: float) -> None:
         sh = self.shoulder
@@ -410,6 +481,9 @@ class LostClown(CvHuman):
         self.arm_ik("R", sh["R"] + Vector((-0.06, 0.22 * s - 0.06, -0.30 + 0.05 * abs(s))), self.R_POLE)
 
     def idle_extra(self, t: float) -> None:
+        # accroupi, prêt à bondir ; la tête dodeline
+        self.j["pelvis"].location.z -= 0.06
+        self.legs((-0.30, -0.16, 0), (-0.22, 0.16, 0), 0.55, 0.45)
         self.j["neck"].rotation_euler = (-0.05, 0.0, 0.18 * math.sin(t * 0.5) + 0.12)
 
     def pose_attack(self, i: int, n: int) -> None:
@@ -441,78 +515,92 @@ class LostClown(CvHuman):
 
 # ------------------------------------------------------------------------------- acrobate sanguinaire
 class Acrobat(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.40, 0, 0)
+
     def build_head(self, head) -> None:
-        self.skull(head, "mask", sx=0.165, sy=0.165, sz=0.185, jaw=0.30)
+        head.location = (0, -0.03, 0.06)
+        self.skull(head, "mask", sx=0.160, sy=0.165, sz=0.190, jaw=0.34)
         for sx in (1, -1):
-            self.part("socket", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.062 * sx, -0.150, 0.232),
-                      scale=(0.042, 0.02, 0.036)), "makeup", head, nofs=True)
+            self.part("socket", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.062 * sx, -0.150, 0.225),
+                      scale=(0.056, 0.03, 0.050), rot=(0, 0.3 * sx, 0)), "makeup", head, nofs=True)
             # larme peinte
-            self.part("tear", C.bm_xform(C.bm_box(0.012, 0.01, 0.06), loc=(0.07 * sx, -0.160, 0.175)),
+            self.part("tear", C.bm_xform(C.bm_box(0.014, 0.01, 0.07), loc=(0.07 * sx, -0.160, 0.17)),
                       "makeup", head, nofs=True)
-        self.eyes(head, "eye_glow", z=0.232, x=0.062, y=-0.168, r=(0.022, 0.010, 0.016), brow=False)
-        self.grin(head, w=0.075, z=0.12, curve=0.035)
-        # chapeau à grelots : trois cornes souples bicolores, grelots dorés
+        self.eyes(head, "eye_glow", z=0.232, x=0.060, y=-0.170, r=(0.020, 0.010, 0.016), brow=False)
+        self.part("mouthDark", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.150, 0.11), scale=(0.075, 0.025, 0.04)),
+                  "makeup", head, nofs=True)
+        self.grin(head, w=0.08, z=0.115, curve=0.04)
+        # chapeau de bouffon : calotte, deux grandes cornes souples (violette / rouge), grelots dorés
         cap = C.bm_sphere(16, 10, 1.0)
         for v in cap.verts:
             if v.co.z < -0.1:
                 v.co.z = -0.1
-        self.part("cap", C.bm_xform(cap, loc=(0, 0.01, 0.27), scale=(0.19, 0.19, 0.15)), "suit_a", head)
-        for k, (ax, ay, key) in enumerate(((1, 0.0, "suit_a"), (-1, 0.0, "suit_b"), (0, 1, "suit_a"))):
-            if ay:
-                pts = C.bezier((0, 0.06, 0.36), (0, 0.18, 0.50), (0, 0.34, 0.46), (0, 0.38, 0.30), 7)
-            else:
-                pts = C.bezier((0.06 * ax, 0, 0.36), (0.20 * ax, -0.02, 0.50), (0.36 * ax, -0.02, 0.44),
-                               (0.40 * ax, -0.04, 0.28), 7)
-            self.part("horn%d" % k, C.bm_tube(pts, [0.075, 0.07, 0.06, 0.05, 0.035, 0.02, 0.008], seg=8), key, head)
-            self.part("bell%d" % k, C.bm_xform(C.bm_sphere(10, 8, 0.04), loc=pts[-1]), "bell", head)
+        self.part("cap", C.bm_xform(cap, loc=(0, 0.01, 0.27), scale=(0.185, 0.19, 0.15)), "hat_a", head)
+        self.part("capBand", C.bm_xform(C.bm_torus(18, 6, 0.178, 0.022), loc=(0, 0.0, 0.26), scale=(1, 1.02, 1)),
+                  "hat_b", head)
+        for k, (ax, key) in enumerate(((1, "hat_a"), (-1, "hat_b"))):
+            pts = C.bezier((0.06 * ax, 0.02, 0.36), (0.26 * ax, 0.0, 0.58), (0.46 * ax, 0.06, 0.48),
+                           (0.46 * ax, 0.04, 0.26), 8)
+            self.part("horn%d" % k, C.bm_tube(pts, [0.085, 0.08, 0.07, 0.06, 0.048, 0.035, 0.02, 0.008], seg=8), key, head)
+            self.part("bell%d" % k, C.bm_xform(C.bm_sphere(10, 8, 0.045), loc=pts[-1]), "bell", head)
 
     def build_legs(self, pelvis) -> None:
         super().build_legs(pelvis)
-        # arlequin : jambes bicolores croisées
-        self.rekey("thighR", "suit_b")
-        self.rekey("shinL", "suit_b")
+        # arlequin : genouillères sombres, chaussons pointus
+        for side in ("L", "R"):
+            self.part("kneepad" + side, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.02, 0.0), scale=(0.10, 0.09, 0.08)),
+                      "tights_b", self.j["knee" + side])
+            self.part("toe" + side, C.bm_xform(C.bm_cyl(8, 0.05, 0.0, 0.14), loc=(0, -0.22, self.foot_z + 0.03),
+                      rot=(math.pi / 2 + 0.4, 0, 0)), "shoe", self.j["knee" + side])
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        # moitié droite du torse crème, losanges sombres
-        half = C.bm_loft([C.ellipse(0, 0, z, r1 * tw + 0.006, r2 * td + 0.006, 20)
-                          for z, r1, r2 in ((0.02, 0.188, 0.138), (0.16, 0.203, 0.148), (0.30, 0.234, 0.157), (0.40, 0.222, 0.142))],
-                         cap_start=False, cap_end=False)
-        for f in list(half.faces):
-            if f.calc_center_median().x > 0.0:
-                half.faces.remove(f)
-        self.part("half", half, "suit_b", sp, thick=0.006)
-        for k, (x, z) in enumerate(((0.07, 0.30), (-0.06, 0.20), (0.07, 0.10), (-0.06, 0.36))):
-            self.part("diamond", C.bm_xform(C.bm_box(0.06, 0.01, 0.06), loc=(x * tw, -0.165 * td, z), rot=(0, 0.785, 0)),
-                      "diamond", sp, nofs=True)
-        # collerette à pointes
+        # losange rouge sur la poitrine, losanges sombres sur le ventre
+        self.part("heart", C.bm_xform(C.bm_box(0.10, 0.012, 0.10), loc=(0.0, -0.160 * td - 0.01, 0.26), rot=(0, 0.785, 0)),
+                  "diamond", sp, nofs=True)
+        for k, (x, z) in enumerate(((0.07, 0.10), (-0.07, 0.10), (0.0, 0.03))):
+            self.part("diamondS", C.bm_xform(C.bm_box(0.05, 0.01, 0.05), loc=(x * tw, -0.15 * td - 0.012, z), rot=(0, 0.785, 0)),
+                      "suit_a", sp, nofs=True)
+        # ceinture et bretelles sombres
+        self.part("belt", C.bm_xform(C.bm_cyl(18, 0.20 * tw, 0.20 * tw, 0.05), loc=(0, 0, 0.02),
+                  scale=(1, 0.76 * td / tw, 1)), "suit_a", sp)
+        # collerette à pointes violette / rouge
         for k in range(10):
             a = 2 * math.pi * k / 10
             x, y = math.sin(a) * 0.15 * tw, -math.cos(a) * 0.13 * td
-            self.part("collar", C.bm_xform(C.bm_cyl(6, 0.045, 0.0, 0.10), loc=(x * 1.2, y * 1.2, 0.44),
-                      rot=(-math.cos(a) * 1.3, -math.sin(a) * 1.3, 0)), "suit_a" if k % 2 else "suit_b", sp)
-        # faucille au bout d'un manche (main droite)
+            self.part("collar", C.bm_xform(C.bm_cyl(6, 0.045, 0.0, 0.10), loc=(x * 1.25, y * 1.25, 0.40),
+                      rot=(-math.cos(a) * 1.7, -math.sin(a) * 1.7, 0)), "hat_a" if k % 2 else "hat_b", sp)
+        # longue perche à faucille (tenue à deux mains)
         fa = self.j["faR"]
         g = joint("w_sickle", fa, (0, 0, -self.ll))
-        self.part("pole", C.bm_xform(C.bm_cyl(8, 0.018, 0.018, 0.62), loc=(0, -0.10, 0), rot=(math.pi / 2, 0, 0)),
+        self.part("pole", C.bm_xform(C.bm_cyl(8, 0.02, 0.02, 1.10), loc=(0, -0.18, 0), rot=(math.pi / 2, 0, 0)),
                   "pole", g, grp="sickle")
-        bl = C.bm_tube(C.bezier((0, -0.40, 0.0), (0, -0.48, 0.16), (0, -0.36, 0.30), (0, -0.20, 0.30), 8),
-                       [0.035, 0.04, 0.038, 0.032, 0.025, 0.018, 0.01, 0.0], seg=6, flat=0.25, up=(1, 0, 0))
+        bl = C.bm_tube(C.bezier((0, -0.70, 0.0), (0, -0.80, 0.18), (0, -0.66, 0.34), (0, -0.48, 0.32), 8),
+                       [0.035, 0.045, 0.042, 0.035, 0.026, 0.018, 0.01, 0.0], seg=6, flat=0.25, up=(1, 0, 0))
         self.part("sickle", bl, "blade", g, grp="sickle")
-        self.part("bloodTip", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.42, 0.20), scale=(0.02, 0.03, 0.05)),
+        self.part("bloodTip", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.76, 0.20), scale=(0.022, 0.03, 0.06)),
                   "blood", g, nofs=True, grp="sickle")
         self.sickle = g
-        self.muzzle_ref = ("sickle", (0, -0.36, 0.30))
+        self.muzzle_ref = ("sickle", (0, -0.66, 0.34))
 
     def set_sickle(self, rot) -> None:
         self.sickle.rotation_euler = rot
 
+    def grip_left(self, y: float = 0.30) -> None:
+        """Main gauche sur la perche (repère de l'arme → repère de la colonne)."""
+        bpy.context.view_layer.update()
+        w = self.sickle.matrix_world @ Vector((0, y, 0))
+        sp = self.j["spine"].matrix_world.inverted() @ w
+        self.arm_ik("L", sp, self.L_POLE)
+
     def arms_rest(self, b: float = 0.0) -> None:
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.16, -0.10, -0.26 + 0.02 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.12, -0.16, -0.30 + 0.02 * b)), self.R_POLE)
-        self.set_sickle((-0.9, 0, 0.4))
+        self.arm_ik("R", s["R"] + Vector((-0.10, -0.24, -0.16 + 0.02 * b)), self.R_POLE)
+        self.set_sickle((-1.05, 0, -0.55))
+        self.grip_left(0.28)
 
     def arms_run(self, s: float) -> None:
         sh = self.shoulder
@@ -522,9 +610,12 @@ class Acrobat(CvHuman):
         self.set_sickle((-1.6, 0, 0.2))
 
     def idle_extra(self, t: float) -> None:
-        # balancement d'équilibriste sur la pointe des pieds
-        self.j["pelvis"].rotation_euler = (0, 0.05 * math.sin(t), 0.06 * math.sin(t))
-        self.j["neck"].rotation_euler = (-0.1, 0.12 * math.sin(t + 1), 0.15 * math.sin(t * 0.5))
+        # garde basse d'acrobate : jambes écartées, genoux fléchis, balancement
+        j = self.j
+        j["pelvis"].location.z -= 0.10
+        j["pelvis"].rotation_euler = (0, 0.05 * math.sin(t), 0.06 * math.sin(t))
+        self.legs((-0.45, -0.40, 0), (0.25, 0.40, 0), 0.95, 0.55)
+        j["neck"].rotation_euler = (-0.1, 0.12 * math.sin(t + 1), 0.15 * math.sin(t * 0.5))
 
     def pose_hit(self, i, n):
         super().pose_hit(i, n)
@@ -557,82 +648,106 @@ class Acrobat(CvHuman):
 
 # ------------------------------------------------------------------------------- pénombre
 class Penumbra(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.30, 0, 0)
+
     def build_head(self, head) -> None:
+        head.location = (0, -0.02, 0.03)
         self.skull(head, "skin")
-        self.part("faceShadow", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.10, 0.19),
-                  scale=(0.155, 0.085, 0.165)), "face", head)
-        self.eyes(head, "eye_glow", z=0.215, x=0.055, y=-0.184, r=(0.030, 0.012, 0.014), brow=False)
-        hood = C.bm_sphere(22, 14, 1.0)
+        # visage : masque noir, yeux orangés
+        self.part("faceShadow", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.10, 0.20),
+                  scale=(0.150, 0.09, 0.17)), "face", head)
+        self.eyes(head, "eye_glow", z=0.235, x=0.055, y=-0.186, r=(0.032, 0.012, 0.016), brow=False)
+        # capuche pointue : pointe tirée vers le haut et l'arrière, bord du visage avancé
+        hood = C.bm_sphere(24, 16, 1.0)
         for v in hood.verts:
             x, y, z = v.co
             if y < 0:
-                z += 0.16 * (-y)
-            if z > 0.6:
-                y += 0.25 * (z - 0.6)
-            v.co = Vector((x * 0.235, y * 0.23 + 0.03, z * 0.25 + 0.215))
+                z += 0.12 * (-y)
+            if z > 0.3:
+                k = (z - 0.3) / 0.7
+                x *= 1.0 - 0.6 * k
+                y = y * (1.0 - 0.5 * k) + 0.45 * k
+                z += 0.28 * k * k
+            v.co = Vector((x * 0.245, y * 0.24 + 0.03, z * 0.26 + 0.215))
         for f in list(hood.faces):
             c = f.calc_center_median()
-            if c.y < -0.08 and c.z < 0.36 and abs(c.x) < 0.17:
+            if c.y < -0.07 and c.z < 0.37 and abs(c.x) < 0.165:
                 hood.faces.remove(f)
         for v in list(hood.verts):
             if not v.link_faces:
                 hood.verts.remove(v)
-        self.part("hood", hood, "cloak", head, thick=0.022)
+        self.part("hood", hood, "cloak", head, thick=0.024)
+        self.part("hoodRim", C.bm_xform(C.bm_torus(20, 6, 1.0, 0.10), loc=(0, -0.13, 0.215), rot=(math.pi / 2 - 0.25, 0, 0),
+                  scale=(0.175, 0.20, 0.17)), "cloak_in", head)
 
     def dress(self) -> None:
         sp = self.j["spine"]
         pel = self.j["pelvis"]
         tw, td = self.TW, self.TD
-        # mantelet (épaules → taille) et jupe de cape en lambeaux (taille → mollets), ouverte devant
+        # mantelet large (épaules → taille) et jupe de cape en lambeaux (taille → mollets), ouverte devant
         mant = C.bm_loft([C.ellipse(0, 0.01, z, r1 * tw, r2 * td, 22)
-                          for z, r1, r2 in ((0.04, 0.25, 0.20), (0.22, 0.27, 0.21), (0.38, 0.28, 0.20), (0.47, 0.17, 0.15))],
+                          for z, r1, r2 in ((0.04, 0.27, 0.21), (0.22, 0.30, 0.22), (0.38, 0.33, 0.22), (0.47, 0.19, 0.16))],
                          cap_start=False, cap_end=False)
         self.part("mantle", mant, "cloak", sp, thick=0.016)
         rnd = random.Random(5)
         secs = []
-        for z, r in ((0.06, 0.25), (-0.12, 0.29), (-0.30, 0.33), (-0.48, 0.37)):
-            secs.append(C.ellipse(0, 0.02, z, r * tw, r * 0.85 * td, 22))
+        for z, r in ((0.06, 0.27), (-0.12, 0.32), (-0.30, 0.37), (-0.50, 0.42)):
+            secs.append(C.ellipse(0, 0.02, z, r * tw, r * 0.85 * td, 24))
         skirt = C.bm_loft(secs, cap_start=False, cap_end=False)
         for v in skirt.verts:
             if v.co.z < -0.4:
                 a = math.atan2(v.co.y, v.co.x)
-                v.co.z += 0.10 * (0.5 + 0.5 * math.sin(7 * a)) + 0.04 * rnd.random()
+                v.co.z += 0.14 * (0.5 + 0.5 * math.sin(9 * a)) + 0.05 * rnd.random()
         for f in list(skirt.faces):
             c = f.calc_center_median()
-            if c.y < -0.12 * td and abs(c.x) < 0.10 * tw and c.z < 0.0:
+            if c.y < -0.12 * td and abs(c.x) < 0.11 * tw and c.z < 0.0:
                 skirt.faces.remove(f)
         self.part("skirt", skirt, "cloak", pel, thick=0.014)
+        # sangles, boucles et braises orangées sur la poitrine
+        self.part("strap", C.bm_tube([(0.20 * tw, -0.17 * td, 0.40), (0.0, -0.21 * td, 0.22), (-0.18 * tw, -0.18 * td, 0.04)],
+                                     [0.02] * 3, seg=5, flat=0.4, up=(0, 1, 0)), "cloak_in", sp)
+        for k, (x, z) in enumerate(((0.10, 0.32), (-0.02, 0.20), (-0.12, 0.10), (0.12, 0.10))):
+            self.part("ember", C.bm_xform(C.bm_sphere(8, 6, 0.024), loc=(x * tw, -0.215 * td, z)), "ember", sp, nofs=True)
+        self.part("buckle", C.bm_xform(C.bm_box(0.06, 0.02, 0.05), loc=(0.0, -0.215 * td, 0.21)), "brass", sp)
         # brume violette au ras du sol (sans contour)
         for k in range(6):
             a = 2 * math.pi * k / 6
             self.part("wisp", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.32 * math.sin(a), 0.30 * math.cos(a), -self.PZ + 0.04),
-                      scale=(0.07, 0.05, 0.02)), "wisp", pel, nofs=True, grp="wisps")
-        # lame courbe (main droite), griffes (main gauche)
+                      scale=(0.06, 0.045, 0.015)), "wisp", pel, nofs=True, grp="wisps")
+        # longue lame droite (main droite), griffes (main gauche)
         fa = self.j["faR"]
         g = joint("w_blade", fa, (0, 0, -self.ll))
-        bl = C.bm_tube(C.bezier((0, 0.02, 0.0), (0, -0.20, 0.02), (0, -0.40, -0.04), (0, -0.52, -0.16), 8),
-                       [0.035, 0.05, 0.055, 0.05, 0.042, 0.03, 0.016, 0.0], seg=6, flat=0.22, up=(1, 0, 0))
+        bl = C.bm_tube([(0, -0.04, 0.0), (0, -0.30, -0.01), (0, -0.56, -0.03), (0, -0.70, -0.06)],
+                       [0.04, 0.042, 0.036, 0.0], seg=6, flat=0.20, up=(1, 0, 0))
         self.part("blade", bl, "blade", g, grp="blade")
-        self.part("edge", C.bm_tube(C.bezier((0, -0.18, -0.03), (0, -0.34, -0.05), (0, -0.46, -0.10), (0, -0.52, -0.17), 6),
-                                    [0.012] * 5 + [0.0], seg=5), "blade_edge", g, nofs=True, grp="blade")
-        self.part("hilt", C.bm_xform(C.bm_cyl(8, 0.022, 0.022, 0.10), loc=(0, 0.04, 0), rot=(math.pi / 2, 0, 0)),
+        self.part("edge", C.bm_tube([(0, -0.10, -0.03), (0, -0.40, -0.045), (0, -0.66, -0.07)],
+                                    [0.010, 0.010, 0.0], seg=5), "blade_edge", g, nofs=True, grp="blade")
+        self.part("guard", C.bm_xform(C.bm_box(0.12, 0.025, 0.03), loc=(0, -0.03, 0)), "brass", g, grp="blade")
+        self.part("hilt", C.bm_xform(C.bm_cyl(8, 0.022, 0.022, 0.12), loc=(0, 0.04, 0), rot=(math.pi / 2, 0, 0)),
                   "cloak_in", g, grp="blade")
         self.blade = g
         for k in range(3):
             x = (k - 1) * 0.03
-            self.part("clawL", C.bm_tube([(x, -0.02, -self.ll - 0.03), (x * 1.3, -0.06, -self.ll - 0.11)],
+            self.part("clawL", C.bm_tube([(x, -0.02, -self.ll - 0.03), (x * 1.3, -0.06, -self.ll - 0.13)],
                                          [0.016, 0.0], seg=5), "blade", self.j["faL"])
-        self.balloons(side="L", height=0.70)
-        self.muzzle_ref = ("blade", (0, -0.52, -0.16))
+        self.balloons(side="L", height=0.62)
+        self.muzzle_ref = ("blade", (0, -0.70, -0.06))
 
     def set_blade(self, rot) -> None:
         self.blade.rotation_euler = rot
 
     def arms_rest(self, b: float = 0.0) -> None:
+        # bras écartés, lame basse pointée vers l'extérieur
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.10, -0.12, -0.28 + 0.01 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.10, -0.16, -0.34 + 0.01 * b)), self.R_POLE)
-        self.set_blade((-1.1, 0, 0.3))
+        self.arm_ik("L", s["L"] + Vector((0.26, -0.16, -0.16 + 0.01 * b)), self.L_POLE)
+        self.arm_ik("R", s["R"] + Vector((-0.26, -0.18, -0.24 + 0.01 * b)), self.R_POLE)
+        self.set_blade((1.1, 0.7, 0.0))
+
+    def idle_extra(self, t: float) -> None:
+        self.j["pelvis"].location.z -= 0.06
+        self.legs((-0.30, -0.28, 0), (-0.25, 0.28, 0), 0.55, 0.50)
 
     def arms_run(self, s: float) -> None:
         sh = self.shoulder
@@ -678,6 +793,10 @@ class Penumbra(CvHuman):
 
 # ------------------------------------------------------------------------------- grosse peluche
 class BigPlush(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.30, 0, 0.0)
+
     def build_head(self, head) -> None:
         self.skull(head, "fur", sx=0.20, sy=0.19, sz=0.19, jaw=0.0)
         for sx in (1, -1):
@@ -696,14 +815,16 @@ class BigPlush(CvHuman):
                       "stitch", head, nofs=True)
         self.part("mouthLine", C.bm_tube([(-0.06, -0.218, 0.13), (0, -0.226, 0.115), (0.06, -0.218, 0.13)], [0.006] * 3,
                                          seg=4), "stitch", head, nofs=True)
-        # œil-bouton (gauche) et œil possédé (droit)
-        self.part("button", C.bm_xform(C.bm_cyl(14, 0.034, 0.034, 0.02), loc=(0.07, -0.172, 0.235), rot=(math.pi / 2, 0, 0)),
+        # yeux possédés (lueur pâle) sous des sourcils froncés, un bouton recousu sur la joue
+        for sx in (1, -1):
+            self.part("socket", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.072 * sx, -0.165, 0.235), scale=(0.045, 0.02, 0.040)),
+                      "nose", head, nofs=True)
+            self.part("eye" + ("L" if sx > 0 else "R"), C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.072 * sx, -0.178, 0.232),
+                      scale=(0.030, 0.014, 0.026)), "eye_glow", head, nofs=True)
+            self.part("brow", C.bm_xform(C.bm_box(0.09, 0.04, 0.03, bevel=0.01), loc=(0.07 * sx, -0.170, 0.285),
+                      rot=(0, -0.45 * sx, 0)), "fur", head)
+        self.part("button", C.bm_xform(C.bm_cyl(14, 0.026, 0.026, 0.02), loc=(0.13, -0.135, 0.14), rot=(math.pi / 2, 0, 0.5)),
                   "button", head)
-        for dx, dz in ((0.01, 0.01), (-0.01, 0.01), (0.01, -0.01), (-0.01, -0.01)):
-            self.part("hole", C.bm_xform(C.bm_sphere(6, 4, 0.006), loc=(0.07 + dx, -0.184, 0.235 + dz)), "stitch", head,
-                      nofs=True)
-        self.part("eyeR", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(-0.07, -0.170, 0.235), scale=(0.038, 0.016, 0.038)),
-                  "eye_glow", head, nofs=True)
         # couture déchirée sur le crâne, rembourrage qui dépasse
         for k in range(4):
             self.part("stitchH", C.bm_xform(C.bm_box(0.04, 0.008, 0.008), loc=(-0.08 + 0.01 * k, -0.06 + 0.05 * k, 0.37 - 0.01 * k),
@@ -722,7 +843,24 @@ class BigPlush(CvHuman):
         # flanc décousu : rembourrage
         for k, (x, z, r) in enumerate(((0.21, 0.20, 0.05), (0.23, 0.26, 0.04), (0.20, 0.13, 0.035))):
             self.part("stuff", C.bm_xform(C.bm_sphere(10, 8, r), loc=(x * tw, -0.08, z)), "stuffing", sp)
-        self.ruff(sp, 0.47, 0.155 * tw, n=16, size=0.065, tilt=0.02)
+        # collerette à pétales pointus (fauve / roux)
+        for k in range(16):
+            a = 2 * math.pi * k / 16
+            x, y = math.sin(a) * 0.16 * tw, -math.cos(a) * 0.15 * td
+            pet = C.bm_sphere(8, 6, 1.0)
+            for v in pet.verts:
+                if v.co.z > 0:
+                    v.co.x *= 1.0 - 0.8 * v.co.z
+                    v.co.z *= 1.6
+            self.part("petal", C.bm_xform(pet, loc=(x * 1.05, y * 1.05, 0.44 - 0.03 * (-math.cos(a))),
+                      rot=(-math.cos(a) * 1.25, -math.sin(a) * 1.25, 0), scale=(0.085, 0.03, 0.07)),
+                      "ruff_a" if k % 2 else "ruff_b", sp)
+        # cœur rouge cousu sur le ventre
+        heart = C.bm_merge(C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.035, 0, 0.02), scale=(0.045, 0.015, 0.04)),
+                           C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(-0.035, 0, 0.02), scale=(0.045, 0.015, 0.04)),
+                           C.bm_xform(C.bm_cyl(4, 0.075, 0.0, 0.09), loc=(0, 0, -0.03), rot=(math.pi, 0, math.pi / 4),
+                                      scale=(1, 0.2, 1)))
+        self.part("heart", C.bm_xform(heart, loc=(0, -0.16 * td - 0.105, 0.20)), "heart", sp)
         for side in ("L", "R"):
             fa = self.j["fa" + side]
             self.part("paw" + side, C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, 0, -self.ll),
@@ -785,18 +923,27 @@ class BigPlush(CvHuman):
 
 # ------------------------------------------------------------------------------- l'Être forain (élite)
 class FairgroundBeing(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.36, 0, 0)
+
     def build_head(self, head) -> None:
+        head.location = (0, -0.02, 0.03)
         self.skull(head, "skin", sx=0.165, sy=0.175, sz=0.195, jaw=0.45)
         self.eyes(head, "eye_glow", z=0.235, x=0.06, y=-0.158, r=(0.028, 0.012, 0.016), brow_key="hat", angle=0.6)
         for sx in (1, -1):
             self.part("cheek", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.10 * sx, -0.12, 0.17), scale=(0.035, 0.03, 0.05)),
                       "hat", head, nofs=True)
+            # fissures incandescentes sur le visage
+            self.part("crack", C.bm_tube([(0.03 * sx, -0.17, 0.30), (0.07 * sx, -0.165, 0.27), (0.06 * sx, -0.17, 0.20),
+                                          (0.11 * sx, -0.145, 0.15), (0.10 * sx, -0.15, 0.09)], [0.007] * 5, seg=4),
+                      "crack", head, nofs=True)
         self.grin(head, key="lips", w=0.085, z=0.115, teeth="tooth", curve=0.045)
         self.part("nose", C.bm_xform(C.bm_cyl(8, 0.025, 0.0, 0.07), loc=(0, -0.19, 0.19), rot=(1.35, 0, 0)), "skin", head)
         # haut-de-forme incliné, ruban rouge, plume de néon
         g = joint("hat", head, (0.02, 0.0, 0.34))
         g.rotation_euler = (-0.12, 0.18, 0)
-        self.part("brim", C.bm_xform(C.bm_cyl(24, 0.27, 0.27, 0.025), loc=(0, 0, 0.0)), "hat", g)
+        self.part("brim", C.bm_xform(C.bm_cyl(24, 0.23, 0.23, 0.025), loc=(0, 0, 0.0)), "hat", g)
         self.part("crown", C.bm_xform(C.bm_cyl(20, 0.15, 0.165, 0.34), loc=(0, 0, 0.18)), "hat", g)
         self.part("band", C.bm_xform(C.bm_cyl(20, 0.168, 0.168, 0.06), loc=(0, 0, 0.05)), "hat_band", g)
         self.part("buckle", C.bm_xform(C.bm_box(0.06, 0.02, 0.05), loc=(0, -0.17, 0.05)), "gold", g)
@@ -815,15 +962,22 @@ class FairgroundBeing(CvHuman):
             if c.y < -0.08 * td and abs(c.x) < 0.11 * tw:
                 coat.faces.remove(f)
         self.part("coat", coat, "coat", sp, thick=0.016)
-        tails = C.bm_loft([C.ellipse(0, 0.02, z, r * tw, r * 0.85 * td, 22)
-                           for z, r in ((0.08, 0.235), (-0.16, 0.27), (-0.42, 0.30))], cap_start=False, cap_end=False)
+        tails = C.bm_loft([C.ellipse(0, 0.02, z, r * tw, r * 0.85 * td, 24)
+                           for z, r in ((0.08, 0.235), (-0.16, 0.28), (-0.42, 0.32), (-0.62, 0.35))], cap_start=False, cap_end=False)
         for f in list(tails.faces):
             c = f.calc_center_median()
-            if c.y < -0.06 * td or (c.y > 0.0 and abs(c.x) < 0.03 and c.z < -0.12):
+            if (c.y < -0.10 * td and abs(c.x) < 0.09 * tw) or (c.y > 0.0 and abs(c.x) < 0.03 and c.z < -0.12):
                 tails.faces.remove(f)
         self.part("tails", tails, "coat", pel, thick=0.014)
+        # haut col relevé
+        col = C.bm_loft([C.ellipse(0, 0.02, z, r * tw, r * 0.9 * td, 20) for z, r in ((0.42, 0.17), (0.56, 0.20))],
+                        cap_start=False, cap_end=False)
+        for f in list(col.faces):
+            if f.calc_center_median().y < -0.08:
+                col.faces.remove(f)
+        self.part("collar", col, "coat", sp, thick=0.016)
         for sx in (1, -1):
-            # revers rouges
+            # revers
             self.part("lapel", C.bm_tube([(0.10 * sx * tw, -0.17 * td, 0.42), (0.08 * sx * tw, -0.20 * td, 0.28),
                                           (0.10 * sx * tw, -0.19 * td, 0.12)], [0.03, 0.035, 0.02], seg=5, flat=0.3,
                                          up=(0, 1, 0)), "coat_in", sp)
@@ -888,29 +1042,52 @@ class FairgroundBeing(CvHuman):
 
 # ------------------------------------------------------------------------------- le Clown de feu (élite)
 class FireClown(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.40, 0, 0)
+
     def build_head(self, head) -> None:
-        self.skull(head, "face", jaw=0.12)
-        self.eyes(head, "eye_glow", r=(0.03, 0.012, 0.024), brow_key="soot", angle=0.6)
+        head.location = (0, -0.03, 0.05)
+        self.skull(head, "face", jaw=0.10)
         for sx in (1, -1):
-            self.part("soot", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.066 * sx, -0.158, 0.225),
-                      scale=(0.05, 0.02, 0.06)), "soot", head, nofs=True)
-        self.part("nose", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.19, 0.175), scale=(0.05, 0.045, 0.048)),
+            self.part("soot", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.066 * sx, -0.150, 0.230),
+                      scale=(0.058, 0.03, 0.054), rot=(0, 0.35 * sx, 0)), "soot", head, nofs=True)
+            self.part("brow", C.bm_xform(C.bm_box(0.085, 0.03, 0.022, bevel=0.006), loc=(0.062 * sx, -0.160, 0.285),
+                      rot=(0, -0.5 * sx, 0)), "soot", head)
+        self.eyes(head, "eye_glow", r=(0.022, 0.010, 0.020), brow=False, y=-0.172, x=0.068)
+        self.part("nose", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.195, 0.175), scale=(0.045, 0.042, 0.044)),
                   "nose", head)
-        self.grin(head, key="lips", w=0.12, z=0.10, curve=0.05)
-        # chevelure de flammes
-        for k, (x, y, z, s, lx) in enumerate(((0.0, 0.02, 0.36, 0.11, 0.0), (0.12, 0.0, 0.30, 0.09, -0.4),
-                                              (-0.12, 0.0, 0.30, 0.09, 0.4), (0.07, 0.10, 0.33, 0.08, -0.2),
-                                              (-0.07, 0.10, 0.33, 0.08, 0.2), (0.17, 0.05, 0.22, 0.07, -0.7),
-                                              (-0.17, 0.05, 0.22, 0.07, 0.7))):
-            self.flame(head, (x, y, z), s, name="hairFire%d" % k, lean=(0.25, lx))
+        self.part("mouthDark", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, -0.152, 0.105), scale=(0.13, 0.03, 0.055)),
+                  "soot", head, nofs=True)
+        self.grin(head, key="lips", w=0.135, z=0.095, curve=0.06)
+        for k in range(7):
+            u = (k + 0.5) / 7
+            x = -0.10 + 0.20 * u
+            self.part("toothL", C.bm_xform(C.bm_box(0.020, 0.012, 0.024), loc=(x, -0.166, 0.072 + 0.03 * (2 * u - 1) ** 2)),
+                      "tooth", head, nofs=True)
+        # chevelure de flammes : grande couronne de langues de feu (côtés et sommet)
+        rnd = random.Random(11)
+        k = 0
+        for ring, (z, r, n, sz, lean) in enumerate(((0.30, 0.17, 8, 0.075, 0.6), (0.18, 0.20, 9, 0.08, 1.0), (0.38, 0.08, 5, 0.085, 0.3))):
+            for q in range(n):
+                a = math.pi * (0.0 + 2.0 * q / n) + 0.3 * ring
+                x, y = math.sin(a) * r, math.cos(a) * r * 0.9 + 0.03
+                if y < -0.10 and z < 0.35:
+                    continue  # pas de flamme devant le visage
+                key = ("fire_edge", "fire", "fire_core")[(k + ring) % 3] if ring < 2 else "fire_core"
+                self.flame(head, (x, y, z), sz * (0.85 + 0.3 * rnd.random()), name="hairFire%d" % k,
+                           lean=(lean * (y / max(r, 1e-3)) * 0.8, -lean * (x / max(r, 1e-3))), tall=3.4,
+                           outer=key, inner="fire_core" if key != "fire_core" else "fire")
+                k += 1
 
     def dress(self) -> None:
         sp = self.j["spine"]
         tw, td = self.TW, self.TD
-        self.ruff(sp, 0.44, 0.17 * tw, n=14, size=0.07, tilt=0.03)
-        for k in range(3):
-            self.part("ember", C.bm_xform(C.bm_sphere(8, 6, 0.03), loc=(0, -0.19 * td - 0.02, 0.30 - 0.1 * k)), "ember", sp,
-                      nofs=True)
+        self.ruff(sp, 0.37, 0.24 * tw, n=16, size=0.08, sy=0.86, tilt=0.12)
+        self.ruff(sp, 0.41, 0.16 * tw, n=12, keys=("ruff_b", "ruff_a"), size=0.06, sy=0.86, tilt=0.12)
+        for k, (x, z) in enumerate(((0.0, 0.28), (0.06, 0.18), (-0.07, 0.12), (0.02, 0.05), (0.12, 0.30), (-0.13, 0.26))):
+            self.part("ember", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(x * tw, -0.19 * td - 0.02, z), scale=(0.03, 0.01, 0.022)),
+                      "ember", sp, nofs=True)
         self.part("belt", C.bm_xform(C.bm_cyl(18, 0.22 * tw, 0.22 * tw, 0.05), loc=(0, 0, 0.05),
                   scale=(1, 0.76 * td / tw, 1)), "soot", self.j["pelvis"])
         # mains en feu, flammes sur les épaules
@@ -922,16 +1099,19 @@ class FireClown(CvHuman):
             self.flame(self.j["ua" + side], (0.03 * sx, 0, 0.06), 0.06, name="shoulderFire" + side)
         # boule de feu tenue (main droite) pendant l'élan
         fa = self.j["faR"]
-        self.part("fireball", C.bm_xform(C.bm_sphere(14, 10, 0.09), loc=(0, -0.04, -self.ll - 0.06)), "fire", fa,
+        self.part("fireball", C.bm_xform(C.bm_sphere(14, 10, 0.13), loc=(0, -0.06, -self.ll - 0.10)), "fire_edge", fa,
                   nofs=True, grp="fireball")
-        self.part("fireballCore", C.bm_xform(C.bm_sphere(12, 8, 0.055), loc=(0, -0.06, -self.ll - 0.06)), "fire_core", fa,
+        self.part("fireballMid", C.bm_xform(C.bm_sphere(14, 10, 0.10), loc=(0, -0.10, -self.ll - 0.10)), "fire", fa,
+                  nofs=True, grp="fireball")
+        self.part("fireballCore", C.bm_xform(C.bm_sphere(12, 8, 0.065), loc=(0, -0.15, -self.ll - 0.10)), "fire_core", fa,
                   nofs=True, grp="fireball")
         self.muzzle_ref = ("fireball", (0, -0.04, -self.ll - 0.06))
 
     def arms_rest(self, b: float = 0.0) -> None:
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.14, -0.14, -0.24 + 0.02 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.14, -0.14, -0.24 + 0.02 * b)), self.R_POLE)
+        self.arm_ik("L", s["L"] + Vector((0.18, -0.20, -0.20 + 0.02 * b)), self.L_POLE)
+        # boule de feu présentée dans la main droite, en avant
+        self.arm_ik("R", s["R"] + Vector((-0.16, -0.30, -0.06 + 0.02 * b)), self.R_POLE)
 
     def idle_extra(self, t: float) -> None:
         self.j["neck"].rotation_euler = (-0.08, 0.0, 0.12 * math.sin(t))
@@ -951,7 +1131,7 @@ class FireClown(CvHuman):
 
     def after_pose(self, anim: str, i: int, n: int) -> None:
         self.flicker(i * 31 + len(anim) * 977 + int(self.dir_ang) * 7 + 1000)
-        ball = anim == "attack" and i <= 3
+        ball = (anim == "attack" and i <= 3) or anim in ("idle", "run", "hit")
         self.show("fireball", ball)
         if anim == "death" and i >= n - 2:
             for ob, _k in self.flames:
@@ -960,9 +1140,24 @@ class FireClown(CvHuman):
 
 # ------------------------------------------------------------------------------- le Roi du cirque (boss)
 class CircusKing(CvHuman):
+    def rest(self) -> None:
+        super().rest()
+        self.j["head"].rotation_euler = (-0.34, 0, 0)
+
     def build_head(self, head) -> None:
+        head.location = (0, -0.03, 0.05)
         self.skull(head, "face", jaw=0.18)
-        self.eyes(head, "eye_glow", r=(0.028, 0.012, 0.022), brow_key="makeup", angle=0.6)
+        for sx in (1, -1):
+            self.part("socket", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.066 * sx, -0.150, 0.232),
+                      scale=(0.058, 0.03, 0.05), rot=(0, 0.35 * sx, 0)), "makeup", head, nofs=True)
+        self.eyes(head, "eye_glow", r=(0.026, 0.012, 0.020), brow_key="makeup", angle=0.6, y=-0.172, x=0.068)
+        self.part("mouthDark", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, -0.152, 0.105), scale=(0.13, 0.03, 0.055)),
+                  "makeup", head, nofs=True)
+        for k in range(7):
+            u = (k + 0.5) / 7
+            x = -0.10 + 0.20 * u
+            self.part("toothL", C.bm_xform(C.bm_box(0.020, 0.012, 0.024), loc=(x, -0.166, 0.072 + 0.03 * (2 * u - 1) ** 2)),
+                      "tooth", head, nofs=True)
         for sx in (1, -1):
             self.part("paint", C.bm_xform(C.bm_box(0.05, 0.01, 0.11), loc=(0.065 * sx, -0.166, 0.232),
                       rot=(0, 0.785, 0)), "makeup", head, nofs=True)
@@ -988,13 +1183,29 @@ class CircusKing(CvHuman):
         sp = self.j["spine"]
         pel = self.j["pelvis"]
         tw, td = self.TW, self.TD
-        self.ruff(sp, 0.45, 0.17 * tw, n=18, size=0.075, tilt=0.03)
+        self.ruff(sp, 0.36, 0.27 * tw, n=20, keys=("ruff_c", "ruff_b"), size=0.085, sy=0.86, tilt=0.12)
+        self.ruff(sp, 0.40, 0.21 * tw, n=16, keys=("ruff_a", "ruff_b"), size=0.075, sy=0.86, tilt=0.12)
+        self.ruff(sp, 0.44, 0.15 * tw, n=12, keys=("ruff_a",), size=0.06, sy=0.86, tilt=0.10)
+        # épaulières d'armure sombre bordées d'or, plastron
+        for side, sx in (("L", 1), ("R", -1)):
+            self.part("pauldron" + side, C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0.02 * sx, 0, 0.02),
+                      scale=(0.15, 0.15, 0.10)), "armor", self.j["ua" + side])
+            self.part("pauldronRim" + side, C.bm_xform(C.bm_torus(16, 5, 0.14, 0.016), loc=(0.02 * sx, 0, -0.02)),
+                      "gold", self.j["ua" + side])
+        self.part("plate", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -0.10 * td, 0.20), scale=(0.20 * tw, 0.10 * td, 0.16)),
+                  "armor", sp)
         # longue robe (taille → chevilles)
         rob = C.bm_loft([C.ellipse(0, 0.0, z, r * tw, r * 0.85 * td, 22)
-                         for z, r in ((0.08, 0.24), (-0.20, 0.28), (-0.50, 0.33), (-0.68, 0.35))], cap_start=False, cap_end=True)
+                         for z, r in ((0.08, 0.24), (-0.16, 0.27), (-0.38, 0.30))], cap_start=False, cap_end=False)
+        for f in list(rob.faces):
+            c = f.calc_center_median()
+            if c.y < -0.10 * td and abs(c.x) < 0.07 * tw and c.z < -0.05:
+                rob.faces.remove(f)
         self.part("robeSkirt", rob, "robe", pel, thick=0.016)
-        self.part("hem", C.bm_xform(C.bm_torus(24, 6, 0.345 * tw, 0.03), loc=(0, 0, -0.67), scale=(1, 0.85 * td / tw, 1)),
+        self.part("hem", C.bm_xform(C.bm_torus(24, 6, 0.30 * tw, 0.025), loc=(0, 0, -0.37), scale=(1, 0.85 * td / tw, 1)),
                   "gold", pel)
+        self.part("belt", C.bm_xform(C.bm_cyl(20, 0.25 * tw, 0.25 * tw, 0.07), loc=(0, 0, 0.08),
+                  scale=(1, 0.85 * td / tw, 1)), "gold", pel)
         # cape royale : bord d'hermine sur les épaules, intérieur violet
         cape = C.bm_loft([C.ellipse(0, 0.04, z, r1 * tw, r2 * td, 24)
                           for z, r1, r2 in ((0.46, 0.20, 0.17), (0.30, 0.30, 0.25), (-0.10, 0.36, 0.30), (-0.62, 0.42, 0.36))],
@@ -1035,8 +1246,11 @@ class CircusKing(CvHuman):
         sg = joint("w_scepter", fa, (0, 0, -self.ll))
         self.part("shaft", C.bm_xform(C.bm_cyl(10, 0.025, 0.022, 0.95), loc=(0, 0, 0.05)), "gold", sg, grp="scepter")
         self.part("ring", C.bm_xform(C.bm_torus(14, 6, 0.06, 0.016), loc=(0, 0, 0.50)), "gold", sg, grp="scepter")
-        self.part("orb", C.bm_xform(C.bm_sphere(14, 10, 0.085), loc=(0, 0, 0.62)), "orb", sg, nofs=True, grp="scepter")
-        self.part("orbCage", C.bm_xform(C.bm_torus(16, 6, 0.09, 0.012), loc=(0, 0, 0.62), rot=(math.pi / 2, 0, 0)), "gold", sg,
+        self.part("orb", C.bm_xform(C.bm_sphere(14, 10, 0.10), loc=(0, 0, 0.64)), "orb", sg, grp="scepter")
+        self.part("orbGlow", C.bm_xform(C.bm_torus(16, 6, 0.10, 0.012), loc=(0, 0, 0.64)), "orb_glow", sg, nofs=True,
+                  grp="scepter")
+        self.part("orbTip", C.bm_xform(C.bm_cyl(8, 0.03, 0.0, 0.10), loc=(0, 0, 0.78)), "gold", sg, grp="scepter")
+        self.part("orbCage", C.bm_xform(C.bm_torus(16, 6, 0.105, 0.014), loc=(0, 0, 0.64), rot=(math.pi / 2, 0, 0)), "gold", sg,
                   grp="scepter")
         self.part("butt", C.bm_xform(C.bm_sphere(10, 8, 0.04), loc=(0, 0, -0.43)), "gold", sg, grp="scepter")
         self.scepter = sg
@@ -1295,69 +1509,134 @@ class Quad(M.Rig):
 
 
 class CircusDog(Quad):
+    """Molosse-hyène de cirque : avant massif et bossu, caparaçon d'or sur les épaules, épines roses,
+    gueule béante pleine de crocs, oreilles en cornes."""
+
+    def pose(self, anim: str, i: int, n: int) -> None:
+        super().pose(anim, i, n)
+        # tête dressée, gueule tournée vers le joueur (lisible sous la caméra 3/4)
+        if anim != "death":
+            self.j["neck"].rotation_euler.x -= 0.30
+            self.j["head"].rotation_euler.x -= 0.62
+            self.j["tail"].rotation_euler.x -= 0.9
+
     def build_head(self, hd, jw) -> None:
         S = self.S
         hl = S["head_len"]
         sk = C.bm_sphere(16, 12, 1.0)
         for v in sk.verts:
             x, y, z = v.co
-            v.co = Vector((x * 0.155, y * 0.15, z * 0.13 + 0.02))
+            v.co = Vector((x * 0.17, y * 0.16, z * 0.14 + 0.03))
         self.part("skull", sk, "fur", hd)
-        self.part("snout", C.bm_tube([(0, -0.06, 0.0), (0, -hl * 0.55, -0.01), (0, -hl * 0.78, -0.02)], [0.10, 0.085, 0.065],
-                                     seg=12, flat=0.85), "muzzle", hd)
-        self.part("nose", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -hl * 0.80, 0.0), scale=(0.035, 0.025, 0.028)),
+        self.part("snout", C.bm_tube([(0, -0.06, 0.02), (0, -hl * 0.55, 0.0), (0, -hl * 0.80, -0.01)], [0.115, 0.10, 0.075],
+                                     seg=12, flat=0.80), "muzzle", hd)
+        self.part("nose", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -hl * 0.82, 0.02), scale=(0.045, 0.03, 0.032)),
                   "fur_dark", hd)
-        self.part("gumU", C.bm_xform(C.bm_box(0.10, hl * 0.6, 0.03, bevel=0.012), loc=(0, -hl * 0.48, -0.05)), "gum", hd)
+        self.part("gumU", C.bm_xform(C.bm_box(0.15, hl * 0.62, 0.035, bevel=0.012), loc=(0, -hl * 0.48, -0.05)), "gum", hd)
+        # rangée de crocs du haut
+        for k in range(7):
+            u = k / 6
+            x = 0.065 * math.cos(math.pi * u)
+            y = -hl * (0.30 + 0.45 * math.sin(math.pi * u))
+            L = 0.07 if k in (1, 5) else 0.045
+            self.part("fangU", C.bm_xform(C.bm_cyl(6, 0.015, 0.0, L), loc=(x, y, -0.07 - L * 0.4), rot=(math.pi, 0, 0)),
+                      "tooth", hd)
         for sx in (1, -1):
-            self.part("fangU", C.bm_xform(C.bm_cyl(6, 0.014, 0.0, 0.06), loc=(0.035 * sx, -hl * 0.68, -0.085),
-                      rot=(math.pi, 0, 0)), "tooth", hd)
-            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.06 * sx, -0.10, 0.06), scale=(0.026, 0.014, 0.018)),
+            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.07 * sx, -0.13, 0.07), scale=(0.036, 0.016, 0.026)),
                       "eye_glow", hd, nofs=True)
-            self.part("brow", C.bm_xform(C.bm_box(0.06, 0.03, 0.02), loc=(0.06 * sx, -0.10, 0.085), rot=(0, -0.45 * sx, 0)),
-                      "fur_dark", hd)
-            ear = C.bm_cyl(4, 0.05, 0.0, 0.13)
-            self.part("ear", C.bm_xform(ear, loc=(0.075 * sx, 0.02, 0.14), rot=(-0.3, 0.35 * sx, 0), scale=(1, 0.5, 1)),
-                      "fur_dark", hd)
-        # mâchoire inférieure
-        self.part("jawM", C.bm_tube([(0, 0.0, -0.02), (0, -hl * 0.45, -0.03), (0, -hl * 0.66, -0.02)], [0.06, 0.05, 0.035],
+            self.part("brow", C.bm_xform(C.bm_box(0.09, 0.045, 0.035, bevel=0.01), loc=(0.07 * sx, -0.12, 0.105),
+                      rot=(0, -0.45 * sx, 0)), "fur_dark", hd)
+            # oreilles en cornes recourbées
+            pts = C.bezier((0.08 * sx, 0.02, 0.12), (0.12 * sx, 0.02, 0.24), (0.16 * sx, 0.06, 0.30), (0.12 * sx, 0.12, 0.34), 6)
+            self.part("ear", C.bm_tube(pts, [0.045, 0.04, 0.032, 0.022, 0.012, 0.0], seg=6), "fur_dark", hd)
+            self.part("cheek", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.13 * sx, -0.04, -0.01), scale=(0.06, 0.07, 0.07)),
+                      "fur", hd)
+        # gueule béante tournée vers l'avant : fond rouge sombre, gencives, crocs tout autour
+        mz = Vector((0, -hl * 0.80, -0.075))
+        self.part("maw", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=mz, scale=(0.080, 0.035, 0.085)), "maw", hd, nofs=True)
+        self.part("mawRim", C.bm_xform(C.bm_torus(18, 6, 1.0, 0.16), loc=mz + Vector((0, -0.01, 0)), rot=(math.pi / 2, 0, 0),
+                  scale=(0.083, 0.088, 0.08)), "gum", hd)
+        for k in range(9):
+            a = math.pi * (0.12 + 0.76 * k / 8)
+            for top in (1, -1):
+                x = 0.075 * math.cos(a)
+                z = top * 0.072 * math.sin(a)
+                L = 0.05 if k in (1, 7) else 0.032
+                self.part("fangM", C.bm_xform(C.bm_cyl(6, 0.012, 0.0, L), loc=mz + Vector((x, -0.035, z)),
+                          rot=(math.pi if top > 0 else 0.0, 0, 0)), "tooth", hd, nofs=True)
+        # crête d'épines sur le crâne
+        for k in range(3):
+            self.part("crest", C.bm_xform(C.bm_cyl(5, 0.025, 0.0, 0.10 - 0.02 * k), loc=(0, 0.02 + 0.06 * k, 0.16 - 0.02 * k),
+                      rot=(-0.4, 0, 0)), "spike", hd)
+        # mâchoire inférieure béante
+        self.part("jawM", C.bm_tube([(0, 0.0, -0.03), (0, -hl * 0.45, -0.04), (0, -hl * 0.68, -0.03)], [0.085, 0.07, 0.05],
                                     seg=10, flat=0.6), "muzzle", jw)
-        self.part("gumL", C.bm_xform(C.bm_box(0.08, hl * 0.5, 0.02, bevel=0.008), loc=(0, -hl * 0.38, 0.01)), "gum", jw)
-        for sx in (1, -1):
-            self.part("fangL", C.bm_xform(C.bm_cyl(6, 0.012, 0.0, 0.05), loc=(0.03 * sx, -hl * 0.58, 0.03)), "tooth", jw)
-        # petit chapeau de cirque incliné
-        hat = joint("hat", hd, (0.04, 0.02, 0.13))
-        hat.rotation_euler = (-0.2, 0.35, 0)
-        self.part("hatCone", C.bm_xform(C.bm_cyl(14, 0.06, 0.0, 0.14), loc=(0, 0, 0.07)), "hat", hat)
-        self.part("hatBand", C.bm_xform(C.bm_torus(14, 6, 0.055, 0.012), loc=(0, 0, 0.015)), "hat_band", hat, nofs=True)
-        self.part("hatPom", C.bm_xform(C.bm_sphere(8, 6, 0.025), loc=(0, 0, 0.145)), "ruff_a", hat)
-        self.muzzle_ref = ("fangU", (0.0, -hl * 0.78, -0.05))
+        self.part("gumL", C.bm_xform(C.bm_box(0.12, hl * 0.52, 0.025, bevel=0.008), loc=(0, -hl * 0.38, 0.015)), "gum", jw)
+        self.part("tongue", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -hl * 0.36, 0.03), scale=(0.05, hl * 0.25, 0.015)),
+                  "maw", jw)
+        for k in range(5):
+            u = k / 4
+            x = 0.05 * math.cos(math.pi * u)
+            y = -hl * (0.28 + 0.36 * math.sin(math.pi * u))
+            self.part("fangL", C.bm_xform(C.bm_cyl(6, 0.013, 0.0, 0.05), loc=(x, y, 0.045)), "tooth", jw)
+        self.muzzle_ref = ("fangU", (0.0, -hl * 0.80, -0.05))
 
     def build_torso(self, to) -> None:
         super().build_torso(to)
-        # crinière hérissée et épines le long du dos
-        for k in range(7):
-            y = -self.L * 0.36 + self.L * 0.11 * k
-            h = 0.12 - 0.012 * k
-            self.part("spine", C.bm_xform(C.bm_cyl(5, 0.035, 0.0, h), loc=(0, y, self.RZ * 0.92 + h * 0.4),
-                      rot=(0.45, 0, 0)), "fur_dark", to)
+        L, RX, RZ = self.L, self.RX, self.RZ
+        # bosse d'épaules massive, caparaçon d'or ouvragé (épaules + poitrail)
+        self.part("hump", C.bm_xform(C.bm_sphere(16, 12, 1.0), loc=(0, -L * 0.24, RZ * 0.55), scale=(RX * 1.15, L * 0.26, RZ * 0.85)),
+                  "fur", to)
         for sx in (1, -1):
             for k in range(3):
-                self.part("mane", C.bm_xform(C.bm_cyl(5, 0.04, 0.0, 0.12), loc=(sx * self.RX * 0.75, -self.L * 0.34 + 0.07 * k,
-                          self.RZ * 0.5), rot=(0.6, 0.9 * sx, 0)), "fur_dark", to)
-        # harnais doré
-        self.part("harness", C.bm_xform(C.bm_torus(18, 6, 1.0, 0.06), loc=(0, -self.L * 0.18, 0), rot=(math.pi / 2, 0, 0),
-                  scale=(self.RX * 1.02, self.RZ * 1.02, 1)), "brass", to)
+                self.part("pauldron", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(sx * RX * 0.92, -L * 0.36 + 0.07 * k, RZ * 0.55 - 0.05 * k),
+                          scale=(0.07, 0.10, 0.11 - 0.015 * k), rot=(0, 0.7 * sx, 0)), "armor", to)
+            self.part("stud", C.bm_xform(C.bm_sphere(8, 6, 0.028), loc=(sx * (RX * 1.0 + 0.09), -L * 0.30, RZ * 0.40)),
+                      "brass", to)
+        self.part("breastplate", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -L * 0.47, -RZ * 0.05), scale=(RX * 0.95, 0.07, RZ * 0.9)),
+                  "armor", to)
+        self.part("harness", C.bm_xform(C.bm_torus(18, 6, 1.0, 0.045), loc=(0, -L * 0.08, 0.01), rot=(math.pi / 2, 0, 0),
+                  scale=(RX * 1.05, RZ * 1.05, 1)), "armor", to)
+        # épines roses le long du dos, plus hautes sur la bosse
+        for k in range(8):
+            y = -L * 0.36 + L * 0.105 * k
+            h = (0.16, 0.18, 0.16, 0.12, 0.10, 0.09, 0.08, 0.07)[k]
+            zt = RZ * (1.25 if k < 3 else 0.95) + h * 0.35
+            self.part("spine", C.bm_xform(C.bm_cyl(5, 0.035, 0.0, h), loc=(0, y, zt), rot=(0.55, 0, 0)), "spike", to)
+        for sx in (1, -1):
+            for k in range(3):
+                self.part("sideSpike", C.bm_xform(C.bm_cyl(5, 0.03, 0.0, 0.12), loc=(sx * RX * 0.85, -L * 0.20 + 0.10 * k, RZ * 0.85),
+                          rot=(0.4, 0.8 * sx, 0)), "spike", to)
 
     def build_neck(self, to, nk) -> None:
         super().build_neck(to, nk)
         hd = self.j["head"].location
-        # collerette de clown autour du cou
-        for k in range(12):
-            a = 2 * math.pi * k / 12
-            c = Vector((0, hd.y * 0.35, hd.z * 0.35))
-            off = Vector((math.cos(a) * self.RZ * 0.85, math.sin(a) * 0.05, math.sin(a) * self.RZ * 0.85))
-            self.part("ruff%d" % k, C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=c + off, rot=(0.6, 0, a),
-                      scale=(0.045, 0.03, 0.045)), "ruff_a" if k % 2 else "ruff_b", nk)
+        # collier à pointes de laiton
+        c = Vector((0, hd.y * 0.4, hd.z * 0.4))
+        self.part("collar", C.bm_xform(C.bm_torus(18, 6, self.RZ * 0.80, 0.02), loc=c, rot=(math.pi / 2 - 0.5, 0, 0)), "fur_dark", nk)
+        for k in range(8):
+            a = 2 * math.pi * k / 8
+            off = Vector((math.cos(a) * self.RZ * 0.85, math.sin(a) * 0.04, math.sin(a) * self.RZ * 0.85))
+            self.part("collarSpike", C.bm_xform(C.bm_cyl(5, 0.02, 0.0, 0.06), loc=c + off,
+                      rot=(0, math.pi / 2 - a, 0)), "brass", nk)
+
+    def build_foot(self, lo, name: str) -> None:
+        r0 = self.S.get("leg_r", 0.06)
+        self.part("paw" + name, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.03, -self.L2),
+                  scale=(r0 * 1.35, r0 * 1.6, r0 * 0.85)), "fur_dark", lo)
+        for k in range(3):
+            x = (k - 1) * 0.035
+            self.part("claw" + name, C.bm_xform(C.bm_cyl(5, 0.012, 0.0, 0.05), loc=(x, -0.03 - r0 * 1.5, -self.L2 - 0.01),
+                      rot=(math.pi / 2 + 0.3, 0, 0)), "tooth", lo)
+
+    def dress(self) -> None:
+        # avant-bras massifs (pattes avant de colosse), griffes
+        for Lg in self.legs_def:
+            if Lg["front"]:
+                self.part("forearm" + Lg["name"], C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.01, -self.L1 * 0.45),
+                          scale=(0.11, 0.12, self.L1 * 0.62)), "fur", Lg["u"])
+                self.part("bracer" + Lg["name"], C.bm_xform(C.bm_cyl(12, 0.085, 0.075, 0.10), loc=(0, 0, -self.L2 * 0.45)),
+                          "armor", Lg["l"])
 
     def build_tail(self, tl) -> None:
         self.part("tailM", C.bm_tube(C.bezier((0, 0, 0), (0, 0.12, 0.10), (0, 0.24, 0.12), (0, 0.34, 0.06), 7),
@@ -1365,59 +1644,105 @@ class CircusDog(Quad):
 
 
 class GhostCarousel(Quad):
-    """Cheval de manège hanté : glisse sur sa barre dorée (pied lumineux), pattes figées en galop
-    de manège ; se cabre puis s'abat (piétinement de zone)."""
+    """Cheval de manège hanté : bois peint gris lavande craquelé, crinière sombre, rubans orangés ;
+    glisse sur sa barre dorée (pied lumineux), pattes avant levées en galop de manège ; se cabre
+    puis s'abat (piétinement de zone)."""
 
     POLE_TOP = 1.95
+
+    def pose(self, anim: str, i: int, n: int) -> None:
+        super().pose(anim, i, n)
+        if anim != "death":
+            # encolure arquée, tête haute et de trois quarts vers le joueur
+            self.j["neck"].rotation_euler.x -= 0.30
+            self.j["head"].rotation_euler.x -= 0.20
+
+    def build_neck(self, to, nk) -> None:
+        hd = self.j["head"].location
+        self.part("neckM", C.bm_tube([(0, 0.08, -0.06), (0, hd.y * 0.45, hd.z * 0.55), (0, hd.y, hd.z - 0.02)],
+                                     [self.RZ * 0.85, self.RZ * 0.62, self.RZ * 0.46], seg=12), "coat", nk)
+        # crinière sombre ondulée, épaisse, le long de l'encolure
+        a0, a1 = Vector((0, 0.08, -0.06)), Vector((0, hd.y, hd.z))
+        dirv = (a1 - a0).normalized()
+        back = Vector((0, -dirv.z, dirv.y)) if dirv.y < 0 else Vector((0, dirv.z, -dirv.y))
+        if back.z < 0:
+            back = -back
+        for k in range(9):
+            u = k / 8
+            c = a0.lerp(a1, u) + back * (self.RZ * (0.85 - 0.40 * u) + 0.07)
+            self.part("mane%d" % k, C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=c + Vector((0.03 * (-1) ** k, 0, 0)),
+                      scale=(0.06, 0.09, 0.10 - 0.03 * u), rot=(0.5, 0.35 * (-1) ** k, 0)), "mane", nk)
+        for k in range(3):
+            u = 0.25 + 0.25 * k
+            self.part("swirlN", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.0, hd.y * u - 0.16, hd.z * u - 0.10),
+                      scale=(0.11, 0.03, 0.035), rot=(0.6, 0, 0)), "swirl", nk, nofs=True)
 
     def build_head(self, hd, jw) -> None:
         hl = self.S["head_len"]
         sk = C.bm_sphere(16, 12, 1.0)
         for v in sk.verts:
             x, y, z = v.co
-            v.co = Vector((x * 0.11, y * 0.13, z * 0.12 + 0.03))
+            v.co = Vector((x * 0.135, y * 0.15, z * 0.14 + 0.03))
+        hd.scale = (1.18, 1.18, 1.18)
         self.part("skull", sk, "coat", hd)
-        self.part("snout", C.bm_tube([(0, -0.06, 0.02), (0, -hl * 0.5, -0.03), (0, -hl * 0.72, -0.07)], [0.10, 0.085, 0.07],
+        self.part("snout", C.bm_tube([(0, -0.06, 0.02), (0, -hl * 0.5, -0.04), (0, -hl * 0.72, -0.09)], [0.12, 0.10, 0.085],
                                      seg=12, flat=0.8), "coat", hd)
-        self.part("nostril", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -hl * 0.74, -0.06), scale=(0.06, 0.03, 0.04)),
+        self.part("nostril", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -hl * 0.74, -0.08), scale=(0.065, 0.035, 0.045)),
                   "muzzle", hd)
         for sx in (1, -1):
-            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.085 * sx, -0.10, 0.07), scale=(0.024, 0.016, 0.022)),
+            # orbites creuses, lueur orangée
+            self.part("socket", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.09 * sx, -0.10, 0.07), scale=(0.035, 0.028, 0.03)),
+                      "socket", hd, nofs=True)
+            self.part("eye", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.10 * sx, -0.11, 0.07), scale=(0.016, 0.012, 0.014)),
                       "eye_glow", hd, nofs=True)
-            self.part("ear", C.bm_xform(C.bm_cyl(5, 0.035, 0.0, 0.11), loc=(0.05 * sx, 0.04, 0.16), rot=(-0.2, 0.2 * sx, 0)),
+            self.part("ear", C.bm_xform(C.bm_cyl(5, 0.04, 0.0, 0.13), loc=(0.055 * sx, 0.04, 0.17), rot=(-0.15, 0.25 * sx, 0)),
                       "coat", hd)
-            # bride dorée
-            self.part("bridle", C.bm_xform(C.bm_torus(14, 5, 0.075, 0.012), loc=(0, -hl * 0.45, -0.02), rot=(math.pi / 2, 0, 0),
-                      scale=(1.15, 1, 0.95)), "gold", hd)
-        self.part("jawM", C.bm_tube([(0, -0.02, -0.03), (0, -hl * 0.45, -0.05), (0, -hl * 0.6, -0.04)], [0.06, 0.05, 0.035],
+            # bride dorée, rubans orangés qui pendent
+            self.part("bridle", C.bm_xform(C.bm_torus(14, 5, 0.08, 0.013), loc=(0, -hl * 0.45, -0.03), rot=(math.pi / 2, 0, 0),
+                      scale=(1.2, 1, 0.95)), "gold", hd)
+            self.part("ribbon", C.bm_tube(C.bezier((0.10 * sx, -hl * 0.30, 0.0), (0.12 * sx, -hl * 0.30, -0.10),
+                                                   (0.11 * sx, -hl * 0.22, -0.18), (0.12 * sx, -hl * 0.18, -0.26), 5),
+                                          [0.022, 0.022, 0.02, 0.016, 0.01], seg=5, flat=0.35), "ribbon", hd)
+            self.part("rosette", C.bm_xform(C.bm_sphere(10, 6, 0.035), loc=(0.10 * sx, -hl * 0.30, 0.01)), "ribbon", hd)
+        # toupet de crinière sur le front
+        self.part("forelock", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.0, -0.03, 0.15),
+                  scale=(0.035, 0.05, 0.03), rot=(0.6, 0, 0)), "mane", hd)
+        # crinière qui retombe derrière la tête, sur un côté (visible de dessus)
+        for k in range(5):
+            self.part("maneH", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(-0.07 - 0.015 * k, 0.07 + 0.05 * k, 0.12 - 0.06 * k),
+                      scale=(0.045, 0.07, 0.07), rot=(0.5, -0.5, 0)), "mane", hd)
+        self.part("jawM", C.bm_tube([(0, -0.02, -0.04), (0, -hl * 0.45, -0.07), (0, -hl * 0.6, -0.08)], [0.06, 0.05, 0.035],
                                     seg=8, flat=0.7), "coat", jw)
-        self.part("gum", C.bm_xform(C.bm_box(0.07, hl * 0.4, 0.02), loc=(0, -hl * 0.38, -0.01)), "gum", jw)
+        self.part("gum", C.bm_xform(C.bm_box(0.07, hl * 0.4, 0.02), loc=(0, -hl * 0.38, -0.02)), "gum", jw)
         # fissures (bois peint craquelé)
-        self.part("crack", C.bm_tube([(0.10, -0.04, 0.10), (0.09, -0.12, 0.04), (0.10, -0.18, 0.05)], [0.008] * 3, seg=4),
-                  "crack", hd, nofs=True)
+        for sx in (1, -1):
+            self.part("crack", C.bm_tube([(0.11 * sx, -0.04, 0.10), (0.10 * sx, -0.12, 0.04), (0.11 * sx, -0.18, 0.05)],
+                                         [0.008] * 3, seg=4), "crack", hd, nofs=True)
         self.muzzle_ref = ("snout", (0, -hl * 0.72, -0.07))
 
     def build_torso(self, to) -> None:
         super().build_torso(to)
         L, RX, RZ = self.L, self.RX, self.RZ
-        # selle rouge à franges d'or, tapis
-        self.part("saddle", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, 0.02, RZ * 0.80), scale=(RX * 0.95, 0.20, 0.07)),
+        # petite selle sombre ourlée d'or, tapis ouvragé
+        self.part("saddle", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, 0.04, RZ * 0.86), scale=(RX * 0.85, 0.15, 0.06)),
                   "saddle", to)
-        self.part("blanket", C.bm_xform(C.bm_box(RX * 2.15, 0.36, 0.20, bevel=0.03), loc=(0, 0.02, RZ * 0.35)), "saddle", to)
-        self.part("trim", C.bm_xform(C.bm_box(RX * 2.2, 0.38, 0.03), loc=(0, 0.02, RZ * 0.25)), "gold", to)
-        # rubans dorés et motifs peints sur le poitrail
+        self.part("saddleTrim", C.bm_xform(C.bm_torus(18, 5, 1.0, 0.10), loc=(0, 0.04, RZ * 0.86), scale=(RX * 0.85, 0.15, 0.4)),
+                  "gold", to)
+        self.part("strap", C.bm_xform(C.bm_torus(18, 6, 1.0, 0.04), loc=(0, 0.04, 0.0), rot=(math.pi / 2, 0, 0),
+                  scale=(RX * 1.03, RZ * 1.03, 1)), "saddle", to)
+        # motifs peints (volutes claires) sur les flancs et la croupe
+        for sx in (1, -1):
+            for k, (y, z, r) in enumerate(((-0.20, 0.04, 0.09), (0.22, 0.05, 0.10), (0.32, -0.08, 0.06), (-0.02, -0.10, 0.06))):
+                self.part("swirl", C.bm_xform(C.bm_torus(14, 5, r, 0.018), loc=(sx * RX * 0.99, y, z), rot=(0, math.pi / 2, 0),
+                          scale=(1, 1, 0.8)), "swirl", to, nofs=True)
+            self.part("medal", C.bm_xform(C.bm_cyl(10, 0.04, 0.04, 0.015), loc=(sx * RX * 0.99, -0.20, 0.02), rot=(0, math.pi / 2, 0)),
+                      "ribbon", to, nofs=True)
+        # poitrail doré, pendeloques
         self.part("breast", C.bm_xform(C.bm_torus(20, 5, 1.0, 0.03), loc=(0, -L * 0.30, 0.0), rot=(math.pi / 2, 0, 0),
                   scale=(RX * 1.03, RZ * 1.03, 1)), "gold", to)
         for k in range(3):
             self.part("jewel", C.bm_xform(C.bm_sphere(8, 6, 0.025), loc=(0, -L * 0.42 - 0.01, RZ * (0.3 - 0.3 * k))), "neon_red",
                       to, nofs=True)
-        # crinière ondulée (violette)
-        for k in range(8):
-            u = k / 7
-            y = -L * 0.40 - 0.24 * u
-            z = RZ * 0.9 + 0.30 * u
-            self.part("mane%d" % k, C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.03 * (-1) ** k, y + 0.02, z + 0.03),
-                      scale=(0.05, 0.08, 0.06), rot=(0.4, 0.3 * (-1) ** k, 0)), "mane", to)
         self.part("crackB", C.bm_tube([(RX * 0.98, -0.10, 0.05), (RX * 0.99, 0.0, -0.03), (RX * 0.97, 0.10, 0.02)], [0.008] * 3,
                                       seg=4), "crack", to, nofs=True)
 
@@ -1442,12 +1767,16 @@ class GhostCarousel(Quad):
             z = 0.12 + (self.POLE_TOP - 0.2) * k / 13
             self.part("twist", C.bm_xform(C.bm_torus(10, 4, 0.03, 0.009), loc=(0, 0, z), rot=(0.5, 0, 0.6 * k)), "gold", g)
         self.part("finial", C.bm_xform(C.bm_sphere(12, 8, 0.055), loc=(0, 0, self.POLE_TOP + 0.03)), "gold", g)
-        self.part("base", C.bm_xform(C.bm_cyl(24, 0.30, 0.34, 0.06), loc=(0, 0, 0.03)), "gold", g)
-        self.part("baseNeon", C.bm_xform(C.bm_torus(28, 6, 0.36, 0.02), loc=(0, 0, 0.04)), "neon", g, nofs=True)
+        self.part("base", C.bm_xform(C.bm_cyl(24, 0.22, 0.26, 0.05), loc=(0, 0, 0.025)), "mane", g)
+        self.part("baseRim", C.bm_xform(C.bm_torus(28, 5, 0.25, 0.012), loc=(0, 0, 0.05)), "gold", g)
+        for k in range(10):
+            a = 2 * math.pi * k / 10
+            self.part("bulb", C.bm_xform(C.bm_sphere(8, 6, 0.024), loc=(0.235 * math.cos(a), 0.235 * math.sin(a), 0.06)),
+                      "neon", g, nofs=True)
         for k in range(6):
-            a = 2 * math.pi * k / 6
-            self.part("ghost", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.40 * math.cos(a), 0.40 * math.sin(a), 0.03),
-                      scale=(0.07, 0.07, 0.02)), "neon", g, nofs=True, grp="ghost")
+            a = 2 * math.pi * k / 6 + 0.5
+            self.part("ghost", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.36 * math.cos(a), 0.36 * math.sin(a), 0.02),
+                      scale=(0.035, 0.035, 0.012)), "neon", g, nofs=True, grp="ghost")
 
     def rest(self) -> None:
         super().rest()
@@ -1475,11 +1804,11 @@ class GhostCarousel(Quad):
         to = self.j["torso"]
         to.scale = (1, 1, 1)
         to.location.z = self.H + 0.07 * math.sin(t)
-        to.rotation_euler = (0.06 * math.sin(t + 0.8), 0, 0)
+        to.rotation_euler = (-0.20 + 0.06 * math.sin(t + 0.8), 0, 0)
         self.j["neck"].rotation_euler = (-0.1 + 0.06 * math.sin(t), 0, 0.08 * math.sin(t * 0.5))
         self.j["jaw"].rotation_euler = (0.10 + 0.12 * max(0.0, math.sin(t)), 0, 0)
         self.j["tail"].rotation_euler = (0.1, 0, 0.15 * math.sin(t))
-        self.carousel_legs(0.2 * math.sin(t))
+        self.carousel_legs(0.2 * math.sin(t), kick=0.35)
 
     def pose_run(self, i: int, n: int) -> None:
         # monte et descend sur sa barre en se balançant (mouvement de manège)
@@ -1554,6 +1883,9 @@ def presentation_sheet(kinds) -> None:
     from PIL import Image, ImageDraw, ImageFont
     fb = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     fr = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    if not os.path.exists(fb):  # macOS
+        fb = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+        fr = "/System/Library/Fonts/Supplemental/Arial.ttf"
     title_f = ImageFont.truetype(fb, 30)
     name_f = ImageFont.truetype(fb, 17)
     sub_f = ImageFont.truetype(fr, 13)
@@ -1605,8 +1937,27 @@ def presentation_sheet(kinds) -> None:
     print("SHEET", out)
 
 
+def hipreview(kinds, dirs, anims_spec) -> None:
+    """Aperçu d'évaluation : garde le rendu ×2 (avant réduction) et l'image à la taille du jeu
+    (RDM_CV_TMP/prev_<kind>_<anim>_<dir>_<i>{,_hi}.png)."""
+    for kind in kinds:
+        rig, cam = M.setup_scene(kind)
+        F = M.out_frame(kind)
+        for d in dirs:
+            rig.j["root"].rotation_euler = (0, 0, math.radians(M.DIRS[d]))
+            rig.dir_ang = M.DIRS[d]
+            for a in anims_spec:
+                an, i = a.split(":")
+                n = M.anims_for(kind)[an][0]
+                rig.pose(an, int(i), n)
+                p = os.path.join(M.TMP_DIR, "prev_%s_%s_%s_%s" % (kind, an, d, i))
+                C.render_to(p + "_hi.png")
+                C.downscale(p + "_hi.png", p + ".png", (F, F))
+        print("HIPREVIEW", kind)
+
+
 def main() -> None:
-    args = sys.argv[1:]
+    args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else sys.argv[1:]
     kinds = args[args.index("--kinds") + 1].split(",") if "--kinds" in args else KINDS
     os.makedirs(M.TMP_DIR, exist_ok=True)
     if "--sheet" in args:
@@ -1615,6 +1966,11 @@ def main() -> None:
     if "--repack" in args:
         for k in kinds:
             M.repack(k)
+        return
+    if "--hipreview" in args:
+        dirs = args[args.index("--hipreview") + 1].split(",")
+        anims = args[args.index("--anim") + 1].split(",") if "--anim" in args else ["idle:0"]
+        hipreview(kinds, dirs, anims)
         return
     if "--preview" in args:
         dirs = args[args.index("--preview") + 1].split(",")

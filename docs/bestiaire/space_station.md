@@ -39,21 +39,50 @@ Tous les paramètres sont dans les `.tres` (les valeurs de `defaults()` ne sont 
 ### Modèles Blender
 `art/blender/bestiary/space_station/build_ss_enemies.py` (pipeline de `art/blender/build_enemies.py` :
 caméra 3/4 à 48°, toon peint, contour Freestyle, même densité de pixels que le héros ; pack/SpriteFrames
-importés de `build_enemies.py`). Rigs : `Mech` (humanoïdes en IK : droïde, téléporteur, gardien, Atlas ; variante `organic` pour l'alien
-bipède massif à 4 tentacules dorsaux animés et 7 yeux ; variante `orb` pour L'Architecte : torse-sphère à
-énorme œil rouge central, antennes, ailerons, bras-canons doubles), `Spectre` (sphère volante haute, 6
-pattes IK pendantes), `Spider` (8 pattes IK au sol ; version volante pour le Drone Tieur), `Alien`
-(créature ronde à tentacules : utilisée pour la larve, distincte de l'adulte). Les lueurs (yeux, cœurs,
-canons) sont émissives avec un point chaud quasi blanc au centre (lisible sur mobile) et s'éteignent sur
-les dernières images de la mort. Métal sombre contrasté (ombres presque noires, reflets clairs).
+importés de `build_enemies.py`). Rigs : `Mech` (humanoïdes en IK : droïde, téléporteur, gardien, Atlas ;
+variante `gaunt` pour le téléporteur : créature décharnée gris-bleu aux membres galbés, cœur bleu et éclairs ;
+variante `orb` pour L'Architecte : torse-sphère à énorme œil rouge central, antennes, ailerons, bras-canons
+doubles écartés), `Spectre` (sphère volante, œil bleu relevé vers la caméra, boulons de coque, 7 tentacules
+mécaniques segmentées à griffes), `Spider` (variante `orb_body` : corps-sphère porté haut, gros œil rouge,
+6 pattes blindées à lames — Détecteur anthracite, Drone Tieur plus massif aux lames ivoire et canons
+latéraux), `Alien` (créature à crâne haut bosselé, yeux magenta, arcades froncées, 8 pattes-tentacules et
+2 bras griffus : adulte ; la larve est le même rig en petit). Les lueurs (yeux, cœurs, canons) sont émissives
+avec un point chaud quasi blanc au centre (lisible sur mobile) et s'éteignent sur les dernières images de la mort.
+
+Palette (refonte de fidélité aux planches) : métal « gunmetal » anthracite (`SS_MATS`), seuil toon relevé
+(`BAND` 0,62 : vues de dessus, les faces supérieures gardent le ton de base au lieu du reflet clair) et
+liseré de contre-jour bleu froid (`RIM_COLOR`, éclairage de la station) au lieu du liseré chaud commun.
 
 ```
-flock /home/claude/.blender_render.lock python3 art/blender/bestiary/space_station/build_ss_enemies.py [--kinds ...]
+source tools/prerender/mac_env.sh
+flock "$BLENDER_LOCK" python3 art/blender/bestiary/space_station/build_ss_enemies.py [--kinds ...]
+RDM_TMP=<dossier> flock "$BLENDER_LOCK" python3 art/blender/bestiary/space_station/build_ss_enemies.py \
+    --preview s,se --anim idle:0,attack:3 --kinds ss_alien     # aperçu rapide
 python3 art/blender/bestiary/space_station/build_ss_enemies.py --sheet   # planche de présentation
 ```
 Cadres : 192 px (droïde, spectre, téléporteur, détecteur), 224-256 px (gardien, alien, élites), 160 px (larve).
-L'Architecte est rendu à demi-densité (`px_scale` 0,5, cadre 320 px, `display_height` doublé) : environ 2,5×
+L'Architecte est rendu à densité réduite (`px_scale` 0,4375, cadre 280 px, même `display_height` qu'avant : 369 unités) : environ 2,5×
 la taille d'un droïde en jeu tout en gardant un atlas sous 4096 px (limite GPU mobile).
+
+### Fidélité aux planches (revue du 31/10/2026)
+Chaque modèle comparé à son illustration (planche à gauche, rendu jeu s / se, idle et attaque à droite),
+noté sur 6 critères (silhouette, couleurs, matières, accessoires, posture, lisibilité) ; seuil 7,5/10.
+Comparaisons finales : `captures/space_station/comparaison_planches.png`.
+
+| Kind | Note de départ | Note finale | Décision | Changements principaux |
+|---|---|---|---|---|
+| `ss_security_droid` | 5,0 | 7,6 | refait (4 essais) | métal sombre, casque/épaulières argent, torse élargi, fusil ×1,4 tenu en travers |
+| `ss_spectre` | 5,0 | 7,5 | refait (3 essais) | œil bleu relevé vers la caméra, boulons, 7 tentacules segmentées à griffes |
+| `ss_teleporter` | 3,5 | 7,5 | refait (6 essais) | créature décharnée (membres galbés), voûtée, bras écartés, griffes longues, éclairs du cœur |
+| `ss_detector` | 4,5 | 7,6 | refait (4 essais) | corps-sphère à gros œil rouge, 6 pattes blindées à lames, genoux hauts |
+| `ss_station_guardian` | 5,0 | 7,5 | refait (6 essais) | gorille mécanique voûté, œil bleu unique, épaulières caisson, canons d'avant-bras nervurés |
+| `ss_alien` | 3,5 | 7,5 | refait (7 essais) | rig `Alien` (8 pattes-tentacules) au lieu du bipède, crâne haut bosselé, yeux magenta, griffes |
+| `ss_drone_tieur` | 4,0 | 7,5 | refait (5 essais) | araignée à corps-sphère au sol (plus d'hélices), pattes-faux ivoire, canons latéraux |
+| `ss_atlas` | 5,0 | 7,5 | refait (5 essais) | gabarit ×1,10, épaulières caisson à projecteurs, visière en V et cœur bleus, bouclier physique retiré (l'`energy_shield` reste) |
+| `ss_architect` | 5,5 | 7,5 | refait (4 essais) | métal sombre, canons doubles longs et écartés tenus à l'horizontale |
+
+`ss_alien_brood` (hors planche) re-rendu avec la nouvelle palette. Aucune donnée de jeu modifiée
+(stats, `body_radius`, cadres inchangés).
 
 ## Anciens monstres supprimés
 `space_android`, `space_brute`, `space_drone`, `space_soldier` : `.tres`, PNG + `.import` de

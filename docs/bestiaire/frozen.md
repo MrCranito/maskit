@@ -15,15 +15,19 @@ nuit) ; lumières cyan émissives avec point chaud blanc (yeux, cœurs, cristaux
 
 | Rig | Kinds |
 |---|---|
-| `Quad` (torse, cou + tête + mâchoire, 4 pattes à 3 segments, queue ; repris du Far West) | Loup des glaces (crête de cristaux), Ours des neiges muté (variante lourde : se dresse pour frapper, blessures, cristaux sur le dos) |
-| `PolarSpider` (rig `Spider` + tête de bête, plaques, lueur rouge ventrale, piquants de givre) | Araignée polaire |
-| `Drone` (coque sphérique, grand œil cyan, 2 pinces, 4 pattes pendantes, propulseurs ; éclat de tir sur l'image 3 de l'attaque, œil éteint en mourant) | Drone de froid |
-| `Human` + `SlamMixin` (frappe à deux poings) : `Elemental` (blocs et cristaux, cœur cyan), `Titan` (couronne et flèches de glace) | Élémentaire, Titan |
-| `Human` + `GunMixin` (arme à deux mains) : `Hunter` (armure grise, capuche fourrée, lunettes orange, fusil cryo) | Chasseur arctique |
-| `Armored` (plaques, visière / cœur) : `Guardian` (+ `SlamMixin`, cristaux), `Mechanic` (+ `GunMixin`, œil cyclope, canon-outil, clé, réservoirs) | élites |
+| `Quad` (torse, cou + tête + mâchoire, 4 pattes à 3 segments, queue ; repris du Far West) + fourrure hirsute (`shaggy` : mèches sur le dos, collerette, joues) | Loup des glaces (bleu acier, crête de glace hérissée, grandes oreilles, gueule rouge ouverte, yeux ambre), Ours des neiges muté (variante lourde gris-brun : bosse d'épaules, grandes entailles rouges, gueule rouge et crocs, se dresse pour frapper) |
+| `PolarSpider` (rig `Spider` sans tête d'araignée : grosse tête de loup blanc hirsute à gueule rouge et yeux rouges, thorax mécanique en segments, longues pattes d'acier épaisses, lueur rouge ventrale) | Araignée polaire |
+| `Drone` (corps vertical acier sombre : dôme-tête à visière, grand œil cyan au torse, 2 grandes pinces en croissant, 6 pattes pendantes, queue effilée ; éclat de tir sur l'image 3 de l'attaque, œil éteint en mourant) | Drone de froid |
+| `Human` + `SlamMixin` (frappe à deux poings ; bras longs, posture de gorille) : `Elemental` (glace taillée à facettes, éclats sur tout le corps, amas de cristaux aux épaules, griffes de glace, cœur cyan), `Titan` (même base en bleu profond, couronne de grandes flèches, visage lumineux, veines d'énergie) | Élémentaire, Titan |
+| `Human` + `GunMixin` (arme à deux mains) : `Hunter` (armure grise givrée massive, capuche-casque, cagoule, grosses lunettes rondes orange, lourd fusil cryo tenu en travers) | Chasseur arctique |
+| `Armored` (plaques, visière / cœur) : `Guardian` (+ `SlamMixin` : énormes épaulières facettées en couches, tête portée entre les épaules, visière en V cyan, gantelets, voyants), `Mechanic` (+ `GunMixin` : armure bleu acier, plastron et ceinture en laiton, grand œil cyclope cyan cerclé de laiton, canon-outil, clé, réservoirs) | élites |
+
+Refonte des modèles (branche `feature/refonte-bestiaires`) : chaque modèle a été comparé à son illustration de la
+planche (rendu 3/4 sud et sud-est agrandi) et refait jusqu'à une ressemblance jugée ≥ 7,5/10 (silhouette,
+palette, matières, accessoires, posture, lisibilité). Comparaisons : `docs/bestiaire/captures/frozen/compare_*.png`.
 
 ```
-flock /home/claude/.blender_render.lock python3 art/blender/bestiary/frozen/build_frozen_bestiary.py [--kinds ice_wolf,...]
+source tools/prerender/mac_env.sh && flock "$BLENDER_LOCK" python3 art/blender/bestiary/frozen/build_frozen_bestiary.py [--kinds ice_wolf,...]
 ... --preview s,se --anim idle:0,attack:3 --kinds ice_bear     # aperçu rapide (RDM_TMP)
 ... --repack --kinds ice_wolf                                  # atlas + méta depuis les images rendues
 ... --sheet                                                    # planche de présentation (captures)

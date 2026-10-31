@@ -17,13 +17,38 @@ Freestyle et mêmes matériaux toon peints que le héros et l'ancien `art/blende
 | `build_fw_bestiary.py` | CLI : `--kinds`, `--preview s,se --anim idle:0,attack:3`, `--board <png>` |
 
 ```
-flock /home/claude/.blender_render.lock python3 art/blender/bestiary/far_west/build_fw_bestiary.py [--kinds fw_bandit,...]
+source tools/prerender/mac_env.sh   # macOS : Blender 5.2, Pillow, verrous BLENDER_LOCK / GODOT_LOCK
+RDM_TMP=<dossier de travail> flock "$BLENDER_LOCK" python3 art/blender/bestiary/far_west/build_fw_bestiary.py [--kinds fw_bandit,...]
+flock "$GODOT_LOCK" godot --headless --path . --import
 ```
 Animations : idle (6), run (8), attack (6 : 0-2 élan, 2 tenue du télégraphe, 3 coup/tir, 4-5 retour),
 hit (3), death (8, dernière image = cadavre) × 8 directions ; le shérif a en plus `charge` (8, à cheval,
 jouée par `EnemyVisual.set_run_anim("charge")` pendant `fw_sheriff_charge`). Cadres : 192 px (humains),
 224 px (hyène, chien), 288 px (Buffle), 320 px (Shérif à cheval) — même densité de pixels partout (la
 caméra s'élargit avec le cadre).
+
+## Fidélité aux planches (passe du 31/10/2026, macOS, Blender 5.2 GPU Metal)
+Chaque modèle a été comparé à son illustration (planche à gauche, rendu idle s / se / sw à droite) et
+noté sur 6 critères (silhouette, palette, matières, accessoires, posture, lisibilité à la taille du jeu).
+Règle : note ≥ 7,5 → on garde, sinon on remodèle. Tous les modèles de départ étaient sous 7,5 et ont été
+refaits (scripts `fw_humans.py`, `fw_beasts.py`, `fw_bosses.py`), puis re-rendus en entier.
+
+| Kind | Note départ | Note finale | Ce qui a changé |
+|---|---|---|---|
+| `fw_bandit` | 5,5 | 7,7 | tête/chapeau plus petits, foulard rouge visage + cou, chemise sable manches retroussées, gilet anthracite fermé, gants noirs, jean gris, fusil à pompe (pompe et crosse bois), garde basse |
+| `fw_raider` | 5,0 | 7,5 | barbe → foulard rouge, chapeau sable, veste de cuir fauve, genouillères, grande hache de fer sombre à pointes tenue levée au-dessus du chapeau, posture voûtée |
+| `fw_sharpshooter` | 5,5 | 7,6 | cache-poussière beige → veste de cuir brune, pantalon kaki, foulard sombre, carabine à long fût de bois, à genoux en visée, buste tourné |
+| `fw_marauder` | 5,0 | 7,5 | fourrure rousse plus contrastée, rayures brun-noir irrégulières, crinière hérissée sur nuque/épaules et dos, avant haut et dos fuyant, tête allongée basse, gueule béante rouge |
+| `fw_bruiser` | 5,0 | 7,6 | chapeau de tôle → petit casque d'acier riveté, visage grimaçant, armure de tôle rouillée, grand pavois d'acier riveté à umbo (au lieu du bouclier de planches), garde basse |
+| `fw_guard_dog` | 5,0 | 7,5 | chien-loup : manteau gris-noir sur dos et nuque, pattes et ventre fauves, grandes oreilles, tête relevée gueule ouverte, poitrail haut |
+| `fw_deserter` | 5,5 | 7,5 | long cache-poussière → blouson de cuir brun, épaulières de métal sombre, chapeau brun, gants, fusil d'assaut noir (chargeur courbe), garde basse |
+| `fw_buffalo` | 4,5 | 7,6 | cuir gris-noir, carapace de plaques de bronze rouillé (6 bandes, arête dorsale, panneaux de flanc, épaulières), cornes brun clair recourbées vers l'avant, corps et pattes plus massifs |
+| `fw_sheriff` | 5,0 | 7,6 | moustache blanche → masque de métal aux yeux bleus luisants, chapeau fauve, cape + poncho rouge sombre en lambeaux, armure de métal sombre, bras-canon pointé devant en garde |
+
+Limites : la caméra de jeu (3/4 plongeant à 48°) écrase les poses de face des illustrations (accroupi,
+gueule béante vue de face) et le chapeau masque une partie du visage ; les modèles gardent le rendu toon
+du héros (pas la texture peinte détaillée des planches). Comparaisons : `compare_<kind>_v*.png` dans le
+dossier de travail de l'agent (hors dépôt) ; planche à jour : `docs/bestiaire/captures/far_west/modeles.png`.
 
 ## Monstres classiques (rangée 1 = plus simples, rangée 2 = plus durs)
 

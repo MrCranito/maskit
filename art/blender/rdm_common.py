@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 
+import os
 import bpy  # noqa: I001  (bpy doit être importé avant bmesh)
 import bmesh
 from mathutils import Matrix, Vector
@@ -372,6 +373,15 @@ def setup_render(res: int | tuple[int, int], samples: int = 6, outline_px: float
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
+    # CYCLES_DEVICE=METAL / CUDA / OPTIX : rendu GPU (tools/prerender/mac_env.sh), CPU par défaut
+    gpu = os.environ.get("CYCLES_DEVICE", "CPU")
+    if gpu != "CPU":
+        prefs = bpy.context.preferences.addons["cycles"].preferences
+        prefs.compute_device_type = gpu
+        prefs.get_devices()
+        for d in prefs.devices:
+            d.use = d.type == gpu
+        sc.cycles.device = "GPU"
     sc.cycles.samples = samples
     sc.cycles.use_denoising = False
     sc.cycles.use_adaptive_sampling = False
