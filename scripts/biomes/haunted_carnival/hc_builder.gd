@@ -4,7 +4,7 @@ extends Node2D
 ##   HauntedCarnivalBuilder.build(layout, world) -> HauntedCarnivalBuilder (Node2D racine triée en Y)
 ## Même API que WorldBuilder (docs/CONVENTIONS.md) : get_doors(), get_stairs_areas() (meta
 ## `stairs`), signal stairs_entered(stairs), get_room_at_world(pos), set_stairs_cooldown(sec) ;
-## en plus get_roofs(), get_props(), get_wall_body(), prerender_hide().
+## en plus get_roofs(), get_props(), get_wall_body(), prerender_hide(), prerender_tint().
 ##
 ## Le rez-de-chaussée est PRÉ-RENDU (tools/prerender/hc_scene.py → assets/prerender/
 ## haunted_carnival/<seed>/) : PrerenderBackdrop remplace les visuels de ce constructeur et
@@ -13,6 +13,9 @@ extends Node2D
 ## (sol peint, murs plats, disques des manèges, décors en formes simples) servent de repli quand
 ## aucun paquet n'est disponible (seed inconnue, tests).
 ##
+## Éclairage : HcLights (lampadaires, guirlandes, stands, manèges, place, portail) dans une couche
+## AmbientLights « Lights », visible aussi sur le fond pré-rendu ; fond pré-rendu éclairci par
+## prerender_tint() ([haunted_carnival] prerender_tint).
 ## Performance : aucun _draw par image (sauf extraction), aucune lumière dynamique, quelques
 ## nœuds statiques dessinés une fois.
 
@@ -122,6 +125,11 @@ func get_props() -> Array[Node2D]:
 
 func get_wall_body() -> StaticBody2D:
 	return _wall_body
+
+
+## (Pré-rendu) Teinte du fond pré-calculé (> 1 = éclairci : la nuit rendue est très sombre).
+func prerender_tint() -> Color:
+	return _cfg_c("prerender_tint", Color.WHITE)
 
 
 ## (Pré-rendu) Masque les visuels remplacés par le fond pré-calculé.
@@ -775,6 +783,18 @@ func _build_ambience() -> void:
 	glows.z_index = 45
 	glows.z_as_relative = false
 	add_child(glows)
+	_build_lights()
+
+
+## Lumières du carnaval (HcLights) : halos additifs sous le brouillard, gardés sur le fond
+## pré-rendu (contrairement à Glows).
+func _build_lights() -> void:
+	var lights: Dictionary = HcLights.compute(layout)
+	var al := AmbientLights.create(null, Rect2(), lights["flicker"], lights["blink"], [], lights["steady"])
+	al.name = "Lights"
+	al.z_index = 46
+	al.z_as_relative = false
+	add_child(al)
 
 
 class GateSign extends Node2D:

@@ -1609,7 +1609,10 @@ func _apply_map_floor_modifiers() -> void:
 	if map_card.is_night() and floor_root != null:
 		# Un seul CanvasModulate est actif par canevas : on assombrit celui du décor
 		# (teinte d'ambiance du WorldBuilder) ou on en crée un.
-		var tint: Variant = Balance.get_value("maps", "night_tint", Color(0.5, 0.55, 0.8))
+		# Teinte propre à la carte (modificateur « night_tint ») : décor déjà nocturne (carnaval).
+		var tint: Variant = map_card.get_mod("night_tint")
+		if not (tint is Color):
+			tint = Balance.get_value("maps", "night_tint", Color(0.5, 0.55, 0.8))
 		var night: Color = tint if tint is Color else Color(0.5, 0.55, 0.8)
 		var mods: Array[Node] = floor_root.find_children("*", "CanvasModulate", true, false)
 		if mods.is_empty():
