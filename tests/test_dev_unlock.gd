@@ -91,7 +91,15 @@ func test_tout_est_debloque() -> void:
 func test_toutes_les_cartes_et_difficultes() -> void:
 	DevMode.set_all_unlocked(true)
 	var offered := MapRotation.offered_cards(MapRotation.now())
-	assert_eq(offered.size(), MapCard.load_all().size(), "Toute la rotation est ouverte")
+	var only: Array = Balance.get_value("maps", "only_ids", [])
+	var expected := MapCard.load_all().size() if only.is_empty() else 0
+	for c: MapCard in MapCard.load_all():
+		if not only.is_empty() and only.has(String(c.id)):
+			expected += 1
+	assert_eq(offered.size(), expected, "Toutes les cartes jouables ([maps] only_ids) sont ouvertes")
+	for e: Dictionary in offered:
+		assert_true(only.is_empty() or only.has(String((e["card"] as MapCard).id)),
+			"Pas de carte prototype hors only_ids : %s" % (e["card"] as MapCard).id)
 	var diffs := {}
 	for e: Dictionary in offered:
 		var c: MapCard = e["card"]
@@ -100,7 +108,7 @@ func test_toutes_les_cartes_et_difficultes() -> void:
 		assert_true(RaiderProgress.current_level() >= RaiderProgress.required_level(c.id), "Niveau suffisant : %s" % c.id)
 	assert_gt(diffs.size(), 1, "Plusieurs difficultés proposées")
 	DevMode.set_all_unlocked(false)
-	assert_lt(MapRotation.offered_cards(MapRotation.now()).size(), MapCard.load_all().size(), "Rotation normale rétablie")
+	assert_lte(MapRotation.offered_cards(MapRotation.now()).size(), expected, "Rotation normale rétablie")
 
 
 func test_arsenal_de_depart_accepte_n_importe_quelle_arme() -> void:
