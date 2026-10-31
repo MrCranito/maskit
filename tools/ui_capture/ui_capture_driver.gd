@@ -6,11 +6,13 @@ extends Node
 ## Options : --only=menu (seulement le menu principal, <prefix>menu.png), --prefix=xxx,
 ## --insets=g,h,d,b (encoche simulée, px de fenêtre : HudSafeArea.debug_insets),
 ## --pass_tier=N (pass de combat au palier N + moitié du suivant, en mémoire), --dev=0|1 (ressources illimitées),
-## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire).
+## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire),
+## --slab_held=1 (bandeau DÉPLOYER montré enfoncé : retour visuel à l'appui).
 
 var out: String = ""
 var only: String = ""
 var prefix: String = ""
+var slab_held: bool = false
 
 
 func _ready() -> void:
@@ -32,6 +34,8 @@ func _ready() -> void:
 			bp.from_dict({"xp": s.xp_total_for(t) + s.xp_for_tier(t + 1) / 2})
 		elif a.begins_with("--dev="):
 			DevMode.set_unlimited(a.substr(6) == "1")
+		elif a.begins_with("--slab_held="):
+			slab_held = a.substr(12) == "1"
 		elif a.begins_with("--online="):
 			# réglage en mémoire seulement (la sauvegarde n'est pas réécrite)
 			var sm: Node = get_node_or_null(^"/root/SaveManager")
@@ -49,6 +53,10 @@ func _ready() -> void:
 func _run_menu() -> void:
 	get_tree().change_scene_to_file(MenuKit.MAIN_MENU_SCENE)
 	await _sleep(2.5)
+	var mm := get_tree().current_scene as MainMenu
+	if slab_held and mm != null and mm.slab is MainMenu.DeploySlab:
+		(mm.slab as MainMenu.DeploySlab).held = true
+		await _sleep(0.1)
 	await _shot(prefix + "menu")
 	get_tree().quit(0)
 

@@ -8,7 +8,9 @@ extends Control
 ##         l'équipement (grenade, mine, C4, drone : toucher = lancer vers la visée, charges « ×3 ») ;
 ##       · bouton Recharger (au-dessus à droite du stick), qui s'allume quand le chargeur est bas ;
 ##   - au-dessus du stick de déplacement (bas gauche) : emplacements rapides du sac (soins,
-##     équipements glissés depuis l'inventaire ; toucher = utiliser ; vide = ouvre le sac).
+##     équipements glissés depuis l'inventaire ; toucher = utiliser ; vide = ouvre le sac) :
+##     cases biseautées (QuickSlot) au liseré de rareté, quantité en badge, grisées quand
+##     l'objet ne sert à rien (PV pleins), flash et rebond du chiffre à l'utilisation.
 ## Positions relatives aux positions de repos des sticks ([hud] cluster_*, quick_* de
 ## balance.cfg), recalées dans la zone sûre (HudSafeArea). Mise à jour sur signaux du joueur
 ## (weapons_changed, ammo_changed, gadget_changed, quick_used) et Inventory.changed ; seul le
@@ -20,7 +22,6 @@ const SLOT_COUNT := 3
 const PILL_SIZE := Vector2(156, 58)
 const ROUND_R := 27.0
 const RELOAD_R := 31.0
-const QUICK_R := 30.0
 
 var player: Node2D = null
 var pill: ActivePill = null
@@ -28,7 +29,8 @@ var pill: ActivePill = null
 var other_rounds: Array[HudRound] = []
 var gadget_round: HudRound = null
 var reload_button: HudRound = null
-var quick_rounds: Array[HudRound] = []
+## Emplacements rapides (nom historique : c'étaient des ronds).
+var quick_rounds: Array[QuickSlot] = []
 var _hint: Label = null
 var _hint_tween: Tween = null
 var _inv: Inventory = null
@@ -51,6 +53,7 @@ func _ready() -> void:
 	if is_instance_valid(GameState.player):
 		bind_player(GameState.player)
 	_bind_inventory()
+	EventBus.player_damaged.connect(func(_a: float, _hp: float, _max: float) -> void: _refresh_quick_usable())
 	get_viewport().size_changed.connect(_place)
 	_place()
 
@@ -96,14 +99,12 @@ func _build() -> void:
 func _rebuild_quick(n: int) -> void:
 	if quick_rounds.size() == n:
 		return
-	for r: HudRound in quick_rounds:
+	for r: QuickSlot in quick_rounds:
 		r.queue_free()
 	quick_rounds.clear()
 	for i in n:
-		var r := HudRound.new()
+		var r := QuickSlot.new()
 		r.name = "Quick%d" % i
-		r.kind = HudRound.KIND_QUICK
-		r.radius = QUICK_R
 		r.index = i
 		r.key_hint = str(4 + i)
 		r.tapped.connect(_on_quick_tapped)
@@ -132,9 +133,16 @@ static func compute_layout(vp: Vector2, safe: Vector4, n_quick: int = 2) -> Dict
 	out["reload"] = _fit(_circle(right_c + _vec("cluster_reload", Vector2(100, -118)), RELOAD_R), area)
 	var q0 := _vec("quick_first", Vector2(-20, -150))
 	var step := _vec("quick_step", Vector2(78, 14))
+	var qs := quick_size()
 	for i in n_quick:
-		out["quick%d" % i] = _fit(_circle(left_c + q0 + step * float(i), QUICK_R), area)
+		var qc := left_c + q0 + step * float(i)
+		out["quick%d" % i] = _fit(Rect2(qc - Vector2(qs, qs) * 0.5, Vector2(qs, qs)), area)
 	return out
+
+
+## Côté d'un emplacement rapide (px viewport, [hud] quick_size).
+static func quick_size() -> float:
+	return Balance.get_float("hud", "quick_size", 66.0)
 
 
 static func _vec(key: String, def: Vector2) -> Vector2:
@@ -196,6 +204,7 @@ func bind_player(p: Node2D) -> void:
 	if p.has_signal(&"reload_started"):
 		p.connect(&"reload_started", _update_reload)
 	_bind_inventory()
+	_refresh_quick_usable()
 	refresh()
 
 
@@ -262,6 +271,30 @@ func refresh_quick() -> void:
 	_rebuild_quick(_inv.quick_count())
 	for i in quick_rounds.size():
 		quick_rounds[i].set_item(_inv.quick_item(i), _inv.quick_amount(i))
+	_refresh_quick_usable()
+
+
+## Grise les emplacements dont l'objet ne sert à rien maintenant (redessin seulement si ça change).
+func _refresh_quick_usable() -> void:
+	for s: QuickSlot in quick_rounds:
+		s.set_usable(quick_usable(s.item, s.count, player))
+
+
+## Objet d'emplacement rapide utilisable maintenant : soin seulement si les PV ne sont pas pleins
+## (et joueur en vie), équipement toujours (il s'équipe), rien sans exemplaire dans le sac.
+static func quick_usable(it: ItemData, n: int, p: Node) -> bool:
+	if it == null or n <= 0:
+		return false
+	if p == null or not is_instance_valid(p):
+		return true
+	if p.get("_alive") is bool and not bool(p.get("_alive")):
+		return false
+	if it.is_usable():
+		var hp: Variant = p.get("hp")
+		var max_hp: Variant = p.get("max_hp")
+		if hp != null and max_hp != null:
+			return float(hp) < float(max_hp)
+	return true
 
 
 ## Armes tenues du joueur (API get_weapons, repli : player.weapon seule).
@@ -313,6 +346,8 @@ func _poll() -> void:
 	_bind_inventory()
 	if not is_instance_valid(player):
 		return
+	# Faux joueurs / PV changés sans signal : simple comparaison, redessin seulement si ça change.
+	_refresh_quick_usable()
 	if _is_reloading() != is_processing():
 		_update_reload()
 
@@ -415,6 +450,9 @@ func _on_quick_tapped(i: int) -> void:
 func _on_quick_used(i: int, message: String) -> void:
 	if i < quick_rounds.size():
 		quick_rounds[i].flash(message.is_empty())
+		# Temps de recharge circulaire si l'objet en a un (API optionnelle du joueur, en secondes).
+		if message.is_empty() and is_instance_valid(player) and player.has_method(&"get_quick_cooldown"):
+			quick_rounds[i].start_cooldown(float(player.call(&"get_quick_cooldown", i)))
 	if message.is_empty():
 		return
 	show_hint(message)
@@ -559,17 +597,15 @@ class ActivePill extends HudButton:
 		draw_string(font, Vector2(right - mw, base_y + 2.0), m, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 1, 1, 0.7))
 
 
-## Petit rond : autre arme, équipement, rechargement ou emplacement rapide.
+## Petit rond : autre arme, équipement ou rechargement.
 class HudRound extends HudButton:
 	const KIND_WEAPON := 0
 	const KIND_GADGET := 1
 	const KIND_RELOAD := 2
-	const KIND_QUICK := 3
 
 	var kind: int = KIND_WEAPON
 	var radius: float = 27.0
 	var weapon: WeaponData = null
-	var item: ItemData = null
 	var count: int = 0
 	var progress: float = -1.0
 	var alert: bool = false
@@ -588,11 +624,6 @@ class HudRound extends HudButton:
 		count = charges
 		key_hint = "G"
 		set_enabled(w != null and charges > 0)
-		queue_redraw()
-
-	func set_item(it: ItemData, n: int) -> void:
-		item = it
-		count = n
 		queue_redraw()
 
 	func set_progress(p: float) -> void:
@@ -626,7 +657,7 @@ class HudRound extends HudButton:
 	func _draw() -> void:
 		var c := size * 0.5
 		var r := radius * (0.92 if _down > 0.0 else 1.0)
-		var empty := (kind == KIND_WEAPON or kind == KIND_GADGET) and weapon == null or kind == KIND_QUICK and item == null
+		var empty := (kind == KIND_WEAPON or kind == KIND_GADGET) and weapon == null
 		var fill := Color(MenuKit.NIGHT_DEEP, 0.45 if empty else 0.74)
 		if _down > 0.0:
 			fill = Color(MenuKit.VIOLET, 0.85)
@@ -640,8 +671,6 @@ class HudRound extends HudButton:
 		var ring := Color(1, 1, 1, 0.35)
 		if kind == KIND_WEAPON and weapon != null:
 			ring = weapon.get_rarity_color()
-		elif kind == KIND_QUICK and item != null:
-			ring = LootDB.rarity_color(item.rarity)
 		elif alert:
 			ring = MenuKit.GOLD
 		if empty:
@@ -667,19 +696,6 @@ class HudRound extends HudButton:
 					LootVisuals.draw_weapon_glyph(self, inner, &"frag", Color(1, 1, 1, 0.35))
 			KIND_RELOAD:
 				_draw_reload_icon(c, r, a)
-			KIND_QUICK:
-				if item != null:
-					var tex := LootVisuals.item_icon(item)
-					var ia := 1.0 if count > 0 else 0.35
-					if tex != null:
-						draw_texture_rect(tex, inner.grow(r * 0.12), false, Color(LootVisuals.item_tint(item), ia))
-					elif item.is_weapon():
-						LootVisuals.draw_weapon(self, inner, WeaponCatalog.get_weapon(item.weapon_id), Color(1, 1, 1, ia))
-					_badge("×%d" % count, count > 0)
-				else:
-					var pc := Color(1, 1, 1, 0.55)
-					draw_line(c - Vector2(8, 0), c + Vector2(8, 0), pc, 3.0)
-					draw_line(c - Vector2(0, 8), c + Vector2(0, 8), pc, 3.0)
 		if not key_hint.is_empty() and not DisplayServer.is_touchscreen_available():
 			var f := LootVisuals.text_font(700)
 			draw_string_outline(f, Vector2(c.x - r * 0.95, c.y - r * 0.55), key_hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, 4, MenuKit.NIGHT_DEEP)
@@ -704,3 +720,232 @@ class HudRound extends HudButton:
 		draw_colored_polygon(PackedVector2Array([tip + tangent * 8.0, tip - normal * 6.0, tip + normal * 6.0]), col)
 		if progress >= 0.0:
 			draw_arc(c, r - 3.0, -PI * 0.5, -PI * 0.5 + TAU * progress, 40, MenuKit.GOLD, 4.0, true)
+
+
+## Emplacement rapide : case biseautée (haut-gauche / bas-droit, comme la pastille d'arme), fond
+## encre translucide, liseré à la couleur de rareté (doublé d'un trait fin net pour Épique et
+## Légendaire), icône réduite une fois pour toutes à sa taille réelle à l'écran (nette, sans halo),
+## quantité dans un badge Anton logé dans le coin bas-droit. Vide : case fantôme et petit « + ».
+## Grisée quand l'objet ne sert à rien maintenant (PV pleins). Utilisation : flash, rebond du
+## chiffre qui décrémente, temps de recharge circulaire si l'objet en a un. Dessin statique :
+## redessiné seulement quand l'état change (et le temps d'une animation courte).
+class QuickSlot extends HudButton:
+	## Icônes réduites (clé : objet, taille en px écran, grisée) : une seule réduction par cas.
+	static var _icon_cache: Dictionary = {}
+
+	var item: ItemData = null
+	var count: int = 0
+	## Faux : l'objet ne sert à rien maintenant (soin à PV pleins, plus d'exemplaire).
+	var usable: bool = true
+	## Touche clavier affichée sur PC (aucune sur écran tactile).
+	var key_hint: String = ""
+	## Part restante du temps de recharge (0 = prêt).
+	var cooldown: float = 0.0
+	var _flash: float = 0.0
+	var _flash_ok: bool = true
+	var _bump: float = 0.0
+	var _tw_flash: Tween = null
+	var _tw_bump: Tween = null
+	var _tw_cd: Tween = null
+
+	func set_item(it: ItemData, n: int) -> void:
+		var same := it != null and item != null and it.instance_key() == item.instance_key()
+		if same and n == count:
+			return
+		var dropped := same and n < count
+		item = it
+		count = n
+		if dropped:
+			_tw_bump = _animate(_tw_bump, &"_bump", Balance.get_float("hud", "quick_bump_time", 0.3))
+		queue_redraw()
+
+	func set_usable(on: bool) -> void:
+		if on == usable:
+			return
+		usable = on
+		queue_redraw()
+
+	## Retour visuel d'utilisation (violet = fait, rouge = refusé).
+	func flash(ok: bool) -> void:
+		_flash_ok = ok
+		_tw_flash = _animate(_tw_flash, &"_flash", Balance.get_float("hud", "quick_flash_time", 0.35))
+
+	## Temps de recharge circulaire (secondes), si l'objet en a un.
+	func start_cooldown(seconds: float) -> void:
+		if seconds > 0.0:
+			_tw_cd = _animate(_tw_cd, &"cooldown", seconds)
+
+	## Anime `prop` de 1 à 0 : redessin à chaque pas, le temps de l'animation seulement.
+	func _animate(tw: Tween, prop: StringName, duration: float) -> Tween:
+		if tw != null and tw.is_valid():
+			tw.kill()
+		if not is_inside_tree() or duration <= 0.0:
+			set(prop, 0.0)
+			queue_redraw()
+			return null
+		set(prop, 1.0)
+		queue_redraw()
+		var nt := create_tween()
+		nt.tween_method(func(v: float) -> void:
+			set(prop, v)
+			queue_redraw(), 1.0, 0.0, duration)
+		return nt
+
+	func _hit(p: Vector2) -> bool:
+		return get_global_rect().grow(Balance.get_float("hud", "quick_hit_grow", 5.0)).has_point(p)
+
+	## Badge de quantité (coordonnées locales) pour une case de taille `sz` : coin bas-droit,
+	## à l'intérieur du liseré (tests : ne déborde pas).
+	static func badge_rect(sz: Vector2, n: int) -> Rect2:
+		var fs := int(Balance.get_float("hud", "quick_badge_font", 16.0))
+		var bw := Balance.get_float("hud", "quick_border", 2.0)
+		var tw := MenuKit.display().get_string_size(_badge_text(n), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var h := float(fs) + 6.0
+		var w := minf(tw + 12.0, sz.x - bw * 2.0)
+		return Rect2(sz - Vector2(w, h) - Vector2(bw, bw), Vector2(w, h))
+
+	static func _badge_text(n: int) -> String:
+		return "×%d" % maxi(n, 0)
+
+	## Polygone de la case (biseaux haut-gauche et bas-droit).
+	func _shape(r: Rect2, cut: float) -> PackedVector2Array:
+		var c := minf(cut, minf(r.size.x, r.size.y) * 0.5)
+		return PackedVector2Array([r.position + Vector2(0, c), r.position + Vector2(c, 0),
+			Vector2(r.end.x, r.position.y), r.end - Vector2(0, c), r.end - Vector2(c, 0),
+			Vector2(r.position.x, r.end.y)])
+
+	func _draw() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		var cut := Balance.get_float("hud", "quick_cut", 12.0)
+		var bw := Balance.get_float("hud", "quick_border", 2.0)
+		var ink := Color(MenuKit.NIGHT_PANEL, 1.0)
+		var shape := _shape(r, cut)
+		if item == null:
+			_draw_empty(shape, ink)
+			_draw_key()
+			return
+		var rc := LootDB.rarity_color(item.rarity)
+		# Lueur nette Épique / Légendaire : second liseré fin à l'extérieur (pas de flou).
+		if item.rarity >= ItemData.Rarity.EPIC and usable:
+			var outer := _shape(r.grow(3.0), cut + 1.5)
+			outer.append(outer[0])
+			draw_polyline(outer, Color(rc, 0.5), 1.5, true)
+		var fill := Color(ink.lerp(rc, 0.14 if usable else 0.0), Balance.get_float("hud", "quick_bg_alpha", 0.78))
+		var border := Color(rc, 1.0 if usable else 0.35)
+		if _down > 0.0:
+			fill = Color(MenuKit.VIOLET, 0.85)
+		if _flash > 0.0:
+			var fc: Color = MenuKit.VIOLET_LIGHT if _flash_ok else MenuKit.BAD
+			fill = fill.lerp(Color(fc, 0.9), _flash * 0.75)
+			border = border.lerp(Color.WHITE, _flash)
+		draw_colored_polygon(shape, fill)
+		var loop := shape.duplicate()
+		loop.append(shape[0])
+		draw_polyline(loop, border, bw, true)
+		# Icône centrée, réduite à sa taille réelle à l'écran.
+		var pad := Balance.get_float("hud", "quick_icon_pad", 9.0)
+		var box := r.grow(-pad)
+		var tex := _icon(item, box.size, not usable)
+		if tex != null:
+			var ts := Vector2(tex.get_size())
+			var ds := ts * minf(box.size.x / ts.x, box.size.y / ts.y)
+			var mod := Color(LootVisuals.item_tint(item), 1.0)
+			if not usable:
+				mod = Color(1, 1, 1, Balance.get_float("hud", "quick_unusable_alpha", 0.5))
+			draw_texture_rect(tex, Rect2(box.position + (box.size - ds) * 0.5, ds), false, mod)
+		# Temps de recharge : secteur sombre qui se rétracte dans le sens horaire.
+		if cooldown > 0.0:
+			var c := size * 0.5
+			var span := TAU * minf(cooldown, 0.999)
+			var a0 := -PI * 0.5 + TAU - span
+			var steps := maxi(3, int(48.0 * cooldown))
+			var sector := PackedVector2Array([c])
+			for k in steps + 1:
+				sector.append(c + Vector2.from_angle(a0 + span * float(k) / float(steps)) * size.length())
+			for poly: PackedVector2Array in Geometry2D.intersect_polygons(sector, shape):
+				draw_colored_polygon(poly, Color(MenuKit.NIGHT_DEEP, 0.62))
+		_draw_badge(cut)
+		_draw_key()
+
+	func _draw_empty(shape: PackedVector2Array, ink: Color) -> void:
+		draw_colored_polygon(shape, Color(MenuKit.VIOLET, 0.6) if _down > 0.0 else Color(ink, 0.3))
+		var loop := shape.duplicate()
+		loop.append(shape[0])
+		draw_polyline(loop, Color(1, 1, 1, 0.16), 1.0, true)
+		var c := (size * 0.5).round()
+		var h := roundf(size.x * 0.1)
+		var col := Color(1, 1, 1, 0.5)
+		draw_rect(Rect2(c - Vector2(h, 1), Vector2(h * 2.0, 2)), col)
+		draw_rect(Rect2(c - Vector2(1, h), Vector2(2, h * 2.0)), col)
+
+	## Quantité : badge encre (biseau bas-droit calé sur celui de la case), chiffre Anton blanc,
+	## rebond quand il décrémente.
+	func _draw_badge(cut: float) -> void:
+		var br := badge_rect(size, count)
+		var fs := int(Balance.get_float("hud", "quick_badge_font", 16.0))
+		var font: Font = MenuKit.display()
+		var s := 1.0 + (Balance.get_float("hud", "quick_bump_scale", 1.35) - 1.0) * _bump * _bump
+		if s != 1.0:
+			var pivot := br.get_center()
+			draw_set_transform(pivot * (1.0 - s), 0.0, Vector2(s, s))
+		var cb := minf(cut, br.size.y * 0.6)
+		var poly := PackedVector2Array([br.position + Vector2(0, 4), br.position + Vector2(4, 0),
+			Vector2(br.end.x, br.position.y), br.end - Vector2(0, cb), br.end - Vector2(cb, 0),
+			Vector2(br.position.x, br.end.y)])
+		draw_colored_polygon(poly, Color(MenuKit.NIGHT_DEEP, 0.92))
+		var t := _badge_text(count)
+		var tw := font.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+		var asc := font.get_ascent(fs)
+		var base := br.position.y + (br.size.y - asc - font.get_descent(fs)) * 0.5 + asc
+		var col := Color.WHITE if usable else Color(1, 1, 1, 0.6)
+		if count <= 0:
+			col = MenuKit.BAD
+		draw_string(font, Vector2(br.position.x + (br.size.x - tw) * 0.5 - cb * 0.15, base), t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		if s != 1.0:
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	func _draw_key() -> void:
+		if key_hint.is_empty() or DisplayServer.is_touchscreen_available():
+			return
+		var f := LootVisuals.text_font(700)
+		var w := f.get_string_size(key_hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+		draw_string(f, Vector2(size.x - 7.0 - w, 15.0), key_hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1, 1, 1, 0.6))
+
+	## Rapport pixels écran / pixels viewport (étirement canvas_items) : l'icône est réduite à
+	## sa taille réelle à l'écran.
+	func _screen_scale() -> float:
+		if not is_inside_tree():
+			return 1.0
+		var vp := get_viewport_rect().size
+		return clampf(float(get_tree().root.size.y) / vp.y, 1.0, 4.0) if vp.y > 0.0 else 1.0
+
+	## Icône de l'objet réduite (Lanczos, bords alpha corrigés) à la taille de `box` à l'écran ;
+	## version grisée pour l'état « pas utilisable ». Calculée une fois, puis en cache.
+	func _icon(it: ItemData, box: Vector2, grey: bool) -> Texture2D:
+		var src := LootVisuals.item_icon(it)
+		if src == null:
+			return null
+		var sc := _screen_scale()
+		var px := Vector2i(maxi(roundi(box.x * sc), 1), maxi(roundi(box.y * sc), 1))
+		var key := "%s|%d|%d|%s" % [it.id, px.x, px.y, grey]
+		if _icon_cache.has(key):
+			return _icon_cache[key]
+		var tex: Texture2D = src
+		var img := src.get_image()
+		if img != null and not img.is_empty():
+			img = img.duplicate() as Image
+			if img.is_compressed():
+				img.decompress()
+			img.convert(Image.FORMAT_RGBA8)
+			img.fix_alpha_edges()
+			var fit := minf(float(px.x) / img.get_width(), float(px.y) / img.get_height())
+			img.resize(maxi(roundi(img.get_width() * fit), 1), maxi(roundi(img.get_height() * fit), 1), Image.INTERPOLATE_LANCZOS)
+			if grey:
+				for y in img.get_height():
+					for x in img.get_width():
+						var c := img.get_pixel(x, y)
+						var l := c.get_luminance()
+						img.set_pixel(x, y, Color(l, l, l, c.a))
+			tex = ImageTexture.create_from_image(img)
+		_icon_cache[key] = tex
+		return tex

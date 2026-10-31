@@ -2,9 +2,12 @@ class_name MiniMap
 extends Control
 ## Mini-carte (haut droite, sous le sac/pause, dans la zone sûre) :
 ##   - carte autour du joueur : version réduite de l'image du paquet pré-rendu
-##     (assets/prerender/<biome>/<seed>/minimap.webp, sinon rendu simplifié des cases) ;
-##   - seules les cases explorées sont visibles (masque issu de FogOfWar.is_cell_explored),
-##     le reste sous une brume bleu nuit aux bords doux ;
+##     (assets/prerender/<biome>/<seed>/minimap.webp, ~18 px par case, mipmaps), sinon plan
+##     vectoriel de l'étage (MinimapPlan : aplats, murs en traits nets) ;
+##   - seules les cases explorées sont visibles : la mémoire d'exploration de FogOfWar
+##     (texture partagée, mise à jour par le brouillard quand une case est découverte) est
+##     lissée par assets/shaders/minimap_fog.gdshader (bords doux et irréguliers, liseré) ;
+##   - cadre direction D (CutBox, coins coupés, liseré violet), léger vignettage ;
 ##   - position et orientation (visée) du joueur, au centre ;
 ##   - zones d'extraction toujours affichées avec leur minuteur (orange avant fermeture, grise
 ##     et barrée une fois fermée, zone d'urgence cachée tant qu'elle est éteinte) ; si la plus
@@ -12,8 +15,11 @@ extends Control
 ##   - toucher / clic (ou touche M) = carte plein écran (jeu en pause), zoomable et déplaçable
 ##     (voir FullMapOverlay) ; bouton ×, toucher hors du panneau, M ou Échap pour fermer.
 ## Performance : rafraîchie par un Timer ([minimap] refresh_interval ≈ 0,1 s), sans allocation :
-## on déplace un nœud (transformations), on ne redessine pas ; le masque d'exploration n'est
-## relu qu'autour du joueur et la texture n'est mise à jour que si une case change.
+## on déplace un nœud (transformations), on ne redessine pas. La brume ne coûte rien côté CPU :
+## la texture d'exploration appartient à FogOfWar, qui ne la met à jour que sur découverte de
+## cases ; le plan vectoriel est calculé une fois par étage et dessiné une fois. Repli (pas de
+## texture de brouillard, ex. tests sans rendu) : relecture des cases autour du joueur, texture
+## mise à jour seulement si une case change ; durée mesurée dans last_fog_update_usec.
 
 signal full_map_toggled(open: bool)
 
@@ -21,17 +27,15 @@ const NIGHT := Color(0.024, 0.027, 0.05)
 const BORDER := Color(1.0, 1.0, 1.0, 0.4)
 const EXTRACT := Color(0.718, 0.608, 1.0)
 const TS := float(FloorLayout.TILE_SIZE)
-const FOG_SHADER_CODE := """
-shader_type canvas_item;
-uniform vec4 fog_color : source_color = vec4(0.05, 0.07, 0.13, 0.97);
-void fragment() {
-	float e = texture(TEXTURE, UV).r;
-	e = smoothstep(0.15, 0.85, e);
-	COLOR = vec4(fog_color.rgb, fog_color.a * (1.0 - e));
-}
-"""
+const FOG_SHADER: Shader = preload("res://assets/shaders/minimap_fog.gdshader")
+const VIGNETTE_SHADER: Shader = preload("res://assets/shaders/minimap_vignette.gdshader")
+## Uniformes de minimap_fog.gdshader réglés depuis balance.cfg [minimap] (clé fog_<nom>).
+const FOG_PARAMS: Array[String] = ["fog_color", "mist_color", "mist_amount", "rim_color", "rim_px",
+	"rim_offset", "threshold", "edge_soft", "edge_px", "noise_amp", "noise_cells"]
+## Marge de brume autour de la grille (cases) : le bord de la carte reste sous la brume.
+const FOG_MARGIN_CELLS := 48
 
-static var _fog_shader: Shader = null
+static var _fog_material: ShaderMaterial = null
 
 var raid: Node = null
 var layout: FloorLayout = null
@@ -43,8 +47,14 @@ var bg_texture: Texture2D = null
 var view: MapView = null
 var full_map: FullMapOverlay = null
 
+## Plan vectoriel de l'étage (étages sans image pré-rendue), sinon null.
+var plan_geometry: MinimapPlan.Geometry = null
+## Durée de la dernière mise à jour de la brume (µs) et cases relues (0 avec la texture partagée).
+var last_fog_update_usec: int = 0
+var last_fog_cells_scanned: int = 0
+## Image de repli (sans texture FogOfWar) ; null quand la texture du brouillard est partagée.
 var _fog_img: Image = null
-var _fog_tex: ImageTexture = null
+var _fog_tex: Texture2D = null
 var _zone_centers: PackedVector2Array = PackedVector2Array()
 var _timer: Timer = null
 var _arrow: EdgeArrow = null
@@ -74,6 +84,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	set_process(false)
 	view = MapView.new()
+	view.vignette = Balance.get_float("minimap", "vignette_strength", 0.55)
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(view)
@@ -136,7 +147,7 @@ func rebuild() -> void:
 	var fv: Variant = fog.get("view_radius") if fog != null else null
 	_scan_radius = (int(fv) if fv != null else 10) + 2
 	var view_cells := Balance.get_float("minimap", "view_cells", 24.0)
-	view.setup(bg_texture, bg_world_rect, _fog_tex, Vector2(layout.size), _zone_centers, TS * view_cells / _box)
+	view.setup(bg_texture, bg_world_rect, _fog_tex, Vector2(layout.size), _zone_centers, TS * view_cells / _box, plan_geometry)
 	view.set_zone_states(zone_states())
 	if full_map != null and is_instance_valid(full_map):
 		full_map.close()
@@ -144,9 +155,10 @@ func rebuild() -> void:
 	_timer.start()
 
 
-## Fond : image réduite du paquet pré-rendu (étage 0 Far West) ou cases simplifiées.
+## Fond : image réduite du paquet pré-rendu (étage 0) ou plan vectoriel de l'étage.
 func _build_background() -> void:
 	bg_texture = null
+	plan_geometry = null
 	var pr: Variant = raid.get("prerender")
 	if pr is PrerenderBackdrop and is_instance_valid(pr):
 		var b := pr as PrerenderBackdrop
@@ -156,39 +168,24 @@ func _build_background() -> void:
 			var ip: Array = b.meta.get("image_px", [0, 0])
 			bg_world_rect = Rect2(b.origin, Vector2(float(ip[0]), float(ip[1])) * b.px_scale)
 	if bg_texture == null:
-		bg_texture = tile_texture(layout)
 		bg_world_rect = Rect2(Vector2.ZERO, Vector2(layout.size) * TS)
+		plan_geometry = MinimapPlan.Geometry.build(layout)
 
 
-## Rendu simplifié des cases (4 px par case), pour les biomes sans paquet pré-rendu.
-static func tile_texture(l: FloorLayout, cpx: int = 4) -> ImageTexture:
-	var img := Image.create(l.size.x * cpx, l.size.y * cpx, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.08, 0.1, 0.14, 1.0))
-	for y in l.size.y:
-		for x in l.size.x:
-			var c := tile_color(l.get_tile(Vector2i(x, y)))
-			if c.a > 0.0:
-				img.fill_rect(Rect2i(x * cpx, y * cpx, cpx, cpx), c)
-	return ImageTexture.create_from_image(img)
+## Fond vectoriel en place (étage sans image pré-rendue).
+func has_vector_plan() -> bool:
+	return plan_geometry != null
 
 
-static func tile_color(t: int) -> Color:
-	match t:
-		FloorLayout.Tile.STREET:
-			return Color(0.74, 0.6, 0.42)
-		FloorLayout.Tile.FLOOR:
-			return Color(0.52, 0.38, 0.27)
-		FloorLayout.Tile.WALL:
-			return Color(0.22, 0.18, 0.16)
-		FloorLayout.Tile.DOOR:
-			return Color(0.85, 0.65, 0.32)
-		FloorLayout.Tile.STAIRS_UP, FloorLayout.Tile.STAIRS_DOWN:
-			return Color(0.55, 0.8, 1.0)
-	return Color(0, 0, 0, 0)
-
-
-## Masque d'exploration (1 px par case, L8), relu en entier une seule fois par étage.
+## Masque d'exploration : la texture de FogOfWar (partagée, 1 texel par case) ; repli : image
+## locale relue en entier une seule fois par étage (pas de brouillard → tout découvert).
 func _build_fog_mask() -> void:
+	_fog_img = null
+	_fog_tex = null
+	if fog != null and fog.has_method("get_explored_texture"):
+		_fog_tex = fog.call("get_explored_texture") as Texture2D
+	if _fog_tex != null:
+		return
 	_fog_img = Image.create(maxi(layout.size.x, 1), maxi(layout.size.y, 1), false, Image.FORMAT_L8)
 	_fog_img.fill(Color(0, 0, 0))
 	if fog != null and fog.has_method("is_cell_explored"):
@@ -201,11 +198,21 @@ func _build_fog_mask() -> void:
 	_fog_tex = ImageTexture.create_from_image(_fog_img)
 
 
-static func fog_shader() -> Shader:
-	if _fog_shader == null:
-		_fog_shader = Shader.new()
-		_fog_shader.code = FOG_SHADER_CODE
-	return _fog_shader
+## Brume partagée par la mini-carte et la carte plein écran (réglages [minimap] fog_*).
+static func fog_material() -> ShaderMaterial:
+	if _fog_material == null:
+		_fog_material = ShaderMaterial.new()
+		_fog_material.shader = FOG_SHADER
+		for k: String in FOG_PARAMS:
+			var v: Variant = Balance.get_value("minimap", "fog_" + k if not k.begins_with("fog_") else k, null)
+			if v != null:
+				_fog_material.set_shader_parameter(StringName(k), v)
+	return _fog_material
+
+
+## Vrai si la brume lit directement la texture d'exploration de FogOfWar (aucune copie).
+func uses_shared_fog_texture() -> bool:
+	return _fog_img == null and _fog_tex != null
 
 
 # --- Mise à jour espacée ---------------------------------------------------------------
@@ -252,10 +259,14 @@ func _aim_angle() -> float:
 	return (d as Vector2).angle() if d is Vector2 and (d as Vector2) != Vector2.ZERO else 0.0
 
 
-## Relit les cases autour du joueur ; met à jour la texture seulement si une case change.
+## Texture partagée : rien à faire (FogOfWar la met à jour sur découverte). Repli : relit les
+## cases autour du joueur ; met à jour la texture seulement si une case change.
 func _update_fog(pos: Vector2) -> void:
+	last_fog_cells_scanned = 0
 	if fog == null or not is_instance_valid(fog) or _fog_img == null:
+		last_fog_update_usec = 0
 		return
+	var t0 := Time.get_ticks_usec()
 	var pc := FloorLayout.world_to_cell(pos)
 	var changed := false
 	var x0 := maxi(pc.x - _scan_radius, 0)
@@ -267,8 +278,10 @@ func _update_fog(pos: Vector2) -> void:
 			if _fog_img.get_pixel(x, y).r < 0.5 and bool(fog.call("is_cell_explored", Vector2i(x, y))):
 				_fog_img.set_pixel(x, y, Color(1, 1, 1))
 				changed = true
+	last_fog_cells_scanned = (x1 - x0 + 1) * (y1 - y0 + 1)
 	if changed:
-		_fog_tex.update(_fog_img)
+		(_fog_tex as ImageTexture).update(_fog_img)
+	last_fog_update_usec = Time.get_ticks_usec() - t0
 
 
 ## Flèche au bord vers l'extraction la plus proche quand elle sort du cadre.
@@ -391,7 +404,13 @@ func _unhandled_input(event: InputEvent) -> void:
 func explored_count() -> int:
 	var n := 0
 	if _fog_img == null:
-		return 0
+		if fog == null or not is_instance_valid(fog) or layout == null:
+			return 0
+		for y in layout.size.y:
+			for x in layout.size.x:
+				if bool(fog.call("is_cell_explored", Vector2i(x, y))):
+					n += 1
+		return n
 	for y in _fog_img.get_height():
 		for x in _fog_img.get_width():
 			if _fog_img.get_pixel(x, y).r > 0.5:
@@ -410,13 +429,19 @@ func get_arrow_text() -> String:
 # =====================================================================================
 
 ## Vue de carte (fond + brume d'exploration + extractions + joueur), découpée par un masque
-## arrondi. Le contenu est en coordonnées monde dans `content` (échelle = px / px monde).
+## à coins coupés (CutBox). Le contenu est en coordonnées monde dans `content`
+## (échelle = px / px monde). Par-dessus : vignettage (shader statique) puis cadre.
 class MapView extends Control:
+	const CUT := 18.0
 	var mask: Panel = null
 	var content: Node2D = null
-	var frame: Panel = null
+	var frame: Control = null
+	var vignette_rect: ColorRect = null
 	var player_mark: PlayerMark = null
+	var plan: MinimapPlan = null
 	var px_per_world: float = 0.1
+	## Force du vignettage (0 = aucun), à régler avant l'entrée dans l'arbre.
+	var vignette: float = 0.0
 	var _icons: Array[Node2D] = []
 	var _fit_rect: Rect2 = Rect2()
 
@@ -426,35 +451,65 @@ class MapView extends Control:
 		mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		mask.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 		# maquette Hud : encre, coins haut droit et bas gauche coupés
-		var st := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.96), 18.0, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
+		var st := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.96), CUT, Color(0, 0, 0, 0), 0.0, 0.0, 0.0)
 		st.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
 		mask.add_theme_stylebox_override("panel", st)
 		add_child(mask)
 		content = Node2D.new()
 		mask.add_child(content)
-		frame = Panel.new()
+		if vignette > 0.0:
+			vignette_rect = ColorRect.new()
+			vignette_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			vignette_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var vm := ShaderMaterial.new()
+			vm.shader = MiniMap.VIGNETTE_SHADER
+			vm.set_shader_parameter(&"strength", vignette)
+			vm.set_shader_parameter(&"ink", MenuKit.NIGHT_DEEP)
+			vm.set_shader_parameter(&"start", Balance.get_float("minimap", "vignette_start", 0.55))
+			vignette_rect.material = vm
+			mask.add_child(vignette_rect)
+		frame = Control.new()
 		frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var fs := CutBox.new()
-		fs.draw_center = false
-		fs.border_color = Color(1, 1, 1, 0.35)
-		fs.border_width = 1.5
-		fs.cut = 18.0
-		fs.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
-		frame.add_theme_stylebox_override("panel", fs)
+		frame.draw.connect(_draw_frame)
 		add_child(frame)
 		resized.connect(func() -> void:
+			frame.queue_redraw()
 			if _fit_rect.has_area():
 				fit(_fit_rect))
 
-	## (Re)construit le contenu. world_per_px = px monde par px écran.
-	func setup(bg: Texture2D, bg_rect: Rect2, fog_tex: Texture2D, grid: Vector2, zones: PackedVector2Array, world_per_px: float) -> void:
+	## Cadre : contour fin anti-crénelé (couvre aussi le bord du masque) + biseaux soulignés de
+	## violet (accent direction D). Redessiné seulement au redimensionnement.
+	func _draw_frame() -> void:
+		var fs := CutBox.new()
+		fs.cut = CUT
+		fs.corners = CutBox.CUT_TOP_RIGHT | CutBox.CUT_BOTTOM_LEFT
+		var r := Rect2(Vector2.ZERO, frame.size).grow(-0.5)
+		var pts := fs.points(r)
+		var loop := pts.duplicate()
+		loop.append(pts[0])
+		frame.draw_polyline(loop, Color(MenuKit.NIGHT_DEEP, 0.9), 3.0, true)
+		frame.draw_polyline(loop, Color(1, 1, 1, Balance.get_float("minimap", "frame_alpha", 0.32)), 1.25, true)
+		var acc := Color(MenuKit.GOLD, 0.95)
+		var tr := Vector2(r.end.x, r.position.y)
+		var bl := Vector2(r.position.x, r.end.y)
+		frame.draw_line(tr - Vector2(CUT, 0), tr + Vector2(0, CUT), acc, 2.0, true)
+		frame.draw_line(bl + Vector2(CUT, 0), bl - Vector2(0, CUT), acc, 2.0, true)
+
+	## (Re)construit le contenu. world_per_px = px monde par px écran. Sans image de fond,
+	## `plan_geom` (plan vectoriel) la remplace.
+	func setup(bg: Texture2D, bg_rect: Rect2, fog_tex: Texture2D, grid: Vector2, zones: PackedVector2Array, world_per_px: float,
+			plan_geom: MinimapPlan.Geometry = null) -> void:
 		for c: Node in content.get_children():
 			content.remove_child(c)
 			c.queue_free()
 		_icons.clear()
+		plan = null
 		px_per_world = 1.0 / maxf(world_per_px, 0.001)
 		content.scale = Vector2(px_per_world, px_per_world)
+		if bg == null and plan_geom != null:
+			plan = MinimapPlan.create(plan_geom)
+			content.add_child(plan)
 		if bg != null:
 			# Fond découpé à la grille du plan (les marges du rendu restent hors carte).
 			var grid_rect := Rect2(Vector2.ZERO, grid * TS).intersection(bg_rect)
@@ -469,15 +524,21 @@ class MapView extends Control:
 			s.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			content.add_child(s)
 		if fog_tex != null:
+			# Masque d'exploration lissé par le shader ; le sprite déborde de FOG_MARGIN_CELLS
+			# autour de la grille (hors grille = non exploré) pour que le bord reste sous la brume.
 			var f := Sprite2D.new()
+			f.name = "Fog"
 			f.texture = fog_tex
 			f.centered = false
-			f.scale = Vector2(TS, TS) * grid / fog_tex.get_size()
+			var k := Vector2(TS, TS) * grid / fog_tex.get_size()
+			var m := Vector2(FOG_MARGIN_CELLS, FOG_MARGIN_CELLS) * fog_tex.get_size() / grid
+			f.region_enabled = true
+			f.region_rect = Rect2(-m, fog_tex.get_size() + m * 2.0)
+			f.position = -m * k
+			f.scale = k
 			f.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-			var mat := ShaderMaterial.new()
-			mat.shader = MiniMap.fog_shader()
-			f.material = mat
-			# La brume déborde d'une case au-delà de la grille.
+			f.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+			f.material = MiniMap.fog_material()
 			content.add_child(f)
 		for z: Vector2 in zones:
 			var ic := ExtractIcon.new()
@@ -534,12 +595,21 @@ class MapView extends Control:
 		return content.position + p * px_per_world
 
 
-## Joueur : flèche blanche cerclée (pointe vers la visée).
+## Polygone plein au bord anti-crénelé (contour fin de même couleur).
+static func draw_aa_polygon(ci: CanvasItem, pts: PackedVector2Array, col: Color) -> void:
+	ci.draw_colored_polygon(pts, col)
+	var loop := pts.duplicate()
+	loop.append(pts[0])
+	ci.draw_polyline(loop, col, 1.0, true)
+
+
+## Joueur : flèche blanche cerclée (pointe vers la visée), tracés anti-crénelés.
 class PlayerMark extends Node2D:
 	func _draw() -> void:
-		draw_circle(Vector2.ZERO, 9.0, Color(0.05, 0.07, 0.13, 0.85))
-		draw_colored_polygon(PackedVector2Array([Vector2(10, 0), Vector2(-6, -7), Vector2(-2, 0), Vector2(-6, 7)]), Color(1, 0.95, 0.85))
-		draw_arc(Vector2.ZERO, 9.0, 0.0, TAU, 24, Color(1.0, 0.8, 0.4), 1.5, true)
+		draw_circle(Vector2(0, 1.0), 10.5, Color(0, 0, 0, 0.35), true, -1.0, true)
+		draw_circle(Vector2.ZERO, 9.0, Color(0.05, 0.07, 0.13, 0.9), true, -1.0, true)
+		MiniMap.draw_aa_polygon(self, PackedVector2Array([Vector2(10, 0), Vector2(-6, -7), Vector2(-2, 0), Vector2(-6, 7)]), Color(1, 0.96, 0.9))
+		draw_arc(Vector2.ZERO, 9.0, 0.0, TAU, 40, Color(1.0, 0.8, 0.4), 1.75, true)
 
 
 ## Icône d'extraction (pastille verte + pictogramme de sortie).
@@ -564,15 +634,15 @@ class ExtractIcon extends Node2D:
 			col = Color(0.55, 0.56, 0.62)
 		elif state == ExtractionZone.State.CLOSING or text == "!":
 			col = ExtractionZone.COL_WARN
-		draw_circle(Vector2(0, 1.5), 11.0, Color(0, 0, 0, 0.4))
-		draw_circle(Vector2.ZERO, 10.0, Color(0.04, 0.05, 0.09, 0.95) if closed else Color(0.04, 0.12, 0.09, 0.95))
-		draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 28, col, 2.5, true)
+		draw_circle(Vector2(0, 1.5), 11.0, Color(0, 0, 0, 0.4), true, -1.0, true)
+		draw_circle(Vector2.ZERO, 10.0, Color(0.04, 0.05, 0.09, 0.95) if closed else Color(0.04, 0.12, 0.09, 0.95), true, -1.0, true)
+		draw_arc(Vector2.ZERO, 10.0, 0.0, TAU, 40, col, 2.5, true)
 		ExtractionZone.draw_exit_glyph(self, Vector2.ZERO, 6.0, col.lightened(0.3))
 		if closed:
 			draw_line(Vector2(-8, -8), Vector2(8, 8), Color(0.85, 0.3, 0.28), 2.5, true)
 			draw_line(Vector2(-8, 8), Vector2(8, -8), Color(0.85, 0.3, 0.28), 2.5, true)
 		if text != "" and text != "!":
-			var font := ThemeDB.fallback_font
+			var font := LootVisuals.text_font(800)
 			var fs := 11
 			var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 			draw_rect(Rect2(-w * 0.5 - 3.0, 12.0, w + 6.0, 13.0), Color(0.024, 0.027, 0.05, 0.85))
@@ -582,8 +652,8 @@ class ExtractIcon extends Node2D:
 ## Flèche de bord vers l'extraction la plus proche (pointe vers +X, tournée par `rotation`).
 class EdgeArrow extends Node2D:
 	func _draw() -> void:
-		draw_colored_polygon(PackedVector2Array([Vector2(10, 0), Vector2(-7, -9), Vector2(-3, 0), Vector2(-7, 9)]), Color(0.02, 0.05, 0.04, 0.8))
-		draw_colored_polygon(PackedVector2Array([Vector2(8, 0), Vector2(-6, -7), Vector2(-2, 0), Vector2(-6, 7)]), EXTRACT)
+		MiniMap.draw_aa_polygon(self, PackedVector2Array([Vector2(10, 0), Vector2(-7, -9), Vector2(-3, 0), Vector2(-7, 9)]), Color(0.02, 0.05, 0.04, 0.8))
+		MiniMap.draw_aa_polygon(self, PackedVector2Array([Vector2(8, 0), Vector2(-6, -7), Vector2(-2, 0), Vector2(-6, 7)]), EXTRACT)
 
 
 ## Carte plein écran : voile, panneau bleu nuit, carte zoomable (carte entière à l'ouverture),
@@ -672,6 +742,7 @@ class FullMapOverlay extends Control:
 		close_button.pressed.connect(close)
 		head.add_child(close_button)
 		view = MapView.new()
+		view.vignette = Balance.get_float("minimap", "full_map_vignette_strength", 0.3)
 		view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		v.add_child(view)
@@ -744,7 +815,7 @@ class FullMapOverlay extends Control:
 		await get_tree().process_frame
 		_panel.reset_size()
 		_panel.position = ((vp - _panel.size) * 0.5).floor()
-		view.setup(mm.bg_texture, mm.bg_world_rect, mm._fog_tex, Vector2(mm.layout.size), mm._zone_centers, 1.0)
+		view.setup(mm.bg_texture, mm.bg_world_rect, mm._fog_tex, Vector2(mm.layout.size), mm._zone_centers, 1.0, mm.plan_geometry)
 		view.set_zone_states(mm.zone_states())
 		_reset_gestures()
 		_icon_scale = Balance.get_float("minimap", "full_map_icon_scale", 1.25)

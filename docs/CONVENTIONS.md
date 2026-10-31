@@ -163,7 +163,7 @@ Chaque biome fournit, à ces chemins :
 - Style : même pipeline Blender que le héros (`art/blender/rdm_common.py` : caméra orthographique 3/4 à 48°, matériaux toon, contour Freestyle), même échelle (héros ≈ 64 unités monde), règles de performance de la « Refonte » (atlas, peu de nœuds, pas de redessin par frame, aucune lumière dynamique).
 
 ## Refonte « Exfil Rush » (retour de test n°3) — CONTRAT ENTRE AGENTS
-Le jeu s'appelle désormais **Exfil Rush** (slogan : « Tire. Pille. Tire-toi. »). Le projet est dans
+Le jeu s'appelle désormais **Exfil Rush**. Le projet est dans
 `/home/claude/maskit` (dépôt GitHub MrCranito/maskit). **Les masques n'existent plus** : plus de
 MaskData, de choix de masque, d'aura, de portraits. Le héros est un personnage simple sans masque.
 Les ennemis « masqués » (outlaw, masked_grunt…) restent : ce sont des ennemis, pas le système.
@@ -297,7 +297,7 @@ Far West : ville dispersée dans le désert, rochers, train à l'arrêt (obstacl
 
 
 ## Nom du jeu
-Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Slogan : « Tire. Pille. Tire-toi. ». Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.
+Le jeu s'appelle désormais **RaidersGo** (anciennement « Exfil Rush », avant « Les Royaumes des Masques »). Les mentions « Exfil Rush » dans les commentaires désignent la même refonte.
 
 ## Refonte n°3 « méta-jeu, coop, station » (CONTRAT, 29/10)
 Quatre agents en parallèle. Propriété des fichiers :

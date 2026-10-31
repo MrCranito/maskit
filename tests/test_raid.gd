@@ -329,7 +329,7 @@ func test_minimap_extractions_exploration_et_plein_ecran() -> void:
 	assert_true(mm.visible)
 	assert_gt(mm.explored_count(), 0, "zones explorées autour du joueur")
 	assert_lt(mm.explored_count(), _raid.layout.size.x * _raid.layout.size.y, "le reste reste dans le brouillard")
-	assert_not_null(mm.bg_texture, "fond (image du paquet ou cases)")
+	assert_true(mm.bg_texture != null or mm.has_vector_plan(), "fond (image du paquet ou plan vectoriel)")
 	assert_lte(mm.size.x, 190.0)
 	# Rect dans la zone sûre et sans chevaucher la vie / le sac.
 	var safe := HudSafeArea.safe_rect(mm)
@@ -414,9 +414,11 @@ func test_carte_plein_ecran_zoom_gestes_et_icones() -> void:
 	assert_false(get_tree().paused)
 
 
-func test_minimap_rendu_des_cases() -> void:
-	var tex := MiniMap.tile_texture(_raid.layout, 2)
-	assert_eq(tex.get_size(), Vector2(_raid.layout.size * 2))
+func test_minimap_plan_vectoriel_des_cases() -> void:
+	var g := MinimapPlan.Geometry.build(_raid.layout)
+	assert_gt(g.floor_rects.size() + g.street_rects.size(), 0, "pièces et rues en aplats")
+	assert_gt(g.edges.size(), 0, "murs en traits")
+	assert_eq(g.edges.size() % 2, 0, "segments par paires")
 
 
 func test_zone_sure_simulee() -> void:
