@@ -202,7 +202,7 @@ func _generate_floors() -> void:
 		uses_generator = not floors.is_empty()
 		_plan_extractions()
 		if map_seed != 0 and floors.has(0):
-			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]))
+			shuffle_enemy_spawns(floors[0], hash([run_seed, "prerender_enemies"]), _prerender_rects(floors[0]))
 		# Bestiaire : un seul boss par raid, élites du monde (scripts/dungeon/bestiary_rules.gd).
 		if world is WorldData:
 			BestiaryRules.apply(floors, world as WorldData, run_seed, difficulty)
@@ -219,13 +219,20 @@ func _generate_floors() -> void:
 func _plan_extractions() -> void:
 	for idx: int in floors.keys():
 		var l: FloorLayout = floors[idx]
-		var blocked: Array[Rect2] = []
-		if idx == 0 and map_seed != 0 and world != null:
-			var pb := PrerenderBackdrop.create(map_seed, l, StringName(world.get("biome")))
-			if pb != null:
-				blocked = pb.collision_rects()
-				pb.free()
+		var blocked: Array[Rect2] = _prerender_rects(l) if idx == 0 else ([] as Array[Rect2])
 		ExtractionPlan.apply(l, hash([run_seed, idx, "extraction"]), blocked)
+
+
+## Emprise rendue (rectangles monde infranchissables) du fond pré-rendu de l'étage 0, [] sans fond.
+func _prerender_rects(l: FloorLayout) -> Array[Rect2]:
+	var out: Array[Rect2] = []
+	if map_seed == 0 or world == null:
+		return out
+	var pb := PrerenderBackdrop.create(map_seed, l, StringName(world.get("biome")))
+	if pb != null:
+		out = pb.collision_rects()
+		pb.free()
+	return out
 
 
 func _load_module_scripts() -> void:
@@ -359,7 +366,11 @@ func _attach_prerender(index: int) -> void:
 
 ## (Test B) Carte pré-rendue = structure fixe : chaque ennemi est redéplacé sur une case
 ## libre de sa salle (tirage sur run_seed) pour que deux parties sur la même carte diffèrent.
-static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
+## La case tirée doit appartenir à la salle elle-même (pas à un bâtiment ni au chapiteau dont la
+## boîte recoupe une grande place) et être hors de l'emprise rendue `blocked` (rectangles monde de
+## PrerenderBackdrop.collision_rects : murs épais, gradins, rochers…). Un ennemi resté dans
+## l'emprise (case du peupleur, salle du boss) est poussé sur la case libre la plus proche.
+static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int, blocked: Array[Rect2] = []) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var busy := {}
@@ -367,6 +378,7 @@ static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
 		for sp: FloorLayout.Spawn in list:
 			for c: Vector2i in FloorLayout.spawn_cells(sp):
 				busy[c] = true
+	var solid := blocked_cells(blocked, Balance.get_float("raid", "spawn_clearance", 12.0))
 	for sp2: FloorLayout.Spawn in l.enemy_spawns:
 		var room := l.get_room(sp2.room_id) if sp2.room_id >= 0 else l.room_at(sp2.cell)
 		if room == null or room.type == &"boss":
@@ -375,13 +387,75 @@ static func shuffle_enemy_spawns(l: FloorLayout, seed_value: int) -> void:
 			var c2 := Vector2i(rng.randi_range(room.rect.position.x, room.rect.end.x - 1),
 				rng.randi_range(room.rect.position.y, room.rect.end.y - 1))
 			var t := l.get_tile(c2)
-			if busy.has(c2) or c2.distance_to(l.player_spawn) < 8.0 \
-					or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+			if busy.has(c2) or solid.has(c2) or c2.distance_to(l.player_spawn) < 8.0 \
+					or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET) \
+					or cell_room_id(l, c2) != room.id:
 				continue
 			busy.erase(sp2.cell)
 			sp2.cell = c2
 			busy[c2] = true
 			break
+	if solid.is_empty():
+		return
+	for sp3: FloorLayout.Spawn in l.enemy_spawns:
+		if not solid.has(sp3.cell):
+			continue
+		var c3 := free_cell_near(l, sp3.cell, sp3.room_id if sp3.room_id >= 0 else cell_room_id(l, sp3.cell), solid, busy)
+		if c3 != sp3.cell:
+			busy.erase(sp3.cell)
+			sp3.cell = c3
+			busy[c3] = true
+
+
+## Salle d'une case : grille exacte du plan si le générateur en fournit une (méta « cell_rooms »,
+## Carnaval : chapiteau ovale), sinon la plus petite salle dont la boîte contient la case. -1 : aucune.
+static func cell_room_id(l: FloorLayout, c: Vector2i) -> int:
+	if l.has_meta(&"cell_rooms"):
+		var g: PackedInt32Array = l.get_meta(&"cell_rooms")
+		var i := c.y * l.size.x + c.x
+		return g[i] if l.in_bounds(c) and i < g.size() else -1
+	var r := l.room_at(c)
+	return r.id if r != null else -1
+
+
+## Cases dont le point d'apparition (centre) tombe dans un rectangle de `rects` élargi de `margin` px.
+static func blocked_cells(rects: Array[Rect2], margin: float) -> Dictionary:
+	var out := {}
+	var ts := float(FloorLayout.TILE_SIZE)
+	for r: Rect2 in rects:
+		var g := r.grow(margin)
+		for y in range(floori(g.position.y / ts - 0.5), ceili(g.end.y / ts - 0.5) + 1):
+			for x in range(floori(g.position.x / ts - 0.5), ceili(g.end.x / ts - 0.5) + 1):
+				var c := Vector2i(x, y)
+				if not out.has(c) and g.has_point(FloorLayout.cell_to_world(c)):
+					out[c] = true
+	return out
+
+
+## Case praticable libre la plus proche de `from` (anneaux de 1 à 6 cases), de préférence dans la
+## salle `room_id` ; `from` si aucune.
+static func free_cell_near(l: FloorLayout, from: Vector2i, room_id: int, solid: Dictionary, busy: Dictionary) -> Vector2i:
+	for same_room: bool in [true, false]:
+		for r in range(1, 7):
+			var best := from
+			var best_d := INF
+			for dy in range(-r, r + 1):
+				for dx in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) != r:
+						continue
+					var c := from + Vector2i(dx, dy)
+					var t := l.get_tile(c)
+					if solid.has(c) or busy.has(c) or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
+						continue
+					if same_room and room_id >= 0 and cell_room_id(l, c) != room_id:
+						continue
+					var d := Vector2(dx, dy).length()
+					if d < best_d:
+						best_d = d
+						best = c
+			if best != from:
+				return best
+	return from
 
 
 func _collect_doors() -> void:
