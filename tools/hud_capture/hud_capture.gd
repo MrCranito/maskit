@@ -7,6 +7,7 @@ extends SceneTree
 ## (1280x720 = PC, 1560x720 = téléphone 2000×923, 1600x720 = téléphone 2400×1080 : le viewport
 ## fait toujours 720 de haut.) Isoler la sauvegarde : override.cfg (non commité) avec
 ##   [application] config/use_custom_user_dir=true / config/custom_user_dir_name="RaidersGo_hudcap"
+## --scenario=quick : emplacements rapides seuls (quick_capture_driver.gd, captures zoomées).
 
 
 func _init() -> void:
@@ -14,6 +15,9 @@ func _init() -> void:
 
 
 func _start() -> void:
-	var driver: Node = (load("res://tools/hud_capture/hud_capture_driver.gd") as Script).new()
+	var path := "res://tools/hud_capture/hud_capture_driver.gd"
+	if "--scenario=quick" in OS.get_cmdline_user_args():
+		path = "res://tools/hud_capture/quick_capture_driver.gd"
+	var driver: Node = (load(path) as Script).new()
 	driver.name = "HudCaptureDriver"
 	root.add_child(driver)
