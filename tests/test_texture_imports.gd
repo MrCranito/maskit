@@ -89,7 +89,10 @@ func test_prerender_tiles_lossy_ids_lossless() -> void:
 		if prm.is_empty():
 			continue
 		var name := p.get_file().trim_suffix(".import")
-		assert_false(bool(prm.get("mipmaps/generate", false)), "%s : pas de mipmaps" % name)
+		if name == "minimap.webp":
+			assert_true(bool(prm.get("mipmaps/generate", false)), "%s : mipmaps (affichée réduite)" % p)
+		else:
+			assert_false(bool(prm.get("mipmaps/generate", false)), "%s : pas de mipmaps" % name)
 		if name.begins_with("o_") or name == "footprint.png":
 			n_ids += 1
 			assert_eq(int(prm.get("compress/mode", -1)), 0, "%s : ids / masque sans perte" % p)

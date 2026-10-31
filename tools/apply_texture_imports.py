@@ -11,7 +11,7 @@ assets (l'éditeur doit d'abord avoir créé leur .import), puis réimporte :
 
 Règles (vérifiées aussi par tests/test_texture_imports.gd) :
 1. Fond pré-rendu (assets/prerender/**) : tuiles t_*, intérieurs in_*, minimap → WebP avec perte
-   (compress/mode=1), qualité LOSSY_QUALITY, sans mipmaps. Les sources sont déjà des WebP avec
+   (compress/mode=1), qualité LOSSY_QUALITY, sans mipmaps (sauf minimap.webp, affichée réduite). Les sources sont déjà des WebP avec
    perte : le stockage sans perte (mode 0) ré-encodait ~8× plus gros sans rien gagner.
    Restent sans perte : o_*.png (ids d'occultation lus au texel près par le shader
    prerender_occluder) et footprint.png (masque d'emprise).
@@ -46,7 +46,9 @@ def wanted(rel: str, params: dict[str, str]) -> dict[str, str]:
 	if rel.startswith("assets/prerender/"):
 		if prerender_lossless(name):
 			return {"compress/mode": "0", "mipmaps/generate": "false"}
-		return {"compress/mode": "1", "compress/lossy_quality": LOSSY_QUALITY, "mipmaps/generate": "false"}
+		# minimap.webp : mipmaps gardées (mini-carte réduite, carte plein écran zoomable, PR #82)
+		mips = "true" if name == "minimap.webp" else "false"
+		return {"compress/mode": "1", "compress/lossy_quality": LOSSY_QUALITY, "mipmaps/generate": mips}
 	enemy_atlas = rel.startswith("assets/sprites/enemies/") and name.endswith("_atlas.png")
 	if enemy_atlas:
 		return {"compress/mode": "4", "compress/uastc_level": UASTC_LEVEL,
