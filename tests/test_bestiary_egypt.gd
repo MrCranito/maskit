@@ -262,7 +262,9 @@ func test_boss_trois_phases_tres_difficile() -> void:
 			assert_true(ids.has(StringName(str(oe))), "phase %d : compétence d'entrée %s active" % [i + 1, oe])
 	assert_gt(float((d.phases[2] as Dictionary).get("damage_mult", 1.0)), 1.3, "phase 3 enragée")
 	assert_lt(float((d.phases[2] as Dictionary).get("cooldown_mult", 1.0)), 0.7, "phase 3 enragée")
-	assert_gt(d.max_hp, 5.5 * _hp(&"eg_shadow_warrior"), "vraiment très difficile")
+	# Escalier de difficulté (31/10) : PV 3300 → 1500, la difficulté vient de la carte (Expert) et des
+	# phases ; il reste plus coriace que son escorte d'élite.
+	assert_gt(d.max_hp, 2.5 * _hp(&"eg_shadow_warrior"), "vraiment très difficile")
 	assert_eq(d.stagger_ratio, 0.0, "jamais étourdi")
 
 

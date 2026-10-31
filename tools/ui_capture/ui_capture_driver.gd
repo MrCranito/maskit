@@ -3,7 +3,9 @@ extends Node
 ## boutique*.png (onglets, onglet Gemmes avec le dernier pack choisi), icones.png (gemme et pièce :
 ## dessin en code puis images peintes), mort.png, extraction.png (écrans de fin sur un résumé d'exemple).
 
-## Options : --only=menu (seulement le menu principal, <prefix>menu.png), --prefix=xxx,
+## Options : --only=menu (seulement le menu principal, <prefix>menu.png), --only=cartes (choix de la
+## carte, filtre Permanentes : <prefix>cartes.png puis <prefix>carte_<id>.png pour chaque carte de --maps=a,b),
+## --prefix=xxx,
 ## --insets=g,h,d,b (encoche simulée, px de fenêtre : HudSafeArea.debug_insets),
 ## --pass_tier=N (pass de combat au palier N + moitié du suivant, en mémoire), --dev=0|1 (ressources illimitées),
 ## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire),
@@ -13,6 +15,7 @@ var out: String = ""
 var only: String = ""
 var prefix: String = ""
 var slab_held: bool = false
+var maps: PackedStringArray = PackedStringArray()
 
 
 func _ready() -> void:
@@ -34,6 +37,8 @@ func _ready() -> void:
 			bp.from_dict({"xp": s.xp_total_for(t) + s.xp_for_tier(t + 1) / 2})
 		elif a.begins_with("--dev="):
 			DevMode.set_unlimited(a.substr(6) == "1")
+		elif a.begins_with("--maps="):
+			maps = a.substr(7).split(",", false)
 		elif a.begins_with("--slab_held="):
 			slab_held = a.substr(12) == "1"
 		elif a.begins_with("--online="):
@@ -47,6 +52,9 @@ func _ready() -> void:
 	if only == "menu":
 		_run_menu.call_deferred()
 		return
+	if only == "cartes":
+		_run_maps.call_deferred()
+		return
 	_run.call_deferred()
 
 
@@ -58,6 +66,27 @@ func _run_menu() -> void:
 		(mm.slab as MainMenu.DeploySlab).held = true
 		await _sleep(0.1)
 	await _shot(prefix + "menu")
+	get_tree().quit(0)
+
+
+func _run_maps() -> void:
+	get_tree().change_scene_to_file(MenuKit.MAP_SELECT_SCENE)
+	await _sleep(2.0)
+	var ms := get_tree().current_scene as MapSelect
+	if ms == null:
+		get_tree().quit(1)
+		return
+	ms.set_filter(&"permanent")
+	await _sleep(0.6)
+	await _shot(prefix + "cartes")
+	for id: String in maps:
+		var e := ms._find_entry(StringName(id))
+		if e.is_empty():
+			push_warning("carte introuvable : " + id)
+			continue
+		ms.select_entry(e, false)
+		await _sleep(0.8)
+		await _shot(prefix + "carte_" + id)
 	get_tree().quit(0)
 
 

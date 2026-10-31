@@ -330,7 +330,8 @@ func test_raid_applies_map_modifiers() -> void:
 		var d := e.get("data") as EnemyData
 		var orig := load("res://data/enemies/%s.tres" % d.kind) as EnemyData
 		assert_true(d.has_meta(&"map_modified"))
-		assert_almost_eq(float(e.get("max_hp")), orig.max_hp * 3.0, 0.01, "PV ennemis ×3")
+		assert_almost_eq(float(e.get("max_hp")), orig.max_hp * 3.0 * Enemy.world_mult("hp_mult"), 0.01,
+			"PV ennemis ×3 (× escalier du monde)")
 	assert_eq(int(raid.fog.get("view_radius")), maxi(3, roundi(Balance.get_float("fog", "view_radius", 10.0) * 0.5)))
 	assert_almost_eq(float(raid.player.get("max_hp")), Balance.get_float("player", "max_hp", 100.0) * 1.5, 0.5,
 		"PV joueur ×1,5")

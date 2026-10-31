@@ -10,5 +10,5 @@ description = "Au cœur du désert, des pyramides millénaires abritent des tré
 world_path = "res://data/worlds/world_06_egypt_pyramids.tres"
 accent_color = Color(1, 0.78, 0.3, 1)
 tags = PackedStringArray("Classique", "Pyramides", "Trésors")
-difficulty = 2
+difficulty = 3
 reward_text = "Trésors du Pharaon"

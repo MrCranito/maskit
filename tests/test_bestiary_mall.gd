@@ -365,8 +365,9 @@ func test_boss_declare_avec_trois_phases() -> void:
 		for sid2: StringName in wanted[i]:
 			assert_true(ids.has(sid2), "phase %d : %s (planche)" % [i + 1, sid2])
 	assert_gt(float((d.phases[2] as Dictionary).get("damage_mult", 1.0)), 1.2, "phase 3 enragée")
-	# « Vraiment très difficile » : plusieurs fois les PV d'une élite.
-	assert_gt(d.max_hp, 5.0 * (load("res://data/enemies/mall_store_warden.tres") as EnemyData).max_hp)
+	# « Vraiment très difficile » : plusieurs fois les PV d'une élite (escalier du 31/10 : 3200 → 1400,
+	# le bot ne le battait jamais avec un arsenal Rare).
+	assert_gt(d.max_hp, 3.0 * (load("res://data/enemies/mall_store_warden.tres") as EnemyData).max_hp)
 
 
 func test_violent_devient_invisible() -> void:

@@ -10,6 +10,7 @@ const BOSSES: Array[StringName] = [&"fw_sheriff", &"ss_architect", &"mall_omnist
 var _world: Node2D
 var _saved_player: Node2D
 var _saved_difficulty: int
+var _saved_world: String
 
 
 class FakePlayer extends Node2D:
@@ -32,11 +33,15 @@ func before_each() -> void:
 	_saved_player = GameState.player
 	GameState.player = p
 	_saved_difficulty = GameState.difficulty
+	# Hors de tout monde : l'escalier [world_scaling] (test_world_scaling.gd) vaut 1.
+	_saved_world = GameState.world_path
+	GameState.world_path = ""
 
 
 func after_each() -> void:
 	GameState.player = _saved_player
 	GameState.difficulty = _saved_difficulty
+	GameState.world_path = _saved_world
 
 
 func _cfg() -> ConfigFile:
