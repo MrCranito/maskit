@@ -272,6 +272,26 @@ class _DamageProbe extends Node2D:
 		received += amount
 
 
+func test_densite_ne_touche_pas_la_salle_du_boss() -> void:
+	var l := FloorLayout.make_sample()
+	var sp0: FloorLayout.Spawn = l.enemy_spawns[0]
+	var boss_room := l.get_room(sp0.room_id) if sp0.room_id >= 0 else l.room_at(sp0.cell)
+	assert_not_null(boss_room)
+	boss_room.type = &"boss"
+	var in_boss := func(list: Array[FloorLayout.Spawn]) -> int:
+		var k := 0
+		for sp: FloorLayout.Spawn in list:
+			var r := l.get_room(sp.room_id) if sp.room_id >= 0 else l.room_at(sp.cell)
+			if r == boss_room:
+				k += 1
+		return k
+	var before: int = in_boss.call(l.enemy_spawns)
+	var more := Raid.scale_enemy_spawns(l, 3.0, 7)
+	assert_gt(more.size(), l.enemy_spawns.size(), "plus d'ennemis ailleurs")
+	assert_eq(in_boss.call(more), before, "salle du boss : ni second boss ni gardes en plus")
+	assert_eq(in_boss.call(Raid.scale_enemy_spawns(l, 0.3, 7)), before, "salle du boss : rien retiré")
+
+
 func test_enemy_density_scaling() -> void:
 	var l := FloorLayout.make_sample()
 	var n: int = l.enemy_spawns.size()

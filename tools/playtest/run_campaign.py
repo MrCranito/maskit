@@ -147,6 +147,16 @@ def plan(pass_name: str, rounds: int = 4) -> list[dict]:
                     jobs.append({"mode": "raid", "map": WORLD_MAPS[w], "difficulty": -1, "tier": raid_tier,
                                  "profile": p, "seed": 14000 + n, "max_time": 420})
                     n += 1
+    elif pass_name == "raids":
+        # Raids seuls de l'escalier : chaque monde à la difficulté de sa carte, arsenal de raid attendu,
+        # 3 profils × 10 tours (30 raids par monde).
+        n = 0
+        for w, (raid_tier, _boss_tiers) in ESCALIER.items():
+            for rep in range(10):
+                for p in PROFILES:
+                    jobs.append({"mode": "raid", "map": WORLD_MAPS[w], "difficulty": -1, "tier": raid_tier,
+                                 "profile": p, "seed": 15000 + n, "max_time": 420})
+                    n += 1
     elif pass_name == "smoke":
         jobs = [{"mode": "raid", "map": MAPS["fw"], "difficulty": 1, "profile": "fouilleur", "seed": 11,
                  "max_time": 60}]

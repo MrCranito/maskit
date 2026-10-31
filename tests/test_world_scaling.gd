@@ -25,7 +25,7 @@ func _table(key: String) -> Dictionary:
 
 
 func test_chaque_monde_a_sa_marche() -> void:
-	for key: String in ["hp_mult", "damage_mult"]:
+	for key: String in ["hp_mult", "damage_mult", "boss_hp_mult", "boss_damage_mult", "enemy_density_mult"]:
 		var t := _table(key)
 		for f: String in DirAccess.get_files_at(WORLDS_DIR):
 			if f.ends_with(".tres"):
@@ -53,3 +53,29 @@ func test_ennemi_du_monde_mis_a_l_echelle() -> void:
 		assert_almost_eq(e.max_hp, data.max_hp * float(t[id]), 0.01, "PV : %s" % id)
 		assert_almost_eq(e.diff_damage_mult, Enemy._diff_at("damage_mult", GameState.difficulty, [1.0]) * float(d[id]),
 			0.0001, "dégâts : %s" % id)
+
+
+func test_boss_suit_sa_propre_courbe() -> void:
+	var t := _table("boss_hp_mult")
+	var d := _table("boss_damage_mult")
+	var data := load("res://data/enemies/fw_sheriff.tres") as EnemyData
+	for id: Variant in t:
+		GameState.world_path = WORLDS_DIR + str(id) + ".tres"
+		var e := Enemy.new()
+		e.data = data
+		add_child_autofree(e)
+		assert_almost_eq(e.max_hp, data.max_hp * e.boss_hp_scale() * float(t[id]), 0.01, "PV du boss : %s" % id)
+		assert_almost_eq(e.diff_damage_mult, Enemy._diff_at("damage_mult", GameState.difficulty, [1.0]) * float(d[id]),
+			0.0001, "dégâts du boss : %s" % id)
+
+
+func test_escorte_de_l_arene_suit_la_courbe_du_boss() -> void:
+	var t := _table("boss_hp_mult")
+	var data := load("res://data/enemies/fw_bandit.tres") as EnemyData
+	for id: Variant in t:
+		GameState.world_path = WORLDS_DIR + str(id) + ".tres"
+		var e := Enemy.new()
+		e.data = data
+		e.set_meta(Enemy.META_BOSS_ARENA, true)
+		add_child_autofree(e)
+		assert_almost_eq(e.max_hp, data.max_hp * float(t[id]), 0.01, "garde de l'arène : %s" % id)

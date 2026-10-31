@@ -32,6 +32,8 @@ const VISUAL_SCRIPT_PATH := "res://scripts/enemies/enemy_visual.gd"
 const LAYER_ENEMIES := 4
 const MASK_WORLD := 1
 const MASK_PLAYER := 2
+## Ennemi de la salle du boss (escorte, gardes) : courbe [world_scaling] boss_*.
+const META_BOSS_ARENA := &"boss_arena"
 
 const GROUP_ENEMIES := &"enemies"
 const GROUP_DAMAGEABLE := &"damageable"
@@ -105,6 +107,7 @@ static var profiling: bool = false
 static var profile_usec: int = 0
 
 @export var data: EnemyData
+
 
 var max_hp: float = 1.0
 var hp: float = 1.0
@@ -423,7 +426,7 @@ func _tf(key: String, default: float) -> float:
 ## Multiplicateurs de difficulté (n'altèrent pas `data` : PV et vitesse de base inchangés).
 func _load_difficulty() -> void:
 	var d: int = clampi(int(GameState.get("difficulty")) if GameState.get("difficulty") != null else 1, 0, 4)
-	diff_damage_mult = _diff_at("damage_mult", d, [0.75, 1.0, 1.12, 1.25, 1.4]) * world_mult("damage_mult")
+	diff_damage_mult = _diff_at("damage_mult", d, [0.75, 1.0, 1.12, 1.25, 1.4]) * world_mult(_world_key("damage_mult"))
 	diff_windup_mult = _diff_at("windup_mult", d, [1.25, 1.0, 0.94, 0.88, 0.8])
 	diff_cooldown_mult = _diff_at("cooldown_mult", d, [1.2, 1.0, 0.92, 0.85, 0.75])
 	diff_spread_mult = _diff_at("spread_mult", d, [1.4, 1.0, 0.9, 0.8, 0.65])
@@ -436,7 +439,15 @@ func _load_difficulty() -> void:
 
 ## Échelle des PV : difficulté du raid (boss seulement) × escalier du monde ([world_scaling]).
 func hp_scale() -> float:
-	return boss_hp_scale() * world_mult("hp_mult")
+	return boss_hp_scale() * world_mult(_world_key("hp_mult"))
+
+
+## Les boss et les ennemis de leur salle (escorte, gardes : meta META_BOSS_ARENA, posée par le Raid)
+## suivent leur propre courbe ([world_scaling] boss_hp_mult / boss_damage_mult) : on règle le combat
+## de boss sans toucher aux raids, et inversement.
+func _world_key(key: String) -> String:
+	var arena := (data != null and data.boss) or has_meta(META_BOSS_ARENA)
+	return "boss_" + key if arena else key
 
 
 ## Escalier de difficulté par monde ([world_scaling] key, dictionnaire id du monde → multiplicateur ;
@@ -1480,6 +1491,9 @@ func spawn_reinforcement(kind: StringName, pos: Vector2) -> Enemy:
 	var r := Enemy.spawn(d)
 	r.position = pos
 	r.set_meta(&"reinforcement", true)
+	# Renforts appelés par le boss ou son escorte : même courbe que l'arène ([world_scaling] boss_*).
+	if _world_key("hp_mult") != "hp_mult":
+		r.set_meta(META_BOSS_ARENA, true)
 	if is_in_group(&"fog_hideable"):
 		r.add_to_group(&"fog_hideable")
 	get_parent().add_child(r)

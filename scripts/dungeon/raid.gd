@@ -584,16 +584,22 @@ static func load_enemy_data(kind: StringName) -> Resource:
 func _spawn_enemies() -> void:
 	for i: int in layout.enemy_spawns.size():
 		var sp: FloorLayout.Spawn = layout.enemy_spawns[i]
-		var en := _add_enemy(load_enemy_data(sp.kind), FloorLayout.cell_to_world(sp.cell), "%s_%d" % [String(sp.kind).to_pascal_case(), i])
+		var room := layout.get_room(sp.room_id) if sp.room_id >= 0 else layout.room_at(sp.cell)
+		var arena := room != null and room.type == FloorLayout.ROOM_BOSS
+		var en := _add_enemy(load_enemy_data(sp.kind), FloorLayout.cell_to_world(sp.cell), "%s_%d" % [String(sp.kind).to_pascal_case(), i], arena)
 		if en != null:
 			en.set_meta(&"net_id", i)  # Identité réseau (coop) : index d'apparition, identique chez les deux joueurs.
 
 
-func _add_enemy(data: Resource, pos: Vector2, enemy_name: String) -> Node2D:
+## `arena` : ennemi de la salle du boss (escorte, gardes) : il suit la courbe du boss
+## ([world_scaling] boss_*), lue dans Enemy._ready.
+func _add_enemy(data: Resource, pos: Vector2, enemy_name: String, arena: bool = false) -> Node2D:
 	if not ResourceLoader.exists(ENEMY_SCENE_PATH) or data == null:
 		return null
 	var enemy := (load(ENEMY_SCENE_PATH) as PackedScene).instantiate() as Node2D
 	enemy.set("data", data)
+	if arena:
+		enemy.set_meta(Enemy.META_BOSS_ARENA, true)
 	enemy.name = enemy_name
 	enemy.position = pos
 	enemy.add_to_group(GROUP_FOG_HIDEABLE)
@@ -605,7 +611,8 @@ func _restore_enemies(state: FloorState) -> void:
 	for i: int in state.enemies.size():
 		var e: Dictionary = state.enemies[i]
 		var data: Resource = e["data"]
-		var enemy := _add_enemy(data, e["position"], "%s_%d" % [str(data.get("kind")).to_pascal_case(), i])
+		var enemy := _add_enemy(data, e["position"], "%s_%d" % [str(data.get("kind")).to_pascal_case(), i],
+			bool(e.get("arena", false)))
 		if enemy == null:
 			continue
 		enemy.set("spawn_position", e["spawn_position"])
@@ -637,6 +644,7 @@ func capture_floor_state() -> FloorState:
 			"spawn_position": e.get("spawn_position") if e.get("spawn_position") is Vector2 else e.global_position,
 			"hp": float(e.get("hp")) if e.get("hp") != null else 1.0,
 			"net_id": int(e.get_meta(&"net_id", -1)),
+			"arena": e.has_meta(Enemy.META_BOSS_ARENA),
 		})
 	for cell: Vector2i in _door_by_cell:
 		var d: Node2D = _door_by_cell[cell]
@@ -1497,6 +1505,8 @@ func _apply_map_modifiers() -> void:
 		LootRoller.map_rarity_bonus = map_card.get_mod_f("loot_rarity_bonus")
 		LootRoller.map_quantity_mult = maxf(map_card.get_mod_f("loot_quantity_mult"), 0.0)
 		density = maxf(map_card.get_mod_f("enemy_density_mult"), 0.0)
+	# Escalier par monde ([world_scaling] enemy_density_mult) : raids plus peuplés dans les derniers mondes.
+	density *= Enemy.world_mult("enemy_density_mult")
 	# Coop : plus d'ennemis à plusieurs (même tirage chez l'hôte et l'invité : seed + nombre de joueurs).
 	density *= CoopRules.party_mult("enemy_density", party_size)
 	if is_equal_approx(density, 1.0):
@@ -1507,7 +1517,8 @@ func _apply_map_modifiers() -> void:
 
 
 ## Densité d'ennemis : < 1 retire des points d'apparition (jamais les boss), > 1 en
-## ajoute sur une case libre voisine d'un point existant (même salle). Déterministe.
+## ajoute sur une case libre voisine d'un point existant (même salle, jamais celle du boss :
+## ni second boss ni gardes en plus dans l'arène). Déterministe.
 static func scale_enemy_spawns(l: FloorLayout, mult: float, seed_value: int) -> Array[FloorLayout.Spawn]:
 	var src: Array[FloorLayout.Spawn] = l.enemy_spawns
 	var rng := RandomNumberGenerator.new()
@@ -1520,16 +1531,21 @@ static func scale_enemy_spawns(l: FloorLayout, mult: float, seed_value: int) -> 
 				out.append(sp)
 		return out
 	out.append_array(src)
-	var extra: int = roundi(src.size() * (mult - 1.0))
+	var bases: Array[FloorLayout.Spawn] = []
+	for sp: FloorLayout.Spawn in src:
+		var room := l.get_room(sp.room_id) if sp.room_id >= 0 else l.room_at(sp.cell)
+		if room == null or room.type != &"boss":
+			bases.append(sp)
+	var extra: int = roundi(bases.size() * (mult - 1.0))
 	var used: Dictionary = {}
 	for sp: FloorLayout.Spawn in src:
 		used[sp.cell] = true
 	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
 		Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]
 	var tries: int = 0
-	while extra > 0 and not src.is_empty() and tries < extra * 12 + 24:
+	while extra > 0 and not bases.is_empty() and tries < extra * 12 + 24:
 		tries += 1
-		var base: FloorLayout.Spawn = src[rng.randi_range(0, src.size() - 1)]
+		var base: FloorLayout.Spawn = bases[rng.randi_range(0, bases.size() - 1)]
 		var c: Vector2i = base.cell + dirs[rng.randi_range(0, dirs.size() - 1)] * rng.randi_range(1, 2)
 		var t: int = l.get_tile(c)
 		if used.has(c) or c == l.player_spawn or not (t == FloorLayout.Tile.FLOOR or t == FloorLayout.Tile.STREET):
