@@ -134,6 +134,8 @@ func _ready() -> void:
 	# État de butin du raid précédent (cadavres, butin au sol, conteneurs) : effacé avant la
 	# construction de l'étage 0, qui restaure sinon ceux de la partie précédente.
 	LootManager.begin_raid(run_seed)
+	# Objets, icônes, sons et shaders préchargés : aucun chargement synchrone en jeu (RaidWarmup).
+	RaidWarmup.start(self)
 	party_size = CoopRules.raid_party_size()
 	_load_world()
 	_generate_floors()

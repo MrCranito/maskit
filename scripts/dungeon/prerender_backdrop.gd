@@ -45,6 +45,9 @@ var pack_dir := ""
 var px_scale := Vector2.ONE           ## px image → monde
 var origin := Vector2.ZERO            ## position monde du pixel (0, 0)
 var stream_margin := 900.0            ## marge (monde) autour de la vue pour charger
+## Marge (monde) de libération, plus large que celle de chargement (hystérésis, [prerender]
+## stream_release_margin) : un joueur qui longe la limite ne recharge plus la même tuile en boucle.
+var release_margin := 1500.0
 var _tiles: Array[Dictionary] = []    ## {file, rect (monde), sprite, pending}
 var _interiors: Array[Dictionary] = []  ## {sprite, roof}
 const OCC_SHADER: Shader = preload("res://assets/shaders/prerender_occluder.gdshader")
@@ -158,6 +161,8 @@ func _setup() -> void:
 		var r := Rect2(origin + Vector2(p[0], p[1]) * px_scale, Vector2(p[2], p[3]) * px_scale)
 		_tiles.append({"file": pack_dir + String(t["file"]), "rect": r, "sprite": null, "pending": false,
 			"px": p, "slices": []})
+	stream_margin = maxf(float(_bal("stream_margin", stream_margin)), 0.0)
+	release_margin = maxf(float(_bal("stream_release_margin", release_margin)), stream_margin)
 	_occ_enabled = bool(_bal("occluders", true))
 	_occ_alpha_player = float(_bal("occluder_player_alpha", 0.55))
 	_occ_interval = float(_bal("occluder_check_interval", 0.1))
@@ -323,27 +328,35 @@ static func threaded_loading_safe() -> bool:
 	return DisplayServer.get_name() != "headless"
 
 
-## Chargement par morceaux : tuiles qui recoupent la vue (+ marge) chargées en arrière-plan
-## (synchrone sous le rendu factice, voir threaded_loading_safe), les autres libérées.
+## Chargement par morceaux : tuiles qui recoupent la vue (+ stream_margin) chargées en arrière-plan
+## (synchrone sous le rendu factice, voir threaded_loading_safe) avec leur image d'ids
+## d'occultation ; libérées seulement hors de la vue + release_margin (hystérésis).
 func _stream() -> void:
 	var vp := get_viewport()
 	if vp == null:
 		return
 	var inv := vp.get_canvas_transform().affine_inverse()
-	var view := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vp.get_visible_rect().size).grow(stream_margin)
+	var screen := Rect2(inv * Vector2.ZERO, Vector2.ZERO).expand(inv * vp.get_visible_rect().size)
+	var view := screen.grow(stream_margin)
+	var keep := screen.grow(release_margin)
 	for t: Dictionary in _tiles:
 		var want := view.intersects(t["rect"])
 		var spr: Sprite2D = t["sprite"]
 		if want and spr == null:
+			var ids_path := _ids_path(t)
 			if not threaded_loading_safe() and not t["pending"]:
 				# Serveur de rendu factice : chargement synchrone (voir threaded_loading_safe).
 				_make_sprite(t, load(t["file"]) as Texture2D)
 			elif not t["pending"]:
 				ResourceLoader.load_threaded_request(t["file"])
+				if not ids_path.is_empty() and t.get("ids_tex") == null:
+					ResourceLoader.load_threaded_request(ids_path)
 				t["pending"] = true
-			elif ResourceLoader.load_threaded_get_status(t["file"]) == ResourceLoader.THREAD_LOAD_LOADED:
+			elif ResourceLoader.load_threaded_get_status(t["file"]) == ResourceLoader.THREAD_LOAD_LOADED 					and (ids_path.is_empty() or t.get("ids_tex") != null 					or ResourceLoader.load_threaded_get_status(ids_path) != ResourceLoader.THREAD_LOAD_IN_PROGRESS):
+				if not ids_path.is_empty() and t.get("ids_tex") == null 						and ResourceLoader.load_threaded_get_status(ids_path) == ResourceLoader.THREAD_LOAD_LOADED:
+					t["ids_tex"] = ResourceLoader.load_threaded_get(ids_path) as Texture2D
 				_make_sprite(t, ResourceLoader.load_threaded_get(t["file"]) as Texture2D)
-		elif not want and spr != null:
+		elif spr != null and not keep.intersects(t["rect"]):
 			spr.queue_free()
 			t["sprite"] = null
 			t["pending"] = false
@@ -356,6 +369,13 @@ func _stream() -> void:
 			if not (t["slices"] as Array).is_empty():
 				_index_dirty = true
 			t["slices"] = []
+
+
+## Image d'ids d'occultation d'une tuile ("" si la tuile n'a pas de tranches).
+func _ids_path(t: Dictionary) -> String:
+	if not _occ_enabled or not _occ_by_tile.has(t["file"]):
+		return ""
+	return pack_dir + String((_occ_by_tile[t["file"]] as Dictionary)["ids"])
 
 
 func _make_sprite(t: Dictionary, tex: Texture2D) -> void:
@@ -380,7 +400,11 @@ func _make_slices(t: Dictionary, tex: Texture2D) -> void:
 	if not _occ_enabled or _occ_holder == null or not _occ_by_tile.has(t["file"]):
 		return
 	var e: Dictionary = _occ_by_tile[t["file"]]
-	var ids := load(pack_dir + String(e["ids"])) as Texture2D
+	# Image d'ids chargée en arrière-plan avec la tuile (_stream) ; synchrone seulement en repli.
+	var ids: Texture2D = t.get("ids_tex") as Texture2D
+	if ids == null:
+		ids = load(pack_dir + String(e["ids"])) as Texture2D
+		t["ids_tex"] = ids
 	if ids == null:
 		return
 	var mat := ShaderMaterial.new()

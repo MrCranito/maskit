@@ -1,14 +1,19 @@
 class_name FrameRate
 extends RefCounted
 ## Images par seconde du jeu (réglage « Images par seconde » des Options).
-##  - « max » (par défaut) : la fréquence de l'écran, plafonnée à [display] max_fps_cap (120) —
-##    120 i/s sur les téléphones à écran 120 Hz (iPhone Pro ProMotion, Android 120 Hz), 60 sinon ;
-##  - « 60 » : 60 i/s ;
+##  - « max » (par défaut sur ordinateur) : la fréquence de l'écran, plafonnée à [display] max_fps_cap
+##    (120) — 120 i/s sur les téléphones à écran 120 Hz (iPhone Pro ProMotion, Android 120 Hz), 60 sinon ;
+##  - « 60 » (par défaut sur mobile, [display] default_frame_rate_mobile) : 60 i/s. Sur un écran
+##    120 Hz, viser 120 i/s double le travail du GPU (chauffe, bridage) et une image > 8,3 ms rate
+##    une synchro : le rythme alterne 8 / 16 ms (saccades). 120 reste disponible dans les Options ;
 ##  - « eco » : économie d'énergie, [display] eco_fps (30) i/s (moins de chauffe et de batterie).
 ## La logique du jeu reste à 60 pas de physique par seconde : l'interpolation physique
 ## (physics/common/physics_interpolation) rend les déplacements fluides à 120 i/s.
 ## iOS : l'écran 120 Hz est déverrouillé dans le projet Xcode (tools/ios_fix_xcode.py :
 ## CADisableMinimumFrameDurationOnPhone + affichage à la fréquence maximale de l'écran).
+## Limiteur : quand la synchro verticale est active et que la cible atteint la fréquence de
+## l'écran, Engine.max_fps vaut 0 (la synchro seule cadence les images). Un limiteur logiciel
+## égal à la fréquence de l'écran se bat avec la synchro et provoque des micro-saccades.
 ## Android : demande la fréquence voulue à la surface de rendu (Surface.setFrameRate, Android 11+),
 ## au mieux : si l'appareil refuse, le jeu tourne à la fréquence que le système lui accorde.
 
@@ -60,7 +65,26 @@ static func saved_mode() -> String:
 		return m
 	if bool(MenuKit.get_setting(&"power_saving", false)):
 		return MODE_ECO
-	return String(Balance.get_value("display", "default_frame_rate", MODE_MAX))
+	return default_mode()
+
+
+## Mode par défaut (sans réglage enregistré) : [display] default_frame_rate_mobile sur mobile
+## (Android, iOS), [display] default_frame_rate ailleurs.
+static func default_mode(mobile: Variant = null) -> String:
+	var is_mobile: bool = OS.has_feature("mobile") if mobile == null else bool(mobile)
+	var key := "default_frame_rate_mobile" if is_mobile else "default_frame_rate"
+	var m := String(Balance.get_value("display", key, MODE_60 if is_mobile else MODE_MAX))
+	return m if MODES.has(m) else MODE_MAX
+
+
+## Valeur d'Engine.max_fps pour viser `fps` : 0 (synchro seule) si la synchro verticale est
+## active et que la cible atteint la fréquence de l'écran, sinon `fps`.
+static func engine_limit(fps: int, refresh: float = -1.0, vsync: Variant = null) -> int:
+	var hz := refresh if refresh > 0.0 else screen_refresh()
+	var vs: bool = (DisplayServer.window_get_vsync_mode() != DisplayServer.VSYNC_DISABLED) if vsync == null else bool(vsync)
+	if vs and fps >= roundi(hz):
+		return 0
+	return fps
 
 
 ## Applique un mode (et l'enregistre si `persist`). Renvoie les images par seconde visées.
@@ -71,7 +95,7 @@ static func apply(mode: String, persist: bool = false) -> int:
 		MenuKit.set_setting(SETTING, mode)
 		MenuKit.set_setting(&"power_saving", mode == MODE_ECO)
 	var fps := target_for(mode)
-	Engine.max_fps = fps
+	Engine.max_fps = engine_limit(fps)
 	_request_android(float(fps))
 	return fps
 
