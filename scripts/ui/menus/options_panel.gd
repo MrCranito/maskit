@@ -27,6 +27,19 @@ func _init() -> void:
 
 
 func _build_body() -> void:
+	# Contenu défilant (doigt ou molette) : avec les lignes du mode dev et la sauvegarde cloud, il
+	# dépasse la hauteur d'un écran 720 px ; le bouton « Fermer » reste toujours visible.
+	var sc := ScrollContainer.new()
+	sc.name = "OptionsScroll"
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(sc)
+	var inner := VBoxContainer.new()
+	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inner.add_theme_constant_override("separation", 14)
+	sc.add_child(inner)
+	body = inner
+	MenuKit.make_touch_scroll(sc)
 	var am: Node = get_node_or_null(^"/root/AudioManager")
 	var music_v: float = float(am.get("music_volume")) if am != null else 0.7
 	var sfx_v: float = float(am.get("sfx_volume")) if am != null else 1.0
@@ -89,7 +102,7 @@ func _build_dev() -> void:
 		"Version de test : gemmes et or ∞, ton vrai solde est gardé", DevMode.is_unlimited(),
 		func(v: bool) -> bool: return DevMode.set_unlimited(v))
 	unlock_toggle = _dev_row("UnlockRow", "UnlockToggle", "Tout débloquer",
-		"Armes, objets, skins, pass, cartes : profil de test, ta sauvegarde est gardée",
+		"Profil de test complet, ta sauvegarde est gardée",
 		DevMode.is_all_unlocked(), func(v: bool) -> bool:
 			var now := DevMode.set_all_unlocked(v)
 			if now != v:
