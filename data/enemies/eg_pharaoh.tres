@@ -6,7 +6,7 @@
 script = ExtResource("1_edata")
 kind = &"eg_pharaoh"
 display_name = "Le Pharaon éternel"
-max_hp = 4200.0
+max_hp = 3300.0
 move_speed = 96.0
 body_radius = 52.0
 detection_radius = 780.0
@@ -22,7 +22,7 @@ awareness_decay = 0.02
 awareness_alert_threshold = 1.0
 attack_type = 0
 attack_range = 120.0
-attack_damage = 28.0
+attack_damage = 22.0
 attack_cooldown = 1.8
 attack_windup = 0.85
 aoe_radius = 150.0

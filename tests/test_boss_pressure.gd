@@ -62,12 +62,12 @@ func _escort_after_rules(difficulty: int) -> int:
 func test_escort_values_per_difficulty() -> void:
 	var v: Variant = _cfg().get_value("boss", "elite_boss_escorts", null)
 	assert_true(v is Array, "elite_boss_escorts est un tableau par difficulté")
-	assert_eq(v, [0, 1, 1, 1, 2], "Facile : pas d'élite ; Normal à Expert : 1 ; Cauchemar : 2")
+	assert_eq(v, [0, 0, 1, 1, 2], "Facile et Normal : pas d'élite ; Difficile et Expert : 1 ; Cauchemar : 2")
 	for i in 5:
 		assert_eq(BestiaryRules.boss_escorts(i), int((v as Array)[i]), "lecture difficulté %d" % i)
 	for i2 in range(1, 5):
 		assert_gte(BestiaryRules.boss_escorts(i2), BestiaryRules.boss_escorts(i2 - 1), "escorte croissante (%d)" % i2)
-	assert_lt(BestiaryRules.boss_escorts(0), BestiaryRules.boss_escorts(NORMAL), "Facile plus léger que Normal")
+	assert_lt(BestiaryRules.boss_escorts(NORMAL), BestiaryRules.boss_escorts(NORMAL + 1), "Normal plus léger que Difficile")
 
 
 func test_escort_scalar_still_accepted() -> void:
@@ -86,7 +86,7 @@ func test_escort_applied_by_difficulty() -> void:
 		pass_test("aucune élite déclarée")
 		return
 	assert_eq(_escort_after_rules(0), 0, "Facile : pas d'élite autour du boss")
-	assert_eq(_escort_after_rules(NORMAL), 1, "Normal : une élite d'escorte")
+	assert_eq(_escort_after_rules(NORMAL), 0, "Normal : pas d'élite, on affronte le boss")
 	assert_eq(_escort_after_rules(HARD), 1, "Difficile : une élite d'escorte")
 	assert_eq(_escort_after_rules(4), 2, "Cauchemar : deux élites")
 

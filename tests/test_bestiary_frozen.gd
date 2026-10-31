@@ -434,8 +434,8 @@ func test_boss_declare_avec_trois_phases() -> void:
 			assert_true(ids.has(StringName(str(sid3))), "phase %d : on_enter %s dans la phase" % [i + 1, sid3])
 	assert_gt(float((d.phases[2] as Dictionary).get("damage_mult", 1.0)), 1.3, "phase 3 enragée")
 	assert_lt(float((d.phases[2] as Dictionary).get("cooldown_mult", 1.0)), 0.7, "phase 3 : rythme effréné")
-	# « Vraiment très difficile » : plusieurs fois les PV d'une élite, plus que les autres boss.
-	assert_gt(d.max_hp, 6.0 * _load(&"ice_glacier_guardian").max_hp)
+	# « Vraiment très difficile » : plusieurs fois les PV d’une élite.
+	assert_gt(d.max_hp, 5.0 * _load(&"ice_glacier_guardian").max_hp)
 	assert_eq(d.stagger_ratio, 0.0, "pas d'étourdissement")
 
 
