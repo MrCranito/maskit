@@ -19,6 +19,13 @@ const TIERS := {
 	"debutant": {"weapons": [&"pistol_p9", &"smg_mp5"], "gadget": &"gadget_frag"},
 	"moyen": {"weapons": [&"rifle_m4a1", &"pistol_glock18", &"sniper_m24"], "gadget": &"gadget_frag"},
 	"equipe": {"weapons": [&"rifle_scarh", &"sniper_m82", &"smg_p90"], "gadget": &"gadget_c4"},
+	# Arsenaux par rareté (passe boss_rarete) : fusil, arme lourde à distance, arme rapide de
+	# près, gadget de la rareté. Pas de gadget offensif Rare (fumigène) : grenade ; pas de sniper
+	# Légendaire : P320.
+	"commun": {"weapons": [&"rifle_ak47", &"sniper_m24", &"smg_mp5"], "gadget": &"gadget_frag"},
+	"rare": {"weapons": [&"rifle_m4a1", &"sniper_ax50", &"smg_vector"], "gadget": &"gadget_frag"},
+	"epique": {"weapons": [&"rifle_scarh", &"sniper_m82", &"smg_p90"], "gadget": &"gadget_c4"},
+	"legendaire": {"weapons": [&"rifle_aug", &"pistol_p320", &"smg_uzi"], "gadget": &"gadget_drone"},
 }
 ## Arsenal réaliste par difficulté (raids) : Facile, Normal → débutant ; Difficile, Expert →
 ## moyen ; Cauchemar → bien équipé.
@@ -31,6 +38,9 @@ const BOSS_HEAL_KIT := {
 	"far_west": {&"bandage": 2, &"whisky": 1},
 	"space_station": {&"space_medigel": 3},
 	"mall": {&"mall_painkillers": 3},
+	"haunted_carnival": {&"hc_caramel_apple": 2},
+	"frozen_lands": {&"fl_thermos": 3},
+	"egypt": {&"eg_water_skin": 2, &"eg_honey_pot": 1},
 }
 const PROFILES := {
 	"prudent": {"dist": 0.8, "cover_hp": 0.6, "heal_hp": 0.55, "extract_hp": 0.35, "budget": 170.0,
