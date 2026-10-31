@@ -15,7 +15,8 @@ extends Control
 ##  - droite : bandeau violet translucide en biais (verre dépoli), pleine hauteur, réservé à
 ##    l'action principale : « DÉPLOYER » (PlayCard → choix des cartes → arsenal de départ → raid ;
 ##    salon coop ouvert → retour au salon) et dessous l'interrupteur En ligne / Hors ligne
-##    (OnlineSwitch). La coop passe par le « + Coéquipier » à côté du héros ;
+##    (OnlineSwitch). Tout le bandeau (DeploySlab, zone en biais) lance DÉPLOYER au toucher, sauf
+##    l'interrupteur. La coop passe par le « + Coéquipier » à côté du héros ;
 ##  - bas centré : version + lien Crédits.
 ##    L'arsenal emporté n'est plus résumé ici : il se choisit à l'étape 2.
 ## Animations d'entrée (glissements, fondus), retours tactiles et sons MenuKit, marges de
@@ -106,8 +107,63 @@ class LobbySlab extends Control:
 	var cut: float = 64.0
 	var color: Color = Color(MenuKit.VIOLET, 0.62)
 
+	## Forme du bandeau (coordonnées locales) : bord gauche en biais, de (cut, 0) à (0, bas).
+	func polygon() -> PackedVector2Array:
+		return PackedVector2Array([Vector2(cut, 0), Vector2(size.x, 0), size, Vector2(0, size.y)])
+
+	## Couleur de remplissage du moment (DeploySlab l'éclaircit à l'appui).
+	func fill_color() -> Color:
+		return color
+
 	func _draw() -> void:
-		draw_colored_polygon(PackedVector2Array([Vector2(cut, 0), Vector2(size.x, 0), size, Vector2(0, size.y)]), color)
+		draw_colored_polygon(polygon(), fill_color())
+
+
+## Bandeau de l'accueil : tout le bandeau lance DÉPLOYER au toucher (demande de Victor), pas
+## seulement le mot. La zone cliquable suit le biais (_has_point : rien dans la partie
+## transparente à gauche). Les enfants qui captent le clic (interrupteur En ligne / Hors ligne,
+## bouton DÉPLOYER lui-même) gardent leur comportement. Appui : tout le bandeau s'éclaircit
+## ([menu] lobby_slab_pressed_lighten), aussi quand on appuie sur le mot DÉPLOYER.
+class DeploySlab extends LobbySlab:
+	## Toucher relâché sur le bandeau (le lobby y branche _on_play).
+	signal activated
+	var pressed_lighten: float = 0.18
+	var held: bool = false:
+		set(v):
+			if held != v:
+				held = v
+				queue_redraw()
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	func fill_color() -> Color:
+		if not held:
+			return color
+		var c := color.lightened(pressed_lighten)
+		c.a = minf(1.0, color.a + pressed_lighten * 0.5)
+		return c
+
+	func _has_point(point: Vector2) -> bool:
+		return Geometry2D.is_point_in_polygon(point, polygon())
+
+	func _gui_input(event: InputEvent) -> void:
+		var mb := event as InputEventMouseButton
+		if mb == null or mb.button_index != MOUSE_BUTTON_LEFT:
+			return
+		accept_event()
+		if mb.pressed:
+			held = true
+		elif held:
+			held = false
+			# Relâché hors du bandeau (doigt glissé dehors) : annulé, comme un bouton.
+			if _has_point(mb.position):
+				activated.emit()
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_MOUSE_EXIT_SELF and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			held = false
 
 
 var slab: Control = null
@@ -145,11 +201,12 @@ func _build() -> void:
 	ui.add_child(veil)
 
 	# Droite : bandeau violet translucide pleine hauteur
-	var sl := LobbySlab.new()
+	var sl := DeploySlab.new()
 	sl.name = "Slab"
 	sl.cut = Balance.get_float("menu", "lobby_slab_cut", 64.0)
 	sl.color = Color(MenuKit.VIOLET, Balance.get_float("menu", "lobby_slab_alpha", 0.62))
-	sl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sl.pressed_lighten = Balance.get_float("menu", "lobby_slab_pressed_lighten", 0.18)
+	sl.activated.connect(_on_play)
 	sl.anchor_left = 1.0
 	sl.anchor_right = 1.0
 	sl.anchor_bottom = 1.0
@@ -407,6 +464,11 @@ func _build_slab_content(sl: Control, m: Vector4, slab_w: float) -> void:
 	play_button.name = "PlayButton"
 	play_button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	play_button.pressed.connect(_on_play)
+	# Appui sur le mot : tout le bandeau s'éclaircit aussi (même retour visuel partout).
+	if sl is DeploySlab:
+		var ds := sl as DeploySlab
+		play_button.button_down.connect(func() -> void: ds.held = true)
+		play_button.button_up.connect(func() -> void: ds.held = false)
 	inner.add_child(play_button)
 	# Respiration entre DÉPLOYER et l'interrupteur (retour de Victor : ils se collaient).
 	var gap := Control.new()
