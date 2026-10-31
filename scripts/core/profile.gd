@@ -81,6 +81,11 @@ var raid_weapon_ids: Array[StringName] = []
 ## Affixes des armes emportées (même ordre que raid_weapon_ids) : cartes de l'écran de mort.
 var raid_weapon_affixes: Array = []
 var _next_uid: int = 1
+## Profil de développement « Tout débloquer » chargé en mémoire (DevMode) : save() n'écrit plus
+## rien dans SaveManager, le profil réel y reste intact et sera rechargé à la désactivation.
+var _dev_profile_active: bool = false
+## Copie du profil réel prise à l'activation (repli si SaveManager est absent).
+var _real_snapshot: Dictionary = {}
 
 
 func _ready() -> void:
@@ -89,6 +94,7 @@ func _ready() -> void:
 	if eb != null and eb.has_signal(&"enemy_died"):
 		eb.connect(&"enemy_died", _on_enemy_died)
 	DevMode.notifier.changed.connect(_on_dev_mode_changed)
+	DevMode.notifier.unlock_changed.connect(_on_dev_unlock_changed)
 
 
 # --- Réserve d'armes ------------------------------------------------------------
@@ -750,6 +756,33 @@ func _on_dev_mode_changed(_on: bool) -> void:
 	changed.emit()
 
 
+## « Tout débloquer » : bascule entre le profil réel (sauvegardé) et le profil de développement
+## (DevTools.build_profile, en mémoire seulement).
+func _on_dev_unlock_changed(on: bool) -> void:
+	if on == _dev_profile_active:
+		return
+	if on:
+		save()   # le profil réel est à jour dans SaveManager avant de le quitter
+		_real_snapshot = to_dict()
+		_dev_profile_active = true
+		from_dict(DevTools.build_profile(_real_snapshot))
+		loadout = DevTools.default_loadout(get_stash_weapons(), loadout_slots())
+	else:
+		_dev_profile_active = false
+		var sm: Node = get_node_or_null(^"/root/SaveManager")
+		var d: Variant = (sm.get("data") as Dictionary).get(SAVE_KEY) if sm != null else null
+		from_dict(d if d is Dictionary else _real_snapshot)
+		_real_snapshot = {}
+	gems_changed.emit(gems)
+	gold_changed.emit(gold)
+	changed.emit()
+
+
+## Le profil en mémoire est-il le profil de développement (jamais sauvegardé) ?
+func is_dev_profile() -> bool:
+	return _dev_profile_active
+
+
 func add_gems(n: int) -> void:
 	gems = maxi(gems + n, 0)
 	save()
@@ -882,6 +915,7 @@ func from_dict(d: Dictionary) -> void:
 	var sw: Variant = d.get("skin_weapons", {})
 	skin_weapons = (sw as Dictionary).duplicate() if sw is Dictionary else {}
 	var st: Variant = d.get("stats", {})
+	stats = {"raids": 0, "extractions": 0, "deaths": 0}
 	if st is Dictionary:
 		stats.merge(st, true)
 	# Sauvegarde d'avant le niveau de raider : XP estimée à partir des statistiques.
@@ -916,6 +950,10 @@ static func _names_to_array(list: Array[StringName]) -> Array:
 
 
 func save() -> void:
+	# Profil de développement : jamais écrit (ni sur le disque, ni dans le cloud).
+	if _dev_profile_active:
+		changed.emit()
+		return
 	var sm: Node = get_node_or_null(^"/root/SaveManager")
 	if sm == null:
 		return
@@ -925,6 +963,10 @@ func save() -> void:
 
 
 func _load() -> void:
+	# Profil de développement actif (ex. restauration cloud) : le réel est à jour dans SaveManager,
+	# il sera relu à la désactivation.
+	if _dev_profile_active:
+		return
 	var sm: Node = get_node_or_null(^"/root/SaveManager")
 	if sm == null:
 		reset_new()

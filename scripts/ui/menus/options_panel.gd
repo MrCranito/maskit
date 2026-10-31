@@ -4,7 +4,8 @@ extends ModalPanel
 ## images par seconde (Max = fréquence de l'écran jusqu'à 120, 60, ou éco 30 : moins de chauffe).
 ## Les valeurs sont sauvegardées dans SaveManager.data["settings"] (MenuKit.set_setting).
 ## Versions de test uniquement (DevMode.is_available : build debug ou éditeur, donc l'APK de la CI) :
-## interrupteur « Argent illimité » (DevMode), seule façon de l'activer sur téléphone (pas de F3/F4).
+## interrupteur « Argent illimité » (DevMode), seule façon de l'activer sur téléphone (pas de F3/F4),
+## et interrupteur « Tout débloquer » (profil de développement virtuel, la vraie sauvegarde est gardée).
 
 var music_slider: HSlider = null
 var sfx_slider: HSlider = null
@@ -13,13 +14,16 @@ var vibration_toggle: Button = null
 var fps_button: Button = null
 ## Interrupteur du mode dev « argent illimité » (null hors version de test).
 var dev_toggle: Button = null
+## Interrupteur « Tout débloquer » (DevMode.set_all_unlocked ; null hors version de test).
+var unlock_toggle: Button = null
 ## Section « Sauvegarde cloud » (CloudSync) : état + compte, bouton Synchroniser.
 var cloud_status_label: Label = null
 var sync_button: Button = null
 
 
 func _init() -> void:
-	super._init("Options", Vector2(620, 600 if DevMode.is_available() else 520))
+	super._init("Options", Vector2(620, Balance.get_float("menu", "options_height_dev", 690.0)
+		if DevMode.is_available() else Balance.get_float("menu", "options_height", 520.0)))
 
 
 func _build_body() -> void:
@@ -81,32 +85,51 @@ func _build_body() -> void:
 func _build_dev() -> void:
 	if not DevMode.is_available():
 		return
+	dev_toggle = _dev_row("DevRow", "DevToggle", "Argent illimité",
+		"Version de test : gemmes et or ∞, ton vrai solde est gardé", DevMode.is_unlimited(),
+		func(v: bool) -> bool: return DevMode.set_unlimited(v))
+	unlock_toggle = _dev_row("UnlockRow", "UnlockToggle", "Tout débloquer",
+		"Armes, objets, skins, pass, cartes : profil de test, ta sauvegarde est gardée",
+		DevMode.is_all_unlocked(), func(v: bool) -> bool:
+			var now := DevMode.set_all_unlocked(v)
+			if now != v:
+				MenuKit.sfx(&"error")
+			return now)
+
+
+## Ligne du mode développeur : titre, sous-titre, interrupteur violet. `apply(v) -> bool` renvoie
+## l'état réellement obtenu (refus possible : bascule pendant un raid).
+func _dev_row(row_name: String, toggle_name: String, title: String, sub: String, pressed: bool,
+		apply: Callable) -> Button:
 	var row := HBoxContainer.new()
-	row.name = "DevRow"
+	row.name = row_name
 	row.add_theme_constant_override("separation", 16)
 	body.add_child(row)
 	var col := VBoxContainer.new()
 	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	col.add_theme_constant_override("separation", 0)
 	row.add_child(col)
-	col.add_child(MenuKit.label("Argent illimité", 26, MenuKit.TEXT, MenuKit.nunito(800)))
-	col.add_child(MenuKit.label("Version de test : gemmes et or ∞, ton vrai solde est gardé", 15, MenuKit.TEXT_DIM, MenuKit.nunito(600)))
-	dev_toggle = MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
-	dev_toggle.name = "DevToggle"
-	dev_toggle.toggle_mode = true
-	dev_toggle.button_pressed = DevMode.is_unlimited()
-	dev_toggle.text = "Activé" if dev_toggle.button_pressed else "Désactivé"
+	col.add_child(MenuKit.label(title, 26, MenuKit.TEXT, MenuKit.nunito(800)))
+	var sl := MenuKit.label(sub, 15, MenuKit.TEXT_DIM, MenuKit.nunito(600))
+	sl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(sl)
+	var t := MenuKit.button("", MenuKit.Style.SECONDARY, 22, Vector2(200, 60))
+	t.name = toggle_name
+	t.toggle_mode = true
+	t.button_pressed = pressed
+	t.text = "Activé" if pressed else "Désactivé"
 	var on := MenuKit.panel_style(MenuKit.VIOLET, Color(MenuKit.GOLD, 0.9), 16, 2, 10)
 	on.border_width_bottom = 5
-	dev_toggle.add_theme_stylebox_override("pressed", on)
-	dev_toggle.add_theme_stylebox_override("hover_pressed", on)
-	dev_toggle.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
-	dev_toggle.toggled.connect(func(v: bool) -> void:
-		var now := DevMode.set_unlimited(v)
-		dev_toggle.set_pressed_no_signal(now)
-		dev_toggle.text = "Activé" if now else "Désactivé"
+	t.add_theme_stylebox_override("pressed", on)
+	t.add_theme_stylebox_override("hover_pressed", on)
+	t.add_theme_color_override("font_pressed_color", MenuKit.TEXT)
+	t.toggled.connect(func(v: bool) -> void:
+		var now: bool = apply.call(v)
+		t.set_pressed_no_signal(now)
+		t.text = "Activé" if now else "Désactivé"
 		MenuKit.sfx(&"toggle"))
-	row.add_child(dev_toggle)
+	row.add_child(t)
+	return t
 
 
 ## Compte et sauvegarde cloud (CloudSync) : état, identifiant du compte invité, bouton Synchroniser.
