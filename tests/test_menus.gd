@@ -717,7 +717,10 @@ func test_weapon_skin_apply() -> void:
 	WeaponSkin.enabled_override = 1
 	var spr := Sprite2D.new()
 	add_child_autofree(spr)
-	var s := SkinData.get_skin(&"wsk_p90_digital")   # recoloration par shader (pas de texture dédiée)
+	# Skin sans texture dédiée (tous les skins du jeu en ont une depuis les armes HD) : recoloration
+	# par shader, avec le motif du skin P90 « Digital ».
+	var s := (SkinData.get_skin(&"wsk_p90_digital") as SkinData).duplicate() as SkinData
+	s.id = &"test_skin_sans_texture"
 	assert_null(s.held_texture())
 	WeaponSkin.apply(spr, s)
 	assert_true(spr.material is ShaderMaterial)
