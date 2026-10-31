@@ -375,15 +375,6 @@ func test_boss_whistle_calls_two_reinforcements() -> void:
 			assert_true((n as Enemy).is_in_combat(), "renfort déjà alerté")
 
 
-func test_reinforcement_never_whistles() -> void:
-	# Sinon les loups des glaces appelés sifflent à leur tour : meute sans fin.
-	var wolf := await _engaged(&"ice_wolf", Vector2.ZERO, Vector2(300, 0))
-	var s := wolf.get_skill(&"whistle")
-	assert_true(s.can_use_extra(300.0, true), "le chef peut siffler")
-	wolf.set_meta(&"reinforcement", true)
-	assert_false(s.can_use_extra(300.0, true), "un renfort ne siffle pas")
-
-
 func test_boss_rage_under_thirty_percent() -> void:
 	var boss := await _engaged(&"fw_deserter", Vector2.ZERO, Vector2(300, 0))
 	boss.data.stagger_ratio = 0.0

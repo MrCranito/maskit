@@ -61,7 +61,7 @@ Les dégâts de la colonne de droite sont les PV perdus par combat (le joueur a 
 
 | # | Fichier, clef | Avant | Après | Effet attendu |
 |---|---|---|---|---|
-| 1 | `scripts/enemies/skills/whistle_skill.gd` : `can_use_extra()` renvoie `false` si `e.has_meta(&"reinforcement")` (correction de bug, 1 ligne + 1 test GUT) | renforts qui sifflent | renforts muets | Termine la réaction en chaîne, sur tous les mondes (`fw_bandit` siffle aussi) |
+| 1 | Renforts qui n'appellent plus de renforts : **déjà corrigé sur main par Roux** (commit 9718749d, `EnemySkill.summons()` + `[enemy_skills] reinforcements_can_summon`), repris tel quel | renforts qui sifflent | renforts muets | Termine la réaction en chaîne, sur tous les mondes (`fw_bandit` siffle aussi) |
 | 2 | `data/enemies/ice_wolf.tres`, `skills` → `whistle` | `chance` 0,5 · `initial_cooldown` 1,5 · `max_total` 2 | 0,3 · 6,0 · 1 | La meute appelle moins et plus tard |
 | 3 | `data/balance.cfg [bestiary_frozen]` `pack_damage_per_ally` | 0,12 | 0,08 | Meute de 4 : +24 % de dégâts au lieu de +36 % |
 | 4 | `data/enemies/cv_circus_king.tres` `max_hp` | 4400 | 3400 | Aligné sur les boss 1-3 (+6 % au plus) |
