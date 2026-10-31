@@ -119,6 +119,15 @@ def plan(pass_name: str, rounds: int = 4) -> list[dict]:
                         jobs.append({"mode": "boss", "map": WORLD_MAPS[w], "difficulty": diff, "tier": tier,
                                      "profile": "agressif", "seed": 12000 + n, "max_time": 480})
                         n += 1
+    elif pass_name == "boss_rarete":
+        # Combats de boss par arsenal : 6 boss × 4 raretés × 10 combats, Normal, profil agressif.
+        n = 0
+        for w in WORLD_MAPS:
+            for tier in ("commun", "rare", "epique", "legendaire"):
+                for r in range(10):
+                    jobs.append({"mode": "boss", "map": WORLD_MAPS[w], "difficulty": 1, "tier": tier,
+                                 "profile": "agressif", "seed": 13000 + n, "max_time": 480})
+                    n += 1
     elif pass_name == "smoke":
         jobs = [{"mode": "raid", "map": MAPS["fw"], "difficulty": 1, "profile": "fouilleur", "seed": 11,
                  "max_time": 60}]
