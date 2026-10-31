@@ -99,6 +99,8 @@ var _shells_enabled: bool = true
 var _invulnerable_left: float = 0.0
 var _is_moving: bool = false
 var _alive: bool = true
+## Arène de test (TestArena) : aucun dégât reçu.
+var god_mode: bool = false
 var _move_joystick: TouchJoystick = null
 var _aim_joystick: TouchJoystick = null
 var _joysticks_looked_up: bool = false
@@ -1097,7 +1099,7 @@ func get_hide_spot() -> Node:
 # --- Dégâts ------------------------------------------------------------------
 
 func take_damage(amount: float, _source: Node) -> void:
-	if not _alive or net_downed or _invulnerable_left > 0.0 or amount <= 0.0:
+	if not _alive or net_downed or _invulnerable_left > 0.0 or amount <= 0.0 or god_mode:
 		return
 	# Coop, invité : seuls les dégâts envoyés par l'hôte comptent.
 	if NetHooks.active and NetHooks.blocks_local_damage():

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="MapCard" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/map_card.gd" id="1_card"]
+[ext_resource type="Texture2D" path="res://assets/ui/maps/test_arena.png" id="2_thumb"]
+
+[resource]
+script = ExtResource("1_card")
+id = &"dev_test_arena"
+display_name = "Arène de test"
+description = "Mode dev : mannequins, ennemis à la demande, râtelier d'armes et d'objets. Rien ne compte, sortie libre."
+world_path = "res://data/worlds/dev/world_test_arena.tres"
+category = &"dev"
+difficulty = 0
+thumbnail = ExtResource("2_thumb")
+accent_color = Color(0.486, 0.302, 1, 1)
+tags = PackedStringArray("Mode dev", "Sans risque", "Sortie libre")
+reward_text = "Aucune récompense"
+weight = 0.0
