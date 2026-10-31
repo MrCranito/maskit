@@ -249,6 +249,18 @@ def render_skin(skin_id: str) -> None:
     global mats
     base = mats
     mats = _skin_mats(over, base)
+    if skin_id not in SKINS:
+        # Skin généré : tout matériau de l'arme hors petites pièces techniques prend le motif.
+        d = _tres_skin(skin_id)
+        name = "sk_" + skin_id
+
+        def _hook(mat_name):
+            if mat_name in SKIN_KEEP or mat_name.startswith("sk"):
+                return None
+            main, metal = _skin_materials(name, d["pattern"], d["color_primary"], d["color_secondary"],
+                                          d["color_accent"])
+            return metal if mat_name in SKIN_METAL else main
+        WP.hook = _hook
     try:
         big, _cam, _info, (W, H) = _render(skin_id, HD[wid], BW.HELD_ELEV, None, OUTLINE_HELD, 6)
         C.downscale(big, os.path.join(OUT_SKIN_HELD, skin_id + ".png"), (W, H))
@@ -257,6 +269,7 @@ def render_skin(skin_id: str) -> None:
         C.downscale(big, os.path.join(OUT_SKIN_ICON, skin_id + ".png"), (W2, H2))
     finally:
         mats = base
+        WP.hook = None
     print("SKIN", skin_id, (W, H), (W2, H2), flush=True)
 
 

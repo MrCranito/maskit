@@ -20,6 +20,9 @@ import bpy
 import rdm_common as C
 
 _cache: dict[str, bpy.types.Material] = {}
+## Rendu d'un skin : hook(nom) -> matériau qui remplace celui demandé (None = matériau normal).
+## Couvre aussi les matériaux créés directement par les modèles (noyer, marine doré du P90…).
+hook = None
 
 
 def _node(nt, kind, **inputs):
@@ -85,6 +88,10 @@ def paint(name: str, base: str, shadow: str | None = None, lit: str | None = Non
     lumière) : donne du volume aux grandes faces plates vues de profil ;
     layers : motifs de skin superposés, [(hex, masque)] où masque(nt, coord objet) -> prise 0/1
     (build_weapon_skins.mask_bands, mask_flames…)."""
+    if hook is not None:
+        r = hook(name)
+        if r is not None:
+            return r
     if name in _cache:
         return _cache[name]
     m = bpy.data.materials.new("hd_" + name)
