@@ -119,6 +119,11 @@ func test_regles_d_armurerie_du_catalogue() -> void:
 			# C4 : Épique, uniquement fabricable à l'atelier ou trouvé en butin (pas en vente).
 			assert_eq(w.unlock_mode, WeaponData.UNLOCK_DROP)
 			continue
+		if w.id == &"gadget_hatch_key":
+			# Clef de trappe : trouvée sur les ennemis et dans les coffres seulement (pas en vente).
+			assert_eq(w.unlock_mode, WeaponData.UNLOCK_DROP)
+			assert_eq(w.price_gold, 0)
+			continue
 		assert_true(w.unlock_mode in [WeaponData.UNLOCK_SHOP, WeaponData.UNLOCK_KILL], "%s : achetable" % w.id)
 		assert_gt(w.price_gold, 0, "%s : prix en or" % w.id)
 		if w.rarity == 0:

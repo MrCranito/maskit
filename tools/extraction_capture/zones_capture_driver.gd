@@ -103,12 +103,12 @@ func _run() -> void:
 	await _shot("fermee")
 	var em: ExtractionZone = null
 	for z: ExtractionZone in raid.extraction_zones:
-		if z.emergency:
+		if z.is_hatch():
 			em = z
 	raid.raid_clock = 1.0e5
 	await _sleep(0.5)
 	if em != null:
 		await _goto(raid, em)
-		await _shot("urgence")
-	await _map(raid, "carte_urgence")
+		await _shot("trappe")
+	await _map(raid, "carte_permanente")
 	get_tree().quit(0)

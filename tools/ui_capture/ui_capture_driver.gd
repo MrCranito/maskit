@@ -9,7 +9,9 @@ extends Node
 ## --insets=g,h,d,b (encoche simulée, px de fenêtre : HudSafeArea.debug_insets),
 ## --pass_tier=N (pass de combat au palier N + moitié du suivant, en mémoire), --dev=0|1 (ressources illimitées),
 ## --online=0|1 (interrupteur En ligne / Hors ligne du lobby, en mémoire),
-## --slab_held=1 (bandeau DÉPLOYER montré enfoncé : retour visuel à l'appui).
+## --slab_held=1 (bandeau DÉPLOYER montré enfoncé : retour visuel à l'appui),
+## --only=arsenal_clef (arsenal avec une clef de trappe ajoutée et choisie comme équipement :
+## <prefix>arsenal_clef.png ; profil modifié en mémoire, sauvegarde isolée par override.cfg).
 
 var out: String = ""
 var only: String = ""
@@ -55,10 +57,33 @@ func _ready() -> void:
 	if only == "cartes":
 		_run_maps.call_deferred()
 		return
+	if only == "arsenal_clef":
+		_run_arsenal_key.call_deferred()
+		return
 	if only == "monnaie":
 		_run_currency.call_deferred()
 		return
 	_run.call_deferred()
+
+
+func _run_arsenal_key() -> void:
+	var uid := Profile.add_weapon(HatchKeys.GADGET_ID)
+	var uids: Array[int] = []
+	for e: Dictionary in Profile.weapons:
+		var w := Profile.get_weapon_data(int(e["uid"]))
+		if w != null and not w.is_gadget() and uids.size() < 1:
+			uids.append(int(e["uid"]))
+	uids.append(uid)
+	Profile.set_loadout(uids)
+	# Arsenal de départ : emplacement d'équipement occupé par la clef, fiche de la clef.
+	get_tree().change_scene_to_file("res://scenes/ui/menus/loadout.tscn")
+	await _sleep(1.5)
+	var scr := get_tree().current_scene
+	scr.call(&"show_detail", uid, false)
+	scr.call(&"_on_equip_pressed")
+	await _sleep(0.8)
+	await _shot("arsenal_clef")
+	get_tree().quit(0)
 
 
 func _run_menu() -> void:

@@ -11,7 +11,10 @@ extends Node2D
 ##   - réussite (play_success) : colonne éblouissante et gerbe d'éclats qui montent.
 ##   - durée de vie (ExtractionPlan) : minuteur au-dessus de la zone, qui clignote en orange
 ##     avant la fermeture ; zone fermée grisée et barrée (plus de colonne ni de fumigène) ;
-##     zone d'urgence invisible tant qu'elle n'est pas ouverte.
+##   - extraction permanente (ExtractionPlan, option A) : jamais fermée, minuteur « ∞ » absent ;
+##   - trappe d'urgence (kind hatch) : rendu Blender de trappe à chevrons verts
+##     (assets/sprites/extraction/hatch*.png), fermée à clef (`locked`) ; ni plaque, ni balise,
+##     ni icône au-dessus du brouillard (cachée hors du champ de vision, jamais sur la carte).
 ## Performance : chaque morceau est dessiné UNE fois ; l'animation passe par des Tween sur
 ## rotation / position / échelle / opacité de nœuds (aucun redessin par frame). Seul l'anneau
 ## de progression est redessiné pendant la canalisation, quand la valeur affichée change.
@@ -34,7 +37,12 @@ var radius: float = 96.0
 var zone_name: String = ""
 var opens_at: float = 0.0
 var closes_at: float = INF
-var emergency: bool = false
+## ExtractionPlan.KIND_* (permanente, temporaire, trappe).
+var kind: StringName = ExtractionPlan.KIND_TEMPORARY
+## Option de placement (ExtractionPlan.Spec.option) : debug.
+var option: String = ""
+## Trappe : fermée tant qu'aucune clef n'a été utilisée.
+var locked: bool = false
 var rank: int = 0
 var state: int = State.OPEN
 
@@ -50,6 +58,7 @@ var _smoke: Node2D = null
 var _timer: ZoneTimer = null
 var _closed_mark: Node2D = null
 var _pending_clock: float = -1.0
+var _hatch: HatchSprite = null
 
 
 ## Regroupe les cases d'extraction en zones contiguës (4-voisinage), triées (déterministe).
@@ -99,7 +108,9 @@ static func create_from_specs(specs: Array) -> Array[ExtractionZone]:
 		z.zone_name = sp.name
 		z.opens_at = sp.opens_at
 		z.closes_at = sp.closes_at
-		z.emergency = sp.emergency
+		z.kind = sp.kind
+		z.option = sp.option
+		z.locked = sp.kind == ExtractionPlan.KIND_HATCH
 		z.rank = sp.rank
 		z._compute_geometry()
 		out.append(z)
@@ -118,7 +129,25 @@ func state_at(t: float) -> int:
 
 
 func is_open() -> bool:
-	return state == State.OPEN or state == State.CLOSING
+	return (state == State.OPEN or state == State.CLOSING) and not locked
+
+
+func is_hatch() -> bool:
+	return kind == ExtractionPlan.KIND_HATCH
+
+
+func is_permanent() -> bool:
+	return kind == ExtractionPlan.KIND_PERMANENT
+
+
+## Trappe : ouverture (clef utilisée ici ou chez le coéquipier). Renvoie false si déjà ouverte.
+func unlock() -> bool:
+	if not locked:
+		return false
+	locked = false
+	if _hatch != null:
+		_hatch.set_open(true)
+	return true
 
 
 ## Secondes avant fermeture (INF si la zone ne ferme pas).
@@ -180,8 +209,7 @@ func _update_timer(t: float) -> void:
 			col = COL_WARN
 			blink = fmod(t, 1.0) > 0.5
 		_:
-			txt = "URGENCE" if emergency and closes_at == INF else (format_time(closes_at - t) if closes_at != INF else "")
-			col = COL_WARN if emergency else COL
+			txt = format_time(closes_at - t) if closes_at != INF else ""
 	_timer.set_state(txt, col, blink)
 
 
@@ -209,6 +237,9 @@ func has_cell(c: Vector2i) -> bool:
 func _ready() -> void:
 	name = "ExtractionZone"
 	z_index = 1
+	if is_hatch():
+		_build_hatch()
+		return
 	_ground = ZoneGround.new()
 	_ground.radius = radius
 	add_child(_ground)
@@ -241,6 +272,28 @@ func _ready() -> void:
 	if _pending_clock >= 0.0:
 		_apply_state()
 		_update_timer(_pending_clock)
+
+
+## Trappe d'urgence : rendu de trappe (fermée / ouverte), colonne et anneau de progression
+## (canalisation), cachée hors du champ de vision comme les conteneurs.
+func _build_hatch() -> void:
+	name = "HatchZone"
+	add_to_group(&"fog_hideable")
+	_hatch = HatchSprite.new()
+	_hatch.set_open(not locked)
+	add_child(_hatch)
+	_beam = ZoneBeam.new()
+	_beam.radius = radius
+	_beam.modulate.a = 0.0
+	add_child(_beam)
+	_progress = ZoneProgress.new()
+	_progress.radius = radius
+	_progress.visible = false
+	add_child(_progress)
+
+
+func is_hatch_open_visual() -> bool:
+	return _hatch != null and _hatch.opened
 
 
 func _exit_tree() -> void:
@@ -618,3 +671,71 @@ static func draw_exit_glyph(ci: CanvasItem, c: Vector2, s: float, col: Color) ->
 	ci.draw_line(c + Vector2(0, s * 0.55), c + Vector2(0, -s * 0.5), col, lw * 1.15, true)
 	ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 0.5, -s * 0.25), c + Vector2(0, -s * 0.95),
 		c + Vector2(s * 0.5, -s * 0.25)]), col)
+
+
+## Trappe d'urgence : rendu Blender (art/blender/build_hatch.py) fermé / ouvert, point d'appui
+## lu dans hatch.json ; repli dessiné (cadre à bandes vert et noir, battants, chevrons) si les
+## images manquent.
+class HatchSprite extends Node2D:
+	const DIR := "res://assets/sprites/extraction/"
+	## Rendus à 2 px par unité monde : affichés à l'échelle 0,5.
+	const RENDER_SCALE := 0.5
+	static var _meta: Dictionary = {}
+	var opened: bool = false
+	var _sprite: Sprite2D = null
+
+	func set_open(o: bool) -> void:
+		opened = o
+		if not is_node_ready():
+			return
+		_refresh()
+
+	func _ready() -> void:
+		_sprite = Sprite2D.new()
+		_sprite.centered = false
+		_sprite.scale = Vector2(RENDER_SCALE, RENDER_SCALE)
+		add_child(_sprite)
+		_refresh()
+
+	static func meta() -> Dictionary:
+		if _meta.is_empty() and FileAccess.file_exists(DIR + "hatch.json"):
+			var v: Variant = JSON.parse_string(FileAccess.get_file_as_string(DIR + "hatch.json"))
+			if v is Dictionary:
+				_meta = v
+		return _meta
+
+	func _refresh() -> void:
+		var key := "hatch_open" if opened else "hatch"
+		var path := DIR + key + ".png"
+		var info: Dictionary = meta().get(key, {})
+		if ResourceLoader.exists(path) and not info.is_empty():
+			_sprite.texture = load(path) as Texture2D
+			var feet: Array = info.get("feet", [0, 0])
+			_sprite.position = -Vector2(float(feet[0]), float(feet[1])) * RENDER_SCALE
+			_sprite.visible = true
+		else:
+			_sprite.visible = false
+		queue_redraw()
+
+	func _draw() -> void:
+		if _sprite != null and _sprite.visible:
+			return
+		var h := TS * 0.95
+		var r := Rect2(-h, -h, h * 2.0, h * 2.0)
+		draw_rect(r.grow(6.0), Color(0.16, 0.17, 0.2))
+		var n := 10
+		for i in n:
+			var c := COL if i % 2 == 0 else Color(0.05, 0.06, 0.06)
+			draw_rect(Rect2(r.position.x + r.size.x * i / n, r.position.y - 6.0, r.size.x / n, 6.0), c)
+			draw_rect(Rect2(r.position.x + r.size.x * i / n, r.end.y, r.size.x / n, 6.0), c)
+		var inner := r.grow(-14.0)
+		draw_rect(inner, Color(0.02, 0.03, 0.03) if opened else Color(0.3, 0.32, 0.36))
+		if opened:
+			for k in 5:
+				var y := inner.position.y + 10.0 + k * inner.size.y / 5.0
+				draw_line(Vector2(-18, y), Vector2(18, y), Color(0.55, 0.42, 0.3), 4.0)
+		else:
+			draw_line(Vector2(0, inner.position.y), Vector2(0, inner.end.y), Color(0.12, 0.13, 0.15), 3.0)
+		for k in 2:
+			var y0 := -h - 40.0 + k * 22.0
+			draw_polyline(PackedVector2Array([Vector2(-22, y0), Vector2(0, y0 + 16), Vector2(22, y0)]), COL, 7.0, true)

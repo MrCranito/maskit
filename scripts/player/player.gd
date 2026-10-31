@@ -354,6 +354,20 @@ func get_placed_c4_count() -> int:
 	return n
 
 
+## Équipement « clef de trappe » avec une charge.
+func has_hatch_key_gadget() -> bool:
+	return loadout.gadget != null and loadout.gadget.gadget_kind == WeaponData.GADGET_HATCH_KEY \
+		and loadout.has_gadget_charge()
+
+
+## Consomme la clef de trappe de l'équipement (false s'il n'y en a pas).
+func consume_hatch_key_gadget() -> bool:
+	if not has_hatch_key_gadget() or not loadout.consume_gadget_charge():
+		return false
+	gadget_changed.emit()
+	return true
+
+
 ## Utilise l'équipement dans `dir` (ZERO = visée, sinon direction de déplacement).
 ## C4 : si des charges sont posées, l'appui suivant les fait exploser.
 ## Renvoie true si quelque chose s'est produit.
@@ -362,6 +376,10 @@ func use_gadget(dir: Vector2 = Vector2.ZERO) -> bool:
 	if g == null or not _alive or _hidden or net_downed:
 		return false
 	var kind: StringName = g.gadget_kind
+	# Clef de trappe : s'utilise seule sur une trappe d'urgence, jamais lancée.
+	if kind == WeaponData.GADGET_HATCH_KEY:
+		_play_sfx(&"dry_fire")
+		return false
 	if kind == WeaponData.GADGET_C4 and get_placed_c4_count() > 0:
 		for d: GadgetDevice in _c4_placed:
 			if is_instance_valid(d):

@@ -67,7 +67,7 @@ func _catalog() -> Array[WeaponData]:
 func test_catalogue_exact_de_la_planche() -> void:
 	WeaponCatalog.reload()
 	var all := _catalog()
-	assert_eq(all.size(), 36, "18 armes de la planche + 12 de la phase 8 + 5 équipements + le leurre")
+	assert_eq(all.size(), 37, "18 armes de la planche + 12 de la phase 8 + 5 équipements + le leurre + la clef de trappe")
 	for id: StringName in PLANCHE:
 		var w := WeaponCatalog.get_weapon(id)
 		assert_not_null(w, "arme %s" % id)
@@ -148,7 +148,8 @@ func test_armes_de_la_phase_8_dans_le_butin() -> void:
 
 func test_equipements_dans_l_emplacement_gadget() -> void:
 	var kinds := {&"gadget_frag": [&"frag", 3], &"gadget_smoke": [&"smoke", 2], &"gadget_mine": [&"mine", 2],
-		&"gadget_c4": [&"c4", 1], &"gadget_drone": [&"drone", 1], &"gadget_decoy": [&"decoy", 2]}
+		&"gadget_c4": [&"c4", 1], &"gadget_drone": [&"drone", 1], &"gadget_decoy": [&"decoy", 2],
+		&"gadget_hatch_key": [&"hatch_key", 1]}
 	for w: WeaponData in _catalog():
 		assert_eq(w.is_gadget(), w.category == WeaponData.CAT_GADGET, "%s : slot cohérent" % w.id)
 		if not w.is_gadget():

@@ -128,6 +128,12 @@ static func on_door_changed(door: Variant) -> void:
 		coop.on_door_changed(door as Node2D)
 
 
+## Trappe d'urgence ouverte avec une clef : le coéquipier la voit ouverte aussi.
+static func on_hatch_opened(cell: Vector2i) -> void:
+	if coop != null and not applying_remote:
+		coop.on_hatch_opened(cell)
+
+
 ## Raid._on_stairs_entered : true = le coop gère (compte à rebours commun).
 static func intercept_stairs(stairs: Variant) -> bool:
 	return coop != null and coop.intercept_stairs(stairs)

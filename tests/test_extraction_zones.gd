@@ -1,8 +1,8 @@
 extends GutTest
-## Zones d'extraction multiples à durée de vie (scripts/dungeon/extraction_plan.gd) :
-## 3 zones par étage qui a une extraction, triées par distance du départ, fermeture dans
-## l'ordre (la plus proche d'abord), zone d'urgence, canalisation impossible / interrompue sur
-## une zone fermée, déterminisme par seed.
+## Extractions d'un étage (scripts/dungeon/extraction_plan.gd) : une permanente au bout du
+## parcours, 3 temporaires triées par distance du départ qui ferment dans l'ordre (la plus
+## proche d'abord), trappes d'urgence verrouillées hors carte, canalisation impossible /
+## interrompue sur une zone fermée, déterminisme par seed.
 
 const WORLDS := {
 	"far_west": ["res://data/worlds/world_01_far_west.tres", "res://scripts/dungeon/dungeon_generator.gd"],
@@ -26,12 +26,16 @@ func _floors(key: String, sd: int) -> Array:
 	return _cache[k]
 
 
-static func _normal(L: FloorLayout) -> Array:
-	return L.extraction_specs.filter(func(s: Variant) -> bool: return not s.emergency)
+static func _temps(L: FloorLayout) -> Array:
+	return L.extraction_specs.filter(func(s: Variant) -> bool: return s.kind == ExtractionPlan.KIND_TEMPORARY)
 
 
-func test_trois_zones_triees_par_distance_sur_les_trois_cartes() -> void:
-	var want := int(Balance.get_value("extraction", "zones_per_floor", 3))
+static func _of(L: FloorLayout, kind: StringName) -> Array:
+	return L.extraction_specs.filter(func(s: Variant) -> bool: return s.kind == kind)
+
+
+func test_permanente_temporaires_trappes_sur_les_trois_cartes() -> void:
+	var want := int(Balance.get_value("extraction", "temporary_zones", 3))
 	for key: String in WORLDS:
 		var with_extraction := 0
 		for sd: int in SEEDS:
@@ -40,15 +44,20 @@ func test_trois_zones_triees_par_distance_sur_les_trois_cartes() -> void:
 					assert_true(L.extraction_specs.is_empty(), "%s %d étage %d : pas d'extraction" % [key, sd, L.floor_index])
 					continue
 				with_extraction += 1
-				var n := _normal(L)
-				assert_eq(n.size(), want, "%s %d étage %d : %d zones" % [key, sd, L.floor_index, want])
+				var perm := _of(L, ExtractionPlan.KIND_PERMANENT)
+				assert_eq(perm.size(), 1, "%s %d étage %d : une permanente" % [key, sd, L.floor_index])
+				assert_eq(perm[0].closes_at, INF, "la permanente ne ferme jamais")
+				var n := _temps(L)
+				assert_eq(n.size(), want, "%s %d étage %d : %d temporaires" % [key, sd, L.floor_index, want])
 				var names := {}
 				for i in n.size():
 					var s: ExtractionPlan.Spec = n[i]
 					assert_eq(s.rank, i)
 					assert_eq(s.opens_at, 0.0, "ouverte dès le départ")
+					assert_lt(s.closes_at, INF, "une temporaire ferme")
 					assert_false(names.has(s.name), "noms uniques (%s)" % s.name)
 					names[s.name] = true
+					assert_true(s.option in ["B", "C", "D", "+"], "option de placement (%s)" % s.option)
 					for c: Vector2i in s.cells:
 						assert_true(FloorLayout.is_walkable_tile(L.get_tile(c)), "%s : case praticable" % s.name)
 						assert_true(L.extraction_cells.has(c))
@@ -57,14 +66,37 @@ func test_trois_zones_triees_par_distance_sur_les_trois_cartes() -> void:
 						assert_gte(s.distance, p.distance, "triées par distance")
 						assert_gt(s.closes_at, p.closes_at, "la plus proche ferme la première")
 						assert_gte(s.closes_at - p.closes_at, Balance.get_float("extraction", "lifetime_min_gap", 75.0) - 0.01)
-				# Zone d'urgence : ouverte à la fermeture de la dernière, ne ferme plus.
-				var em := L.extraction_specs.filter(func(s: Variant) -> bool: return s.emergency)
-				if em.size() == 1:
-					assert_eq(em[0].opens_at, n[n.size() - 1].closes_at, "urgence à la dernière fermeture")
-					assert_eq(em[0].closes_at, INF)
-				else:
-					assert_eq(n[n.size() - 1].closes_at, INF, "sans zone d'urgence, la plus lointaine reste ouverte")
+				# Trappes : hors des cases d'extraction (pas sur la carte).
+				for h: ExtractionPlan.Spec in _of(L, ExtractionPlan.KIND_HATCH):
+					for c2: Vector2i in h.cells:
+						assert_false(L.extraction_cells.has(c2), "trappe hors des cases d'extraction")
+						assert_true(FloorLayout.is_walkable_tile(L.get_tile(c2)))
+					assert_eq(h.closes_at, INF)
 		assert_gt(with_extraction, 0, "%s : des étages avec extraction" % key)
+
+
+func test_permanente_au_bout_du_parcours() -> void:
+	for key: String in WORLDS:
+		for L: FloorLayout in _floors(key, 42):
+			var perm := _of(L, ExtractionPlan.KIND_PERMANENT)
+			if perm.is_empty() or perm[0].option != "A":
+				continue
+			var p: ExtractionPlan.Spec = perm[0]
+			for s: ExtractionPlan.Spec in _temps(L):
+				if s.option == "B":
+					assert_lt(s.distance, p.distance, "%s étage %d : mi-parcours avant le bout" % [key, L.floor_index])
+
+
+func test_trappes_presentes() -> void:
+	var total := 0
+	for key: String in WORLDS:
+		for sd: int in SEEDS:
+			for L: FloorLayout in _floors(key, sd):
+				if not L.extraction_cells.is_empty():
+					var h := _of(L, ExtractionPlan.KIND_HATCH)
+					assert_lte(h.size(), ExtractionPlan.hatch_count(L))
+					total += h.size()
+	assert_gt(total, 0, "des trappes d'urgence sur les cartes")
 
 
 func test_zones_ajoutees_sur_des_cases_libres() -> void:
@@ -99,7 +131,7 @@ func test_deterministe_par_seed() -> void:
 static func _sig(L: FloorLayout) -> String:
 	var parts := PackedStringArray()
 	for s: ExtractionPlan.Spec in L.extraction_specs:
-		parts.append("%s|%s|%s|%s|%s" % [s.name, str(s.cells), s.opens_at, s.closes_at, s.emergency])
+		parts.append("%s|%s|%s|%s|%s" % [s.name, str(s.cells), s.opens_at, s.closes_at, s.kind])
 	return ";".join(parts)
 
 
@@ -111,15 +143,15 @@ func test_fermeture_dans_l_ordre() -> void:
 	var zones := ExtractionZone.create_from_specs(L.extraction_specs)
 	for z in zones:
 		add_child_autofree(z)
-	var n := zones.filter(func(z: ExtractionZone) -> bool: return not z.emergency)
-	var em := zones.filter(func(z: ExtractionZone) -> bool: return z.emergency)
+	var n := zones.filter(func(z: ExtractionZone) -> bool: return z.kind == ExtractionPlan.KIND_TEMPORARY)
+	var perm := zones.filter(func(z: ExtractionZone) -> bool: return z.is_permanent())
+	var hatches := zones.filter(func(z: ExtractionZone) -> bool: return z.is_hatch())
 	for z: ExtractionZone in zones:
 		z.update_clock(0.0)
 	for z: ExtractionZone in n:
 		assert_true(z.is_open(), "%s ouverte au départ" % z.zone_name)
-	for z2: ExtractionZone in em:
-		assert_eq(z2.state, ExtractionZone.State.DORMANT, "urgence éteinte au départ")
-		assert_false(z2.visible)
+	for h: ExtractionZone in hatches:
+		assert_false(h.is_open(), "trappe verrouillée au départ")
 	var warn := Balance.get_float("extraction", "close_warning", 30.0)
 	var first: ExtractionZone = n[0]
 	first.update_clock(first.closes_at - warn + 1.0)
@@ -131,9 +163,9 @@ func test_fermeture_dans_l_ordre() -> void:
 		for j in n.size():
 			assert_eq(n[j].is_open(), j > i, "t=%d : zone %d" % [int(t), j])
 		assert_eq(n[i].get_timer_text(), "FERMÉE")
-	for z4: ExtractionZone in em:
-		assert_true(z4.is_open(), "urgence ouverte quand tout est fermé")
-		assert_eq(z4.get_timer_text(), "URGENCE")
+	assert_eq(perm.size(), 1)
+	assert_true(perm[0].is_open(), "la permanente reste ouverte quand tout est fermé")
+	assert_eq(perm[0].get_timer_text(), "", "pas de minuteur sur la permanente")
 
 
 # --- Raid : canalisation sur zone fermée ---------------------------------------------------
@@ -149,8 +181,9 @@ func test_canalisation_impossible_puis_interrompue_sur_zone_fermee() -> void:
 		Profile.from_dict(saved_profile)
 		SaveManager.data = saved_sm
 		return
-	assert_gte(raid.extraction_zones.size(), 3, "trois zones (et l'urgence) à l'étage")
+	assert_gte(raid.extraction_zones.size(), 4, "permanente + trois temporaires à l'étage")
 	var z: ExtractionZone = raid.extraction_zones[0]
+	assert_eq(z.kind, ExtractionPlan.KIND_TEMPORARY, "les temporaires d'abord")
 	var cell: Vector2i = z.cells[0]
 	raid.place_player(cell)
 	# Canalisation en cours, puis la zone ferme : interrompue.
@@ -167,17 +200,12 @@ func test_canalisation_impossible_puis_interrompue_sur_zone_fermee() -> void:
 	raid._update_extraction(cell, Raid.extraction_channel_time())
 	assert_false(raid.is_extracting(), "impossible sur zone fermée")
 	assert_false(raid.is_raid_over())
-	# Zone d'urgence : canalisation plus longue.
+	# Tout est fermé : seule la permanente reste ouverte (les trappes sont verrouillées).
 	raid.raid_clock = 1.0e6
 	raid._update_zone_clocks()
 	var open := raid.get_open_extraction_zones()
-	assert_eq(open.size(), 1, "seule l'urgence reste ouverte")
-	if open.size() == 1 and open[0].emergency:
-		raid.place_player(open[0].cells[0])
-		raid._update_extraction(open[0].cells[0], 0.01)
-		assert_true(raid.is_extracting())
-		assert_almost_eq(raid.current_channel_time(), Raid.extraction_channel_time()
-			* Balance.get_float("extraction", "emergency_channel_mult", 2.0), 0.001)
-		raid._cancel_extraction(false)
+	assert_eq(open.size(), 1, "seule la permanente reste ouverte")
+	if open.size() == 1:
+		assert_true(open[0].is_permanent())
 	Profile.from_dict(saved_profile)
 	SaveManager.data = saved_sm

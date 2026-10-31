@@ -155,7 +155,8 @@ static func _ecfg(key: String, def: Variant) -> Variant:
 ##  - cadavre : table de l'archétype (corpse_table_for), avec la chance de vide de la table ;
 ##  - au sol : avec la chance ground_drop_chance (archétype, sinon [enemy_loot]), 1 à
 ##    ground_drop_max objets de la table enemy_drop ; l'élite lâche toujours et davantage ;
-##  - clef spéciale de l'étage (key_drop_chance × elite_key_mult pour l'élite) : au sol.
+##  - clef spéciale de l'étage (key_drop_chance × elite_key_mult pour l'élite) : au sol ;
+##  - clef de trappe d'urgence (HatchKeys.enemy_chance) : au sol.
 static func roll_enemy_loot(data: EnemyData, rng: RandomNumberGenerator, difficulty: int, floor_index: int,
 		keys: Array[StringName], biome_table: StringName = &"enemy") -> Dictionary:
 	var corpse: Array[Dictionary] = []
@@ -171,6 +172,10 @@ static func roll_enemy_loot(data: EnemyData, rng: RandomNumberGenerator, difficu
 		var k := LootDB.get_item(keys[rng.randi_range(0, keys.size() - 1)])
 		if k != null:
 			ground.append({"item": k, "count": 1})
+	# Clef de trappe d'urgence : tirage à part (HatchKeys), au sol.
+	var hk := HatchKeys.roll(rng.seed, HatchKeys.enemy_chance(difficulty, elite))
+	if not hk.is_empty():
+		ground.append(hk)
 	var chance := float(_ecfg("ground_drop_chance", 0.35))
 	if data != null and data.ground_drop_chance >= 0.0:
 		chance = data.ground_drop_chance

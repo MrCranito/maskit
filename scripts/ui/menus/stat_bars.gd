@@ -11,6 +11,8 @@ const WEAPON_STATS: Array[Array] = [
 const GADGET_STATS: Array[Array] = [
 	["blast", "Dégâts"], ["radius", "Rayon"], ["duration", "Durée"], ["charges", "Charges"],
 ]
+## Clef de trappe : seules les charges ont un sens.
+const KEY_STATS: Array[Array] = [["charges", "Charges"]]
 ## Compatibilité.
 const STATS: Array[Array] = WEAPON_STATS
 
@@ -19,7 +21,7 @@ const STATS: Array[Array] = WEAPON_STATS
 var stacked: bool = false
 var bars: Dictionary = {}     ## clé → Panel (remplissage)
 var values: Dictionary = {}   ## clé → Label
-var _mode: int = -1           ## 0 arme, 1 équipement
+var _mode: int = -1           ## 0 arme, 1 équipement, 2 clef de trappe
 
 static var _max: Dictionary = {}
 
@@ -39,7 +41,7 @@ func _build(mode: int) -> void:
 		c.queue_free()
 	bars.clear()
 	values.clear()
-	for s: Array in (GADGET_STATS if mode == 1 else WEAPON_STATS):
+	for s: Array in (KEY_STATS if mode == 2 else (GADGET_STATS if mode == 1 else WEAPON_STATS)):
 		if stacked:
 			_build_stacked_row(s)
 			continue
@@ -163,8 +165,15 @@ static func format_value(w: WeaponData, key: String) -> String:
 	return str(roundi(stat_value(w, key)))
 
 
+## Lignes à afficher : 0 arme, 1 équipement, 2 clef de trappe.
+static func mode_of(w: WeaponData) -> int:
+	if w == null or not w.is_gadget():
+		return 0
+	return 2 if w.gadget_kind == WeaponData.GADGET_HATCH_KEY else 1
+
+
 func show_weapon(w: WeaponData, color: Color = MenuKit.GOLD) -> void:
-	_build(1 if w != null and w.is_gadget() else 0)
+	_build(mode_of(w))
 	for key: Variant in bars:
 		var fill: Panel = bars[key]
 		var f: float = 0.0

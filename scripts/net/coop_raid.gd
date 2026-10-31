@@ -1387,11 +1387,24 @@ func on_door_changed(door: Node2D) -> void:
 	_ev.end()
 
 
+## Trappe d'urgence ouverte : même message que les portes (case de la trappe, OPEN).
+func on_hatch_opened(cell: Vector2i) -> void:
+	if not is_partner_in_raid():
+		return
+	_ev.begin(NetProtocol.Msg.DOOR)
+	_ev.i16(cell.x)
+	_ev.i16(cell.y)
+	_ev.u8(FloorLayout.DoorState.OPEN)
+	_ev.end()
+
+
 func _on_door() -> void:
 	var cell := Vector2i(_r.i16(), _r.i16())
 	var state := _r.u8()
 	var door := raid.get_door_at(cell)
 	if door == null or not is_instance_valid(door):
+		if state == FloorLayout.DoorState.OPEN:
+			raid.open_hatch_at(cell)
 		return
 	if state == FloorLayout.DoorState.OPEN:
 		if door.has_method(&"is_locked") and bool(door.call(&"is_locked")):

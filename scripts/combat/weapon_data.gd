@@ -58,6 +58,9 @@ const GADGET_C4 := &"c4"
 const GADGET_DRONE := &"drone"
 ## Leurre : lancé, émet du bruit (NoiseSources) qui attire les ennemis pendant effect_duration.
 const GADGET_DECOY := &"decoy"
+## Clef de trappe : ne se lance pas ; consommée (1 charge) à l'ouverture d'une trappe
+## d'urgence (Raid._try_open_hatch).
+const GADGET_HATCH_KEY := &"hatch_key"
 ## Modes de déblocage à l'armurerie (champ `unlock_mode`).
 const UNLOCK_SHOP := &"shop"
 const UNLOCK_KILL := &"kill"
