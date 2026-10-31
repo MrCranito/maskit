@@ -6,7 +6,7 @@ extends Control
 ## Puis (≈ 2,8 s, passable au toucher) : le voile encre se replie en plaque biseautée derrière le
 ## logo qui glisse à droite et découvre le camp au coucher du soleil (LobbyScene, le même fond
 ## vivant que le menu principal, héros compris) ; le grand bandeau violet translucide et un liseré
-## glissent depuis la droite ; le slogan se révèle par balayage ; reflet sur le logo ; braises ;
+## glissent depuis la droite ; reflet sur le logo ; braises ;
 ## légère respiration ; barre de chargement discrète (le menu principal est chargé en tâche de
 ## fond) ; fondu vers le menu principal.
 ## Cadrage de la première image : boot.png (1920 x 1080) est affiché par le moteur en « keep »
@@ -33,7 +33,6 @@ var curtain: Curtain = null
 var logo: Control = null
 var wordmark: Wordmark = null
 var shine: ColorRect = null
-var slogan: SloganBand = null
 var loader: Loader = null
 var embers: CPUParticles2D = null
 var hint: Label = null
@@ -162,9 +161,6 @@ func _build() -> void:
 	shine.rotation = 0.38
 	shine.visible = false
 	wordmark.add_child(shine)
-	slogan = SloganBand.new()
-	slogan.clip_contents = true
-	logo.add_child(slogan)
 	loader = Loader.new()
 	loader.modulate.a = 0.0
 	logo.add_child(loader)
@@ -188,9 +184,7 @@ func _build_logo(fs: int) -> void:
 	title_size = fs
 	wordmark.setup(fs)
 	shine.size = Vector2(fs * 0.32, wordmark.size.y * 2.2)
-	slogan.setup(fs)
-	slogan.position = Vector2(wordmark.text_x, wordmark.size.y + fs * 0.2)
-	loader.position = Vector2(wordmark.text_x, slogan.position.y + slogan.full_size.y + fs * 0.2)
+	loader.position = Vector2(wordmark.text_x, wordmark.size.y + fs * 0.3)
 	loader.size = Vector2(wordmark.size.x - wordmark.text_x, maxf(3.0, fs * 0.035))
 	logo.size = Vector2(wordmark.size.x, loader.position.y + loader.size.y)
 	logo.pivot_offset = wordmark.size * 0.5
@@ -276,9 +270,8 @@ func _play() -> void:
 	_timeline.parallel().tween_property(self, "stripe_in", 1.0, 0.55).set_delay(open_t * 0.45) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_timeline.parallel().tween_callback(func() -> void: embers.emitting = true).set_delay(open_t * 0.5)
-	# slogan révélé par balayage, puis reflet sur le logotype
-	_timeline.tween_property(slogan, "reveal", 1.0, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_timeline.parallel().tween_property(loader, "modulate:a", 1.0, 0.3)
+	# barre de chargement, puis reflet sur le logotype
+	_timeline.tween_property(loader, "modulate:a", 1.0, 0.3)
 	_timeline.tween_callback(func() -> void:
 		shine.visible = true
 		shine.position = Vector2(-shine.size.x * 2.0, -wordmark.size.y * 0.6))
@@ -314,7 +307,7 @@ func _process(delta: float) -> void:
 	_elapsed += delta
 	var p := load_progress()
 	loader.progress = maxf(loader.progress, p)
-	if auto_advance and p >= 1.0 and slogan.reveal >= 1.0:
+	if auto_advance and p >= 1.0 and loader.modulate.a >= 1.0:
 		finish()
 
 
@@ -464,39 +457,7 @@ class Wordmark extends Control:
 		draw_line(c + dir * s * 0.08, base, col, w, true)
 		draw_colored_polygon(PackedVector2Array([tip, base + n * head * 0.62, base - n * head * 0.62]), col)
 
-## Slogan sur une bande violette en biais, révélée par balayage (`reveal` 0..1, clip_contents).
-class SloganBand extends Control:
-	var fs: int = 30
-	var full_size: Vector2 = Vector2.ZERO
-	var reveal: float = 0.0:
-		set(v):
-			reveal = v
-			size.x = full_size.x * clampf(v, 0.0, 1.0)
 
-	func _ready() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func setup(title_size: int) -> void:
-		fs = maxi(12, roundi(title_size * 0.24))
-		var font: Font = MenuKit.nunito(700)
-		var tw: float = font.get_string_size(RaidersLogo.SLOGAN, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
-		full_size = Vector2(tw + fs * 1.6, roundf(fs * 1.7))
-		size = Vector2(full_size.x * reveal, full_size.y)
-		queue_redraw()
-
-	func _draw() -> void:
-		var h: float = full_size.y
-		var k: float = h * 0.35
-		draw_colored_polygon(PackedVector2Array([Vector2(k, 0), Vector2(full_size.x, 0),
-			Vector2(full_size.x - k, h), Vector2(0, h)]), Color(MenuKit.VIOLET, 0.92))
-		var font: Font = MenuKit.nunito(700)
-		var asc: float = font.get_ascent(fs)
-		var desc: float = font.get_descent(fs)
-		draw_string(font, Vector2(fs * 0.8, (h - asc - desc) * 0.5 + asc), RaidersLogo.SLOGAN,
-			HORIZONTAL_ALIGNMENT_LEFT, -1, fs, MenuKit.TEXT)
-
-
-## Barre de chargement discrète : piste blanche très claire, remplissage violet clair.
 class Loader extends Control:
 	var progress: float = 0.0:
 		set(v):
