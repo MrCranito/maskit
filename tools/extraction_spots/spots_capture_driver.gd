@@ -73,9 +73,17 @@ func _run() -> void:
 			await _sleep(1.5)
 			if is_instance_valid(raid.enemies_container):
 				raid.enemies_container.process_mode = Node.PROCESS_MODE_DISABLED
-		raid.place_player(sp["cell"])
+		_clear_extractions(raid)
+		var cell: Vector2i = sp["cell"]
+		var mk := SpotMarker.new()
+		mk.label = "PERMANENTE " + String(sp["id"])
+		mk.position = FloorLayout.cell_to_world(cell) + Vector2(32, 32)
+		mk.z_index = 4000
+		raid.add_child(mk)
+		raid.place_player(_beside(raid.layout, cell))
 		await _sleep(1.2)
 		await _shot("spot_" + String(sp["id"]))
+		mk.queue_free()
 	get_tree().quit(0)
 
 
@@ -151,3 +159,34 @@ func _rect_outline(img: Image, r: Rect2i, c: Color) -> void:
 func _mark(img: Image, cell: Vector2i, c: Color, rad: int = 2) -> void:
 	img.fill_rect(Rect2i((cell.x - rad) * S, (cell.y - rad) * S, (2 * rad + 1) * S, (2 * rad + 1) * S), Color(0, 0, 0))
 	img.fill_rect(Rect2i((cell.x - rad + 1) * S - S / 2, (cell.y - rad + 1) * S - S / 2, (2 * rad) * S, (2 * rad) * S), c)
+
+
+## Anciennes zones retirées (pas de canalisation ni de lueur pendant le repérage).
+func _clear_extractions(raid: Raid) -> void:
+	for z: ExtractionZone in raid.extraction_zones:
+		z.queue_free()
+	raid.extraction_zones.clear()
+	if raid.minimap != null:
+		raid.minimap.rebuild()
+
+
+## Case praticable à 3 cases du candidat (le joueur ne cache pas le marqueur).
+func _beside(L: FloorLayout, c0: Vector2i) -> Vector2i:
+	for d: Vector2i in [Vector2i(0, 3), Vector2i(3, 0), Vector2i(-3, 0), Vector2i(0, -3), Vector2i(2, 2), Vector2i(-2, 2)]:
+		var t := L.get_tile(c0 + d)
+		if t == FloorLayout.Tile.STREET or t == FloorLayout.Tile.FLOOR:
+			return c0 + d
+	return c0
+
+
+## Marqueur violet du candidat (anneau 2×2 cases + libellé).
+class SpotMarker extends Node2D:
+	var label: String = ""
+
+	func _draw() -> void:
+		var col := Color(0.72, 0.61, 1.0)
+		draw_circle(Vector2.ZERO, 120.0, Color(0.49, 0.30, 1.0, 0.28))
+		draw_arc(Vector2.ZERO, 120.0, 0.0, TAU, 64, col, 8.0, true)
+		draw_arc(Vector2.ZERO, 64.0, 0.0, TAU, 48, col, 4.0, true)
+		var f := ThemeDB.fallback_font
+		draw_string(f, Vector2(-150, -140), label, HORIZONTAL_ALIGNMENT_CENTER, 300, 34, Color.WHITE)
