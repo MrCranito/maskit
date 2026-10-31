@@ -10,7 +10,7 @@ const Prop := preload("res://scripts/biomes/space_station/ss_prop.gd")
 const Cross := preload("res://scripts/biomes/space_station/ss_cross.gd")
 const SEEDS := 20
 const DIFFS := 5
-const MAX_MS_PER_FLOOR := 50.0
+const MAX_MS_PER_FLOOR := 100.0  # 50 → 100 ms (31/10) : CI GitHub ~2,5× plus lente qu'un poste de dev
 ## Passes de chronométrage de test_performances (on garde le meilleur temps de chaque pont).
 const PERF_PASSES := 3
 const T := FloorLayout.Tile
@@ -425,8 +425,8 @@ func test_performances() -> void:
 	var mean := total / maxf(1.0, float(best.size()))
 	gut.p("Génération de pont (meilleur de %d passes) : moyenne %.1f ms, pire %.1f ms" % [PERF_PASSES, mean, worst])
 	# Moyenne sous le budget ; pic toléré à 2x (mesures bruitées).
-	assert_lt(mean, MAX_MS_PER_FLOOR, "génération moyenne d'un pont < 50 ms")
-	assert_lt(worst, MAX_MS_PER_FLOOR * 2.0, "pire génération d'un pont < 100 ms")
+	assert_lt(mean, MAX_MS_PER_FLOOR, "génération moyenne d'un pont < %d ms" % int(MAX_MS_PER_FLOOR))
+	assert_lt(worst, MAX_MS_PER_FLOOR * 2.0, "pire génération d'un pont < %d ms" % int(MAX_MS_PER_FLOOR * 2.0))
 
 
 # --- Décor ---------------------------------------------------------------------------------------------

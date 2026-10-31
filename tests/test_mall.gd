@@ -5,7 +5,7 @@ extends GutTest
 const WORLD_PATH := "res://data/worlds/world_03_mall.tres"
 const SEEDS := 20
 const DIFFS := 5
-const MAX_MS_PER_FLOOR := 50.0
+const MAX_MS_PER_FLOOR := 100.0  # 50 → 100 ms (31/10) : CI GitHub ~2,5× plus lente qu'un poste de dev
 ## Passes de chronométrage de test_performance (on garde le meilleur temps de chaque run).
 const PERF_PASSES := 3
 const T := FloorLayout.Tile
