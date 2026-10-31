@@ -1,10 +1,11 @@
 class_name MapSelect
 extends Control
 ## « Choisis ta carte » (ouvert par « Jouer ») :
-##   haut  : retour, titre, puces de filtre par catégorie (Toutes / Événements / Hebdo /
-##           Mensuelle / Permanentes) ;
-##   centre: toutes les cartes disponibles d'un coup d'œil, en grandes vignettes sur deux
-##           rangées défilables horizontalement (l'événement en cours en grand à gauche) ;
+##   haut  : retour, titre, puces de filtre par catégorie (Toutes + [maps] categories :
+##           Événements / Permanentes) ;
+##   centre: toutes les cartes disponibles d'un coup d'œil, rangées par difficulté, en grandes
+##           vignettes par colonnes de 2, défilables horizontalement (l'événement en cours en
+##           grand à gauche) ;
 ##   bas   : panneau compact de la carte choisie (nom, biome, modificateurs en puces
 ##           vertes/rouges, récompense, minuteur) + gros bouton « Choisir mon arsenal ».
 ## Sélection au tap (animation), deuxième tap = bouton d'action. Le bouton ouvre l'écran
@@ -12,7 +13,6 @@ extends Control
 ## Rotation : MapRotation (inchangée). Minuteurs : Timer 1×/s ; liste reconstruite quand une
 ## période se termine. Monde absent → « Bientôt », non jouable.
 
-const FILTERS: Array[StringName] = [&"all", &"event", &"weekly", &"monthly", &"permanent"]
 const FILTER_TITLES := {
 	&"all": "Toutes", &"event": "Événements", &"weekly": "Hebdo",
 	&"monthly": "Mensuelle", &"permanent": "Permanentes",
@@ -121,7 +121,7 @@ func _build() -> void:
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	head.add_child(chips)
 	var group := ButtonGroup.new()
-	for f: StringName in FILTERS:
+	for f: StringName in filters():
 		var accent: Color = MenuKit.GOLD if f == &"all" else (MapTile.CATEGORY_BADGE[f][1] as Color)
 		var b := MenuKit.chip(String(FILTER_TITLES[f]), accent, group)
 		b.toggled.connect(func(on: bool) -> void:
@@ -219,7 +219,7 @@ func refresh_rotation() -> void:
 	var keep: Dictionary = _find_entry(last_selected_id)
 	if not keep.is_empty():
 		selected_entry = keep
-	var f: StringName = last_filter if FILTERS.has(last_filter) else &"all"
+	var f: StringName = last_filter if filters().has(last_filter) else &"all"
 	current_filter = &""
 	set_filter(f)
 	if not keep.is_empty() and _tile_for(keep) != null:
@@ -320,6 +320,13 @@ func _fill() -> void:
 	_wire_focus()
 
 
+## Puces de filtre : Toutes + les catégories proposées (MapRotation.enabled_categories).
+static func filters() -> Array[StringName]:
+	var out: Array[StringName] = [&"all"]
+	out.append_array(MapRotation.enabled_categories())
+	return out
+
+
 ## Cartes rangées par difficulté croissante (MapCard.difficulty), puis dans l'ordre des mondes
 ## (data/worlds/world_01…, world_02…) ; l'arène de test du mode dev en dernier. Tri stable.
 static func sorted_by_difficulty(list: Array[Dictionary]) -> Array[Dictionary]:
@@ -386,7 +393,7 @@ func _tile_for(e: Dictionary) -> MapTile:
 func _wire_focus() -> void:
 	if tiles.is_empty():
 		return
-	for f: StringName in FILTERS:
+	for f: StringName in filters():
 		var b: Button = filter_chips[f]
 		b.focus_neighbor_bottom = b.get_path_to(tiles[0])
 	launch_button.focus_neighbor_top = launch_button.get_path_to(tiles[0])

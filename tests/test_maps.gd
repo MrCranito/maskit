@@ -149,10 +149,11 @@ func test_week_and_month_bounds() -> void:
 	var mb: Vector2i = MapRotation.month_bounds(T0)
 	assert_eq(Time.get_datetime_string_from_unix_time(mb.x), "2026-10-01T00:00:00")
 	assert_eq(Time.get_datetime_string_from_unix_time(mb.y), "2026-11-01T00:00:00")
-	var weekly: Dictionary = MapRotation.available_cards(T0).filter(
-		func(e: Dictionary) -> bool: return e["category"] == MapCard.CATEGORY_WEEKLY)[0]
-	assert_eq(int(weekly["ends_at"]), wb.y)
-	assert_eq(MapRotation.time_left(weekly, T0), wb.y - T0)
+	# Hebdo et mensuelle ne sont plus proposées ([maps] categories) : rotation calculée, pas offerte.
+	for e: Dictionary in MapRotation.available_cards(T0):
+		assert_true(e["category"] in [MapCard.CATEGORY_EVENT, MapCard.CATEGORY_PERMANENT],
+			"%s : catégorie proposée" % (e["card"] as MapCard).id)
+	assert_false(MapRotation.weekly_cards(T0).is_empty(), "Rotation hebdo toujours calculable")
 	var perm: Dictionary = MapRotation.available_cards(T0).back()
 	assert_eq(MapRotation.time_left(perm, T0), -1, "Permanente : sans limite")
 
@@ -365,7 +366,9 @@ func test_map_select_screen() -> void:
 	MapSelect.last_selected_id = &""
 	var ms := _map_select()
 	await wait_frames(3)
-	assert_eq(ms.filter_chips.size(), 5, "Puces : Toutes + 4 catégories")
+	assert_eq(ms.filter_chips.size(), 3, "Puces : Toutes, Événements, Permanentes")
+	assert_false(ms.filter_chips.has(&"weekly"), "Pas de section Hebdo")
+	assert_false(ms.filter_chips.has(&"monthly"), "Pas de section Mensuelle")
 	assert_eq(ms.current_filter, &"all", "Toutes les cartes par défaut")
 	var available: int = MapRotation.available_cards(T0).size()
 	# + l'arène de test en version de test (mode dev, TestArena.rotation_entries).
@@ -383,9 +386,9 @@ func test_map_select_screen() -> void:
 		assert_gte(t.custom_minimum_size.y, 64.0, "Vignette tactile")
 	ms.set_filter(&"permanent")
 	assert_eq(ms.tiles.size(), MapCard.by_category(&"permanent").size())
-	ms.set_filter(&"weekly")
+	ms.set_filter(&"event")
 	for t: MapTile in ms.tiles:
-		assert_eq(t.card.category, MapCard.CATEGORY_WEEKLY)
+		assert_eq(t.card.category, MapCard.CATEGORY_EVENT)
 	ms.set_filter(&"permanent")
 	var dust: MapTile = null
 	for t: MapTile in ms.tiles:
