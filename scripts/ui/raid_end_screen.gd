@@ -9,12 +9,17 @@ extends CanvasLayer
 ##   - mort : « PERDU » : cartes barrées et grisées, butin perdu, « GARDÉ » (XP), cadeau du
 ##     pistolet si la réserve est vide ;
 ##   - encart « Armurerie » : victimes qui comptent pour un déblocage (summary.unlock_kills) ;
-##   - droite : bandeau violet translucide dépoli : XP du pass et niveau de raider, bouton encre
-##     secondaire (« VOIR L'INVENTAIRE » / « REFAIRE MON ARSENAL »), puis « CONTINUER » / « AU CAMP ».
+##   - bilan du raid sous le verdict (summary["stats"]) : tué par, survie, éliminations, étage ;
+##   - droite : bandeau violet translucide dépoli : cartes de progression animées (pass de combat,
+##     niveau de raider : badge, barre qui se remplit, passage de palier/niveau, prochaine
+##     récompense), détail de l'XP, bouton encre secondaire (« VOIR L'INVENTAIRE » /
+##     « REFAIRE MON ARSENAL »), puis « CONTINUER » / « AU CAMP ».
 ## Le jeu est en pause derrière (PROCESS_MODE_ALWAYS). Tout tient à l'écran sans défilement
 ## vertical (1280×720 et téléphones larges) ; les armes défilent horizontalement.
 
 signal menu_requested
+## Coop : « Rejouer ensemble » (le bouton secondaire devient ce bouton, voir set_replay).
+signal replay_pressed
 
 const MAIN_MENU_SCENE := "res://scenes/ui/menus/main_menu.tscn"
 const NIGHT := Color(0.024, 0.027, 0.05, 0.94)
@@ -35,6 +40,8 @@ var _panel: Control = null
 var _slab: Control = null
 var _menu_btn: Button = null
 var _second_btn: Button = null
+## Coop : ligne d'information au-dessus des boutons (coéquipier encore en raid…), masquée si vide.
+var _note_label: Label = null
 var _paused_by_me: bool = false
 var _left_w: float = 800.0
 
@@ -141,6 +148,7 @@ func _build() -> void:
 		18, Color(1, 1, 1, 0.75), MenuKit.nunito(600), 0)
 	sub.uppercase = true
 	col.add_child(sub)
+	_add_stats(col)
 	if success:
 		_build_success(col)
 	else:
@@ -154,6 +162,17 @@ func _build() -> void:
 	tw.tween_property(col, "modulate:a", 1.0, 0.3)
 	tw.tween_property(col, "position:x", col.position.x, 0.4).from(col.position.x - 60.0)
 	tw.tween_property(sl, "modulate:a", 1.0, 0.35).set_delay(0.08)   # fondu seul : le bouton reste à l'écran
+	verdict.pivot_offset = Vector2(0, verdict.get_combined_minimum_size().y * 0.6)
+	verdict.scale = Vector2(1.35, 1.35)
+	tw.tween_property(verdict, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var cards := col.find_child("Cards", true, false)
+	if cards != null:
+		var i := 0
+		for c: Node in cards.get_children():
+			var ci := c as CanvasItem
+			ci.modulate.a = 0.0
+			tw.tween_property(ci, "modulate:a", 1.0, 0.25).set_delay(0.25 + 0.08 * i)
+			i += 1
 
 
 func _kicker_text() -> String:
@@ -169,21 +188,32 @@ func _build_slab(sl: Control, m: Vector4) -> void:
 	col.name = "SlabContent"
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	col.offset_left = 16.0
+	# Le bord gauche du bandeau est en biais (LobbySlab.cut) : la colonne en suit le milieu.
+	col.offset_left = maxf(16.0, (sl as MainMenu.LobbySlab).cut * 0.5) if sl is MainMenu.LobbySlab else 16.0
 	col.offset_top = maxf(m.y, 36.0)
 	col.offset_right = -maxf(m.z, 44.0)
+	var avail := -sl.offset_left - col.offset_left + col.offset_right
 	col.offset_bottom = -maxf(m.w, 40.0)
-	col.add_theme_constant_override("separation", 8)
+	col.add_theme_constant_override("separation", 10)
 	sl.add_child(col)
 	_add_pass_xp(col)
 	_add_raider_xp(col)
+	_add_xp_breakdown(col)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_child(spacer)
+	_note_label = MenuKit.label("", 16, Color(1, 1, 1, 0.85), MenuKit.nunito(600), 0)
+	_note_label.name = "CoopNote"
+	_note_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_note_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_note_label.custom_minimum_size.x = avail
+	_note_label.visible = false
+	col.add_child(_note_label)
 	_second_btn = _ink_button("Voir l'inventaire" if success else "Refaire mon arsenal")
 	_second_btn.name = "SecondButton"
 	_second_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+	_second_btn.custom_minimum_size.x = minf(_second_btn.custom_minimum_size.x, avail)
 	_second_btn.pressed.connect(func() -> void:
 		go_to_menu(MenuKit.MERCHANT_SCENE if success else MenuKit.MAP_SELECT_SCENE))
 	col.add_child(_second_btn)
@@ -193,7 +223,12 @@ func _build_slab(sl: Control, m: Vector4) -> void:
 	_menu_btn.focus_mode = Control.FOCUS_ALL
 	_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_END
 	_menu_btn.add_theme_font_override("font", MenuKit.display())
-	_menu_btn.add_theme_font_size_override("font_size", int(Balance.get_value("menu", "deploy_font_size", 84)))
+	# Taille du libellé réduite s'il ne tient pas dans la colonne (« CONTINUER » est long).
+	var fs := int(Balance.get_value("menu", "deploy_font_size", 84))
+	var tw := MenuKit.display().get_string_size(_menu_btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 12.0
+	if tw > avail:
+		fs = int(floor(float(fs) * avail / tw))
+	_menu_btn.add_theme_font_size_override("font_size", fs)
 	for k: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_hover_pressed_color"]:
 		_menu_btn.add_theme_color_override(k, MenuKit.TEXT)
 	var hov := CutBox.make(Color(1, 1, 1, 0.1), 14.0, Color(0, 0, 0, 0), 0.0, 6.0, 0.0)
@@ -232,6 +267,47 @@ func _ink_button(txt: String) -> Button:
 	f.grow = 3.0
 	b.add_theme_stylebox_override("focus", f)
 	return b
+
+
+## Coop : le bouton secondaire devient « REJOUER ENSEMBLE » (retour au salon avec la même
+## équipe) ; `enabled` = les deux joueurs ont fini et le coéquipier est encore dans le salon.
+func set_replay(enabled: bool) -> void:
+	if _second_btn == null:
+		return
+	if not _second_btn.has_meta(&"replay"):
+		_second_btn.set_meta(&"replay", true)
+		_second_btn.name = "ReplayButton"
+		_second_btn.text = "REJOUER ENSEMBLE"
+		for c: Dictionary in _second_btn.pressed.get_connections():
+			_second_btn.pressed.disconnect(c["callable"])
+		_second_btn.pressed.connect(func() -> void:
+			MenuKit.sfx(&"confirm")
+			replay_pressed.emit())
+		var mk := func(bg: Color) -> CutBox:
+			var c := CutBox.make(bg, 16.0, Color(0, 0, 0, 0), 0.0, 16.0, 0.0)
+			c.corners = CutBox.CUT_TOP_LEFT
+			return c
+		_second_btn.add_theme_stylebox_override("normal", mk.call(MenuKit.NIGHT_DEEP))
+		_second_btn.add_theme_stylebox_override("hover", mk.call(MenuKit.VIOLET.darkened(0.25)))
+		_second_btn.add_theme_stylebox_override("disabled", mk.call(Color(MenuKit.NIGHT_DEEP, 0.45)))
+		_second_btn.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.4))
+	_second_btn.disabled = not enabled
+
+
+func is_replay_enabled() -> bool:
+	return _second_btn != null and _second_btn.has_meta(&"replay") and not _second_btn.disabled
+
+
+## Coop : texte d'information au-dessus des boutons du bandeau ("" = masqué).
+func set_note(text: String) -> void:
+	if _note_label == null:
+		return
+	_note_label.text = text
+	_note_label.visible = not text.is_empty()
+
+
+func get_note() -> String:
+	return _note_label.text if _note_label != null and _note_label.visible else ""
 
 
 ## Largeur de la colonne de gauche (compatibilité).
@@ -460,8 +536,10 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 	card.add_theme_stylebox_override("panel", box)
 	card.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 	card.custom_minimum_size = Vector2(Balance.get_float("menu", "raid_end_card_width", 200.0), CARD_H)
-	if not lost:
-		card.add_child(MenuKit.rarity_backdrop(w.rarity))
+	var backdrop := MenuKit.rarity_backdrop(w.rarity)
+	if lost:
+		backdrop.modulate = Color(1, 1, 1, 0.35)
+	card.add_child(backdrop)
 	var pic := Control.new()
 	pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -503,13 +581,12 @@ func _weapon_card(w: WeaponData, lost: bool) -> Control:
 		strike.offset_left = 30
 		strike.offset_right = -30
 		card.add_child(strike)
-	else:
-		var bar := ColorRect.new()
-		bar.color = rc
-		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-		bar.offset_top = -4
-		card.add_child(bar)
+	var bar := ColorRect.new()
+	bar.color = Color(rc, 0.45) if lost else rc
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bar.offset_top = -4
+	card.add_child(bar)
 	return card
 
 
@@ -545,56 +622,153 @@ func _item_row(items: Dictionary) -> Control:
 	return row
 
 
-## XP et niveau de raider (summary["raider"] = {xp, level_before, level_after, unlocks}, ajouté par
-## Raid), dans le bandeau : « NIVEAU DE RAIDER N », « +XP » en Anton, déblocages obtenus.
+## Niveau de raider (summary["raider"] = {xp, level_before, level_after, unlocks, total_before,
+## total_after}, ajouté par Raid) : carte de progression animée, déblocages obtenus.
 func _add_raider_xp(root: VBoxContainer) -> void:
 	var rx: Variant = summary.get("raider")
 	if not (rx is Dictionary) or (rx as Dictionary).is_empty():
 		return
 	var d: Dictionary = rx
 	var after := int(d.get("level_after", 1))
-	var up := after > int(d.get("level_before", 1))
-	var box := _slab_block("RaiderXp", ("Niveau %d atteint" % after) if up else ("Niveau de raider %d" % after),
-		"+%d XP" % int(d.get("xp", 0)), 34)
-	root.add_child(box)
+	var gain := int(d.get("xp", 0))
+	var t1 := int(d.get("total_after", RaiderProgress.xp_total_for(after)))
+	var card := XpCard.new()
+	card.name = "RaiderXp"
+	card.kicker = "Niveau de raider"
+	card.up_text = "Niveau supérieur"
+	card.gain = gain
+	card.total_before = int(d.get("total_before", maxi(t1 - gain, 0)))
+	card.total_after = t1
+	card.level_of = RaiderProgress.level_for_xp
+	card.progress_of = RaiderProgress.level_progress
 	var names: PackedStringArray = []
 	for u: Variant in d.get("unlocks", []):
 		if u is Dictionary:
 			names.append(RaiderProgress.label_of(u))
+	var next := RaiderProgress.next_unlock(after)
 	if not names.is_empty():
-		var l := _right_label("Débloqué : " + " · ".join(names), 16, MenuKit.TEXT)
-		l.name = "RaiderUnlocks"
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		l.custom_minimum_size.x = Balance.get_float("menu", "loadout_detail_width", 300.0)
-		l.size_flags_horizontal = Control.SIZE_SHRINK_END
-		root.add_child(l)
+		card.footer = "Débloqué : " + " · ".join(names)
+		card.footer_hot = true
+	elif not next.is_empty():
+		card.footer = "Niveau %d : %s" % [int(next["level"]), RaiderProgress.label_of(next)]
+	root.add_child(card)
+	if not names.is_empty():
+		card.set_meta(&"unlocks", names)
 
 
-## XP du pass de combat (summary["pass_xp"] = {xp, tier_before, tier_after}, ajouté par Raid),
-## dans le bandeau : « PASS DE COMBAT · PALIER N », « +XP ».
+## Pass de combat (summary["pass_xp"] = {xp, tier_before, tier_after, total_before, total_after},
+## ajouté par Raid) : carte de progression animée, récompense du palier atteint ou suivant.
 func _add_pass_xp(root: VBoxContainer) -> void:
 	var px: Variant = summary.get("pass_xp")
 	if not (px is Dictionary) or (px as Dictionary).is_empty():
 		return
 	var d: Dictionary = px
-	var before := int(d.get("tier_before", 0))
+	var bp := BattlePassSystem.get_instance()
+	var season: BattlePassSeason = bp.get_season() if bp != null else null
 	var after := int(d.get("tier_after", 0))
-	var k := ("Pass de combat · palier %d → %d" % [before, after]) if after > before else ("Pass de combat · palier %d" % after)
-	root.add_child(_slab_block("PassXp", k, "+%d XP" % int(d.get("xp", 0))))
+	var gain := int(d.get("xp", 0))
+	var card := XpCard.new()
+	card.name = "PassXp"
+	card.kicker = "Pass de combat"
+	card.unit = "Palier"
+	card.up_text = "Palier franchi"
+	card.gain = gain
+	if season != null:
+		var t1 := int(d.get("total_after", season.xp_total_for(after)))
+		card.total_before = int(d.get("total_before", maxi(t1 - gain, 0)))
+		card.total_after = t1
+		card.level_of = func(total: int) -> int: return pass_tier_for(season, total)
+		card.progress_of = func(total: int) -> Vector2i:
+			var t := pass_tier_for(season, total)
+			return Vector2i.ZERO if t >= season.tiers else Vector2i(total - season.xp_total_for(t), season.xp_for_tier(t + 1))
+		var shown := after if after > int(d.get("tier_before", 0)) else mini(after + 1, season.tiers)
+		var r := season.reward(shown, BattlePassSystem.FREE)
+		if bp.premium:
+			var rp := season.reward(shown, BattlePassSystem.PREMIUM)
+			if not rp.is_empty():
+				r = rp
+		if not r.is_empty():
+			var lbl := BattlePassSystem.reward_label(r)
+			if after > int(d.get("tier_before", 0)):
+				card.footer = "Palier %d : %s à récupérer" % [shown, lbl]
+				card.footer_hot = true
+			else:
+				card.footer = "Palier %d : %s" % [shown, lbl]
+	else:
+		card.total_before = 0
+		card.total_after = gain
+		card.level_of = func(_t: int) -> int: return after
+		card.progress_of = func(_t: int) -> Vector2i: return Vector2i.ZERO
+	root.add_child(card)
 
 
-func _slab_block(node_name: String, kicker: String, value: String, value_px: int = 50) -> VBoxContainer:
-	var v := VBoxContainer.new()
-	v.name = node_name
-	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	v.add_theme_constant_override("separation", 0)
-	var k := _right_label(kicker, 17, MenuKit.TEXT)
-	k.uppercase = true
-	v.add_child(k)
-	var val := MenuKit.label(value, value_px, MenuKit.TEXT, MenuKit.display(), 0)
-	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	v.add_child(val)
-	return v
+## Palier du pass atteint avec `total` XP cumulée (même calcul que BattlePassSystem.tier()).
+static func pass_tier_for(season: BattlePassSeason, total: int) -> int:
+	var t := 0
+	while t < season.tiers and total >= season.xp_total_for(t + 1):
+		t += 1
+	return t
+
+
+## Détail de l'XP du raid (summary["pass_xp"]["breakdown"]) : une ligne compacte sous les cartes.
+func _add_xp_breakdown(root: VBoxContainer) -> void:
+	var px: Variant = summary.get("pass_xp")
+	var lines: Variant = (px as Dictionary).get("breakdown", []) if px is Dictionary else []
+	if not (lines is Array) or (lines as Array).is_empty():
+		return
+	var box := PanelContainer.new()
+	box.name = "XpBreakdown"
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_stylebox_override("panel", CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.45), 10.0, Color(0, 0, 0, 0), 0.0, 14.0, 8.0))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 0)
+	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(grid)
+	for e: Variant in lines:
+		if not (e is Dictionary):
+			continue
+		var v := int((e as Dictionary).get("xp", 0))
+		var k := MenuKit.label(str((e as Dictionary).get("label", "")), 14, Color(1, 1, 1, 0.75), MenuKit.nunito(700), 0)
+		k.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_child(k)
+		var val := MenuKit.label("%s%d XP" % ["+" if v >= 0 else "−", absi(v)], 16, MenuKit.TEXT if v >= 0 else DEATH, MenuKit.display(), 0)
+		val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		grid.add_child(val)
+	root.add_child(box)
+
+
+## Bilan du raid (summary["stats"] = {kills, time, floor, killer}, ajouté par Raid) : pastilles
+## sous le verdict. Mort : « Tué par » d'abord ; extraction : survie et éliminations (la valeur et
+## les gemmes ont leurs propres pastilles).
+func _add_stats(root: VBoxContainer) -> void:
+	var st: Variant = summary.get("stats")
+	if not (st is Dictionary) or (st as Dictionary).is_empty():
+		return
+	var d: Dictionary = st
+	var row := HBoxContainer.new()
+	row.name = "RaidStats"
+	row.add_theme_constant_override("separation", 6)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var killer := str(d.get("killer", ""))
+	if not success:
+		var kc := _stat_chip("Tué par", killer if not killer.is_empty() else "Inconnu", DEATH, 24)
+		kc.name = "KillerChip"
+		kc.custom_minimum_size.x = Balance.get_float("menu", "raid_end_killer_width", 250.0)
+		row.add_child(kc)
+	var secs := int(round(float(d.get("time", 0.0))))
+	row.add_child(_stat_chip("Survie", "%d:%02d" % [secs / 60, secs % 60], Color(1, 1, 1, 0.55), 24))
+	row.add_child(_stat_chip("Éliminations", str(int(d.get("kills", 0))), MenuKit.GOLD, 24))
+	row.add_child(_stat_chip("Étage", floor_label(int(d.get("floor", 0))), Color(1, 1, 1, 0.3), 24))
+	root.add_child(row)
+
+
+## Libellé court d'un étage (0 = rez-de-chaussée, > 0 étages, < 0 sous-sols).
+static func floor_label(f: int) -> String:
+	if f == 0:
+		return "RDC"
+	return ("Étage %d" % f) if f > 0 else ("Sous-sol %d" % -f)
 
 
 func _right_label(txt: String, px: int, color: Color) -> Label:
@@ -604,7 +778,7 @@ func _right_label(txt: String, px: int, color: Color) -> Label:
 
 
 ## Pastille de bilan (maquette Extract) : encre, liseré bas coloré, gros chiffre Anton, libellé.
-func _stat_chip(label_text: String, value_text: String, color: Color) -> Control:
+func _stat_chip(label_text: String, value_text: String, color: Color, value_px: int = 33) -> Control:
 	var p := PanelContainer.new()
 	var st := StyleBoxFlat.new()
 	st.bg_color = Color(MenuKit.NIGHT_DEEP, 0.8)
@@ -619,7 +793,10 @@ func _stat_chip(label_text: String, value_text: String, color: Color) -> Control
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", -2)
 	p.add_child(v)
-	v.add_child(MenuKit.label(value_text, 33, MenuKit.TEXT, MenuKit.display(), 0))
+	var val := MenuKit.label(value_text, value_px, MenuKit.TEXT, MenuKit.display(), 0)
+	val.clip_text = true
+	val.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	v.add_child(val)
 	var l := MenuKit.label(label_text, 14, Color(1, 1, 1, 0.65), MenuKit.nunito(600), 0)
 	l.uppercase = true
 	v.add_child(l)
@@ -648,3 +825,204 @@ func _unhandled_input(event: InputEvent) -> void:
 		if k == KEY_ENTER or k == KEY_KP_ENTER or k == KEY_SPACE:
 			get_viewport().set_input_as_handled()
 			go_to_menu()
+
+
+## Carte de progression du bandeau (pass de combat, niveau de raider) : encre biseautée, badge du
+## palier/niveau, « +XP » qui défile, barre qui se remplit de total_before à total_after (plusieurs
+## tours si des paliers/niveaux sont franchis : le badge monte, « NIVEAU SUPÉRIEUR » apparaît),
+## XP dans le palier en cours, ligne de récompense. Animation : [menu] raid_end_xp_* (balance.cfg).
+class XpCard extends PanelContainer:
+	var kicker: String = ""
+	## Unité du badge (« Niveau », « Palier »).
+	var unit: String = "Niveau"
+	var up_text: String = "Niveau supérieur"
+	var gain: int = 0
+	var total_before: int = 0
+	var total_after: int = 0
+	## total → niveau/palier ; total → Vector2i(XP dans le niveau, XP du niveau) ((0, 0) = maximum).
+	var level_of: Callable
+	var progress_of: Callable
+	var footer: String = ""
+	## Ligne de récompense mise en avant (déblocage ou récompense à récupérer).
+	var footer_hot: bool = false
+	## XP cumulée affichée (animée).
+	var shown_total: float = 0.0:
+		set(v):
+			shown_total = v
+			_refresh()
+
+	var _badge_num: Label = null
+	var _gain_lbl: Label = null
+	var _bar: Control = null
+	var _count_lbl: Label = null
+	var _up_lbl: Label = null
+	var _badge: Control = null
+	var _level_shown: int = -1
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var box := CutBox.make(Color(MenuKit.NIGHT_DEEP, 0.74), 14.0, Color(0, 0, 0, 0), 0.0, 14.0, 12.0)
+		add_theme_stylebox_override("panel", box)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 6)
+		v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(v)
+		var top := HBoxContainer.new()
+		top.add_theme_constant_override("separation", 12)
+		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(top)
+		_badge = PanelContainer.new()
+		_badge.custom_minimum_size = Vector2(58, 58)
+		_badge.pivot_offset = Vector2(29, 29)
+		_badge.add_theme_stylebox_override("panel", CutBox.make(MenuKit.VIOLET, 10.0, Color(0, 0, 0, 0), 0.0, 2.0, 2.0))
+		_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top.add_child(_badge)
+		var bv := VBoxContainer.new()
+		bv.add_theme_constant_override("separation", -6)
+		bv.alignment = BoxContainer.ALIGNMENT_CENTER
+		bv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_badge.add_child(bv)
+		var bu := MenuKit.label(unit.to_upper(), 10, Color(1, 1, 1, 0.8), MenuKit.nunito(800), 0)
+		bu.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bv.add_child(bu)
+		_badge_num = MenuKit.label("0", 30, MenuKit.TEXT, MenuKit.display(), 0)
+		_badge_num.name = "LevelNumber"
+		_badge_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bv.add_child(_badge_num)
+		var tv := VBoxContainer.new()
+		tv.add_theme_constant_override("separation", -4)
+		tv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top.add_child(tv)
+		var k := MenuKit.label(kicker.to_upper(), 14, Color(1, 1, 1, 0.7), MenuKit.nunito(700), 0)
+		tv.add_child(k)
+		_gain_lbl = MenuKit.label("+0 XP", 34, MenuKit.TEXT, MenuKit.display(), 0)
+		_gain_lbl.name = "Gain"
+		tv.add_child(_gain_lbl)
+		_bar = Control.new()
+		_bar.name = "Bar"
+		_bar.custom_minimum_size = Vector2(0, 10)
+		_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_bar.draw.connect(_draw_bar)
+		v.add_child(_bar)
+		var crow := HBoxContainer.new()
+		crow.add_theme_constant_override("separation", 8)
+		crow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(crow)
+		_count_lbl = MenuKit.label("", 13, Color(1, 1, 1, 0.65), MenuKit.nunito(700), 0)
+		_count_lbl.name = "Count"
+		_count_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		crow.add_child(_count_lbl)
+		_up_lbl = MenuKit.label(up_text.to_upper(), 13, MenuKit.NIGHT_DEEP, MenuKit.nunito(800), 0)
+		_up_lbl.name = "LevelUp"
+		var up_box := PanelContainer.new()
+		up_box.add_theme_stylebox_override("panel", CutBox.make(MenuKit.GOLD, 6.0, Color(0, 0, 0, 0), 0.0, 8.0, 2.0))
+		up_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		up_box.add_child(_up_lbl)
+		up_box.modulate.a = 0.0
+		up_box.name = "LevelUpBox"
+		crow.add_child(up_box)
+		if not footer.is_empty():
+			var f := MenuKit.label(footer, 14, MenuKit.GOLD if footer_hot else Color(1, 1, 1, 0.8), MenuKit.nunito(700), 0)
+			f.name = "Footer"
+			f.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			f.max_lines_visible = 2
+			v.add_child(f)
+		shown_total = float(total_before)
+		_animate()
+
+	## Lance le remplissage après l'entrée de l'écran ; le gain défile en même temps.
+	func _animate() -> void:
+		var delay := Balance.get_float("menu", "raid_end_xp_delay", 0.45)
+		var dur := Balance.get_float("menu", "raid_end_xp_duration", 1.3)
+		var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(self, "shown_total", float(total_after), dur).set_delay(delay)
+
+	func _refresh() -> void:
+		if _bar == null or not level_of.is_valid():
+			return
+		var t := roundi(shown_total)
+		var lv: int = level_of.call(t)
+		if _level_shown >= 0 and lv > _level_shown:
+			_level_up()
+		_level_shown = lv
+		_badge_num.text = str(lv)
+		var span := maxi(total_after - total_before, 1)
+		_gain_lbl.text = "+%d XP" % roundi(float(gain) * clampf(float(t - total_before) / float(span), 0.0, 1.0))
+		var pr: Vector2i = progress_of.call(t)
+		_count_lbl.text = ("%d / %d XP" % [pr.x, pr.y]) if pr.y > 0 else "Maximum atteint"
+		_bar.queue_redraw()
+
+	func _level_up() -> void:
+		var up := find_child("LevelUpBox", true, false) as Control
+		var tw := create_tween().set_parallel(true)
+		if up != null:
+			up.pivot_offset = up.size * 0.5
+			up.scale = Vector2(1.6, 1.6)
+			tw.tween_property(up, "modulate:a", 1.0, 0.15)
+			tw.tween_property(up, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_badge.scale = Vector2(1.35, 1.35)
+		tw.tween_property(_badge, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		# Lueur de la carte, puis retour au calme.
+		var box := get_theme_stylebox("panel") as CutBox
+		if box != null:
+			box.border_color = MenuKit.GOLD
+			box.border_width = 2.0
+		modulate = Color(1.35, 1.25, 1.6)
+		tw.tween_property(self, "modulate", Color.WHITE, 0.6)
+		_burst()
+
+	## Éclats dorés autour du badge (passage de palier / niveau).
+	func _burst() -> void:
+		var p := CPUParticles2D.new()
+		p.position = _badge.position + _badge.size * 0.5 + Vector2(get_theme_stylebox("panel").content_margin_left,
+			get_theme_stylebox("panel").content_margin_top)
+		p.one_shot = true
+		p.explosiveness = 1.0
+		p.amount = int(Balance.get_value("menu", "raid_end_burst_amount", 26))
+		p.lifetime = 0.7
+		p.spread = 180.0
+		p.initial_velocity_min = 160.0
+		p.initial_velocity_max = 320.0
+		p.gravity = Vector2(0, 380)
+		p.scale_amount_min = 3.0
+		p.scale_amount_max = 6.0
+		p.color = MenuKit.GOLD
+		var ramp := Gradient.new()
+		ramp.set_color(0, Color(1, 1, 1, 1))
+		ramp.set_color(1, Color(1, 1, 1, 0))
+		p.color_ramp = ramp
+		p.emitting = true
+		add_child(p)
+		get_tree().create_timer(1.2, true).timeout.connect(p.queue_free)
+
+	## Barre : fond, part déjà acquise avant le raid (dans le niveau affiché), part gagnée (vive).
+	func _draw_bar() -> void:
+		var r := Rect2(Vector2.ZERO, _bar.size)
+		_bar.draw_rect(r, Color(1, 1, 1, 0.12))
+		if not progress_of.is_valid():
+			return
+		var t := roundi(shown_total)
+		var pr: Vector2i = progress_of.call(t)
+		if pr.y <= 0:
+			_bar.draw_rect(r, MenuKit.GOLD)
+			return
+		var ratio := clampf(float(pr.x) / float(pr.y), 0.0, 1.0)
+		var base_ratio := 0.0
+		if level_of.call(total_before) == level_of.call(t):
+			var pb: Vector2i = progress_of.call(total_before)
+			base_ratio = clampf(float(pb.x) / float(maxi(pb.y, 1)), 0.0, ratio)
+		_bar.draw_rect(Rect2(r.position, Vector2(r.size.x * ratio, r.size.y)), MenuKit.GOLD)
+		if base_ratio > 0.0:
+			_bar.draw_rect(Rect2(r.position, Vector2(r.size.x * base_ratio, r.size.y)), Color(MenuKit.VIOLET, 0.9))
+		_bar.draw_rect(Rect2(Vector2(r.size.x * ratio - 2.0, -2.0), Vector2(2.0, r.size.y + 4.0)), MenuKit.TEXT)
+		# Lueur de pointe : halo derrière le curseur.
+		_bar.draw_rect(Rect2(Vector2(r.size.x * ratio - 14.0, 0.0), Vector2(12.0, r.size.y)), Color(1, 1, 1, 0.35))
+
+	## Niveau affiché (tests).
+	func get_level_shown() -> int:
+		return _level_shown
+
+	func finish_animation() -> void:
+		shown_total = float(total_after)

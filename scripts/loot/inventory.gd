@@ -15,6 +15,12 @@ var rows: int = 4
 var max_weight: float = 30.0
 ## Une entrée par case : null ou {"item": ItemData, "count": int}.
 var slots: Array = []
+## Emplacements rapides (HUD, touches quick_1..n) : clé d'exemplaire (ItemData.instance_key)
+## de l'objet affecté, "" = libre. L'affectation survit à l'épuisement de la pile (l'emplacement
+## se remplit de nouveau quand on en ramasse). Seuls les objets `can_quick` y entrent.
+var quick: Array[String] = []
+## Un consommable utilisable ramassé occupe tout seul le premier emplacement rapide libre.
+var quick_auto_assign: bool = true
 
 
 func _init(p_columns: int = 6, p_rows: int = 4, p_max_weight: float = 30.0) -> void:
@@ -23,12 +29,18 @@ func _init(p_columns: int = 6, p_rows: int = 4, p_max_weight: float = 30.0) -> v
 	max_weight = p_max_weight
 	slots.resize(columns * rows)
 	slots.fill(null)
+	quick.resize(2)
+	quick.fill("")
 
 
 ## Inventaire aux dimensions de [loot] (balance.cfg) ; poids max + bonus du niveau de raider.
 static func from_balance() -> Inventory:
-	return Inventory.new(LootDB.geti("inventory_columns", 6), LootDB.geti("inventory_rows", 4),
+	var inv := Inventory.new(LootDB.geti("inventory_columns", 6), LootDB.geti("inventory_rows", 4),
 		LootDB.getf("inventory_max_weight", 30.0) + RaiderProgress.bag_bonus_at(RaiderProgress.current_level()))
+	inv.quick.resize(clampi(LootDB.geti("quick_slots", 2), 1, 4))
+	inv.quick.fill("")
+	inv.quick_auto_assign = bool(LootDB.geti("quick_auto_assign", 1))
+	return inv
 
 
 func capacity() -> int:
@@ -132,6 +144,10 @@ func add_item(item: ItemData, count: int = 1) -> int:
 			left -= put2
 	var added := todo - left
 	if added > 0:
+		if quick_auto_assign and item.is_usable() and quick_index_of(item) < 0:
+			var free := quick.find("")
+			if free >= 0:
+				quick[free] = item.instance_key()
 		item_added.emit(item, added)
 		changed.emit()
 	return added
@@ -214,7 +230,105 @@ func sort() -> void:
 
 func clear() -> void:
 	slots.fill(null)
+	quick.fill("")
 	changed.emit()
+
+
+## Déplace la case `from` vers `to` (échange si `to` est occupée ; fusion si même objet empilable).
+func move_slot(from: int, to: int) -> bool:
+	if from == to or from < 0 or to < 0 or from >= slots.size() or to >= slots.size() or slots[from] == null:
+		return false
+	var a: Dictionary = slots[from]
+	var b: Variant = slots[to]
+	if b != null and (b["item"] as ItemData).instance_key() == (a["item"] as ItemData).instance_key():
+		var stack := maxi((a["item"] as ItemData).stack_max, 1)
+		var put := mini(stack - int(b["count"]), int(a["count"]))
+		if put > 0:
+			b["count"] = int(b["count"]) + put
+			a["count"] = int(a["count"]) - put
+			if int(a["count"]) <= 0:
+				slots[from] = null
+			changed.emit()
+			return true
+	slots[from] = b
+	slots[to] = a
+	changed.emit()
+	return true
+
+
+# --- Emplacements rapides ------------------------------------------------------------
+
+## Objets acceptés : consommables utilisables (soins) et équipements (grenade, mine, C4, drone).
+static func can_quick(item: ItemData) -> bool:
+	if item == null:
+		return false
+	if item.is_usable():
+		return true
+	if item.is_weapon():
+		var w := WeaponCatalog.get_weapon(item.weapon_id)
+		return w != null and w.is_gadget()
+	return false
+
+
+func quick_count() -> int:
+	return quick.size()
+
+
+## Affecte `item` à l'emplacement rapide `i` (le retire d'un autre emplacement s'il y était).
+func assign_quick(i: int, item: ItemData) -> bool:
+	if i < 0 or i >= quick.size() or not can_quick(item):
+		return false
+	var k := item.instance_key()
+	for j in quick.size():
+		if quick[j] == k:
+			quick[j] = ""
+	quick[i] = k
+	changed.emit()
+	return true
+
+
+func clear_quick(i: int) -> void:
+	if i < 0 or i >= quick.size() or quick[i].is_empty():
+		return
+	quick[i] = ""
+	changed.emit()
+
+
+## Emplacement rapide qui contient `item` (-1 sinon).
+func quick_index_of(item: ItemData) -> int:
+	return quick.find(item.instance_key()) if item != null else -1
+
+
+## Case du sac qui contient l'exemplaire `key` (-1 si épuisé).
+func find_slot(key: String) -> int:
+	if key.is_empty():
+		return -1
+	for i in slots.size():
+		if slots[i] != null and (slots[i]["item"] as ItemData).instance_key() == key:
+			return i
+	return -1
+
+
+## Objet de l'emplacement rapide `i` (null si libre). Épuisé : l'objet de référence (LootDB),
+## pour l'afficher grisé.
+func quick_item(i: int) -> ItemData:
+	if i < 0 or i >= quick.size() or quick[i].is_empty():
+		return null
+	var at := find_slot(quick[i])
+	if at >= 0:
+		return slots[at]["item"]
+	return LootDB.get_item(StringName(quick[i].get_slice("+", 0)))
+
+
+## Unités disponibles dans le sac pour l'emplacement rapide `i`.
+func quick_amount(i: int) -> int:
+	if i < 0 or i >= quick.size() or quick[i].is_empty():
+		return 0
+	var n := 0
+	for s: Variant in slots:
+		if s != null and (s["item"] as ItemData).instance_key() == quick[i]:
+			n += int(s["count"])
+	return n
 
 
 ## Sérialisation (sauvegarde / transfert vers la réserve) : [[id, count], …] par case ;

@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://eqsoodo8xixd"
-path.s3tc="res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.s3tc.ctex"
-path.etc2="res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.etc2.ctex"
+path="res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/mall/containers/hide_mall_shelving.png"
-dest_files=["res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.s3tc.ctex", "res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.etc2.ctex"]
+dest_files=["res://.godot/imported/hide_mall_shelving.png-67190bddec0cbeaedda790946bc406d1.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

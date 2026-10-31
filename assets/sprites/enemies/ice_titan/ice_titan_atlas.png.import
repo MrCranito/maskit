@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://gao7qk4h2yho"
-path.bptc="res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.bptc.ctex"
-path.astc="res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.astc.ctex"
+path="res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/ice_titan/ice_titan_atlas.png"
-dest_files=["res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.bptc.ctex", "res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.astc.ctex"]
+dest_files=["res://.godot/imported/ice_titan_atlas.png-43279fafcbb00b7a5267fc63b7b5442b.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

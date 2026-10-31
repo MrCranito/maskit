@@ -5,6 +5,11 @@ extends Node2D
 ## Retina) animée en code par une idle procédurale continue (respiration + léger balancement) : fluide à toutes les fréquences d'image, une seule
 ## texture par skin. Ombre au sol, réaction au changement de skin (écrasement, éclair, poussière).
 ## Origine du nœud = pieds. `height_px` = hauteur visible voulue (px de l'espace parent).
+## Arme tenue : la pose est rendue SANS arme ; l'arme réellement équipée (WeaponView en mode icône :
+## image Blender de l'arme + skin d'arme) est posée dans la main (hero_menu.json « hand »,
+## « weapon_angle_deg »), puis les mains (<skin>_hands.png) par-dessus. Par défaut l'arme suit le
+## profil local (Profile.get_main_weapon, skins du profil) ; set_weapon impose une arme et ses
+## skins (coéquipier). Taille : proportions du jeu ([menu] lobby_weapon_px_per_unit).
 ## Coût : une mise à jour de transformée par image (aucun redessin, aucune allocation).
 
 const DIR := "res://assets/ui/menu/hero/"
@@ -30,13 +35,23 @@ var height_px: float = 400.0:
 var phase: float = 0.0
 ## Amplitude de l'idle (0 = immobile, tests/captures).
 var idle_amount: float = 1.0
+## Arme tenue (null : mains vides) ; nœuds : pivot de la main → WeaponView, puis mains devant.
+var weapon: WeaponData = null
+var weapon_pivot: Node2D = null
+var weapon_view: WeaponView = null
+var hands: Sprite2D = null
+## true : l'arme suit le profil local (arme principale + skins équipés) ; false : set_weapon.
+var follow_weapon: bool = true
 
 var _meta: Dictionary = {}
 var _base_scale: Vector2 = Vector2.ONE
 var _react_tween: Tween = null
 var _follow_profile: bool = true
 var _pop: Vector2 = Vector2.ONE
+var _weapon_skin_ids: Dictionary = {}
+var _weapon_key: String = "?"
 static var _tex_cache: Dictionary = {}
+static var _meta_cache: Dictionary = {}
 
 
 func _init(follow_profile: bool = true) -> void:
@@ -44,8 +59,7 @@ func _init(follow_profile: bool = true) -> void:
 
 
 func _ready() -> void:
-	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(META_PATH)) if FileAccess.file_exists(META_PATH) else null
-	_meta = d if d is Dictionary else {}
+	_meta = menu_meta()
 	shadow = Sprite2D.new()
 	shadow.texture = GLOW
 	shadow.modulate = Color(0.03, 0.02, 0.08, 0.55)
@@ -56,11 +70,23 @@ func _ready() -> void:
 	sprite.centered = false
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	body.add_child(sprite)
+	weapon_pivot = Node2D.new()
+	weapon_pivot.name = "WeaponPivot"
+	body.add_child(weapon_pivot)
+	weapon_view = WeaponView.new()
+	weapon_view.icon_mode = true
+	weapon_pivot.add_child(weapon_view)
+	hands = Sprite2D.new()
+	hands.name = "Hands"
+	hands.centered = false
+	hands.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	body.add_child(hands)
+	Profile.changed.connect(_on_profile_changed)
 	if _follow_profile:
-		Profile.changed.connect(_on_profile_changed)
 		set_skin(HeroSkin.current(), false)
 	else:
 		set_skin(skin, false)
+	refresh_weapon()
 	visibility_changed.connect(func() -> void: set_process(is_visible_in_tree()))
 	set_process(true)
 
@@ -74,9 +100,124 @@ func set_skin(s: SkinData, animate: bool = true) -> void:
 	sprite.texture = _texture(sheet_id)
 	sprite.material = HeroSkin.material_for(s) if not has_sheet(s) else null
 	sprite.position = -_feet()
+	if hands != null:
+		hands.texture = hands_texture(sheet_id)
+		hands.position = sprite.position
+		hands.material = sprite.material
+		hands.visible = hands.texture != null and weapon != null and weapon_pivot.visible
 	_apply_scale()
 	if animate and is_inside_tree():
 		_react()
+
+
+# --- Arme tenue -------------------------------------------------------------------------
+
+## Impose l'arme tenue et ses skins (id d'arme → id de skin : ceux du coéquipier, pas les nôtres).
+## w null : arme par défaut (pistolet de départ).
+func set_weapon(w: WeaponData, skin_ids: Dictionary = {}, animate: bool = false) -> void:
+	follow_weapon = false
+	weapon = w if w != null else Player.load_default_weapon()
+	_weapon_skin_ids = skin_ids.duplicate()
+	refresh_weapon(animate)
+
+
+## L'arme suit de nouveau le profil local.
+func follow_profile_weapon() -> void:
+	follow_weapon = true
+	_weapon_skin_ids = {}
+	refresh_weapon()
+
+
+## La pose a-t-elle un point de prise (rendu sans arme) ? Sinon l'ancienne image (fusil dans
+## l'image) est affichée telle quelle, sans arme ajoutée.
+func has_grip() -> bool:
+	return poses_have_grip()
+
+
+## Met l'arme à jour (profil local si follow_weapon) ; ne reconstruit rien si arme et skin
+## n'ont pas changé.
+func refresh_weapon(animate: bool = false) -> void:
+	if weapon_view == null:
+		return
+	if follow_weapon:
+		weapon = Profile.get_main_weapon()
+	var show := weapon != null and has_grip()
+	weapon_pivot.visible = show
+	if hands != null:
+		hands.visible = show and hands.texture != null
+	if not show:
+		return
+	var sk: SkinData = WeaponView.forced_skin_for(weapon, _weapon_skin_ids) if not follow_weapon else WeaponSkin.equipped_for(weapon)
+	var key := "%s|%s|%s" % [weapon.id, sk.id if sk != null else "", follow_weapon]
+	if key == _weapon_key:
+		return
+	_weapon_key = key
+	place_held(weapon_pivot, weapon_view, weapon, not follow_weapon, _weapon_skin_ids)
+	weapon_pivot.position -= _feet()  # origine du nœud = pieds
+	if animate and is_inside_tree():
+		_react()
+
+
+## Arme `w` dans la main d'une pose (repère : px du cadre de la pose, origine en haut à gauche) :
+## pivot placé sur « hand », tourné de « weapon_angle_deg », mis à l'échelle (weapon_scale).
+## Partagé par LobbyHero et HeroPoseRect (cartes de boutique, pass).
+static func place_held(pivot: Node2D, wv: WeaponView, w: WeaponData, use_ids: bool, ids: Dictionary) -> void:
+	var m := menu_meta()
+	wv.icon_mode = true
+	wv.use_skin_ids = use_ids
+	wv.skin_ids = ids.duplicate()
+	wv.set_weapon(w, false)
+	pivot.position = WeaponView._vec2_from(m.get("hand"), Vector2.ZERO)
+	pivot.rotation = deg_to_rad(float(m.get("weapon_angle_deg", 40.0)))
+	var s := weapon_scale(w, wv.muzzle_local.length())
+	pivot.scale = Vector2(s, s)
+
+
+## hero_menu.json (lu une fois).
+static func menu_meta() -> Dictionary:
+	if _meta_cache.is_empty() and FileAccess.file_exists(META_PATH):
+		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(META_PATH))
+		_meta_cache = d if d is Dictionary else {"_": true}
+	return _meta_cache
+
+
+## Les poses sont-elles rendues sans arme, avec un point de prise (« hand ») ?
+static func poses_have_grip() -> bool:
+	return menu_meta().has("hand")
+
+
+## Logique pure : échelle de l'arme affichée pour que la poignée → bout du canon mesure la même
+## longueur relative qu'en jeu (WeaponView.held_span × [menu] lobby_weapon_px_per_unit px de pose).
+static func weapon_scale(w: WeaponData, shown_span: float) -> float:
+	var ppu: float = Balance.get_float("menu", "lobby_weapon_px_per_unit", 8.0)
+	return WeaponView.held_span(w) * ppu / maxf(shown_span, 0.001)
+
+
+## Arme et skins d'un joueur d'après ses infos de salon (coop) : « main » / « main_skin », sinon
+## première arme de « loadout » et « wskins », sinon pistolet de départ.
+## Renvoie {weapon: WeaponData, skins: Dictionary (id d'arme → id de skin)}.
+static func held_from_info(info: Dictionary) -> Dictionary:
+	var ids: Array = info.get("loadout", []) if info.get("loadout", []) is Array else []
+	var skins: Array = info.get("wskins", []) if info.get("wskins", []) is Array else []
+	var map := WeaponSkin.skin_map(ids, skins)
+	var wid := str(info.get("main", ""))
+	if wid.is_empty() and not ids.is_empty():
+		wid = str(ids[0])
+	var ms := str(info.get("main_skin", ""))
+	if not wid.is_empty() and not ms.is_empty():
+		map[wid] = ms
+	var w: WeaponData = WeaponCatalog.get_weapon(StringName(wid)) if not wid.is_empty() else null
+	return {"weapon": w if w != null else Player.load_default_weapon(), "skins": map}
+
+
+## Calque des mains de la pose `id` (« default », « gign »…), null s'il n'existe pas.
+static func hands_texture(id: String) -> Texture2D:
+	var p := DIR + id + "_hands.png"
+	if _tex_cache.has(p):
+		return _tex_cache[p] as Texture2D
+	var tex: Texture2D = load(p) as Texture2D if ResourceLoader.exists(p) else null
+	_tex_cache[p] = tex
+	return tex
 
 
 ## Id de texture pour ce skin : « char_gign » → « gign » ; repli « default ».
@@ -117,6 +258,10 @@ func _apply_idle() -> void:
 
 
 func _on_profile_changed() -> void:
+	if follow_weapon:
+		refresh_weapon(true)
+	if not _follow_profile:
+		return
 	var cur := HeroSkin.current()
 	var cur_id: StringName = cur.id if cur != null else &""
 	var old_id: StringName = skin.id if skin != null else &""

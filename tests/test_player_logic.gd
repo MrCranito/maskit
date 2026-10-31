@@ -263,12 +263,35 @@ func test_spread_direction_fan_and_inaccuracy() -> void:
 	var first := Player.spread_direction(Vector2.RIGHT, 0, 5, 40.0, 0.0)
 	var last := Player.spread_direction(Vector2.RIGHT, 4, 5, 40.0, 0.0)
 	var mid := Player.spread_direction(Vector2.RIGHT, 2, 5, 40.0, 0.0)
-	assert_almost_eq(rad_to_deg(first.angle()), -20.0, 0.01)
-	assert_almost_eq(rad_to_deg(last.angle()), 20.0, 0.01)
-	assert_almost_eq(mid.angle(), 0.0, 0.001)
+	# Motif réparti : chaque plomb reste près de sa place (± pellet_jitter × écart de 10°).
+	var tol := Balance.get_float("player", "pellet_jitter", 0.3) * 10.0 + 0.01
+	assert_almost_eq(rad_to_deg(first.angle()), -20.0, tol)
+	assert_almost_eq(rad_to_deg(last.angle()), 20.0, tol)
+	assert_almost_eq(rad_to_deg(mid.angle()), 0.0, tol)
 	for i: int in 30:
 		var d := Player.spread_direction(Vector2.RIGHT, 0, 1, 0.0, 3.0)
 		assert_lt(absf(rad_to_deg(d.angle())), 3.0001, "imprécision bornée")
+
+
+func test_gerbe_reguliere_sans_amas() -> void:
+	# 8 plombs sur 18° : jamais deux plombs voisins inversés ni collés (écart > 40 % du pas).
+	var gap := 18.0 / 7.0
+	for n: int in 50:
+		var prev := -INF
+		for i: int in 8:
+			var a := rad_to_deg(Player.pellet_direction(Vector2.RIGHT, i, 8, 18.0).angle())
+			assert_gt(a - prev, gap * 0.39, "plomb %d bien réparti" % i)
+			prev = a
+
+
+func test_imprecision_centree() -> void:
+	# Loi triangulaire : écart moyen ≈ 1/3 du cône (uniforme : 1/2), jamais au-delà.
+	var sum := 0.0
+	for n: int in 2000:
+		var o := absf(rad_to_deg(Player.spread_offset(6.0)))
+		assert_lte(o, 6.0001)
+		sum += o
+	assert_lt(sum / 2000.0, 6.0 * 0.42, "la plupart des balles partent près du centre")
 
 
 # --- Explosion ------------------------------------------------------------------

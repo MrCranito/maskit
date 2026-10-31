@@ -172,6 +172,8 @@ static func available_cards(unix_time: int) -> Array[Dictionary]:
 ## Cartes proposées au joueur : available_cards filtrées par [maps] only_ids (build de test ;
 ## liste vide = toutes les cartes).
 static func offered_cards(unix_time: int) -> Array[Dictionary]:
+	if DevMode.is_all_unlocked():
+		return dev_all_cards()
 	var all_cards := available_cards(unix_time)
 	var only: Variant = Balance.get_value("maps", "only_ids", [])
 	if not (only is Array) or (only as Array).is_empty():
@@ -186,8 +188,27 @@ static func offered_cards(unix_time: int) -> Array[Dictionary]:
 
 ## Vrai si la rotation est restreinte (build de test) : pas d'annonce d'événement à venir.
 static func is_restricted() -> bool:
+	if DevMode.is_all_unlocked():
+		return true
 	var only: Variant = Balance.get_value("maps", "only_ids", [])
 	return only is Array and not (only as Array).is_empty()
+
+
+## Mode dev « Tout débloquer » : toutes les cartes jouables (et donc toutes les difficultés),
+## ouvertes sans limite de temps, quelle que soit la rotation. Les cartes écartées par [maps]
+## only_ids (prototypes sans rendu final : simulateur, camp d'entraînement, événements…) restent
+## cachées. Ordre : événements, hebdo, mensuelles, permanentes.
+static func dev_all_cards() -> Array[Dictionary]:
+	var only: Variant = Balance.get_value("maps", "only_ids", [])
+	var filter: bool = only is Array and not (only as Array).is_empty()
+	var out: Array[Dictionary] = []
+	for cat: StringName in [MapCard.CATEGORY_EVENT, MapCard.CATEGORY_WEEKLY, MapCard.CATEGORY_MONTHLY,
+			MapCard.CATEGORY_PERMANENT]:
+		for c: MapCard in MapCard.by_category(cat):
+			if filter and not (only as Array).has(String(c.id)):
+				continue
+			out.append(_entry(c, 0, 0))
+	return out
 
 
 ## Événement actif à t ({} si aucun).

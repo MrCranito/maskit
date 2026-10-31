@@ -9,10 +9,10 @@ extends Node2D
 ## Coordonnées monde (le nœud reste à l'origine). Les particules « à hauteur » (douilles,
 ## débris, gouttes) simulent une hauteur z au-dessus du sol avec gravité et rebonds.
 
-enum Kind { NONE, SPARK, DEBRIS, SMOKE, FLASH, RING, SHELL, TRACER, DUST, SCORCH, TEXT, FIRE, DROPLET, STREAK }
+enum Kind { NONE, SPARK, DEBRIS, SMOKE, FLASH, RING, SHELL, TRACER, DUST, SCORCH, TEXT, FIRE, DROPLET, STREAK, HITMARK }
 
 ## Frottement (1/s) par type.
-const DRAG: PackedFloat32Array = [0.0, 7.0, 1.5, 2.2, 0.0, 0.0, 1.0, 0.0, 4.0, 0.0, 2.5, 3.0, 2.0, 0.0]
+const DRAG: PackedFloat32Array = [0.0, 7.0, 1.5, 2.2, 0.0, 0.0, 1.0, 0.0, 4.0, 0.0, 2.5, 3.0, 2.0, 0.0, 0.0]
 
 var capacity: int = 0
 var gravity: float = 900.0
@@ -139,7 +139,7 @@ func _process(delta: float) -> void:
 		_life[i] = l
 		alive += 1
 		var k: int = _kind[i]
-		if k == Kind.TRACER or k == Kind.RING or k == Kind.FLASH or k == Kind.SCORCH:
+		if k == Kind.TRACER or k == Kind.RING or k == Kind.FLASH or k == Kind.SCORCH or k == Kind.HITMARK:
 			continue
 		var v: Vector2 = _vel[i]
 		var drag: float = DRAG[k]
@@ -228,6 +228,14 @@ func _draw() -> void:
 			Kind.DROPLET:
 				c.a *= clampf(_life[i] / 0.25, 0.0, 1.0)
 				draw_circle(p + Vector2(0.0, -_z[i]), s, c, true, -1.0, true)
+			Kind.HITMARK:
+				# Hit-marker : quatre traits en X autour de l'impact, qui s'écartent et s'effacent.
+				c.a *= 1.0 - t * t
+				var gap: float = s * 0.55
+				for k2: int in 4:
+					var d: Vector2 = Vector2(0.7071, 0.7071).rotated(float(k2) * PI * 0.5)
+					draw_line(p + d * gap, p + d * (gap + s * 0.7), Color(0.04, 0.05, 0.1, c.a * 0.7), 4.0, true)
+					draw_line(p + d * gap, p + d * (gap + s * 0.7), c, 2.0, true)
 			Kind.TEXT:
 				if _font == null:
 					_font = ThemeDB.fallback_font

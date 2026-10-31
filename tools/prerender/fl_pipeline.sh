@@ -22,7 +22,7 @@ cd "$ROOT"
 flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --script res://tools/prerender/export_layout.gd -- "$SEED" "$WORK/layout_in.json" "" \
 	res://data/worlds/world_05_frozen_lands.tres
-flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" python3 tools/prerender/fl_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,int "$MARGIN"
+flock "${BLENDER_LOCK:-/home/claude/.blender_render.lock}" python3 tools/prerender/fl_scene.py "$WORK/layout_in.json" "$WORK" "$PPC" "$SAMPLES" mask,full,occ,gnd,int "$MARGIN"
 python3 tools/prerender/compose.py "$WORK" "$PACK" 1024 82
 flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --import > /dev/null 2>&1 || true
 flock "${GODOT_LOCK:-/home/claude/.godot.lock}" godot --headless --path . --script tools/make_minimap.gd -- "res://assets/prerender/frozen_lands/$SEED/"

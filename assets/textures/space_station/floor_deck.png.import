@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ds05e1dslxr56"
-path.s3tc="res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.s3tc.ctex"
-path.etc2="res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.etc2.ctex"
+path="res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/textures/space_station/floor_deck.png"
-dest_files=["res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.s3tc.ctex", "res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.etc2.ctex"]
+dest_files=["res://.godot/imported/floor_deck.png-eb507b1b73eddf98fe272de75a63c46b.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

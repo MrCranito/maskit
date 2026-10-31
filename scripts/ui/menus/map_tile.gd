@@ -15,6 +15,7 @@ const CATEGORY_BADGE := {
 	&"weekly": ["Hebdo", Color(0.22, 0.5, 0.95)],
 	&"monthly": ["Mensuelle", Color(0.86, 0.58, 0.12)],
 	&"permanent": ["Permanente", Color(0.3, 0.36, 0.5)],
+	&"dev": ["Dev", MenuKit.VIOLET],
 }
 
 var entry: Dictionary = {}

@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://vn0pg1v8qg0b"
-path.bptc="res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.bptc.ctex"
-path.astc="res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.astc.ctex"
+path="res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/enemies/mall_brute/mall_brute_atlas.png"
-dest_files=["res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.bptc.ctex", "res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.astc.ctex"]
+dest_files=["res://.godot/imported/mall_brute_atlas.png-9f0b405b5abf6fe850dbd0b8b38c9827.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=true
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

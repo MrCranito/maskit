@@ -1,8 +1,9 @@
 """Post-étalonnage du rendu des Galeries Lumière (avant compose.py), sans re-rendu Blender.
 
 Usage : python3 tools/prerender/mall_grade.py <render_dir>
-Appliqué à render_dir/full.png ET à chaque b<id>_in.png (patchs d'intérieur, décalés de leur
-position dans l'image : même résultat pixel pour pixel, raccords invisibles) :
+Appliqué à render_dir/full.png ET à chaque b<id>_in.png et g<id>.png (patchs d'intérieur et de sol
+seul, grounds.json), décalés de leur position dans l'image : même résultat pixel pour pixel,
+raccords invisibles :
   - appariement de la luminance sur les quantiles de la carte de la planche (colonne « Centre
     commercial abandonné » de docs/reference/cartes.png) ;
   - transfert de teinte par tranche de luminance (ombres bleu-violet, tons moyens beige rosé,
@@ -269,4 +270,11 @@ if __name__ == "__main__":
         n = "b%d_in.png" % b["id"]
         if os.path.exists(os.path.join(SRC, n)):
             save(process(n, b["px"][0], b["px"][1]), n)
+    # patchs « sol seul » (passe gnd, ground_pass.py) : même décalage que dans full.png
+    _gp = os.path.join(SRC, "grounds.json")
+    if os.path.exists(_gp):
+        for e in json.load(open(_gp)):
+            n = "g%d.png" % e["id"]
+            if os.path.exists(os.path.join(SRC, n)):
+                save(process(n, e["px"][0], e["px"][1]), n)
     print("DONE grade")

@@ -4,7 +4,12 @@ extends Node2D
 ## visée, retourné verticalement quand on vise à gauche).
 ##   - Sprite : assets/sprites/weapons/<sprite_id>.png + .json (grip, muzzle, scale ; canon
 ##     vers la droite), sinon <category>.png, sinon silhouette dessinée en code par catégorie.
-##   - Skin d'arme : WeaponSkin.apply(item, Profile.get_weapon_skin(category)).
+##   - Skin d'arme : WeaponSkin.apply(item, Profile.get_weapon_skin(category)) (skin propre à l'arme
+##     prioritaire) ; `use_skin_ids` : skins imposés (id d'arme → id de skin), pour une arme qui
+##     n'est pas la nôtre (coéquipier) — les skins du profil local ne s'appliquent alors jamais.
+##   - `icon_mode` : image de l'icône Blender (assets/ui/weapons/<id>.png + .json grip/muzzle), plus
+##     grande et vue presque de profil, pour tenir l'arme en grand dans les menus (LobbyHero) ;
+##     échelle 1 = 1 px d'icône (le parent la met à l'échelle, voir held_span).
 ##   - Recul par catégorie (profil [player_fx] cat_<category>) : recul le long du canon,
 ##     relevé du canon, vibration continue (mitrailleuse).
 ##   - Éclair de bouche par catégorie (étoile, cône, long, souffle arrière, bouffée), visible
@@ -14,6 +19,7 @@ extends Node2D
 ## Par frame : uniquement des affectations de propriétés.
 
 const WEAPON_SPRITE_DIR := "res://assets/sprites/weapons/"
+const WEAPON_ICON_DIR := "res://assets/ui/weapons/"
 
 ## Profils de ressenti par défaut (repli si [player_fx] cat_<category> est absent).
 const DEFAULT_PROFILES: Dictionary = {
@@ -45,6 +51,11 @@ const COL_FLASH_IN := Color(1.0, 0.98, 0.85, 1.0)
 
 var weapon: WeaponData = null
 var profile: Dictionary = {}
+## Icône Blender au lieu du sprite tenu (menus) : à fixer avant set_weapon.
+var icon_mode: bool = false
+## Skins imposés (coéquipier) : String(id d'arme) → String(id de skin) ; voir set_skin_ids.
+var use_skin_ids: bool = false
+var skin_ids: Dictionary = {}
 ## Bout du canon et arrière de l'arme dans le repère de la main (px monde).
 var muzzle_local: Vector2 = Vector2(22.0, -3.0)
 var rear_local: Vector2 = Vector2(-6.0, 0.0)
@@ -124,7 +135,9 @@ func _apply_weapon(w: WeaponData) -> void:
 		add_child(_flash)
 	if w == null:
 		return
-	var tex_info: Dictionary = _find_sprite(w)
+	var tex_info: Dictionary = _find_sprite(w, WEAPON_ICON_DIR) if icon_mode else {}
+	if tex_info.is_empty():
+		tex_info = _find_sprite(w)
 	if not tex_info.is_empty():
 		var tex: Texture2D = tex_info["tex"]
 		var meta: Dictionary = tex_info["meta"]
@@ -132,13 +145,15 @@ func _apply_weapon(w: WeaponData) -> void:
 		var grip: Vector2 = _vec2_from(meta.get("grip"), Vector2(tsize.x * 0.2, tsize.y * 0.6))
 		var muzzle: Vector2 = _vec2_from(meta.get("muzzle"), Vector2(tsize.x, tsize.y * 0.3))
 		var sc: float = float(meta.get("scale", 26.0 / maxf(tsize.x, 1.0)))
+		if icon_mode:
+			sc = 1.0  # le parent normalise la taille (held_span / muzzle_local)
 		var spr := Sprite2D.new()
 		spr.name = "WeaponSprite"
 		spr.texture = tex
 		spr.centered = false
 		spr.offset = -grip
 		spr.scale = Vector2(sc, sc)
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS if icon_mode else CanvasItem.TEXTURE_FILTER_LINEAR
 		_item = spr
 		muzzle_local = (muzzle - grip) * sc
 		rear_local = Vector2(-grip.x * sc, 0.0)
@@ -151,7 +166,7 @@ func _apply_weapon(w: WeaponData) -> void:
 		muzzle_local = shape_muzzle(cat)
 		rear_local = shape_rear(cat)
 	_holder.add_child(_item)
-	WeaponSkin.apply(_item, _weapon_skin(w.category))
+	_apply_skin()
 	_flash_shape = String(profile.get("flash", "star"))
 	_flash_scale = maxf(w.muzzle_flash_scale, 0.1)
 	_flash.position = Vector2.ZERO
@@ -166,30 +181,105 @@ func _weapon_skin(category: StringName) -> SkinData:
 	return null
 
 
-## Texture + métadonnées : <sprite_id>, puis <category>, puis l'id sans préfixe starter_.
-func _find_sprite(w: WeaponData) -> Dictionary:
-	var cands: Array[String] = [String(w.get_sprite_id()), String(w.category)]
-	var trimmed: String = String(w.id).trim_prefix("starter_")
-	if not trimmed.is_empty():
-		cands.append(trimmed)
-	for cand: String in cands:
-		if cand.is_empty():
-			continue
-		if _sprite_cache.has(cand):
-			var cached: Dictionary = _sprite_cache[cand]
+## Skins imposés (coéquipier : id d'arme → id de skin) ; l'arme affichée est rhabillée tout de suite.
+func set_skin_ids(ids: Dictionary) -> void:
+	use_skin_ids = true
+	skin_ids = ids.duplicate()
+	_apply_skin()
+
+
+## Skin de l'arme affichée : imposé (use_skin_ids), sinon celui du profil local.
+func _apply_skin() -> void:
+	if _item == null or weapon == null:
+		return
+	if use_skin_ids:
+		WeaponSkin.apply(_item, forced_skin_for(weapon, skin_ids), weapon.id, false)
+	else:
+		WeaponSkin.apply(_item, _weapon_skin(weapon.category))
+
+
+## Logique pure : skin imposé pour cette arme (null si aucun, inconnu ou fait pour une autre arme).
+static func forced_skin_for(w: WeaponData, ids: Dictionary) -> SkinData:
+	if w == null:
+		return null
+	var sid := str(ids.get(String(w.id), ""))
+	if sid.is_empty():
+		return null
+	var s := SkinData.get_skin(StringName(sid))
+	return s if s != null and s.kind == SkinData.KIND_WEAPON and s.applies_to(w.category, w.id) else null
+
+
+## Id de skin affiché sur l'arme (« » si aucun) — debug et tests.
+func get_skin_id() -> String:
+	return str(_item.get_meta(WeaponSkin.META_SKIN, "")) if _item != null else ""
+
+
+## Rectangle de l'image de l'arme dans le repère de ce nœud (hors recul) ; silhouette dessinée :
+## boîte approximative (arrière → bout du canon).
+func get_item_rect() -> Rect2:
+	if _item is Sprite2D:
+		var spr := _item as Sprite2D
+		var ts := Vector2(spr.texture.get_size()) if spr.texture != null else Vector2.ZERO
+		return Rect2(spr.offset * spr.scale, ts * spr.scale)
+	if _item != null:
+		return Rect2(Vector2(rear_local.x, -12.0), Vector2(muzzle_local.x - rear_local.x, 24.0))
+	return Rect2()
+
+
+## Image affichée (null : silhouette dessinée) — debug et tests.
+func get_texture() -> Texture2D:
+	return (_item as Sprite2D).texture if _item is Sprite2D else null
+
+
+## Texture + métadonnées dans `dir` : <sprite_id>, puis <category>, puis l'id sans préfixe starter_.
+func _find_sprite(w: WeaponData, dir: String = WEAPON_SPRITE_DIR) -> Dictionary:
+	for cand: String in sprite_candidates(w):
+		var key := dir + cand
+		if _sprite_cache.has(key):
+			var cached: Dictionary = _sprite_cache[key]
 			if not cached.is_empty():
 				return cached
 			continue
-		var png: String = WEAPON_SPRITE_DIR + cand + ".png"
-		var info: Dictionary = {}
-		if ResourceLoader.exists(png):
-			var tex := load(png) as Texture2D
-			if tex != null:
-				info = {"tex": tex, "meta": _read_json(WEAPON_SPRITE_DIR + cand + ".json")}
-		_sprite_cache[cand] = info
+		var info := load_sprite(dir, cand)
+		_sprite_cache[key] = info
 		if not info.is_empty():
 			return info
 	return {}
+
+
+static func sprite_candidates(w: WeaponData) -> Array[String]:
+	var cands: Array[String] = []
+	for c: String in [String(w.get_sprite_id()), String(w.category), String(w.id).trim_prefix("starter_")]:
+		if not c.is_empty() and not cands.has(c):
+			cands.append(c)
+	return cands
+
+
+## {tex, meta} de <dir><name>.png + .json, {} si absent.
+static func load_sprite(dir: String, sprite_name: String) -> Dictionary:
+	var png: String = dir + sprite_name + ".png"
+	if not ResourceLoader.exists(png):
+		return {}
+	var tex := load(png) as Texture2D
+	return {"tex": tex, "meta": _read_json(dir + sprite_name + ".json")} if tex != null else {}
+
+
+## Longueur poignée → bout du canon de l'arme EN JEU (unités monde : sprite tenu × son échelle,
+## sinon silhouette dessinée). Sert à garder les proportions de l'arme quand on l'affiche en grand.
+static func held_span(w: WeaponData) -> float:
+	if w == null:
+		return 0.0
+	for cand: String in sprite_candidates(w):
+		var info := load_sprite(WEAPON_SPRITE_DIR, cand)
+		if info.is_empty():
+			continue
+		var tex: Texture2D = info["tex"]
+		var meta: Dictionary = info["meta"]
+		var tsize := Vector2(tex.get_size())
+		var grip: Vector2 = _vec2_from(meta.get("grip"), Vector2(tsize.x * 0.2, tsize.y * 0.6))
+		var muzzle: Vector2 = _vec2_from(meta.get("muzzle"), Vector2(tsize.x, tsize.y * 0.3))
+		return (muzzle - grip).length() * float(meta.get("scale", 26.0 / maxf(tsize.x, 1.0)))
+	return shape_muzzle(w.category).length()
 
 
 # --- Événements -------------------------------------------------------------------

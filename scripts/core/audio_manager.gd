@@ -242,6 +242,22 @@ static func all_paths() -> PackedStringArray:
 	return out
 
 
+## Chemins de tous les effets sonores (sans la musique) : préchauffe du raid (RaidWarmup).
+func all_sfx_paths() -> PackedStringArray:
+	var out := PackedStringArray()
+	for key: StringName in SFX:
+		for path: String in SFX[key]:
+			if not out.has(path):
+				out.append(path)
+	return out
+
+
+## Son déjà chargé (en arrière-plan par RaidWarmup) : mis en cache, plus de load() au premier usage.
+func cache_stream(path: String, stream: AudioStream) -> void:
+	if stream != null and not _cache.has(path):
+		_cache[path] = stream
+
+
 func _pick_stream(sfx_name: StringName) -> AudioStream:
 	if not SFX.has(sfx_name):
 		push_warning("AudioManager : son inconnu '%s'" % sfx_name)

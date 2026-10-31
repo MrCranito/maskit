@@ -27,6 +27,32 @@ extends RefCounted
 const SIMULATED := true
 
 
+## Prix affiché d'un pack en nombre (« 9,99 € » → 9.99).
+static func pack_euros(p: Dictionary) -> float:
+	return str(p.get("price", "")).replace(",", ".").replace("€", "").strip_edges().to_float()
+
+
+## Pack au meilleur rapport gemmes / euro (à égalité : le plus gros) ; -1 s'il n'y a aucun pack.
+static func best_value_pack() -> int:
+	var list := packs()
+	var best := -1
+	var best_ratio := -1.0
+	for i: int in list.size():
+		var r := float(list[i]["gems"]) / maxf(pack_euros(list[i]), 0.01)
+		if r >= best_ratio:
+			best_ratio = r
+			best = i
+	return best
+
+
+## Pack mis en avant (« Populaire ») et choisi d'office dans l'onglet Gemmes (balance.cfg).
+static func popular_pack() -> int:
+	var n := packs().size()
+	if n == 0:
+		return -1
+	return clampi(int(Balance.get_value("shop", "popular_pack", 2)), 0, n - 1)
+
+
 ## Packs : [{gems: int, price: String, product_id: String}].
 static func packs() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
@@ -68,6 +94,33 @@ static func purchase_pack(index: int) -> bool:
 	print("Store: paiement simulé — %s (%d gemmes, %s)" % [p["product_id"], credited, p["price"]])
 	Profile.shop_first_bonus_used = true
 	Profile.add_gems(credited)
+	return true
+
+
+# --- Or contre gemmes -------------------------------------------------------------------
+
+## Packs d'or achetés en gemmes ([shop] gold_packs : [[or, gemmes], …]) : de quoi s'équiper à
+## l'armurerie avant un raid (décision de Victor du 30/10 : CLAUDE.md « Monétisation »).
+static func gold_packs() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var raw: Variant = Balance.get_value("shop", "gold_packs", [])
+	if raw is Array:
+		for p: Variant in raw:
+			if p is Array and (p as Array).size() >= 2 and int(p[0]) > 0 and int(p[1]) > 0:
+				out.append({"gold": int(p[0]), "gems": int(p[1])})
+	return out
+
+
+## Achète un pack d'or : débite les gemmes (Profile.debit, mode dev compris) puis crédite l'or.
+## false si l'indice est invalide ou s'il manque des gemmes (rien n'est débité).
+static func purchase_gold_pack(index: int) -> bool:
+	var list := gold_packs()
+	if index < 0 or index >= list.size():
+		return false
+	var p: Dictionary = list[index]
+	if not Profile.debit(&"gems", int(p["gems"])):
+		return false
+	Profile.add_gold(int(p["gold"]))
 	return true
 
 

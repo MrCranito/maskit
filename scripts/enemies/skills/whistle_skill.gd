@@ -18,6 +18,10 @@ func defaults() -> Dictionary:
 		"min_player_dist": 260.0}
 
 
+func summons() -> bool:
+	return true
+
+
 func can_use_extra(_dist: float, _sees: bool) -> bool:
 	return _alive_count() + int(f("count")) <= int(f("max_total"))
 

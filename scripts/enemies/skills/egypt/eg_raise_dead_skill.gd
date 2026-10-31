@@ -24,6 +24,10 @@ func alive_count() -> int:
 	return spawned.size()
 
 
+func summons() -> bool:
+	return true
+
+
 func can_use_extra(_dist: float, _sees: bool) -> bool:
 	return alive_count() + int(f("count")) <= int(f("max_total"))
 

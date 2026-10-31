@@ -3,24 +3,22 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b7kdrt442igrf"
-path.s3tc="res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.s3tc.ctex"
-path.etc2="res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.etc2.ctex"
+path="res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://assets/sprites/space_station/containers/locker.png"
-dest_files=["res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.s3tc.ctex", "res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.etc2.ctex"]
+dest_files=["res://.godot/imported/locker.png-4876ac1e7240fe94502d655d11c8035e.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=4
 compress/high_quality=false
 compress/lossy_quality=0.7
-compress/uastc_level=0
+compress/uastc_level=2
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0

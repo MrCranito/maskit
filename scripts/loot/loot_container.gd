@@ -274,8 +274,10 @@ func _stop_search() -> void:
 		EventBus.player_damaged.disconnect(_on_player_damaged)
 
 
-func _on_player_damaged(_a: float, _hp: float, _max: float) -> void:
-	cancel_search()
+func _on_player_damaged(a: float, _hp: float, _max: float) -> void:
+	# 0 = simple mise à jour des PV (soin) : la fouille continue.
+	if a > 0.0:
+		cancel_search()
 
 
 func _process(delta: float) -> void:
