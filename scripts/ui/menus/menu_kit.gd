@@ -422,7 +422,8 @@ static func go_to(owner: Node, scene_path: String, duration: float = -1.0) -> vo
 
 # --- Éléments partagés (arsenal, boutique, cartes) --------------------------------
 
-const GEM := Color(0.36, 0.9, 1.0)
+## Violet des gemmes peintes (planche art/ui/monnaie_reference.png ; cyan avant le 31/10).
+const GEM := Color(0.76, 0.45, 1.0)
 const GOOD := Color(0.45, 0.9, 0.5)
 const BAD := Color(1.0, 0.45, 0.4)
 
