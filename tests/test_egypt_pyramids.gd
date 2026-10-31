@@ -6,7 +6,7 @@ extends GutTest
 const WORLD_PATH := "res://data/worlds/world_06_egypt_pyramids.tres"
 const SEEDS := 16
 const DIFFS := 5
-const MAX_MS_PER_FLOOR := 50.0
+const MAX_MS_PER_FLOOR := 100.0  # 50 → 100 ms (31/10) : CI GitHub ~2,5× plus lente qu'un poste de dev
 const T := FloorLayout.Tile
 const KEY := &"key_eg_treasury"
 const Pop := preload("res://scripts/biomes/egypt_pyramids/eg_populator.gd")
