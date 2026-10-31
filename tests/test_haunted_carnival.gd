@@ -5,7 +5,7 @@ extends GutTest
 const WORLD_PATH := "res://data/worlds/world_04_haunted_carnival.tres"
 const SEEDS := 12
 const DIFFS := 5
-const MAX_MS_PER_FLOOR := 50.0
+const MAX_MS_PER_FLOOR := 100.0  # 50 → 100 ms (31/10) : CI GitHub ~2,5× plus lente qu'un poste de dev
 const T := FloorLayout.Tile
 const KEYS := [&"key_hc_director"]
 const Pop := preload("res://scripts/biomes/haunted_carnival/hc_populator.gd")
