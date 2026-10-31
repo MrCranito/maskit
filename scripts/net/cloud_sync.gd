@@ -490,6 +490,9 @@ func _request(path: String, method: HTTPClient.Method, body: Variant, auth: bool
 	var hr := HTTPRequest.new()
 	hr.timeout = float(_cfg.get_value("sync", "timeout", 15.0))
 	hr.accept_gzip = true
+	# Connexion, poignée de main TLS (ECDH, vérification du certificat) et lecture dans un fil à part :
+	# sur le fil principal, chaque requête figeait le jeu de 80 à 300 ms (perf/fluidite, banc perf_bench).
+	hr.use_threads = true
 	add_child(hr)
 	var headers := PackedStringArray(["Content-Type: application/json", "apikey: " + _key])
 	if auth and not _access_token.is_empty():

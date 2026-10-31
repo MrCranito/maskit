@@ -32,13 +32,13 @@ func test_targets_follow_screen_refresh() -> void:
 func test_apply_sets_engine_max_fps_and_persists() -> void:
 	var fps := FrameRate.apply(FrameRate.MODE_60, true)
 	assert_eq(fps, 60)
-	assert_eq(Engine.max_fps, 60)
+	assert_eq(Engine.max_fps, FrameRate.engine_limit(60))
 	assert_eq(FrameRate.saved_mode(), FrameRate.MODE_60)
 	FrameRate.apply(FrameRate.MODE_ECO, true)
-	assert_eq(Engine.max_fps, FrameRate.eco_fps())
+	assert_eq(Engine.max_fps, FrameRate.engine_limit(FrameRate.eco_fps()))
 	assert_true(bool(MenuKit.get_setting(&"power_saving", false)), "effets allégés en éco (CombatFx)")
 	FrameRate.apply(FrameRate.MODE_MAX, true)
-	assert_eq(Engine.max_fps, FrameRate.target_for(FrameRate.MODE_MAX))
+	assert_eq(Engine.max_fps, FrameRate.engine_limit(FrameRate.target_for(FrameRate.MODE_MAX)))
 	assert_false(bool(MenuKit.get_setting(&"power_saving", true)))
 
 
@@ -47,7 +47,7 @@ func test_old_power_saving_setting_maps_to_eco() -> void:
 	data["settings"] = {"power_saving": true}
 	assert_eq(FrameRate.saved_mode(), FrameRate.MODE_ECO)
 	data["settings"] = {}
-	assert_eq(FrameRate.saved_mode(), String(Balance.get_value("display", "default_frame_rate", "max")))
+	assert_eq(FrameRate.saved_mode(), FrameRate.default_mode())
 
 
 func test_cycle_and_labels() -> void:
@@ -66,8 +66,21 @@ func test_options_button_cycles_modes() -> void:
 	assert_not_null(panel.fps_button)
 	panel.fps_button.pressed.emit()
 	assert_eq(FrameRate.saved_mode(), FrameRate.MODE_60)
-	assert_eq(Engine.max_fps, 60)
+	assert_eq(Engine.max_fps, FrameRate.engine_limit(60))
 	assert_eq(panel.fps_button.text, "60 i/s")
+
+
+func test_default_mode_is_60_on_mobile() -> void:
+	assert_eq(FrameRate.default_mode(true), FrameRate.MODE_60, "mobile : 60 i/s par défaut")
+	assert_eq(FrameRate.default_mode(false), String(Balance.get_value("display", "default_frame_rate", "max")))
+
+
+func test_engine_limit_leaves_pacing_to_vsync() -> void:
+	assert_eq(FrameRate.engine_limit(120, 120.0, true), 0, "cible = écran, synchro active : pas de limiteur")
+	assert_eq(FrameRate.engine_limit(60, 60.0, true), 0)
+	assert_eq(FrameRate.engine_limit(60, 120.0, true), 60, "60 i/s sur écran 120 Hz : limiteur gardé")
+	assert_eq(FrameRate.engine_limit(120, 144.0, true), 120)
+	assert_eq(FrameRate.engine_limit(120, 120.0, false), 120, "sans synchro : limiteur gardé")
 
 
 func test_project_allows_120_and_interpolates() -> void:
