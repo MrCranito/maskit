@@ -367,7 +367,9 @@ func test_map_select_screen() -> void:
 	assert_eq(ms.filter_chips.size(), 5, "Puces : Toutes + 4 catégories")
 	assert_eq(ms.current_filter, &"all", "Toutes les cartes par défaut")
 	var available: int = MapRotation.available_cards(T0).size()
-	assert_eq(ms.tiles.size(), available + 1, "Toutes les cartes visibles d'un coup + prochain événement")
+	# + l'arène de test en version de test (mode dev, TestArena.rotation_entries).
+	assert_eq(ms.tiles.size(), available + 1 + TestArena.rotation_entries().size(),
+		"Toutes les cartes visibles d'un coup + prochain événement (+ arène de test en mode dev)")
 	assert_eq(ms.tiles[0].mode, MapTile.Mode.FEATURED, "Événement en cours mis en avant")
 	assert_eq(ms.tiles[0].card.category, MapCard.CATEGORY_EVENT)
 	assert_string_contains(ms.tiles[0].time_label.text, "01:18:45", "Minuteur")
