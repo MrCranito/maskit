@@ -41,92 +41,123 @@ COMMON_MATS = {
     "shell": ("#d0a040", "#5a3a28", "#f8d478"),
     "bandana": ("#c0261e", "#4a0c1a", "#ec4a34"),
     "glow": "!#ff6a2a",
+    "glow_blue": "!#4ad8ff",
+    "glove": ("#2a2220", "#0a0808", "#4a403c"),
+    "plate": ("#6a6a70", "#22222a", "#a0a0a8"),
+    "rivet": ("#c8b890", "#4a4038", "#fff0c8"),
+    "teeth": ("#e8dcc4", "#7a7088", "#ffffff"),
+    "mouth": ("#2a0e10", None, None),
 }
 
 # Archétypes. Clés : scale, head, leg, torso (largeur, profondeur), arm, belly, hat, face,
 # kerchief (foulard noué au cou), coat, vest, bandolier, weapon, armor, bracers, mats.
 ARCH: dict[str, dict] = {
+    # Bandit (planche : chapeau brun à bande sombre, foulard rouge sur le visage, chemise sable aux
+    # manches retroussées, gilet anthracite clouté, gants noirs, fusil à pompe, jean gris, accroupi)
     "fw_bandit": {
-        "name": "Bandit", "scale": 1.0, "head": 1.40, "leg": 0.82,
-        "torso": (0.94, 0.94), "arm": 0.95, "belly": 0.0,
-        "hat": "cowboy_low", "face": "bandana", "kerchief": False, "coat": None, "vest": True,
-        "bandolier": "cartridges", "weapon": "rifle",
+        "name": "Bandit", "scale": 1.0, "head": 1.26, "leg": 0.84,
+        "torso": (1.00, 0.96), "arm": 1.0, "belly": 0.0, "brim_r": 0.28,
+        "hat": "cowboy_low", "face": "bandana", "kerchief": True, "coat": None, "vest": True,
+        "bandolier": None, "weapon": "shotgun", "bare_arms": True, "gloves": True, "idle_crouch": 0.55,
+        "carry": (0.30, 0.95),
         "mats": {
-            "shirt": ("pat", [("#cdbb98", "#6a5a66", "#efdcb4"), ("#a89676", "#4c4250", "#c8b48e")], 9.0),
-            "pants": ("pat", [("#5a4636", "#221a24", "#7e6248"), ("#4a3a2e", "#1a1420", "#6a5440")], 8.0),
-            "vest": ("pat", [("#7a4428", "#2a1420", "#a0603c"), ("#603620", "#20101a", "#86502e")], 10.0),
-            "hat": ("#6a4a30", "#22141a", "#94704a"),
-            "hatband": ("#2a1a14", "#0c0606", "#4a3226"),
-            "boot": ("#3e2a1e", "#140c12", "#604230"),
+            "shirt": ("pat", [("#c4a27c", "#5e4446", "#e6c49a"), ("#a8865e", "#4a3438", "#c8a47a")], 9.0),
+            "pants": ("pat", [("#4a4846", "#181618", "#6a6662"), ("#3c3a38", "#121012", "#5a5652")], 8.0),
+            "vest": ("pat", [("#3a3636", "#121014", "#5a5452"), ("#2e2a2a", "#0c0a0e", "#4a4442")], 10.0),
+            "hat": ("#6e4a2c", "#24141a", "#9a6e44"),
+            "hatband": ("#221812", "#080404", "#3e2c22"),
+            "boot": ("#3a281c", "#120a0e", "#5a3e2c"),
+            "glove": ("#26201e", "#0a0808", "#46403c"),
+            "bandana": ("#c43a22", "#4a1018", "#ee6a40"),
+            "metal_dark": ("#3c3632", "#14100e", "#625a52"),
+
+            "skin": ("#c48660", "#6a3c40", "#eab084"),
         },
     },
+    # Pillard (planche : brute voûtée, chapeau sable, foulard rouge, veste de cuir fauve à sangles,
+    # brassards, grande hache de fer sombre à pointes tenue droite, genouillères)
     "fw_raider": {
-        "name": "Pillard", "scale": 1.07, "head": 1.36, "leg": 0.80,
-        "torso": (1.10, 1.04), "arm": 1.12, "belly": 0.35,
-        "hat": "cowboy_low", "face": "beard", "kerchief": True, "coat": None, "vest": True,
-        "bandolier": "cartridges", "weapon": "axe", "bracers": True, "bare_arms": True,
+        "name": "Pillard", "scale": 1.07, "head": 1.24, "leg": 0.80,
+        "torso": (1.12, 1.04), "arm": 1.14, "belly": 0.15, "brim_r": 0.28,
+        "hat": "cowboy_low", "face": "bandana", "kerchief": True, "coat": None, "vest": True,
+        "bandolier": "cartridges", "weapon": "axe", "bracers": True, "idle_crouch": 0.7, "kneepads": True,
         "mats": {
-            "shirt": ("pat", [("#8e5a3a", "#3a1c22", "#b47a52"), ("#7a4c30", "#2e161c", "#9a6844")], 8.0),
-            "pants": ("pat", [("#4a3e30", "#1a1416", "#6a5a46"), ("#3c3228", "#141012", "#584a3a")], 7.0),
-            "vest": ("pat", [("#4a2c1c", "#1a0c10", "#6e4428"), ("#3c2416", "#14080c", "#5a3820")], 9.0),
-            "hat": ("#4a3424", "#180e12", "#6e5038"),
-            "hatband": ("#b82a22", "#46101c", "#e04a38"),
-            "beard": ("#4a2a18", "#180a0c", "#6a4026"),
-            "boot": ("#2e2018", "#0e0808", "#4e3828"),
-            "axehead": ("#7a7c84", "#262834", "#c8cad2"),
+            "shirt": ("pat", [("#a8784a", "#46282a", "#d09a62"), ("#8e623c", "#3a2024", "#b4804e")], 8.0),
+            "pants": ("pat", [("#6a5236", "#261a1a", "#8e7048"), ("#5a442e", "#1e1416", "#7a5e3e")], 7.0),
+            "vest": ("pat", [("#7a5232", "#2a1618", "#a06c42"), ("#654228", "#221014", "#86583a")], 9.0),
+            "hat": ("#9a7048", "#3a2224", "#c49464"),
+            "hatband": ("#2a1a12", "#0a0406", "#46301e"),
+            "boot": ("#3a2618", "#120a0c", "#5a3e28"),
+            "bandana": ("#b8321e", "#460e16", "#e45a3a"),
+            "axehead": ("#4a4440", "#16121a", "#7e766c"),
+            "metal_dark": ("#3c3632", "#14100e", "#625a52"),
+
+            "plate": ("#5a4a3a", "#1e1416", "#806a52"),
         },
     },
+    # Tireur d'élite (planche : chapeau brun à bande, visage dans l'ombre (foulard sombre), veste de
+    # cuir brune, pantalon kaki, carabine à crosse de bois, à genoux en visée)
     "fw_sharpshooter": {
-        "name": "Tireur d'élite", "scale": 0.98, "head": 1.40, "leg": 0.84,
-        "torso": (0.90, 0.90), "arm": 0.92, "belly": 0.0,
-        "hat": "wide", "face": "scarf", "kerchief": False, "coat": "duster", "vest": False,
-        "bandolier": "cartridges", "weapon": "sniper", "idle_kneel": True,
+        "name": "Tireur d'élite", "scale": 0.98, "head": 1.26, "leg": 0.84,
+        "torso": (0.98, 0.94), "arm": 0.98, "belly": 0.0, "brim_r": 0.29,
+        "hat": "cowboy_low", "face": "scarf", "kerchief": False, "coat": "jacket", "vest": False,
+        "bandolier": "cartridges", "weapon": "sniper", "idle_kneel": True, "idle_aim": 0.85, "gloves": True, "idle_twist": 0.55,
         "mats": {
-            "shirt": ("#7a7466", "#2e2c32", "#a49c88"),
-            "pants": ("#4a3e30", "#1a1416", "#6a5a46"),
-            "coat": ("pat", [("#9a7c52", "#3e302e", "#c4a272"), ("#806646", "#322628", "#a88a60")], 5.0),
-            "hat": ("#5a4636", "#1e1418", "#80664e"),
-            "hatband": ("#2a1e18", "#0c0808", "#4a3428"),
-            "bandana": ("#6a5a4a", "#241c1e", "#8e7c66"),
+            "shirt": ("#6a5a44", "#26201e", "#8e7a5e"),
+            "pants": ("pat", [("#7a6a4a", "#2e2622", "#a08c64"), ("#685a3e", "#26201c", "#8a7854")], 7.0),
+            "coat": ("pat", [("#6e4a2e", "#26141a", "#966640"), ("#5a3c26", "#1e1014", "#7e5434")], 5.0),
+            "hat": ("#6a4c34", "#22141a", "#94704c"),
+            "hatband": ("#a07a4a", "#3e2a26", "#ccA06a"),
+            "bandana": ("#2e2622", "#0c0a0a", "#4a3e36"),
             "boot": ("#3a2a1e", "#120c0e", "#5a4230"),
+            "glove": ("#3a2a1e", "#120c0e", "#5a4230"),
+            "metal_dark": ("#3c3632", "#14100e", "#625a52"),
         },
     },
+    # Robuste (planche : colosse en armure de tôle rouillée, petit casque d'acier, visage grimaçant,
+    # grand bouclier rectangulaire d'acier riveté à umbo, masse courte, genouillères)
     "fw_bruiser": {
-        "name": "Robuste", "scale": 1.20, "head": 1.28, "leg": 0.78,
-        "torso": (1.40, 1.26), "arm": 1.34, "belly": 1.0,
-        "hat": "kettle", "face": "beard", "kerchief": False, "coat": None, "vest": False,
-        "bandolier": None, "weapon": "shield_mace", "armor": True, "bracers": True,
+        "name": "Robuste", "scale": 1.20, "head": 1.16, "leg": 0.80,
+        "torso": (1.42, 1.26), "arm": 1.36, "belly": 0.7,
+        "hat": "helmet", "face": "grimace", "kerchief": False, "coat": None, "vest": False,
+        "bandolier": None, "weapon": "shield_mace", "armor": True, "bracers": True, "kneepads": True,
+        "shield_size": (0.56, 0.82), "steel_shield": True, "idle_crouch": 0.45,
         "mats": {
-            "shirt": ("pat", [("#6a3a28", "#28121a", "#8e543a"), ("#5a3022", "#200e16", "#7a4632")], 7.0),
-            "pants": ("pat", [("#4a4034", "#1a1618", "#6a5c4a"), ("#3a3228", "#141014", "#564a3c")], 7.0),
-            "plate": ("pat", [("#8a8478", "#2c2a36", "#c8c0b0"), ("#7a5a42", "#2c1c22", "#a07a58")], 3.0),
+            "shirt": ("pat", [("#6a4a32", "#26141a", "#8e6644"), ("#5a3c28", "#1e1014", "#7a5438")], 7.0),
+            "pants": ("pat", [("#5a4632", "#1e1416", "#7e6446"), ("#4a3a2a", "#181014", "#685238")], 7.0),
+            "plate": ("pat", [("#94603c", "#3a1e1e", "#c07e50"), ("#5e4c40", "#221c1c", "#86705e")], 3.5),
             "rivet": ("#c8b890", "#4a4038", "#fff0c8"),
-            "hat": ("#6a6660", "#22222c", "#a8a49a"),
-            "hatband": ("#3a2a1e", "#120c0c", "#5a4230"),
+            "hat": ("#8a8a8e", "#2a2a34", "#cacace"),
+            "hatband": ("#5a5a60", "#1a1a20", "#8a8a90"),
             "beard": ("#3a2418", "#140a0c", "#5a3a26"),
-            "boot": ("#2e2018", "#0e0808", "#4e3828"),
-            "shieldwood": ("pat", [("#6a4428", "#261420", "#8e5e38"), ("#5a3a22", "#1e1018", "#7a5030")], 6.0),
+            "boot": ("#3a2618", "#120a0c", "#5a3e28"),
+            "shieldwood": ("pat", [("#8e8e8c", "#2c2c34", "#c8c8c4"), ("#7a6a5c", "#2a2224", "#a08a74")], 4.0),
+            "skin": ("#b88866", "#5e3c40", "#dcaa84"),
         },
     },
-    # --- élite : Le Déserteur (bandit d'élite : rafales, esquive, renforts) ---
+    # --- élite : Le Déserteur (planche : chapeau brun à bande, grand foulard rouge, blouson de cuir
+    # brun, épaulières de métal sombre, gants, fusil d'assaut noir) ---
     "fw_deserter": {
-        "name": "Le Déserteur", "scale": 1.12, "head": 1.36, "leg": 0.84,
-        "torso": (1.02, 0.98), "arm": 1.02, "belly": 0.0,
-        "hat": "cowboy_tall", "face": "bandana", "kerchief": True, "coat": "duster", "vest": True,
-        "bandolier": "cartridges", "weapon": "burst_rifle", "bracers": True, "run_lean": 0.06,
+        "name": "Le Déserteur", "scale": 1.12, "head": 1.24, "leg": 0.84,
+        "torso": (1.06, 0.98), "arm": 1.06, "belly": 0.0, "brim_r": 0.29,
+        "hat": "cowboy_tall", "face": "bandana", "kerchief": True, "coat": "jacket", "vest": True,
+        "bandolier": None, "weapon": "burst_rifle", "bracers": True, "run_lean": 0.06, "gloves": True,
+        "pauldrons": True, "idle_crouch": 0.6, "carry": (0.30, 0.95),
         "mats": {
-            "shirt": ("pat", [("#5a4a3a", "#201820", "#7e6852"), ("#4a3c30", "#18121a", "#6a5644")], 8.0),
-            "pants": ("pat", [("#3a3028", "#120e12", "#56483a"), ("#2e2620", "#0e0a0e", "#4a3c30")], 7.0),
-            "vest": ("#2a1e18", "#0c0808", "#4a3428"),
-            "coat": ("pat", [("#6a4430", "#26141a", "#94644a"), ("#58382a", "#1e1016", "#7a523c")], 5.0),
-            "hat": ("#2e221c", "#0e0a0c", "#4e3c30"),
-            "hatband": ("#c09040", "#5a3828", "#f0d080"),
-            "bandana": ("#d02a20", "#4c0c18", "#f85a40"),
-            "boot": ("#1e1614", "#080606", "#3a2c26"),
+            "shirt": ("pat", [("#5a4636", "#201820", "#7e644e"), ("#4a3a2e", "#18121a", "#6a5442")], 8.0),
+            "pants": ("pat", [("#3e342c", "#120e12", "#5a4c40"), ("#322a24", "#0e0a0e", "#4c4036")], 7.0),
+            "vest": ("#2a2420", "#0c0808", "#4a3e36"),
+            "coat": ("pat", [("#8a5634", "#2e161a", "#b4784a"), ("#74462a", "#261216", "#9a6440")], 5.0),
+            "hat": ("#6a4426", "#22121a", "#946440"),
+            "hatband": ("#221812", "#080404", "#3e2c22"),
+            "bandana": ("#c8281e", "#4c0c18", "#f45a40"),
+            "boot": ("#2a1e18", "#0a0606", "#4a3a2e"),
+            "glove": ("#1e1a18", "#080606", "#3a3430"),
+            "plate": ("#3e3e44", "#121218", "#6a6a74"),
+            "rivet": ("#a89c80", "#3a342e", "#e0d4b4"),
         },
     },
 }
-
 
 def joint(name: str, parent, loc) -> bpy.types.Object:
     e = C.empty(name, loc, parent)
@@ -274,10 +305,11 @@ class Human:
                       loc=(0, 0.05, fz - 0.02)), "boot", knee)
             self.part("spur" + side, C.bm_xform(C.bm_torus(10, 4, 0.03, 0.008),
                       loc=(0.0, 0.10, fz + 0.01), rot=(0, math.pi / 2, 0)), "metal", knee)
-            if self.A.get("armor"):
-                # genouillère + jambière de tôle
+            if self.A.get("armor") or self.A.get("kneepads"):
+                # genouillère (+ jambière de tôle si armure)
                 self.part("kneePlate" + side, C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -0.07, 0.0),
                           scale=(0.085, 0.05, 0.08)), "plate", knee)
+            if self.A.get("armor"):
                 self.part("greave" + side, C.bm_xform(arc_strip(0.115, -1.1, 1.1, -0.28 * LEG, -0.05, n=8),
                           scale=(1, 1, 1)), "plate", knee, thick=0.012)
 
@@ -310,12 +342,13 @@ class Human:
             self.part("kerchiefTip", tri, "bandana", spine)
         if A["vest"]:
             vs = []
-            for k, (z, r1, r2) in enumerate(((0.02, 0.198, 0.150), (0.20, 0.216, 0.160), (0.36, 0.226, 0.156))):
+            for k, (z, r1, r2) in enumerate(((0.02, 0.198, 0.150), (0.20, 0.216, 0.160), (0.36, 0.226, 0.156),
+                                             (0.43, 0.20, 0.135))):
                 vs.append(C.ellipse(0, 0.0, z, r1 * tw + 0.012, r2 * td + 0.012 + (0.03 * belly if k == 0 else 0), 18))
             vest = C.bm_loft(vs, cap_start=False, cap_end=False)
             for f in list(vest.faces):
                 c = f.calc_center_median()
-                if c.y < -0.12 * td and abs(c.x) < 0.07 * tw:
+                if c.y < -0.12 * td and abs(c.x) < 0.035 * tw:
                     vest.faces.remove(f)
             self.part("vest", vest, "vest", spine, thick=0.012)
             self.part("vestPocket", C.bm_xform(C.bm_box(0.06, 0.02, 0.05, bevel=0.008),
@@ -374,15 +407,16 @@ class Human:
             self.part("coatTop", cbm, "coat", spine, thick=0.014)
             self.part("coatCollar", arc_strip(0.15, 0.7, 2 * math.pi - 0.7, 0.40, 0.50, n=14, flare=0.03),
                       "coat", spine, thick=0.012)
-            length = 0.50 if coat == "duster" else 0.30
-            skirt = arc_strip(0.235 * tw + 0.02, 0.55, 2 * math.pi - 0.55, -length, 0.10, n=22, flare=0.10)
+            length = {"duster": 0.50, "jacket": 0.10}.get(coat, 0.30)
+            skirt = arc_strip(0.235 * tw + 0.02, 0.55, 2 * math.pi - 0.55, -length, 0.10, n=22,
+                              flare=0.03 if coat == "jacket" else 0.10)
             C.bm_xform(skirt, scale=(1, 0.80 * td / tw + 0.05 * belly, 1))
             self.part("coatSkirt", skirt, "coat", pelvis, thick=0.014)
 
     def build_arms(self, spine) -> None:
         j = self.j
         aw = self.A["arm"]
-        sleeve = "coat" if self.A["coat"] == "duster" else "shirt"
+        sleeve = "coat" if self.A["coat"] in ("duster", "jacket") else "shirt"
         fore = "skin" if self.A.get("bare_arms") else sleeve
         for side, sx in (("L", 1), ("R", -1)):
             ua = j["ua" + side] = C.empty("ua" + side, SHOULDER[side] * Vector((self.TW ** 0.5, 1, 1)), spine)
@@ -399,13 +433,15 @@ class Human:
                                                           else 0.06), loc=(0, 0, -0.14)), cuff, fa)
             hand = C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, 0, -L_LOW + 0.012),
                               scale=(0.078 * aw, 0.072 * aw, 0.085 * aw))
-            self.part("hand" + side, hand, "skin", fa)
-            if self.A.get("armor"):
+            self.part("hand" + side, hand, "glove" if self.A.get("gloves") else "skin", fa)
+            if self.A.get("armor") or self.A.get("pauldrons"):
                 pa = C.bm_sphere(14, 8, 1.0)
                 for v in pa.verts:
                     if v.co.z < -0.1:
                         v.co.z = -0.1
-                C.bm_xform(pa, loc=(0.02 * sx, 0, 0.02), scale=(0.15 * aw, 0.14 * aw, 0.12 * aw))
+                flat = 0.5 if self.A.get("pauldrons") and not self.A.get("armor") else 1.0
+                C.bm_xform(pa, loc=(0.02 * sx, 0, 0.02 + 0.03 * (1 - flat)),
+                           scale=(0.15 * aw * (0.5 + flat / 2), 0.14 * aw * (0.5 + flat / 2), 0.12 * aw * flat))
                 self.part("pauldron" + side, pa, "plate", ua)
                 self.part("pauldronRim" + side, C.bm_xform(C.bm_torus(14, 5, 0.135 * aw, 0.014),
                           loc=(0.02 * sx, 0, 0.005)), "rivet", ua)
@@ -453,6 +489,37 @@ class Human:
                     self.part("bandanaTail", C.bm_tube([(0.02 * sx, 0.18, 0.20), (0.05 * sx, 0.23, 0.14),
                                                         (0.07 * sx, 0.25, 0.08)], [0.03, 0.025, 0.01], seg=5,
                                                        flat=0.35, up=(1, 0, 0)), "bandana", head)
+        elif face == "grimace":
+            # visage grimaçant : sourcils lourds, bouche ouverte dents serrées, chaume
+            self.part("browRidge", C.bm_xform(C.bm_box(0.24, 0.05, 0.04, bevel=0.015), loc=(0, -0.155, 0.27)),
+                      "skin", head)
+            self.part("mouth", C.bm_xform(C.bm_box(0.12, 0.02, 0.05, bevel=0.012), loc=(0, -0.168, 0.12)),
+                      "mouth", head, nofs=True)
+            self.part("teeth", C.bm_xform(C.bm_box(0.10, 0.02, 0.02, bevel=0.005), loc=(0, -0.175, 0.13)),
+                      "teeth", head, nofs=True)
+            self.part("stubble", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, -0.05, 0.09),
+                      scale=(0.165, 0.13, 0.08)), "beard", head)
+        elif face == "robot":
+            # masque de métal sombre (crâne mécanique) et yeux bleus luisants
+            mk = C.bm_sphere(20, 14, 1.0)
+            for v in mk.verts:
+                x, y, z = v.co
+                v.co = Vector((x * 0.188, y * 0.182, z * 0.198 + 0.200))
+            for f in list(mk.faces):
+                if f.calc_center_median().y > 0.02:
+                    mk.faces.remove(f)
+            for v in list(mk.verts):
+                if not v.link_faces:
+                    mk.verts.remove(v)
+            self.part("mask", mk, "mech", head, thick=0.012)
+            for sx in (1, -1):
+                self.part("eyeGlow", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.07 * sx, -0.19, 0.225),
+                          scale=(0.050, 0.02, 0.034)), "glow_blue", head, nofs=True)
+            for k in range(4):
+                self.part("grille", C.bm_xform(C.bm_box(0.012, 0.02, 0.07, bevel=0.003),
+                          loc=(-0.045 + 0.03 * k, -0.19, 0.10)), "metal_dark", head)
+            self.part("jawPlate", C.bm_xform(C.bm_box(0.16, 0.06, 0.05, bevel=0.015), loc=(0, -0.15, 0.06)),
+                      "metal_dark", head)
         elif face == "beard":
             bd = C.bm_sphere(18, 12, 1.0)
             for v in bd.verts:
@@ -480,7 +547,7 @@ class Human:
         hz = 0.33
         if h in ("cowboy_low", "cowboy_tall", "wide", "boss"):
             crown_h = {"cowboy_low": 0.13, "cowboy_tall": 0.20, "wide": 0.15, "boss": 0.20}[h]
-            r_out = {"cowboy_low": 0.32, "cowboy_tall": 0.33, "wide": 0.37, "boss": 0.40}[h]
+            r_out = self.A.get("brim_r") or {"cowboy_low": 0.32, "cowboy_tall": 0.33, "wide": 0.37, "boss": 0.40}[h]
             curl = {"cowboy_low": 0.07, "cowboy_tall": 0.08, "wide": 0.04, "boss": 0.11}[h]
             secs = []
             for k in range(6):
@@ -501,6 +568,25 @@ class Human:
                               C.ellipse(0, 0, hz + 0.04, 0.176, 0.161, 20)], cap_start=False, cap_end=False)
             self.part("hatband", band, "hatband", head, thick=0.008)
             self.part("brim", brim(0.15, r_out, curl=curl, front_dip=0.03, z=hz, sy=0.95), "hat", head, thick=0.018)
+        elif h == "helmet":
+            # petit casque d'acier bombé à visière courte et arête centrale (Robuste de la planche)
+            dm = C.bm_sphere(18, 10, 1.0)
+            for v in dm.verts:
+                if v.co.z < 0:
+                    v.co.z = 0
+            C.bm_xform(dm, loc=(0, 0.01, hz - 0.07), scale=(0.198, 0.20, 0.20))
+            self.part("crown", dm, "hat", head)
+            self.part("crest", C.bm_xform(arc_strip(0.20, -1.5, 1.5, -0.02, 0.02, n=12),
+                      loc=(0, 0.01, hz - 0.07), rot=(0, math.pi / 2, 0), scale=(1, 1.0, 1)), "hatband", head, thick=0.02)
+            self.part("visor", C.bm_xform(arc_strip(0.205, -1.3, 1.3, hz - 0.08, hz - 0.06, n=12, flare=0.07),
+                      loc=(0, 0.01, 0)), "hat", head, thick=0.014)
+            self.part("hatband", C.bm_loft([C.ellipse(0, 0.01, hz - 0.08, 0.202, 0.204, 20),
+                                            C.ellipse(0, 0.01, hz - 0.04, 0.20, 0.202, 20)],
+                                           cap_start=False, cap_end=False), "hatband", head, thick=0.008)
+            for k in range(8):
+                a = 2 * math.pi * k / 8
+                self.part("helmRivet", C.bm_xform(C.bm_sphere(6, 4, 0.014),
+                          loc=(0.205 * math.sin(a), 0.01 - 0.207 * math.cos(a), hz - 0.06)), "rivet", head)
         elif h == "kettle":
             # casque de tôle bosselé à large bord plat (silhouette lisible du Robuste)
             dm = C.bm_sphere(18, 10, 1.0)
@@ -522,6 +608,46 @@ class Human:
         self.weapons[name] = g
         return g
 
+    def build_shotgun(self, spine) -> None:
+        """Fusil à pompe : gros canon sombre + tube, pompe de bois, boîtier sombre, crosse de bois."""
+        g = self.gun_group("long", spine)
+        ln = 0.56
+        self.part("barrel", C.bm_xform(C.bm_cyl(12, 0.026, 0.026, ln), loc=(0, -0.10 - ln / 2, 0.035),
+                  rot=(math.pi / 2, 0, 0)), "metal_dark", g, grp="long")
+        self.part("tube", C.bm_xform(C.bm_cyl(10, 0.020, 0.020, ln * 0.8), loc=(0, -0.08 - ln * 0.4, -0.005),
+                  rot=(math.pi / 2, 0, 0)), "metal_dark", g, grp="long")
+        self.part("pump", C.bm_xform(C.bm_cyl(12, 0.050, 0.050, 0.26), loc=(0, -0.27, 0.025),
+                  rot=(math.pi / 2, 0, 0)), "wood", g, grp="long")
+        self.part("receiver", C.bm_xform(C.bm_box(0.065, 0.17, 0.09, bevel=0.014), loc=(0, -0.02, 0.02)),
+                  "metal_dark", g, grp="long")
+        self.part("trigger", C.bm_xform(C.bm_torus(10, 4, 0.035, 0.008), loc=(0, 0.03, -0.045),
+                  rot=(0, math.pi / 2, 0)), "metal_dark", g, grp="long")
+        stock = C.bm_box(0.06, 0.30, 0.10, bevel=0.022)
+        for v in stock.verts:
+            if v.co.y > 0:
+                v.co.z = v.co.z * 1.45 - 0.03
+        self.part("stock", C.bm_xform(stock, loc=(0, 0.21, -0.02)), "wood", g, grp="long")
+
+    def build_assault(self, spine) -> None:
+        """Fusil d'assaut noir : canon, garde-main, chargeur courbe, crosse squelette."""
+        g = self.gun_group("long", spine)
+        ln = 0.50
+        self.part("barrel", C.bm_xform(C.bm_cyl(10, 0.017, 0.017, ln), loc=(0, -0.10 - ln / 2, 0.04),
+                  rot=(math.pi / 2, 0, 0)), "metal_dark", g, grp="long")
+        self.part("handguard", C.bm_xform(C.bm_box(0.06, 0.26, 0.065, bevel=0.012), loc=(0, -0.24, 0.03)),
+                  "metal_dark", g, grp="long")
+        self.part("receiver", C.bm_xform(C.bm_box(0.065, 0.22, 0.09, bevel=0.012), loc=(0, -0.01, 0.03)),
+                  "metal_dark", g, grp="long")
+        self.part("sight", C.bm_xform(C.bm_box(0.03, 0.10, 0.04, bevel=0.006), loc=(0, -0.02, 0.095)),
+                  "metal", g, grp="long")
+        mag = C.bm_tube([(0, -0.08, -0.01), (0, -0.10, -0.10), (0, -0.07, -0.19)], [0.032, 0.032, 0.032],
+                        seg=6, flat=0.45, up=(1, 0, 0))
+        self.part("mag", mag, "metal_dark", g, grp="long")
+        self.part("grip2", C.bm_xform(C.bm_box(0.04, 0.05, 0.10, bevel=0.012), loc=(0, 0.06, -0.06),
+                  rot=(-0.3, 0, 0)), "metal_dark", g, grp="long")
+        self.part("stock", C.bm_xform(C.bm_box(0.05, 0.26, 0.08, bevel=0.015), loc=(0, 0.22, 0.0)),
+                  "metal_dark", g, grp="long")
+
     def build_long_gun(self, spine, length: float, scope: bool, receiver: str = "brass", drum: bool = False) -> None:
         g = self.gun_group("long", spine)
         self.part("barrel", C.bm_xform(C.bm_cyl(10, 0.017, 0.017, length), loc=(0, -0.10 - length / 2, 0.035),
@@ -540,6 +666,9 @@ class Human:
                 v.co.z = v.co.z * 1.4 - 0.025
         self.part("stock", C.bm_xform(stock, loc=(0, 0.20, -0.02)), "wood", g, grp="long")
         if scope:
+            # long fût de bois sous le canon (carabine de la planche)
+            self.part("foreLong", C.bm_xform(C.bm_box(0.07, length * 0.62, 0.07, bevel=0.016),
+                      loc=(0, -0.12 - length * 0.31, 0.03)), "wood", g, grp="long")
             self.part("scope", C.bm_xform(C.bm_cyl(12, 0.030, 0.024, 0.36), loc=(0, -0.10, 0.11),
                       rot=(math.pi / 2, 0, 0)), "metal_dark", g, grp="long")
             for yy in (-0.27, 0.07):
@@ -558,34 +687,36 @@ class Human:
 
     def build_weapons(self, spine) -> None:
         w = self.A["weapon"]
-        if w == "rifle":
+        if w == "shotgun":
+            self.build_shotgun(spine)
+        elif w == "rifle":
             self.build_long_gun(spine, 0.58, scope=False)
         elif w == "sniper":
             self.build_long_gun(spine, 0.86, scope=True, receiver="metal_dark")
         elif w == "burst_rifle":
-            self.build_long_gun(spine, 0.50, scope=False, receiver="metal_dark", drum=True)
+            self.build_assault(spine)
         elif w == "axe":
             g = self.gun_group("axe", spine)
             # manche le long de +Z (main droite à l'origine, main gauche plus bas)
-            self.part("haft", C.bm_xform(C.bm_cyl(10, 0.026, 0.022, 0.86), loc=(0, 0, 0.22)), "wood", g, grp="axe")
+            self.part("haft", C.bm_xform(C.bm_cyl(10, 0.030, 0.026, 1.32), loc=(0, 0, 0.45)), "wood", g, grp="axe")
             self.part("pommel", C.bm_xform(C.bm_sphere(8, 6, 0.035), loc=(0, 0, -0.21)), "metal_dark", g, grp="axe")
             for z in (0.0, -0.14):
                 self.part("wrap", C.bm_xform(C.bm_cyl(10, 0.031, 0.031, 0.06), loc=(0, 0, z)), "strap", g, grp="axe")
             # fer : grande lame en croissant vers l'avant (-Y), pointe à l'arrière
-            blade = C.bm_box(0.024, 0.34, 0.42, bevel=0.006)
+            blade = C.bm_box(0.03, 0.30, 0.40, bevel=0.006)
             for v in blade.verts:
                 y = v.co.y
-                k = min(1.0, max(0.0, (y + 0.17) / 0.34))  # 0 = avant (tranchant), 1 = arrière
-                v.co.z *= 0.45 + 0.55 * (1 - k) ** 0.8 if k > 0 else 1.0
+                k = min(1.0, max(0.0, (y + 0.13) / 0.26))  # 0 = avant (tranchant), 1 = arrière
+                v.co.z *= 0.40 + 0.60 * (1 - k) ** 0.8 if k > 0 else 1.0
                 v.co.x *= 0.35 + 0.65 * k
-            self.part("blade", C.bm_xform(blade, loc=(0, -0.20, 0.56)), "axehead", g, grp="axe")
-            self.part("edge", C.bm_xform(C.bm_box(0.014, 0.035, 0.42, bevel=0.004), loc=(0, -0.37, 0.56)),
+            self.part("blade", C.bm_xform(blade, loc=(0, -0.15, 0.98)), "axehead", g, grp="axe")
+            self.part("edge", C.bm_xform(C.bm_box(0.016, 0.03, 0.34, bevel=0.004), loc=(0, -0.30, 0.98)),
                       "metal", g, grp="axe")
-            self.part("socket", C.bm_xform(C.bm_box(0.06, 0.07, 0.12, bevel=0.012), loc=(0, 0.0, 0.56)),
+            self.part("socket", C.bm_xform(C.bm_box(0.06, 0.07, 0.14, bevel=0.012), loc=(0, 0.0, 0.98)),
                       "metal_dark", g, grp="axe")
-            self.part("spike", C.bm_xform(C.bm_cyl(8, 0.035, 0.0, 0.16), loc=(0, 0.11, 0.56),
+            self.part("spike", C.bm_xform(C.bm_cyl(8, 0.04, 0.0, 0.20), loc=(0, 0.12, 0.98),
                       rot=(-math.pi / 2, 0, 0)), "axehead", g, grp="axe")
-            self.part("topSpike", C.bm_xform(C.bm_cyl(8, 0.025, 0.0, 0.10), loc=(0, 0, 0.67)), "axehead", g, grp="axe")
+            self.part("topSpike", C.bm_xform(C.bm_cyl(8, 0.03, 0.0, 0.16), loc=(0, 0, 1.12)), "axehead", g, grp="axe")
         elif w == "shield_mace":
             g = self.gun_group("mace", spine)
             self.part("haft", C.bm_xform(C.bm_cyl(10, 0.028, 0.024, 0.56), loc=(0, 0, 0.18)), "wood", g, grp="mace")
@@ -601,7 +732,8 @@ class Human:
             self.part("maceTip", C.bm_xform(C.bm_cyl(8, 0.04, 0.0, 0.08), loc=(0, 0, 0.64)), "metal", g, grp="mace")
             # bouclier : grande plaque rectangulaire bombée, planches + bandes de tôle rivetées
             sg = self.gun_group("shield", spine)
-            W, H = 0.50, 0.66
+            W, H = self.A.get("shield_size", (0.50, 0.66))
+            steel = self.A.get("steel_shield", False)
             sec = []
             for k in range(9):
                 t = k / 8 - 0.5
@@ -611,7 +743,7 @@ class Human:
             secs = [[sec[k][r] for k in range(9)] for r in range(3)]
             sh = C.bm_loft(secs, closed=False)
             self.part("shieldBoard", sh, "shieldwood", sg, thick=0.04)
-            for z in (-H * 0.36, 0.0, H * 0.36):
+            for z in (() if steel else (-H * 0.36, 0.0, H * 0.36)):
                 band = []
                 for k in range(9):
                     t = k / 8 - 0.5
@@ -623,8 +755,20 @@ class Human:
                     t = k / 8 - 0.5
                     self.part("shieldRivet", C.bm_xform(C.bm_sphere(6, 4, 0.018),
                               loc=(W * t, -0.06 * (1 - (2 * t) ** 2) - 0.045, z)), "rivet", sg)
+            if steel:
+                # rivets le long des bords (grand pavois d'acier)
+                for k in range(7):
+                    t = k / 6 - 0.5
+                    for z in (-H / 2 + 0.05, H / 2 - 0.05):
+                        self.part("shieldRivet", C.bm_xform(C.bm_sphere(6, 4, 0.016),
+                                  loc=(W * t * 0.9, -0.06 * (1 - (2 * t * 0.9) ** 2) - 0.03, z)), "rivet", sg)
+                for k in range(6):
+                    z = -H / 2 + 0.05 + (H - 0.1) * k / 5
+                    for sx in (1, -1):
+                        self.part("shieldRivet", C.bm_xform(C.bm_sphere(6, 4, 0.016),
+                                  loc=(W * 0.45 * sx, -0.012, z)), "rivet", sg)
             self.part("shieldBoss", C.bm_xform(C.bm_sphere(12, 6, 1.0), loc=(0, -0.09, 0.0),
-                      scale=(0.08, 0.05, 0.08)), "metal", sg)
+                      scale=(0.10, 0.06, 0.10) if steel else (0.08, 0.05, 0.08)), "metal", sg)
             self.part("shieldRim", C.bm_xform(C.bm_box(W + 0.04, 0.05, 0.035, bevel=0.01), loc=(0, -0.01, H / 2)),
                       "plate", sg)
             self.part("shieldRim", C.bm_xform(C.bm_box(W + 0.04, 0.05, 0.035, bevel=0.01), loc=(0, -0.01, -H / 2)),
@@ -685,11 +829,12 @@ class Human:
 
     def hold(self, aim: float = 0.0, dz: float = 0.0, recoil: float = 0.0, swing_l: float | None = None) -> None:
         w = self.A["weapon"]
-        if w in ("rifle", "sniper", "burst_rifle"):
+        if w in ("rifle", "sniper", "burst_rifle", "shotgun"):
             rest_loc = Vector((-0.06, -0.24, 0.10 + dz))
             aim_loc = Vector((-0.07, -0.26, 0.36))
             loc = rest_loc.lerp(aim_loc, aim) + Vector((0, 0.07 * recoil, 0.03 * recoil))
-            rot = (0.55 * (1 - aim) - 0.35 * recoil, 0.0, 0.55 * (1 - aim))
+            cp, cy = self.A.get("carry", (0.55, 0.55))
+            rot = (cp * (1 - aim) - 0.35 * recoil, 0.0, cy * (1 - aim))
             self.place("long", loc, rot)
             grip = self.wpt("long", (0, 0.08, -0.05))
             fore = self.wpt("long", (0, -0.22 if w != "burst_rifle" else -0.30, -0.04))
@@ -699,8 +844,8 @@ class Human:
             self.arm_ik("L", fore, L_POLE)
         elif w == "axe":
             # en travers du corps, fer au-dessus de l'épaule gauche
-            loc = Vector((-0.12, -0.22, 0.10 + dz))
-            self.place("axe", loc, (-0.25, 0.75, 0.15))
+            loc = Vector((-0.28, -0.16, 0.12 + dz))
+            self.place("axe", loc, (0.25, -0.15, -1.0))
             self.arm_ik("R", loc, R_POLE)
             self.arm_ik("L", self.wpt("axe", (0, 0, 0.20)), L_POLE)
         elif w == "shield_mace":
@@ -731,9 +876,18 @@ class Human:
         if self.A.get("idle_kneel"):
             self.kneel(1.0)
             j["pelvis"].location.z -= 0.006 * b
-            j["spine"].rotation_euler = (0.16 + 0.016 * b, 0, 0.05 * sway)
-            self.hold(aim=0.35, dz=0.008 * b)
+            j["spine"].rotation_euler = (0.16 + 0.016 * b, 0, 0.05 * sway + self.A.get("idle_twist", 0.0))
+            j["neck"].rotation_euler = (-0.04, 0, -0.5 * self.A.get("idle_twist", 0.0))
+            self.hold(aim=self.A.get("idle_aim", 0.35), dz=0.008 * b)
             return
+        cr = self.A.get("idle_crouch", 0.0)
+        if cr:
+            # garde basse, genoux fléchis, buste penché (posture de la planche)
+            j["pelvis"].location.z -= 0.09 * cr * self.LEG
+            self.legs((-0.45 * cr, -stance - 0.05 - 0.012 * sway, 0), (-0.25 * cr, stance + 0.05 - 0.012 * sway, 0),
+                      0.07 + 0.80 * cr, 0.09 + 0.55 * cr)
+            j["spine"].rotation_euler = (0.03 + 0.28 * cr + 0.016 * b, -0.02 * sway, 0.10 * cr)
+            j["neck"].rotation_euler = (-0.04 - 0.24 * cr - 0.016 * b, 0.03 * sway, 0.03 * sway)
         self.hold(aim=0.0, dz=0.012 * b)
 
     def pose_run(self, i: int, n: int) -> None:
@@ -808,7 +962,7 @@ class Human:
 
     def drop_weapons(self, hl: Vector, hr: Vector, u: float) -> None:
         w = self.A["weapon"]
-        if w in ("rifle", "sniper", "burst_rifle"):
+        if w in ("rifle", "sniper", "burst_rifle", "shotgun"):
             self.place("long", hr + Vector((0.05, -0.18 * u, -0.05)), (0.2 + 1.2 * u, 0.0, 0.9 * u))
         elif w == "axe":
             self.place("axe", hr + Vector((0.0, 0.0, -0.02)), (0.3 + 1.0 * u, 0.0, 0.4 * u))
@@ -833,6 +987,9 @@ class Human:
         self._aim_body(lean=0.05 - 0.12 * rc, twist=0.08)
         self.j["neck"].rotation_euler = (-0.02, 0, 0.12)
         self.hold(aim=aim, recoil=rc, swing_l=(0, 0, 0, 0, 1.0, 0.4)[i])
+
+    def atk_shotgun(self, i: int) -> None:
+        self.atk_rifle(i)
 
     def atk_burst_rifle(self, i: int) -> None:
         self.rest()
@@ -893,11 +1050,11 @@ class Human:
     def muzzle_world(self) -> Vector:
         bpy.context.view_layer.update()
         w = self.A["weapon"]
-        if w in ("rifle", "sniper", "burst_rifle"):
-            ln = {"rifle": 0.58, "sniper": 0.86, "burst_rifle": 0.50}[w]
+        if w in ("rifle", "sniper", "burst_rifle", "shotgun"):
+            ln = {"rifle": 0.58, "sniper": 0.86, "burst_rifle": 0.50, "shotgun": 0.56}[w]
             g, loc = self.weapons["long"], (0, -0.10 - ln, 0.035)
         elif w == "axe":
-            g, loc = self.weapons["axe"], (0, -0.37, 0.56)
+            g, loc = self.weapons["axe"], (0, -0.30, 0.98)
         elif w == "shield_mace":
             g, loc = self.weapons["mace"], (0, 0, 0.55)
         else:

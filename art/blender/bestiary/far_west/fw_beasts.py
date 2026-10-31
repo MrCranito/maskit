@@ -16,7 +16,7 @@ import math
 
 import fw_sheet as S  # noqa: F401  (chemins + rdm_common)
 from fw_sheet import C, bpy
-from fw_humans import corpse_twist, joint
+from fw_humans import arc_strip, corpse_twist, joint
 from mathutils import Vector
 
 ANIMS = {
@@ -29,34 +29,42 @@ ANIMS = {
 
 # Gabarits. Longueurs en unités Blender (héros ≈ 1,6 de haut).
 ARCH: dict[str, dict] = {
+    # Maraudeur (planche : hyène rousse rayée de brun-noir, crinière hérissée sombre, avant massif et
+    # dos fuyant, museau noir, gueule béante à crocs, tête basse)
     "fw_marauder": {
         "name": "Maraudeur", "scale": 1.42,
-        "withers": 0.64, "hips": 0.50, "length": 0.90,
-        "chest": (0.20, 0.23), "rump": (0.15, 0.16),
-        "neck": 0.22, "neck_r": 0.12, "head": 0.17, "snout": 0.17, "snout_r": 0.075,
-        "leg_r": 0.058, "front_leg": (0.25, 0.22, 0.12), "hind_leg": (0.21, 0.20, 0.13),
-        "ears": "round", "mane": True, "tail": "bushy", "collar": None, "teeth": True,
-        "head_down": 0.25, "jaw_idle": 0.18,
+        "withers": 0.68, "hips": 0.46, "length": 0.90,
+        "chest": (0.21, 0.25), "rump": (0.14, 0.15),
+        "neck": 0.22, "neck_r": 0.13, "head": 0.17, "snout": 0.20, "snout_r": 0.08,
+        "front_leg": (0.26, 0.23, 0.12), "hind_leg": (0.20, 0.19, 0.13),
+        "ears": "round", "mane": True, "mane_big": True, "stripes": 7, "tail": "bushy", "collar": None,
+        "teeth": True, "head_down": 0.42, "jaw_idle": 0.70, "snout_pitch": -0.35, "skull_long": 1.3,
+        "leg_r": 0.046,
         "mats": {
-            "fur": ("pat", [("#a8683c", "#3e2028", "#d0905a"), ("#5a3020", "#20101a", "#7a4630")], 7.0),
-            "fur_dark": ("#3e2418", "#140a10", "#5e3a26"),
-            "belly": ("#c8955e", "#5a3a36", "#e8b47c"),
-            "muzzle": ("#2e1c16", "#0c0608", "#4a3024"),
+            "fur": ("pat", [("#b0602c", "#481c1c", "#d8864a"), ("#6e3a20", "#2a1014", "#8e522e")], 9.0),
+            "fur_dark": ("#3a2018", "#120808", "#5a3424"),
+            "belly": ("#c8884e", "#5a3030", "#eaa66a"),
+            "muzzle": ("#221614", "#080404", "#3e2c26"),
         },
     },
+    # Chien de garde (planche : molosse-loup, dos et nuque gris-noir, pattes et ventre fauves,
+    # grandes oreilles pointues, gueule rouge grande ouverte, harnais de cuir)
     "fw_guard_dog": {
         "name": "Chien de garde", "scale": 1.30,
-        "withers": 0.60, "hips": 0.56, "length": 0.84,
-        "chest": (0.18, 0.22), "rump": (0.14, 0.16),
-        "neck": 0.20, "neck_r": 0.11, "head": 0.155, "snout": 0.18, "snout_r": 0.07,
-        "leg_r": 0.054, "front_leg": (0.24, 0.22, 0.12), "hind_leg": (0.22, 0.21, 0.14),
-        "ears": "pointed", "mane": False, "tail": "thin", "collar": "spiked", "harness": True,
-        "teeth": True, "head_down": 0.0, "jaw_idle": 0.08,
+        "withers": 0.74, "hips": 0.52, "length": 0.84,
+        "chest": (0.18, 0.25), "rump": (0.12, 0.14),
+        "neck": 0.22, "neck_r": 0.11, "head": 0.16, "snout": 0.19, "snout_r": 0.07,
+        "leg_r": 0.050, "front_leg": (0.25, 0.23, 0.12), "hind_leg": (0.22, 0.21, 0.14),
+        "ears": "pointed", "ear_h": 0.20, "mane": True, "mane_n": 11, "stripes": 0, "tail": "thin",
+        "collar": "spiked", "harness": True,
+        "teeth": True, "head_down": -0.12, "jaw_idle": 0.65, "leg_key": "belly", "back_saddle": True,
+        "snout_pitch": -0.40, "skull_long": 1.15,
         "mats": {
-            "fur": ("pat", [("#5a3a28", "#1c1018", "#7e5438"), ("#3a2620", "#120a10", "#5a3e30")], 5.0),
-            "fur_dark": ("#2a1c18", "#0c0608", "#463026"),
-            "belly": ("#9a6a40", "#40242a", "#c08a56"),
-            "muzzle": ("#1e1412", "#060404", "#3a2a22"),
+            "fur": ("pat", [("#8a5c36", "#2e181a", "#b07a4a"), ("#4a4240", "#16141a", "#6e6460")], 6.0),
+            "fur_dark": ("#2a2626", "#0a0808", "#4a4442"),
+            "belly": ("pat", [("#a8703e", "#40242a", "#d0945a"), ("#8a5a32", "#341c22", "#ae7844")], 6.0),
+            "muzzle": ("#2a2422", "#0a0606", "#4a403c"),
+            "tongue": ("#c0303a", "#4a0e1a", "#ee5a60"),
         },
     },
 }
@@ -72,6 +80,10 @@ COMMON_MATS = {
     "horn": ("#d8c8a0", "#5a4a48", "#fff4d0"),
     "red": ("#c0261e", "#4a0c1a", "#ec4a34"),
 }
+
+
+def A_sp(beast) -> float:
+    return beast.A.get("snout_pitch", 0.0)
 
 
 class Beast:
@@ -183,20 +195,54 @@ class Beast:
         self.part("belly", belly, "belly", torso)
         if A.get("mane"):
             # crinière sombre en dents de scie, du crâne au milieu du dos
-            for k in range(9):
-                t = k / 8
-                y = -L * 0.48 + L * 0.55 * t
-                z = (A["withers"] - self.HM) + A["chest"][1] * 0.85 - 0.04 * t
-                h = 0.14 - 0.06 * t
+            nm = 13 if A.get("mane_big") else A.get("mane_n", 9)
+            for k in range(nm):
+                t = k / (nm - 1)
+                y = -L * 0.48 + L * (0.70 if A.get("mane_big") else 0.55) * t
+                z = (A["withers"] - self.HM) + A["chest"][1] * 0.85 - (0.10 if A.get("mane_big") else 0.04) * t
+                h = (0.20 - 0.09 * t) if A.get("mane_big") else (0.14 - 0.06 * t)
+                if A.get("mane_big"):
+                    h *= (1.0, 0.75, 1.15, 0.85, 1.05, 0.7)[k % 6]
+                    for dx, rz in ((-0.035, -0.35), (0.035, 0.35)):
+                        self.part("mane", C.bm_xform(C.bm_cyl(5, 0.05, 0.0, h * 0.8), loc=(dx, y + 0.02, z + h * 0.25),
+                                  rot=(0.7, rz, 0), scale=(0.7, 1.0, 1.0)), "fur_dark", torso, smooth=False)
                 self.part("mane", C.bm_xform(C.bm_cyl(5, 0.06, 0.0, h), loc=(0, y, z + h * 0.4),
                           rot=(0.5, 0, 0), scale=(0.6, 1.0, 1.0)), "fur_dark", torso, smooth=False)
             # rayures / taches plus sombres sur la croupe
-            for sx in (1, -1):
-                for k in range(3):
-                    y = L * (0.05 + 0.12 * k)
-                    self.part("stripe", C.bm_xform(C.bm_box(0.012, 0.035, 0.12),
-                              loc=(A["rump"][0] * 0.98 * sx, y, (A["hips"] - self.HM) + 0.02),
-                              rot=(0.3, 0, 0)), "fur_dark", torso)
+            ns = A.get("stripes", 3)
+            for sx in ((1, -1) if ns else ()):
+                for k in range(ns):
+                    t = 0.18 + 0.72 * k / max(1, ns - 1)
+                    y = -L * 0.5 + L * t
+                    bulge = math.sin(math.pi * t) ** 0.45
+                    rx = (A["chest"][0] * (1 - t) + A["rump"][0] * t) * (0.55 + 0.45 * bulge)
+                    rz = (A["chest"][1] * (1 - t) + A["rump"][1] * t) * (0.55 + 0.45 * bulge)
+                    zc = (A["withers"] - self.HM) * (1 - t) + (A["hips"] - self.HM) * t - 0.03
+                    a0 = (1.45, 1.70, 1.50, 1.80, 1.55, 1.75, 1.60)[k % 7]
+                    band = arc_strip(1.0, a0, a0 + (1.1, 0.8, 1.2, 0.7, 1.0, 0.9, 1.1)[k % 7], -0.014, 0.014, n=7)
+                    C.bm_xform(band, rot=(0, 0, 0))
+                    C.bm_xform(band, rot=(math.pi / 2, 0, 0))
+                    C.bm_xform(band, loc=(0, y, zc), scale=(rx * 1.03 * sx, 1.0, rz * 1.03),
+                               rot=(0.25 * sx * (1 if k % 2 else -0.6), 0, 0))
+                    self.part("stripe", band, "fur_dark", torso, thick=0.01)
+        if A.get("mane_big"):
+            # collerette sombre sur la nuque et les épaules (avant massif de la hyène)
+            for row, (yy, rr) in enumerate(((-L * 0.44, 0.80), (-L * 0.34, 0.86), (-L * 0.24, 0.78))):
+                for k in range(7):
+                    a = -1.25 + 2.5 * k / 6 + 0.15 * (row % 2)
+                    base = (math.sin(a) * A["chest"][0] * rr, yy,
+                            A["withers"] - self.HM - 0.03 + math.cos(a) * A["chest"][1] * rr)
+                    h = (0.15, 0.11, 0.17, 0.12, 0.16, 0.10, 0.14)[(k + row) % 7]
+                    ob = self.part("ruffTuft", C.bm_xform(C.bm_cyl(5, 0.055, 0.0, h), loc=(0, 0, h * 0.4),
+                                   rot=(0.9, 0, 0)), "fur_dark", torso, smooth=False)
+                    ob.rotation_euler = (0, a, 0)
+                    ob.location = base
+        if A.get("back_saddle"):
+            # manteau sombre sur le dos et la nuque (chien-loup)
+            sb = C.bm_sphere(16, 10, 1.0)
+            C.bm_xform(sb, loc=(0, -L * 0.22, A["withers"] - self.HM + A["chest"][1] * 0.42),
+                       scale=(A["chest"][0] * 0.80, L * 0.30, A["chest"][1] * 0.60))
+            self.part("backSaddle", sb, "fur_dark", torso)
         if A.get("harness"):
             for yy in (-L * 0.30, -L * 0.05):
                 zc = (A["withers"] - self.HM) - 0.03
@@ -213,7 +259,8 @@ class Beast:
         A, j = self.A, self.j
         hr = A["head"]
         sk = C.bm_sphere(16, 12, 1.0)
-        C.bm_xform(sk, loc=(0, 0, 0), scale=(hr * 0.95, hr * 1.05, hr * 0.85))
+        C.bm_xform(sk, loc=(0, -hr * 0.15 * (A.get("skull_long", 1.0) - 1.0), 0),
+                   scale=(hr * 0.95, hr * 1.05 * A.get("skull_long", 1.0), hr * 0.85))
         self.part("skull", sk, "fur", head)
         sl, sr = A["snout"], A["snout_r"]
         # museau (dessus) : cône effilé vers l'avant
@@ -228,8 +275,11 @@ class Beast:
         self.part("jawMesh", C.bm_tube([(0, 0.0, 0.0), (0, -jl * 0.6, -0.01), (0, -jl, 0.0)],
                                        [sr * 0.95, sr * 0.75, sr * 0.55], seg=10, flat=0.55), "muzzle", jaw)
         if A.get("teeth"):
-            self.part("tongue", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -jl * 0.5, 0.02),
-                      scale=(sr * 0.55, jl * 0.38, 0.012)), "tongue", jaw)
+            self.part("tongue", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -jl * 0.5, 0.03),
+                      scale=(sr * 0.85, jl * 0.45, 0.02)), "tongue", jaw)
+            # palais rouge sous la mâchoire supérieure (gueule béante lisible de dessus)
+            self.part("palate", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -hr * 0.55 - sl * 0.5, -hr * 0.30),
+                      scale=(sr * 0.9, sl * 0.5, 0.02)), "tongue", head)
             for sx in (1, -1):
                 # crocs du haut (dans la tête) et du bas (mâchoire)
                 self.part("fangU", C.bm_xform(C.bm_cyl(6, 0.014, 0.0, 0.05),
@@ -253,7 +303,8 @@ class Beast:
                            scale=(0.065, 0.025, 0.075))
                 self.part("ear", ear, "fur_dark", head)
             elif ears == "pointed":
-                self.part("ear", C.bm_xform(C.bm_cyl(4, 0.05, 0.0, 0.13), loc=(hr * 0.55 * sx, hr * 0.05, hr * 0.92),
+                eh = A.get("ear_h", 0.13)
+                self.part("ear", C.bm_xform(C.bm_cyl(4, 0.05 * eh / 0.13, 0.0, eh), loc=(hr * 0.55 * sx, hr * 0.05, hr * 0.92),
                           rot=(0.25, -0.25 * sx, 0), scale=(1.0, 0.45, 1.0)), "fur_dark", head, smooth=False)
         if A.get("collar") == "spiked":
             neck = self.j["neck"]
@@ -279,6 +330,7 @@ class Beast:
         A, j = self.A, self.j
         L = A["length"]
         lr = A["leg_r"]
+        lk = A.get("leg_key")
         for end, (ya, za, segs, key) in (("F", (-L * 0.36, A["withers"] - self.HM - 0.06, A["front_leg"], "fur")),
                                          ("H", (L * 0.34, A["hips"] - self.HM - 0.02, A["hind_leg"], "fur"))):
             for side, sx in (("L", 1), ("R", -1)):
@@ -288,7 +340,7 @@ class Beast:
                 a, b, c = segs
                 thick = 1.35 if end == "H" else 1.15
                 self.part("upper" + n, C.bm_xform(C.bm_cyl(10, lr * thick * 1.25, lr * 1.0, a + 0.04),
-                          loc=(0, 0, -a / 2)), key, j0)
+                          loc=(0, 0, -a / 2)), lk or key, j0)
                 if end == "H":  # cuisse musclée
                     self.part("thigh" + n, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.01, -a * 0.25),
                               scale=(lr * 1.7, lr * 2.3, a * 0.55)), key, j0)
@@ -297,17 +349,17 @@ class Beast:
                               scale=(lr * 1.5, lr * 1.9, a * 0.45)), key, j0)
                 j1 = j["l1" + n] = joint("l1" + n, j0, (0, 0, -a))
                 self.part("lower" + n, C.bm_xform(C.bm_cyl(10, lr * 0.95, lr * 0.75, b + 0.03), loc=(0, 0, -b / 2)),
-                          "fur_dark" if A.get("dark_legs") else key, j1)
+                          "fur_dark" if A.get("dark_legs") else (lk or key), j1)
                 j2 = j["l2" + n] = joint("l2" + n, j1, (0, 0, -b))
                 self.part("pastern" + n, C.bm_xform(C.bm_cyl(8, lr * 0.75, lr * 0.70, c + 0.02), loc=(0, 0, -c / 2)),
-                          "fur_dark", j2)
+                          lk or "fur_dark", j2)
                 if A.get("hooves"):
                     self.part("hoof" + n, C.bm_xform(C.bm_cyl(10, lr * 0.95, lr * 1.10, 0.06), loc=(0, -0.01, -c - 0.01)),
                               "horn" if A.get("pale_hooves") else "nose", j2)
                 else:
                     paw = C.bm_sphere(10, 6, 1.0)
                     C.bm_xform(paw, loc=(0, -0.025, -c - 0.005), scale=(lr * 1.05, lr * 1.45, lr * 0.65))
-                    self.part("paw" + n, paw, "fur_dark", j2)
+                    self.part("paw" + n, paw, lk or "fur_dark", j2)
         self.rest_legs()
 
     def build_tail(self, tail) -> None:
@@ -347,7 +399,7 @@ class Beast:
         j["torso"].rotation_euler = (0, 0, 0)
         j["torso"].scale = (1, 1, 1)
         j["neck"].rotation_euler = (self.A.get("head_down", 0.0), 0, 0)
-        j["head"].rotation_euler = (-self.A.get("head_down", 0.0) * 0.4, 0, 0)
+        j["head"].rotation_euler = (-self.A.get("head_down", 0.0) * 0.4 + self.A.get("snout_pitch", 0.0), 0, 0)
         j["jaw"].rotation_euler = (self.A.get("jaw_idle", 0.0), 0, 0)
         j["tail"].rotation_euler = (0, 0, 0)
         self.rest_legs()
@@ -361,7 +413,7 @@ class Beast:
         j["torso"].scale = (1 + 0.025 * b, 1.0, 1 + 0.025 * b)
         hd = self.A.get("head_down", 0.0)
         j["neck"].rotation_euler = (hd + 0.04 * b, 0, 0.12 * math.sin(t * 0.5 + 0.4))
-        j["head"].rotation_euler = (-hd * 0.4 - 0.03 * b, 0, 0.10 * math.sin(t * 0.5))
+        j["head"].rotation_euler = (-hd * 0.4 - 0.03 * b + A_sp(self), 0, 0.10 * math.sin(t * 0.5))
         j["jaw"].rotation_euler = (self.A.get("jaw_idle", 0.0) + 0.06 * max(0.0, b), 0, 0)
         j["tail"].rotation_euler = (0.05 * b, 0, 0.30 * math.sin(t))
         self.leg("FL", -0.03, 0, 0.0)

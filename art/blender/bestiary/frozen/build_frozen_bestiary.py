@@ -19,14 +19,14 @@ Usage (depuis la racine du projet ; rendus : passer par le verrou flock du proje
     ... --sheet                                                # planche de présentation (captures)
 
 Bestiaire (ids) :
-    ice_wolf              Loup des glaces : loup bleu-gris, crête de cristaux de glace, yeux rouges
-    ice_spider            Araignée polaire : araignée blindée blanche à tête de bête, yeux rouges
-    ice_drone             Drone de froid : sphère blanche volante, grand œil cyan, pinces, pattes pendantes
-    ice_bear              Ours des neiges muté : ours crème massif, blessures, cristaux sur le dos
+    ice_wolf              Loup des glaces : loup bleu acier hirsute, crête de glace, gueule rouge, yeux ambre
+    ice_spider            Araignée polaire : corps mécanique d'acier, grosse tête de loup blanc, yeux rouges
+    ice_drone             Drone de froid : robot volant acier sombre, grand œil cyan, 2 pinces, pattes pendantes
+    ice_bear              Ours des neiges muté : ours gris-brun massif, bosse, entailles rouges, gueule ouverte
     ice_elemental         Élémentaire de glace : colosse de blocs de glace, cœur cyan
     ice_hunter            Chasseur arctique : soldat en armure grise, lunettes orange, fusil cryogénique
     ice_glacier_guardian  Gardien des glaces (élite) : golem blindé bleu nuit, cristaux, visière cyan
-    ice_eternal_mechanic  Mécanicien de l'Éternité (élite) : mécha laiton, œil cyan, canon-outil
+    ice_eternal_mechanic  Mécanicien de l'Éternité (élite) : mécha bleu acier et laiton, grand œil cyan
     ice_titan             Le Titan de glace (boss) : colosse de glace, couronne de cristaux, noyau
 
 Animations (8 directions) : idle, run, attack, hit, death.
@@ -98,119 +98,143 @@ COMMON_MATS = {
 SPEC: dict[str, dict] = {
     "ice_wolf": {
         "name": "Loup des glaces", "rig": "quad", "frame": 224, "scale": 1.42, "fps_run": 16,
-        "withers": 0.64, "hips": 0.56, "length": 0.92, "chest": (0.19, 0.23), "rump": (0.15, 0.17),
-        "neck": 0.22, "neck_r": 0.115, "head": 0.16, "snout": 0.19, "snout_r": 0.07,
-        "leg_r": 0.056, "front_leg": (0.25, 0.22, 0.12), "hind_leg": (0.22, 0.21, 0.14),
-        "ears": "pointed", "tail": "bushy", "teeth": True, "head_down": 0.15, "jaw_idle": 0.22,
-        "crystals": "spine",
+        "withers": 0.64, "hips": 0.52, "length": 0.88, "chest": (0.24, 0.27), "rump": (0.16, 0.18),
+        "neck": 0.20, "neck_r": 0.15, "head": 0.215, "snout": 0.17, "snout_r": 0.085,
+        "leg_r": 0.074, "front_leg": (0.25, 0.22, 0.12), "hind_leg": (0.22, 0.20, 0.13),
+        "ears": "pointed", "tail": "bushy", "teeth": True, "head_down": 0.16, "head_up": 0.30, "jaw_idle": 0.62,
+        "mouth": True,
+        "crystals": "spine", "shaggy": True,
         "mats": {
-            "fur": ("pat", [("#6f8cbc", "#1a2452", "#b8d4f4"), ("#5674a6", "#141c46", "#94b4e2"),
-                            ("#8aa6d0", "#202c5c", "#d0e4fa")], 6.0),
-            "fur_dark": ("#2e4474", "#0c1434", "#56709e"),
-            "belly": ("#c8daf0", "#4a5a8a", "#f2f8ff"),
-            "muzzle": ("#2a3450", "#0a0e20", "#46557a"),
-            "eye_glow": "!#ff6a3a",
+            "fur": ("pat", [("#5a7ab4", "#121c48", "#a6c6f0"), ("#4466a2", "#0e163e", "#88aee2"),
+                            ("#7494c8", "#18245a", "#c4dcf8")], 7.0),
+            "fur_dark": ("#2c4072", "#080e2c", "#4e6a9e"),
+            "belly": ("#a8c0e4", "#34467a", "#e2eeff"),
+            "muzzle": ("#1e2844", "#060a1a", "#3a4870"),
+            "tongue": ("#c8203a", "#4a0818", "#ff5a6a"),
+            "eye_glow": "!#ffb03a",
         },
     },
     "ice_spider": {
         "name": "Araignée polaire", "rig": "spider", "frame": 224, "scale": 1.24, "fps_run": 18,
-        "legs": 4, "body_z": 0.42, "femur": 0.58, "tibia": 0.70, "spread": 0.84,
+        "legs": 4, "body_z": 0.46, "femur": 0.60, "tibia": 0.74, "spread": 0.86, "leg_k": 1.45, "pole_up": 2.2,
         "mats": {
-            "carapace": ("pat", [("#a8b4c6", "#2a3458", "#e6eef8"), ("#8692a8", "#1e2648", "#c4cee0")], 5.0),
-            "fur": ("#dfe6ee", "#4a5478", "#ffffff"),
-            "leg": ("#aab4c6", "#2c3456", "#e4eaf4"),
-            "leg_tip": ("#56627c", "#141a32", "#8892ae"),
-            "glow": "!#8ef2ff",
-            "glow_soft": "!#c8f8ff",
+            "carapace": ("pat", [("#56627c", "#121830", "#8492ae"), ("#48526a", "#0e1428", "#727e9a")], 5.0),
+            "fur": ("pat", [("#d6dfec", "#4a5474", "#f4f8ff"), ("#b4c0d4", "#3c4666", "#dce4f0")], 7.0),
+            "fur_dark": ("#8a98b2", "#2a3454", "#bccadf"),
+            "leg": ("pat", [("#6c7890", "#161c38", "#a2aec4"), ("#5c6880", "#121830", "#8c98b0")], 6.0),
+            "leg_tip": ("#2c3448", "#080c1c", "#4e5a74"),
+            "glow": ("#3a4460", "#0c1024", "#5e6a88"),
+            "glow_soft": ("#2e3650", "#0a0e20", "#56617e"),
             "red_glow": "!#ff3a2e",
             "eye_glow": "!#ff3226",
             "fang": ("#eef2f8", "#6a7898", "#ffffff"),
+            "tongue": ("#c42438", "#480a1a", "#ff5a6a"),
+            "muzzle": ("#262c40", "#080a16", "#454d66"),
         },
     },
     "ice_drone": {
         "name": "Drone de froid", "rig": "drone", "frame": 192, "scale": 1.38, "fps_run": 12, "hover": 0.80,
         "mats": {
-            "shell": ("#d4dce8", "#36426a", "#ffffff"),
-            "shell_dark": ("#4a5676", "#121a36", "#76829e"),
-            "eye_glow": "!#36c4ff",
+            "shell": ("pat", [("#5e6c88", "#0e1430", "#8e9cb8"), ("#52607c", "#0c1028", "#7e8ca8")], 6.0),
+            "shell_dark": ("#2a3248", "#070a18", "#485470"),
+            "eye_glow": "!#2aa8ff",
             "eye_core": "!#effdff",
             "light": "!#7ff4ff",
         },
     },
     "ice_bear": {
         "name": "Ours des neiges muté", "rig": "quad", "frame": 256, "scale": 1.72, "fps_run": 11, "heavy": 1.0,
-        "withers": 0.70, "hips": 0.64, "length": 1.00, "chest": (0.27, 0.29), "rump": (0.25, 0.27),
-        "neck": 0.16, "neck_r": 0.16, "head": 0.19, "snout": 0.15, "snout_r": 0.09,
-        "leg_r": 0.088, "front_leg": (0.27, 0.22, 0.10), "hind_leg": (0.25, 0.20, 0.12),
-        "ears": "round", "tail": "stub", "teeth": True, "head_down": 0.30, "jaw_idle": 0.28,
-        "crystals": "hump", "wounds": True, "dark_snout": True,
+        "withers": 0.74, "hips": 0.60, "length": 0.90, "chest": (0.30, 0.32), "rump": (0.24, 0.26),
+        "neck": 0.20, "neck_r": 0.17, "head": 0.235, "snout": 0.15, "snout_r": 0.105,
+        "leg_r": 0.098, "front_leg": (0.27, 0.22, 0.10), "hind_leg": (0.25, 0.20, 0.12),
+        "ears": "round", "tail": "stub", "teeth": True, "head_down": 0.02, "head_up": 0.42, "jaw_idle": 0.78,
+        "mouth": True, "hump": True, "wounds": True, "shaggy": True, "shag_body": False,
+        "shag_len": 0.55,
         "mats": {
-            "fur": ("pat", [("#e2d6c0", "#585878", "#fff8ea"), ("#c8b8a0", "#46446a", "#ece0c8"),
-                            ("#d6c8b0", "#504e72", "#f6ecd8")], 5.0),
-            "fur_dark": ("#a8987e", "#383656", "#cfc0a4"),
-            "belly": ("#eee6d6", "#64647e", "#ffffff"),
-            "muzzle": ("#3a3238", "#100c14", "#5a4e56"),
-            "wound": ("#a01e2a", "#3a0618", "#d03a44"),
-            "eye_glow": "!#ff5a3a",
+            "fur": ("pat", [("#9e9484", "#34324e", "#cec4b4"), ("#8a7f6e", "#2c2a44", "#b8ad9c"),
+                            ("#b2a898", "#3c3a56", "#ddd4c6")], 6.0),
+            "fur_dark": ("#6e6356", "#221f34", "#948878"),
+            "belly": ("#d0c8bc", "#56546e", "#f4f0e8"),
+            "muzzle": ("#5a5048", "#1a1620", "#7e7468"),
+            "wound": ("#b01c2a", "#3a0614", "#e0404c"),
+            "flesh": ("#6a1420", "#20040a", "#9a2a34"),
+            "tongue": ("#c42a40", "#4a0a1a", "#ff6070"),
+            "eye_glow": "!#ffe6b0",
         },
     },
     "ice_elemental": {
-        "name": "Élémentaire de glace", "rig": "human", "frame": 256, "scale": 1.28, "head": 0.92, "leg": 0.78,
-        "torso": (1.42, 1.16), "arm": 1.50, "arm_len": 1.14, "hunch": 0.26, "fps_run": 10, "stride": 0.6,
+        "name": "Élémentaire de glace", "rig": "human", "frame": 256, "scale": 1.28, "head": 0.82, "leg": 0.72,
+        "torso": (1.50, 1.20), "arm": 1.62, "arm_len": 1.80, "hunch": 0.48, "fps_run": 10, "stride": 0.6,
+        "crown_k": 1.5, "claws": True, "arm_fw": 0.22, "arm_x": 0.20, "jagged": True,
         "top_key": "ice",
         "mats": {
+            "ice": ("pat", [("#4c8ed8", "#0e2264", "#c4ecff"), ("#3a76c4", "#0a1a54", "#9cd4fa"),
+                            ("#6aa8e8", "#16307a", "#e0f6ff")], 4.0),
+            "ice_deep": ("#2a5aa8", "#081848", "#5c94dc"),
+            "frost": ("#d4ecff", "#5a7ac0", "#ffffff"),
             "skin": "ice", "shirt": "ice", "pants": "ice_deep", "shoe": "ice_deep",
-            "eye_glow": "!#8ff8ff",
+            "eye_glow": "!#bffcff",
         },
     },
     "ice_hunter": {
-        "name": "Chasseur arctique", "rig": "human", "frame": 192, "scale": 1.05, "head": 1.12, "leg": 0.84,
-        "torso": (1.14, 1.06), "arm": 1.12, "arm_len": 1.0, "hunch": 0.08, "fps_run": 15,
+        "name": "Chasseur arctique", "rig": "human", "frame": 192, "scale": 1.05, "head": 0.94, "leg": 0.84,
+        "torso": (1.30, 1.16), "arm": 1.30, "arm_len": 1.0, "hunch": 0.14, "fps_run": 15,
         "top_key": "suit", "sleeve_key": "suit", "hand_key": "glove",
         "mats": {
-            "armor": ("#4a5468", "#10141e", "#7a86a0"),
+            "armor": ("pat", [("#3e4a64", "#0a0e1a", "#74829e"), ("#4e5a76", "#10141e", "#8e9cb8"),
+                              ("#343e56", "#080c16", "#626e8a")], 9.0),
             "armor_dark": ("#262b38", "#0a0c12", "#424a5e"),
-            "suit": ("pat", [("#5a6480", "#161c32", "#8a96b4"), ("#4c5670", "#12182c", "#76829e")], 6.0),
+            "suit": ("pat", [("#3e4660", "#0e1222", "#6a7694"), ("#343c54", "#0a0e1c", "#5a6682")], 7.0),
             "pants": ("pat", [("#4c5670", "#12182c", "#76829e"), ("#424a62", "#0e1428", "#68748e")], 6.0),
             "shoe": ("#22252e", "#08080c", "#3e424e"),
             "glove": ("#2a2e38", "#0a0a10", "#484c58"),
-            "fur": ("#d8d2c4", "#5c5a72", "#fffaf0"),
-            "visor": "!#ff8a2a",
+            "fur": ("#7a8296", "#22283c", "#a8b0c2"),
+            "visor": "!#ff7a1a",
             "gun": ("#2c303c", "#0a0a12", "#525868"),
             "cryo": "!#5ff0ff",
             "skin": ("#c89a80", "#5a3e4e", "#ecc0a2"),
         },
     },
     "ice_glacier_guardian": {
-        "name": "Gardien des glaces", "rig": "human", "frame": 288, "scale": 1.62, "head": 0.92, "leg": 0.78,
-        "torso": (1.50, 1.22), "arm": 1.55, "arm_len": 1.12, "hunch": 0.16, "fps_run": 10, "stride": 0.55,
+        "name": "Gardien des glaces", "rig": "human", "frame": 288, "scale": 1.62, "head": 1.02, "leg": 0.76,
+        "torso": (1.55, 1.25), "arm": 1.60, "arm_len": 1.40, "hunch": 0.30, "fps_run": 10, "stride": 0.55,
+        "arm_fw": 0.16, "arm_x": 0.16,
         "mats": {
-            "armor": ("pat", [("#3c5888", "#0e1838", "#7294cc"), ("#334c7a", "#0c1430", "#6282bc")], 5.0),
-            "armor_dark": ("#1c2846", "#070b1c", "#34446a"),
+            "armor": ("pat", [("#36507e", "#0a1432", "#7e9ed2"), ("#2e466e", "#08102a", "#6a8cc2"),
+                              ("#405c8e", "#0c1838", "#90b0e0")], 7.0),
+            "armor_dark": ("#16203a", "#050816", "#2e3c60"),
             "visor": "!#8ff6ff",
             "pants": "armor_dark", "shoe": "armor_dark", "skin": "armor", "shirt": "armor",
         },
     },
     "ice_eternal_mechanic": {
-        "name": "Mécanicien de l'Éternité", "rig": "human", "frame": 256, "scale": 1.36, "head": 0.98, "leg": 0.80,
-        "torso": (1.42, 1.22), "arm": 1.40, "arm_len": 1.06, "hunch": 0.12, "fps_run": 11, "stride": 0.6,
+        "name": "Mécanicien de l'Éternité", "rig": "human", "frame": 256, "scale": 1.36, "head": 0.90, "leg": 0.76,
+        "torso": (1.48, 1.26), "arm": 1.55, "arm_len": 1.22, "hunch": 0.36, "fps_run": 11, "stride": 0.6,
         "mats": {
-            "armor": ("pat", [("#c48c3c", "#4a2a2e", "#f4c674"), ("#a8742e", "#3c2228", "#dca85a")], 5.0),
-            "armor_dark": ("#3a3644", "#0e0a14", "#5e5a6c"),
-            "visor": "!#5ee8ff",
+            "armor": ("pat", [("#3a5282", "#0a1434", "#7c9ad0"), ("#30466e", "#08102c", "#6886bc"),
+                              ("#46609a", "#0e1a3e", "#90acde")], 6.0),
+            "armor_dark": ("#1e2638", "#070a14", "#3a4560"),
+            "brass": ("pat", [("#b8823a", "#3e2226", "#f0c070"), ("#9c6a2e", "#341c22", "#d8a656")], 6.0),
+            "visor": "!#3ad8ff",
             "gun": ("#2c2e3a", "#0a0a12", "#4e505e"),
             "spark": "!#ffb040",
             "pants": "armor_dark", "shoe": "armor_dark", "skin": "armor", "shirt": "armor",
         },
     },
     "ice_titan": {
-        "name": "Le Titan de glace", "rig": "human", "frame": 384, "scale": 2.45, "head": 0.86, "leg": 0.80,
-        "torso": (1.52, 1.20), "arm": 1.62, "arm_len": 1.16, "hunch": 0.22, "fps_run": 9, "stride": 0.5,
+        "name": "Le Titan de glace", "rig": "human", "frame": 384, "scale": 2.45, "head": 0.80, "leg": 0.76,
+        "torso": (1.56, 1.22), "arm": 1.66, "arm_len": 1.60, "hunch": 0.40, "fps_run": 9, "stride": 0.5,
         "top_key": "ice", "out_scale": 0.72, "cam_dz": 0.0,
+        "crown_k": 1.7, "claws": True, "arm_fw": 0.20, "arm_x": 0.20, "jagged": True,
         "anims": {"idle": (4, 6, True), "run": (6, 9, True), "death": (6, 9, False)},
         "mats": {
+            "ice": ("pat", [("#2c5aa4", "#081a50", "#8cc4f4"), ("#244c92", "#061444", "#74b0ea"),
+                            ("#3a6cb8", "#0c2260", "#a4d4fa")], 4.0),
+            "ice_deep": ("#163a7c", "#050f36", "#3c6cb4"),
+            "frost": ("#cfeaff", "#5272b8", "#ffffff"),
             "skin": "ice", "shirt": "ice", "pants": "ice_deep", "shoe": "ice_deep",
-            "eye_glow": "!#a8faff",
+            "eye_glow": "!#d8feff",
+            "face_glow": "!#5ad8ff",
             "armor_dark": ("#22346a", "#0a1032", "#46609c"),
         },
     },
@@ -657,13 +681,19 @@ class Spider(Rig):
                 name = "%s%d" % (side, k)
                 u = qjoint("leg_u" + name, th, hip)
                 lo = qjoint("leg_l" + name, th, (0, 0, 0))
+                lk = S.get("leg_k", 1.0)
                 self.part("femur" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L1 * 0.5), (0, 0, -self.L1)],
-                                                    [0.050, 0.046, 0.040], seg=8), "leg", u)
-                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.046), loc=(0, 0, 0)), "glow_soft", lo, nofs=True)
+                                                    [0.050 * lk, 0.046 * lk, 0.040 * lk], seg=8), "leg", u)
+                self.part("knee" + name, C.bm_xform(C.bm_sphere(8, 6, 0.046 * lk), loc=(0, 0, 0)), "glow_soft", lo,
+                          nofs=lk == 1.0)
                 self.part("tibia" + name, C.bm_tube([(0, 0, 0), (0, 0, -self.L2 * 0.55), (0, 0, -self.L2 * 0.9),
-                                                     (0, 0, -self.L2)], [0.040, 0.032, 0.016, 0.0], seg=8), "leg_tip", lo)
-                self.part("band" + name, C.bm_xform(C.bm_cyl(8, 0.036, 0.036, 0.03), loc=(0, 0, -self.L2 * 0.45)),
-                          "glow", lo, nofs=True)
+                                                     (0, 0, -self.L2)], [0.040 * lk, 0.032 * lk, 0.016 * lk, 0.0],
+                                                    seg=8), "leg" if lk > 1.0 else "leg_tip", lo)
+                self.part("band" + name, C.bm_xform(C.bm_cyl(8, 0.036 * lk, 0.036 * lk, 0.03 * lk),
+                          loc=(0, 0, -self.L2 * 0.45)), "glow", lo, nofs=lk == 1.0)
+                if lk > 1.0:
+                    self.part("foot" + name, C.bm_tube([(0, 0, -self.L2 * 0.60), (0, 0, -self.L2)],
+                                                       [0.030 * lk, 0.0], seg=8), "leg_tip", lo)
                 self.legs_def.append({"name": name, "u": u, "l": lo, "hip": hip, "rest": rest, "sx": sx, "k": k,
                                       "phase": 0.0 if (k + (0 if sx > 0 else 1)) % 2 == 0 else math.pi})
         self.muzzle_ref = ("fang", (0.0, -0.08, -0.17))
@@ -675,7 +705,7 @@ class Spider(Rig):
         for L in self.legs_def:
             T = inv @ feet[L["name"]]
             S = L["hip"]
-            pole = Vector((L["sx"] * 0.4, 0.0, pole_up))
+            pole = Vector((L["sx"] * 0.4, 0.0, pole_up * self.S.get("pole_up", 1.0)))
             E, H = ik2(S, T, pole, self.L1, self.L2)
             L["u"].rotation_quaternion = DOWN.rotation_difference((E - S).normalized())
             L["l"].location = E
@@ -812,6 +842,16 @@ def crystal_cluster(rig: Rig, key: str, parent, base, up, n: int, length: float,
                     d, L, r * (1.0 if k == 0 else 0.7))
 
 
+def tuft(rig: Rig, key: str, parent, base, direction, length: float, r: float, flat: float = 0.55):
+    """Mèche de fourrure / givre : pyramide aplatie (lisible en silhouette, rendu peint)."""
+    import bmesh
+    bm = C.bm_xform(shard(length, r, 4), scale=(1.0, flat, 1.0))
+    q = Vector((0, 0, 1)).rotation_difference(Vector(direction).normalized())
+    bmesh.ops.rotate(bm, cent=(0, 0, 0), matrix=q.to_matrix(), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=Vector(base), verts=bm.verts)
+    return rig.part("tuft", bm, key, parent, smooth=False)
+
+
 # =============================================================================== quadrupèdes
 class Quad(Rig):
     """Quadrupède (loup, ours) : torse rigide, cou + tête + mâchoire, 4 pattes à 3 segments, queue.
@@ -901,11 +941,18 @@ class Quad(Rig):
                                        [sr * 0.95, sr * 0.75, sr * 0.55], seg=10, flat=0.55), "muzzle", jaw)
         self.part("tongue", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -jl * 0.5, 0.02),
                   scale=(sr * 0.55, jl * 0.38, 0.012)), "tongue", jaw)
+        if A.get("mouth"):
+            # gueule rouge bien visible (planche) : palais sous le museau + intérieur de la mâchoire
+            self.part("palate", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -hr * 0.55 - sl * 0.45, -hr * 0.24),
+                      scale=(sr * 0.95, sl * 0.60, sr * 0.34)), "tongue", head)
+            self.part("mouthIn", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -jl * 0.45, 0.03),
+                      scale=(sr * 0.90, jl * 0.52, sr * 0.36)), "tongue", jaw)
         for sx in (1, -1):
-            self.part("fangU", C.bm_xform(C.bm_cyl(6, 0.016, 0.0, 0.06),
+            fk = 1.6 if A.get("heavy") else 1.0
+            self.part("fangU", C.bm_xform(C.bm_cyl(6, 0.016 * fk, 0.0, 0.06 * fk),
                       loc=(sr * 0.55 * sx, -hr * 0.55 - sl * 0.85, -hr * 0.32), rot=(math.pi, 0, 0)), "teeth", head,
                       nofs=True)
-            self.part("fangL", C.bm_xform(C.bm_cyl(6, 0.013, 0.0, 0.045),
+            self.part("fangL", C.bm_xform(C.bm_cyl(6, 0.013 * fk, 0.0, 0.045 * fk),
                       loc=(sr * 0.45 * sx, -jl * 0.82, 0.03)), "teeth", jaw, nofs=True)
             for k in range(3):
                 self.part("tooth", C.bm_xform(C.bm_cyl(5, 0.009, 0.0, 0.028),
@@ -914,7 +961,8 @@ class Quad(Rig):
             # yeux lumineux (gros, lisibles sur mobile)
             self.part("eye", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(hr * 0.48 * sx, -hr * 0.80, hr * 0.22),
                       scale=(0.030, 0.014, 0.020)), "eye_glow", head, nofs=True)
-            self.part("brow", C.bm_xform(C.bm_box(0.06, 0.02, 0.018, bevel=0.005),
+            bk = 1.5 if A.get("heavy") else 1.0
+            self.part("brow", C.bm_xform(C.bm_box(0.06 * bk, 0.02 * bk, 0.018 * bk, bevel=0.005),
                       loc=(hr * 0.46 * sx, -hr * 0.82, hr * 0.37), rot=(0, -0.45 * sx, 0)), "fur_dark", head)
             if A.get("ears") == "round":
                 ear = C.bm_sphere(10, 8, 1.0)
@@ -922,8 +970,15 @@ class Quad(Rig):
                            scale=(0.06, 0.03, 0.06))
                 self.part("ear", ear, "fur_dark", head)
             else:
-                self.part("ear", C.bm_xform(C.bm_cyl(4, 0.055, 0.0, 0.15), loc=(hr * 0.55 * sx, hr * 0.05, hr * 0.92),
-                          rot=(0.25, -0.25 * sx, 0), scale=(1.0, 0.45, 1.0)), "fur_dark", head, smooth=False)
+                ek = 1.45 if A.get("shaggy") else 1.0
+                self.part("ear", C.bm_xform(C.bm_cyl(4, 0.055 * ek, 0.0, 0.15 * ek),
+                          loc=(hr * 0.55 * sx, hr * 0.05, hr * 0.92 + 0.02 * (ek - 1)),
+                          rot=(0.25 - 0.40 * (ek > 1), -0.30 * sx, 0), scale=(1.0, 0.45, 1.0)), "fur_dark" if ek == 1
+                          else "fur", head, smooth=False)
+                if A.get("shaggy"):
+                    self.part("earIn", C.bm_xform(C.bm_cyl(4, 0.035 * ek, 0.0, 0.10 * ek),
+                              loc=(hr * 0.55 * sx, -0.016, hr * 0.92), rot=(-0.15, -0.30 * sx, 0),
+                              scale=(1.0, 0.35, 1.0)), "muzzle", head, smooth=False)
         if A.get("crystals") == "spine":
             # petits cristaux sur le front
             for sx in (1, -1):
@@ -980,29 +1035,86 @@ class Quad(Rig):
         A = self.A
         L = A["length"]
         top = (A["withers"] - self.HM) + A["chest"][1] * 0.80
+        if A.get("shaggy"):
+            self.build_shag(torso)
         if A.get("crystals") == "spine":
-            # crête de cristaux de glace du garrot à la croupe (la silhouette du loup de la planche)
-            for k in range(7):
-                t = k / 6
-                y = -L * 0.44 + L * 0.80 * t
+            # crête de glace hérissée du garrot à la croupe (la silhouette du loup de la planche)
+            rnd = random.Random(3)
+            for k in range(11):
+                t = k / 10
+                y = -L * 0.46 + L * 0.84 * t
                 z = top * (1 - t) + ((A["hips"] - self.HM) + A["rump"][1] * 0.80) * t
-                h = (0.20 - 0.10 * t) * (1.15 if k in (1, 2) else 1.0)
+                h = (0.17 - 0.08 * t) * (1.2 if k in (1, 2, 3) else 1.0) * rnd.uniform(0.8, 1.15)
                 for sx in ((0,) if k % 2 == 0 else (1, -1)):
-                    place_shard(self, "spineShard", "ice", torso, (0.035 * sx, y, z - 0.02),
-                                (0.35 * sx, 0.55, 1.0), h, 0.045 if sx == 0 else 0.032)
+                    place_shard(self, "spineShard", "frost" if (k + sx) % 3 == 0 else "ice", torso,
+                                (0.05 * sx, y, z - 0.03), (0.45 * sx, 0.45, 1.0), h, 0.04 if sx == 0 else 0.03)
             for sx in (1, -1):
-                place_shard(self, "shoulderShard", "ice", torso, (A["chest"][0] * 0.85 * sx, -L * 0.32, top - 0.08),
-                            (0.9 * sx, 0.2, 0.7), 0.13, 0.03)
+                for k in range(2):
+                    place_shard(self, "shoulderShard", "ice", torso,
+                                (A["chest"][0] * 0.80 * sx, -L * (0.34 - 0.10 * k), top - 0.06 - 0.03 * k),
+                                (0.9 * sx, 0.3, 0.8), 0.12 - 0.03 * k, 0.03)
         elif A.get("crystals") == "hump":
             for k, (x, y, s) in enumerate(((0.06, -0.30, 1.0), (-0.08, -0.22, 0.85), (0.0, -0.08, 0.7),
                                            (0.12, 0.05, 0.6), (-0.10, 0.18, 0.55))):
                 crystal_cluster(self, "ice", torso, (x, y * L / 0.92, top - 0.03), (x * 2.0, 0.3, 1.0),
                                 2, 0.20 * s, 0.05 * s, 11 + k)
+        if A.get("hump"):
+            # grosse bosse d'épaules (ours de la planche)
+            self.part("hump", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -L * 0.18, top - 0.16),
+                      scale=(A["chest"][0] * 0.80, L * 0.26, A["chest"][1] * 0.50)), "fur", torso)
         if A.get("wounds"):
-            # entailles rouges sur le flanc et l'épaule (ours muté de la planche)
-            for (sx, y, z, rz) in ((1, -0.18, 0.02, 0.5), (1, -0.10, -0.04, 0.4), (-1, 0.10, 0.04, -0.4)):
-                self.part("wound", C.bm_xform(C.bm_box(0.012, 0.16, 0.025, bevel=0.005),
-                          loc=(A["chest"][0] * 0.98 * sx, y * L, z), rot=(rz, 0, 0)), "wound", torso, nofs=True)
+            # grandes entailles rouges sur l'épaule et le flanc (ours muté de la planche)
+            for (sx, y, z, rz, ln) in ((1, -0.30, 0.10, 0.9, 0.26), (1, -0.20, 0.06, 0.9, 0.18), (-1, -0.28, 0.10, -0.8, 0.22),
+                                       (-1, 0.12, 0.06, -0.5, 0.16), (1, 0.18, 0.02, 0.4, 0.14)):
+                tt = y + 0.5
+                bulge = math.sin(math.pi * min(1.0, max(0.0, tt * 1.04))) ** 0.45
+                w = (A["chest"][0] * (1 - tt) + A["rump"][0] * tt) * (0.55 + 0.45 * bulge) * 0.86 * sx
+                self.part("woundIn", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(w, y * L, z), rot=(rz, 0, 0),
+                          scale=(0.06, ln * 0.55, 0.026)), "flesh", torso, nofs=True)
+                self.part("wound", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(w * 1.04, y * L, z), rot=(rz, 0, 0),
+                          scale=(0.05, ln * 0.45, 0.011)), "wound", torso, nofs=True)
+
+    def build_shag(self, torso) -> None:
+        """Fourrure hirsute : mèches sur le dos, les flancs, la collerette et les joues (planche)."""
+        A = self.A
+        rnd = random.Random(19)
+        secs = self.torso_sections() if A.get("shag_body", True) else []
+        for si in range(1, len(secs) - 1):
+            sec = secs[si]
+            cy = sec[0][1]
+            cz = sum(p[2] for p in sec) / len(sec)
+            for i in range(16):
+                a = 2 * math.pi * i / 16
+                if math.sin(a) < -0.35:
+                    continue
+                if (i + si) % 3:
+                    continue
+                x, y, z = sec[i]
+                out = Vector((x, 0.0, z - cz)).normalized()
+                d = out * 0.7 + Vector((0, 1.3, 0.1))
+                key = "fur_dark" if rnd.random() < 0.35 else "fur"
+                tuft(self, key, torso, (x * 0.92, y, cz + (z - cz) * 0.92), d,
+                     rnd.uniform(0.08, 0.12) * (1.25 if si < 4 else 1.0) * A.get("shag_len", 1.0),
+                     rnd.uniform(0.04, 0.055) * (1.0 + 0.6 * (1.0 - A.get("shag_len", 1.0))))
+        # collerette autour du cou
+        neck = self.j["neck"]
+        nl, nr = A["neck"], A["neck_r"]
+        for i in range(12):
+            a = 2 * math.pi * i / 12
+            if math.sin(a) < -0.6:
+                continue
+            base = Vector((math.cos(a) * nr * 1.05, -nl * 0.30, nl * 0.25 + math.sin(a) * nr * 1.0))
+            d = Vector((math.cos(a), 0.9, math.sin(a) + 0.2))
+            tuft(self, "fur" if i % 3 else "fur_dark", neck, base, d, rnd.uniform(0.12, 0.17) * A.get("shag_len", 1.0),
+                 0.05)
+        head = self.j["head"]
+        hr = A["head"]
+        for sx in (1, -1):
+            for k in range(3):
+                tuft(self, "fur", head, (hr * 0.80 * sx, hr * (0.05 + 0.25 * k), -hr * 0.15 + 0.05 * k),
+                     (sx * 1.0, 0.7, -0.2 + 0.3 * k), 0.10 * A.get("shag_len", 1.0), 0.04)
+            if A.get("ears") != "round":
+                tuft(self, "fur_dark", head, (hr * 0.35 * sx, hr * 0.25, hr * 0.75), (0.3 * sx, 0.9, 0.7), 0.10, 0.04)
 
     # ------------------------------------------------------------------ poses
     def rest_legs(self) -> None:
@@ -1024,7 +1136,7 @@ class Quad(Rig):
         j["torso"].rotation_euler = (0, 0, 0)
         j["torso"].scale = (1, 1, 1)
         j["neck"].rotation_euler = (A.get("head_down", 0.0), 0, 0)
-        j["head"].rotation_euler = (-A.get("head_down", 0.0) * 0.4, 0, 0)
+        j["head"].rotation_euler = (-A.get("head_down", 0.0) * 0.4 - A.get("head_up", 0.0), 0, 0)
         j["jaw"].rotation_euler = (A.get("jaw_idle", 0.0), 0, 0)
         j["tail"].rotation_euler = (0, 0, 0)
         self.rest_legs()
@@ -1038,7 +1150,7 @@ class Quad(Rig):
         j["torso"].scale = (1 + 0.025 * b, 1.0, 1 + 0.025 * b)
         hd = A.get("head_down", 0.0)
         j["neck"].rotation_euler = (hd + 0.04 * b, 0, 0.12 * math.sin(t * 0.5 + 0.4))
-        j["head"].rotation_euler = (-hd * 0.4 - 0.03 * b, 0, 0.10 * math.sin(t * 0.5))
+        j["head"].rotation_euler = (-hd * 0.4 - A.get("head_up", 0.0) - 0.03 * b, 0, 0.10 * math.sin(t * 0.5))
         j["jaw"].rotation_euler = (A.get("jaw_idle", 0.0) + 0.06 * max(0.0, b), 0, 0)
         j["tail"].rotation_euler = (0.05 * b, 0, 0.30 * math.sin(t))
         self.leg("FL", -0.03, 0, 0.0)
@@ -1156,43 +1268,101 @@ class Quad(Rig):
 
 # =============================================================================== araignée polaire
 class PolarSpider(Spider):
-    """Araignée polaire : corps blindé blanc, tête de bête (museau, oreilles, crocs), yeux rouges,
-    lueur rouge sous l'abdomen et lumières de givre cyan."""
+    """Araignée polaire (planche) : grosse tête de loup blanc hirsute, gueule rouge ouverte, yeux rouges,
+    corps mécanique gris acier en segments, longues pattes articulées hautes, lueur rouge ventrale."""
 
     def build(self) -> None:
         super().build()
-        self.j["abd"].scale = (0.72, 0.72, 0.72)
+        # la tête d'araignée, ses yeux et ses chélicères laissent place à la tête de loup
+        keep = []
+        for ob, key in self.parts:
+            if ob.name.startswith(("headM", "eye", "chel", "fang", "spot", "dot")):
+                bpy.data.objects.remove(ob, do_unlink=True)
+            else:
+                keep.append((ob, key))
+        self.parts = keep
+        self.j["abd"].scale = (0.52, 0.52, 0.52)
         th = self.j["thorax"]
-        # tête de bête par-dessus la tête d'araignée
-        sk = C.bm_sphere(16, 12, 1.0)
-        C.bm_xform(sk, loc=(0, -0.27, 0.08), scale=(0.13, 0.13, 0.11))
-        self.part("beastSkull", sk, "fur", th)
-        self.part("beastSnout", C.bm_tube([(0, -0.34, 0.07), (0, -0.42, 0.04), (0, -0.48, 0.01)],
-                                          [0.075, 0.06, 0.045], seg=10, flat=0.8), "fur", th)
-        self.part("beastNose", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.49, 0.02), scale=(0.03, 0.02, 0.02)),
-                  "leg_tip", th)
+        # thorax blindé en segments
+        for k in range(3):
+            self.part("seg", C.bm_xform(C.bm_cyl(14, 0.19 - 0.02 * k, 0.17 - 0.02 * k, 0.05),
+                      loc=(0, -0.10 + 0.11 * k, 0.07 - 0.01 * k), rot=(math.pi / 2, 0, 0), scale=(1.0, 0.75, 1.0)),
+                      "glow_soft", th)
         for sx in (1, -1):
-            self.part("beastEar", C.bm_xform(C.bm_cyl(4, 0.045, 0.0, 0.12), loc=(0.08 * sx, -0.22, 0.20),
-                      rot=(0.2, -0.3 * sx, 0), scale=(1.0, 0.45, 1.0)), "carapace", th, smooth=False)
-            self.part("beastEye", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.065 * sx, -0.37, 0.12),
-                      scale=(0.03, 0.014, 0.02)), "eye_glow", th, nofs=True)
-            self.part("beastFang", C.bm_xform(C.bm_cyl(6, 0.014, 0.0, 0.06), loc=(0.035 * sx, -0.45, -0.01),
-                      rot=(math.pi, 0, 0)), "fang", th, nofs=True)
-            # plaques de blindage dorsales
             for k in range(2):
-                self.part("plate", C.bm_xform(C.bm_box(0.10, 0.10, 0.03, bevel=0.012),
-                          loc=(0.09 * sx, -0.06 + 0.10 * k, 0.12), rot=(0.1, 0.35 * sx, 0)), "leg", th)
-        # lueur rouge sous l'abdomen (planche) et piquants de givre
+                self.part("plate", C.bm_xform(C.bm_box(0.12, 0.11, 0.035, bevel=0.012),
+                          loc=(0.09 * sx, -0.04 + 0.12 * k, 0.12), rot=(0.1, 0.35 * sx, 0)), "leg", th)
+        # tête de loup (grosse, portée haut, regard vers l'avant)
+        j = self.j
+        j["wolf"] = wolf = joint("wolf", th, (0, -0.24, 0.16))
+        wolf.scale = (1.35, 1.35, 1.35)
+        sk = C.bm_sphere(18, 12, 1.0)
+        C.bm_xform(sk, loc=(0, -0.04, 0.06), scale=(0.17, 0.16, 0.15))
+        self.part("beastSkull", sk, "fur", wolf)
+        self.part("beastSnout", C.bm_tube([(0, -0.15, 0.04), (0, -0.25, 0.01), (0, -0.33, -0.02)],
+                                          [0.085, 0.07, 0.052], seg=12, flat=0.8), "fur", wolf)
+        self.part("beastNose", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.345, -0.005), scale=(0.035, 0.025, 0.025)),
+                  "leg_tip", wolf)
+        j["wjaw"] = wjaw = joint("wjaw", wolf, (0, -0.10, -0.05))
+        self.part("beastJaw", C.bm_tube([(0, 0, 0), (0, -0.12, -0.01), (0, -0.21, 0.0)], [0.075, 0.06, 0.04],
+                                        seg=10, flat=0.55), "fur", wjaw)
+        self.part("mouthIn", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -0.11, 0.025), scale=(0.06, 0.10, 0.02)),
+                  "tongue", wjaw)
+        self.part("palate", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0, -0.22, -0.035), scale=(0.06, 0.10, 0.02)),
+                  "tongue", wolf)
+        for sx in (1, -1):
+            self.part("beastEar", C.bm_xform(C.bm_cyl(4, 0.08, 0.0, 0.24), loc=(0.11 * sx, 0.02, 0.27),
+                      rot=(0.25, -0.35 * sx, 0), scale=(1.0, 0.45, 1.0)), "fur_dark", wolf, smooth=False)
+            self.part("beastEarIn", C.bm_xform(C.bm_cyl(4, 0.05, 0.0, 0.16), loc=(0.11 * sx, -0.005, 0.25),
+                      rot=(0.25, -0.35 * sx, 0), scale=(1.0, 0.35, 1.0)), "muzzle", wolf, smooth=False)
+            self.part("beastEye", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.075 * sx, -0.165, 0.10),
+                      scale=(0.034, 0.016, 0.022)), "eye_glow", wolf, nofs=True)
+            self.part("beastBrow", C.bm_xform(C.bm_box(0.07, 0.03, 0.022, bevel=0.006), loc=(0.07 * sx, -0.17, 0.135),
+                      rot=(0, -0.45 * sx, 0)), "fur_dark", wolf)
+            self.part("beastFang", C.bm_xform(C.bm_cyl(6, 0.016, 0.0, 0.07), loc=(0.045 * sx, -0.29, -0.04),
+                      rot=(math.pi, 0, 0)), "fang", wolf, nofs=True)
+            self.part("beastFangL", C.bm_xform(C.bm_cyl(6, 0.013, 0.0, 0.05), loc=(0.04 * sx, -0.17, 0.02)),
+                      "fang", wjaw, nofs=True)
+        # crinière hirsute autour de la tête
+        rnd = random.Random(23)
+        for i in range(14):
+            a = 2 * math.pi * i / 14
+            if math.sin(a) < -0.5 or math.sin(a) > 0.6:
+                continue
+            base = Vector((math.cos(a) * 0.15, 0.06, 0.04 + math.sin(a) * 0.13))
+            tuft(self, "fur" if i % 3 else "fur_dark", wolf, base, Vector((math.cos(a) * 1.3, 0.8, math.sin(a) - 0.1)),
+                 rnd.uniform(0.10, 0.14), 0.045)
+        # lueur rouge sous l'abdomen (planche)
         abd = self.j["abd"]
-        self.part("redGlow", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.30, -0.10), scale=(0.12, 0.16, 0.05)),
+        self.part("redGlow", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.30, -0.10), scale=(0.14, 0.18, 0.06)),
                   "red_glow", abd, nofs=True)
-        for k in range(4):
-            place_shard(self, "abdShard", "ice", abd, (0.08 * (-1) ** k, 0.22 + 0.10 * k, 0.30 - 0.02 * k),
-                        (0.4 * (-1) ** k, 0.5, 1.0), 0.10, 0.03)
-        self.muzzle_ref = ("beastSnout", (0.0, -0.48, 0.0))
+        self.part("redGlowT", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0.02, -0.10), scale=(0.08, 0.08, 0.04)),
+                  "red_glow", th, nofs=True)
+        self.muzzle_ref = ("beastSnout", (0.0, -0.33, 0.0))
+
+    def rest(self) -> None:
+        super().rest()
+        self.j["wolf"].rotation_euler = (-0.40, 0, 0)
+        self.j["wjaw"].rotation_euler = (0.45, 0, 0)
+
+    def pose_idle(self, i: int, n: int) -> None:
+        super().pose_idle(i, n)
+        t = 2 * math.pi * i / n
+        self.j["wolf"].rotation_euler = (-0.40 + 0.04 * math.sin(t), 0, 0.10 * math.sin(t * 0.5))
+        self.j["wjaw"].rotation_euler = (0.58 + 0.08 * max(0.0, math.sin(t)), 0, 0)
+
+    def pose_attack(self, i: int, n: int) -> None:
+        super().pose_attack(i, n)
+        self.j["wolf"].rotation_euler = ((-0.50, -0.60, -0.65, 0.05, -0.10, -0.30)[i], 0, 0)
+        self.j["wjaw"].rotation_euler = ((0.5, 0.7, 0.8, 0.15, 0.4, 0.45)[i], 0, 0)
+
+    def pose_death(self, i: int, n: int) -> None:
+        super().pose_death(i, n)
+        t = i / (n - 1)
+        self.j["wjaw"].rotation_euler = (0.45 + 0.3 * t, 0, 0)
 
     def muzzle_world(self) -> Vector:
-        return self.j["thorax"].matrix_world @ Vector((0.0, -0.50, -0.02))
+        return self.j["wolf"].matrix_world @ Vector((0.0, -0.34, -0.02))
 
 
 # =============================================================================== drone
@@ -1207,58 +1377,81 @@ class Drone(Rig):
         j["body"] = body = joint("body", root, (0, 0, 0))
         body.scale = (S["scale"],) * 3
         j["hov"] = hov = joint("hov", body, (0, 0, self.HZ))
-        # coque
-        shell = C.bm_sphere(22, 16, 1.0)
-        C.bm_xform(shell, scale=(0.27, 0.27, 0.23))
-        self.part("shell", shell, "shell", hov)
-        self.part("band", C.bm_xform(C.bm_torus(24, 6, 0.27, 0.035), scale=(1.0, 1.0, 0.8)), "shell_dark", hov)
-        self.part("cap", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, 0.02, 0.20), scale=(0.13, 0.13, 0.06)),
+        # corps vertical blindé (planche) : dôme-tête, torse à grand œil, queue effilée
+        body_m = C.bm_sphere(20, 14, 1.0)
+        for v in body_m.verts:
+            x, y, z = v.co
+            k = 1.0 - 0.25 * max(0.0, -z)
+            v.co = Vector((x * 0.23 * k, y * 0.21 * k, z * 0.27))
+        self.part("shell", body_m, "shell", hov)
+        self.part("band", C.bm_xform(C.bm_torus(24, 6, 0.225, 0.03), loc=(0, 0, 0.06), scale=(1.0, 0.95, 0.8)),
                   "shell_dark", hov)
-        self.part("antenna", C.bm_xform(C.bm_cyl(6, 0.010, 0.006, 0.18), loc=(0.06, 0.06, 0.30)), "metal_dark", hov)
-        self.part("antTip", C.bm_xform(C.bm_sphere(8, 6, 0.022), loc=(0.06, 0.06, 0.40)), "light", hov, nofs=True)
-        self.part("under", C.bm_xform(C.bm_cyl(14, 0.12, 0.07, 0.10), loc=(0, 0, -0.22)), "shell_dark", hov)
-        # œil : bague sombre + lentille cyan + point chaud
-        self.part("eyeRing", C.bm_xform(C.bm_torus(20, 6, 0.125, 0.03), loc=(0, -0.235, 0.0),
+        dome = C.bm_sphere(16, 10, 1.0)
+        C.bm_xform(dome, loc=(0, 0.01, 0.27), scale=(0.15, 0.14, 0.11))
+        self.part("cap", dome, "shell", hov)
+        self.part("capRim", C.bm_xform(C.bm_cyl(16, 0.16, 0.15, 0.04), loc=(0, 0.01, 0.22)), "shell_dark", hov)
+        self.part("capVisor", C.bm_xform(C.bm_box(0.14, 0.04, 0.03, bevel=0.01), loc=(0, -0.135, 0.29)), "light", hov,
+                  nofs=True)
+        for sx in (1, -1):
+            self.part("capFin", C.bm_xform(C.bm_box(0.03, 0.14, 0.10, bevel=0.01), loc=(0.13 * sx, 0.03, 0.30),
+                      rot=(0, 0.3 * sx, 0)), "shell_dark", hov)
+        self.part("antenna", C.bm_xform(C.bm_cyl(6, 0.010, 0.006, 0.16), loc=(0.05, 0.06, 0.42)), "metal_dark", hov)
+        self.part("antTip", C.bm_xform(C.bm_sphere(8, 6, 0.022), loc=(0.05, 0.06, 0.51)), "light", hov, nofs=True)
+        self.part("under", C.bm_tube([(0, 0, -0.16), (0, -0.01, -0.34), (0, -0.02, -0.52), (0, -0.03, -0.66)],
+                                     [0.12, 0.08, 0.045, 0.0], seg=12), "shell", hov)
+        for k in range(2):
+            self.part("underRing", C.bm_xform(C.bm_cyl(12, 0.10 - 0.03 * k, 0.09 - 0.03 * k, 0.035),
+                      loc=(0, -0.01, -0.30 - 0.14 * k)), "shell_dark", hov)
+        self.part("underGlow", C.bm_xform(C.bm_cyl(12, 0.05, 0.05, 0.03), loc=(0, -0.04, -0.27), rot=(0.2, 0, 0)),
+                  "light", hov, nofs=True)
+        # grand œil cyan au centre du torse : bague sombre + lentille + point chaud
+        self.part("eyeRing", C.bm_xform(C.bm_torus(20, 6, 0.13, 0.036), loc=(0, -0.20, 0.04),
                   rot=(math.pi / 2, 0, 0)), "shell_dark", hov)
-        self.part("eyeLens", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.24, 0.0), scale=(0.115, 0.06, 0.115)),
+        self.part("eyeLens", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.205, 0.04), scale=(0.12, 0.065, 0.12)),
                   "eye_glow", hov, nofs=True, grp="eye")
-        j["core"] = core = joint("core", hov, (0, -0.285, 0.0))
-        self.part("eyeCore", C.bm_xform(C.bm_sphere(10, 8, 1.0), scale=(0.055, 0.025, 0.055)), "eye_core", core,
+        j["core"] = core = joint("core", hov, (0, -0.25, 0.04))
+        self.part("eyeCore", C.bm_xform(C.bm_sphere(10, 8, 1.0), scale=(0.05, 0.025, 0.05)), "eye_core", core,
                   nofs=True, grp="eye")
         self.part("flare", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.03, 0), scale=(0.16, 0.05, 0.16)),
                   "eye_core", core, nofs=True, grp="flare")
-        # propulseurs latéraux
+        # épaulières / propulseurs
         for sx in (1, -1):
-            self.part("pod", C.bm_xform(C.bm_cyl(12, 0.06, 0.07, 0.14), loc=(0.29 * sx, 0.04, -0.02),
-                      rot=(0, math.pi / 2, 0)), "shell_dark", hov)
-            self.part("podGlow", C.bm_xform(C.bm_cyl(12, 0.045, 0.045, 0.02), loc=(0.29 * sx, 0.04, -0.10)),
+            self.part("pod", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.22 * sx, 0.02, 0.14),
+                      scale=(0.09, 0.10, 0.08)), "shell_dark", hov)
+            self.part("chestPlate", C.bm_xform(C.bm_box(0.13, 0.05, 0.16, bevel=0.015), loc=(0.13 * sx, -0.15, 0.10),
+                      rot=(0.15, 0.0, 0.45 * sx)), "shell", hov)
+            self.part("chestLight", C.bm_xform(C.bm_box(0.012, 0.02, 0.07), loc=(0.12 * sx, -0.18, -0.10)),
                       "light", hov, nofs=True)
-        # pinces supérieures (bras articulés)
-        self.arms = []
+            self.part("podGlow", C.bm_xform(C.bm_cyl(12, 0.04, 0.04, 0.02), loc=(0.22 * sx, 0.04, 0.06)),
+                      "light", hov, nofs=True)
+        # deux grandes pinces en croissant (bras de crabe au-dessus des épaules)
         for side, sx in (("L", 1), ("R", -1)):
-            a = j["arm" + side] = joint("arm" + side, hov, (0.18 * sx, 0.0, 0.14))
-            self.part("armU" + side, C.bm_tube([(0, 0, 0), (0.10 * sx, -0.02, 0.14), (0.22 * sx, -0.08, 0.16)],
-                                               [0.035, 0.03, 0.028], seg=8), "shell", a)
-            c = j["claw" + side] = joint("claw" + side, a, (0.22 * sx, -0.08, 0.16))
-            self.part("armL" + side, C.bm_tube([(0, 0, 0), (0.06 * sx, -0.10, -0.06), (0.04 * sx, -0.20, -0.16)],
-                                               [0.028, 0.024, 0.02], seg=8), "shell_dark", c)
+            a = j["arm" + side] = joint("arm" + side, hov, (0.24 * sx, 0.0, 0.16))
+            self.part("armU" + side, C.bm_tube([(0, 0, 0), (0.12 * sx, 0.0, 0.14), (0.26 * sx, -0.04, 0.16)],
+                                               [0.075, 0.07, 0.06], seg=10, flat=0.7), "shell", a)
+            self.part("armJ" + side, C.bm_xform(C.bm_sphere(10, 8, 0.07), loc=(0.26 * sx, -0.04, 0.16)), "shell_dark",
+                      a)
+            c = j["claw" + side] = joint("claw" + side, a, (0.26 * sx, -0.04, 0.16))
+            self.part("armL" + side, C.bm_tube([(0, 0, 0), (0.08 * sx, -0.08, -0.08), (0.08 * sx, -0.14, -0.22),
+                                                (0.03 * sx, -0.16, -0.34)], [0.065, 0.065, 0.055, 0.045], seg=10,
+                                               flat=0.75), "shell", c)
             for k in (1, -1):
-                self.part("pincer", C.bm_tube([(0.04 * sx, -0.20, -0.16), (0.04 * sx + 0.04 * k, -0.27, -0.20),
-                                               (0.04 * sx + 0.01 * k, -0.31, -0.25)], [0.016, 0.012, 0.0], seg=6),
-                          "metal", c)
-            self.part("armLight", C.bm_xform(C.bm_sphere(8, 6, 0.02), loc=(0.06 * sx, -0.10, -0.05)), "light", c,
+                self.part("pincer", C.bm_tube([(0.03 * sx, -0.16, -0.34), (0.03 * sx + 0.08 * k, -0.24, -0.42),
+                                               (0.03 * sx + 0.07 * k, -0.31, -0.52), (0.03 * sx - 0.01 * k, -0.33, -0.60)],
+                                              [0.055, 0.045, 0.028, 0.0], seg=6, flat=0.6), "metal_dark", c)
+            self.part("armLight", C.bm_xform(C.bm_sphere(8, 6, 0.024), loc=(0.08 * sx, -0.12, -0.10)), "light", c,
                       nofs=True)
-        # pattes pendantes
+        # pattes pendantes articulées (4) sous le torse
         self.legs_def = []
-        for k, (x, y) in enumerate(((0.10, -0.10), (-0.10, -0.10), (0.11, 0.10), (-0.11, 0.10))):
-            u = j["leg%d" % k] = joint("leg%d" % k, hov, (x, y, -0.20))
-            self.part("legU%d" % k, C.bm_tube([(0, 0, 0), (x * 0.8, y * 0.5, -0.14)], [0.024, 0.02], seg=8),
-                      "shell_dark", u)
-            lo = j["legl%d" % k] = joint("legl%d" % k, u, (x * 0.8, y * 0.5, -0.14))
-            self.part("legL%d" % k, C.bm_tube([(0, 0, 0), (x * 0.2, y * 0.2, -0.16), (0, 0, -0.30)],
-                                              [0.02, 0.016, 0.0], seg=8), "metal", lo)
-            self.part("legJoint%d" % k, C.bm_xform(C.bm_sphere(8, 6, 0.026)), "light", lo, nofs=True)
-            self.legs_def.append((u, lo, x, y))
+        for k, (x, y) in enumerate(((0.11, -0.08), (-0.11, -0.08), (0.12, 0.10), (-0.12, 0.10),
+                                    (0.15, 0.01), (-0.15, 0.01))):
+            u = j["leg%d" % k] = joint("leg%d" % k, hov, (x, y, -0.16))
+            self.part("legU%d" % k, C.bm_tube([(0, 0, 0), (x * 0.9, y * 0.5, -0.16)], [0.042, 0.034], seg=8),
+                      "shell", u)
+            lo = j["legl%d" % k] = joint("legl%d" % k, u, (x * 0.9, y * 0.5, -0.16))
+            self.part("legL%d" % k, C.bm_tube([(0, 0, 0), (x * 0.25, y * 0.2, -0.18), (0, 0, -0.36)],
+                                              [0.034, 0.026, 0.0], seg=8), "metal_dark", lo)
+            self.part("legJoint%d" % k, C.bm_xform(C.bm_sphere(8, 6, 0.042)), "shell_dark", lo)
         self.muzzle_ref = ("eyeCore", (0, 0, 0))
 
     def muzzle_world(self) -> Vector:
@@ -1351,8 +1544,12 @@ class SlamMixin:
 
     def arms_rest(self, b: float = 0.0) -> None:
         s = self.shoulder
-        self.arm_ik("L", s["L"] + Vector((0.13, -0.10, -0.42 * self.AL + 0.02 * b)), self.L_POLE)
-        self.arm_ik("R", s["R"] + Vector((-0.13, -0.10, -0.42 * self.AL + 0.02 * b)), self.R_POLE)
+        r = 0.425 * self.AL * 0.97
+        fw = self.S.get("arm_fw", 0.10)
+        ax = self.S.get("arm_x", 0.13)
+        dz = -math.sqrt(max(r * r - ax ** 2 - fw ** 2, 0.01)) + 0.02 * b
+        self.arm_ik("L", s["L"] + Vector((ax, -fw, dz)), self.L_POLE)
+        self.arm_ik("R", s["R"] + Vector((-ax, -fw, dz)), self.R_POLE)
 
     def arms_run(self, s: float) -> None:
         sh = self.shoulder
@@ -1432,11 +1629,12 @@ class Elemental(SlamMixin, Human):
                   "ice_deep", head, smooth=False)
         self.part("jaw", C.bm_xform(C.bm_box(0.22, 0.12, 0.08, bevel=0.01), loc=(0, -0.09, 0.08)), "ice_deep", head,
                   smooth=False)
-        self.eyes(head, "eye_glow", z=0.215, x=0.062, y=-0.165, r=(0.034, 0.012, 0.020), brow=False)
+        self.eyes(head, "eye_glow", z=0.215, x=0.062, y=-0.165, r=(0.040, 0.014, 0.024), brow=False)
+        ck = self.S.get("crown_k", 1.0)
         for k in range(self.CROWN):
             a = (k - (self.CROWN - 1) / 2) * 0.45
             place_shard(self, "crown", "frost" if k % 2 else "ice", head, (0.12 * math.sin(a), 0.03, 0.30),
-                        (math.sin(a) * 0.8, 0.35, 1.0), 0.20 - 0.04 * abs(a), 0.04)
+                        (math.sin(a) * 0.8, 0.35, 1.0), (0.20 - 0.04 * abs(a)) * ck, 0.04 * (1 + 0.3 * (ck - 1)))
 
     def build_torso(self, pelvis, spine) -> None:
         super().build_torso(pelvis, spine)
@@ -1446,13 +1644,28 @@ class Elemental(SlamMixin, Human):
                   scale=(0.08, 0.04, 0.08)), "glow", spine, nofs=True)
         self.part("coreHot", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.225 * td, 0.27),
                   scale=(0.045, 0.02, 0.045)), "core", spine, nofs=True)
-        # plaques de glace (pectoraux taillés)
+        # blocs de glace taillés (pectoraux, ventre) et grands amas de cristaux aux épaules (planche)
+        rnd = random.Random(41)
         for sx in (1, -1):
-            self.part("plate", C.bm_xform(C.bm_box(0.17 * tw, 0.06, 0.14, bevel=0.01),
-                      loc=(0.11 * sx * tw, -0.15 * td, 0.33), rot=(0.15, 0.25 * sx, 0.1 * sx)), "frost", spine,
-                      smooth=False)
-            crystal_cluster(self, "ice", spine, (0.20 * sx * tw, 0.04, 0.44), (0.9 * sx, 0.35, 1.0), 3, 0.30, 0.06,
-                            21 + sx)
+            pec = C.bm_sphere(6, 4, 1.0)
+            for v in pec.verts:
+                v.co = Vector((v.co.x * rnd.uniform(0.9, 1.1), v.co.y, v.co.z * rnd.uniform(0.9, 1.1)))
+            self.part("plate", C.bm_xform(pec, loc=(0.10 * sx * tw, -0.12 * td, 0.33), rot=(0.15, 0.25 * sx, 0.1 * sx),
+                      scale=(0.11 * tw, 0.07, 0.10)), "ice_deep", spine, smooth=False)
+            self.part("ab", C.bm_xform(C.bm_sphere(6, 4, 1.0), loc=(0.06 * sx, -0.13 * td, 0.14),
+                      scale=(0.07 * tw, 0.06, 0.07)), "ice_deep", spine, smooth=False)
+            crystal_cluster(self, "frost", spine, (0.20 * sx * tw, 0.04, 0.44), (0.8 * sx, 0.25, 1.0), 5, 0.40, 0.07,
+                            21 + sx, spread=0.6)
+        # surface hérissée d'éclats de glace (silhouette dentelée de la planche)
+        if self.S.get("jagged"):
+            for k in range(26):
+                a = rnd.uniform(-math.pi * 0.95, math.pi * 0.95)
+                z = rnd.uniform(0.08, 0.42)
+                rx, ry = 0.21 * tw, 0.15 * td
+                base = Vector((rx * math.sin(a) * 0.9, ry * math.cos(a) * 0.9, z))
+                d = Vector((math.sin(a), math.cos(a) * 0.8, rnd.uniform(0.2, 0.9)))
+                place_shard(self, "jag", "frost" if k % 3 == 0 else "ice", spine, base, d, rnd.uniform(0.12, 0.20),
+                            0.035)
         # dos hérissé
         for k in range(4):
             place_shard(self, "backShard", "frost" if k % 2 else "ice", spine,
@@ -1461,22 +1674,54 @@ class Elemental(SlamMixin, Human):
     def dress(self) -> None:
         for side, sx in (("L", 1), ("R", -1)):
             fa = self.j["fa" + side]
-            self.part("fist" + side, C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, 0, -self.ll),
-                      scale=(0.11 * self.AW, 0.10 * self.AW, 0.10 * self.AW)), "ice", fa, smooth=False)
+            fs = 0.8 if self.S.get("claws") else 1.0
+            self.part("fist" + side, C.bm_xform(C.bm_sphere(7, 5, 1.0), loc=(0, 0, -self.ll),
+                      scale=(0.11 * self.AW * fs, 0.10 * self.AW * fs, 0.10 * self.AW * fs)), "ice", fa, smooth=False)
+            if self.S.get("jagged"):
+                for k in range(3):
+                    place_shard(self, "forearmJag", "frost" if k == 1 else "ice", fa,
+                                (0.05 * sx, 0.03 - 0.03 * k, -0.06 - 0.07 * k), (0.9 * sx, 0.3, 0.2 - 0.2 * k),
+                                0.11, 0.03)
+                place_shard(self, "thighJag", "ice", self.j["hip" + side], (0.07 * sx, 0.0, -0.10),
+                            (0.9 * sx, 0.2, 0.3), 0.10, 0.03)
             place_shard(self, "armShard", "frost", fa, (0.05 * sx, 0.04, -0.08), (0.7 * sx, 0.5, 0.6), 0.16, 0.035)
+            crystal_cluster(self, "ice", self.j["ua" + side], (0.06 * sx, 0.03, -0.12), (0.9 * sx, 0.4, 0.3), 3, 0.18,
+                            0.04, 51 + sx)
             place_shard(self, "knuckle", "ice", fa, (0.0, -0.06, -self.ll - 0.03), (0.0, -0.6, -1.0), 0.10, 0.03)
+            if self.S.get("claws"):
+                for k in (-1, 0, 1):
+                    place_shard(self, "claw", "frost", fa, (0.05 * k, -0.04, -self.ll - 0.06),
+                                (0.4 * k, -0.5, -1.0), 0.16, 0.025)
             knee = self.j["knee" + side]
             place_shard(self, "kneeShard", "frost", knee, (0.05 * sx, -0.07, 0.0), (0.3 * sx, -0.8, 0.6), 0.12, 0.035)
+            for k in range(2):
+                place_shard(self, "elbowShard", "ice", fa, (0.06 * sx, 0.05, -0.02 - 0.08 * k), (0.8 * sx, 0.6, 0.4),
+                            0.14 - 0.03 * k, 0.035)
         self.muzzle_ref = ("fistR", (0, 0, -self.ll))
+        # glace taillée : facettes nettes sur tout le corps
+        for ob, key in self.parts:
+            if key in ("ice", "ice_deep", "skin", "shirt", "pants", "shoe"):
+                for poly in ob.data.polygons:
+                    poly.use_smooth = False
 
     def muzzle_world(self) -> Vector:
         return self.j["faR"].matrix_world @ Vector((0, 0, -self.ll))
 
 
 class Titan(Elemental):
-    """Le Titan de glace : élémentaire colossal, couronne de grands cristaux, noyau arctique."""
+    """Le Titan de glace : élémentaire colossal bleu profond, couronne de grands cristaux, visage lumineux,
+    épaules hérissées, noyau arctique."""
 
     CROWN = 7
+
+    def build_head(self, head) -> None:
+        super().build_head(head)
+        # visage lumineux (planche) : masque d'énergie cyan derrière les yeux
+        self.part("faceGlow", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.175, 0.19),
+                  scale=(0.12, 0.04, 0.10)), "face_glow", head, nofs=True)
+        for sx in (1, -1):
+            self.part("eyeBig", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.06 * sx, -0.20, 0.22),
+                      scale=(0.045, 0.02, 0.028)), "eye_glow", head, nofs=True)
 
     def build_torso(self, pelvis, spine) -> None:
         super().build_torso(pelvis, spine)
@@ -1485,35 +1730,44 @@ class Titan(Elemental):
         for sx in (1, -1):
             place_shard(self, "spire", "frost", spine, (0.24 * sx * tw, 0.08, 0.40), (0.55 * sx, 0.5, 1.0), 0.55, 0.08)
             place_shard(self, "spire2", "ice", spine, (0.15 * sx * tw, 0.14, 0.36), (0.25 * sx, 0.8, 1.0), 0.42, 0.07)
+        # veines d'énergie du noyau (planche)
+        for sx in (1, -1):
+            self.part("vein", C.bm_tube([(0, -0.22 * self.TD, 0.27), (0.08 * sx, -0.20 * self.TD, 0.36),
+                                         (0.16 * sx * tw, -0.17 * self.TD, 0.42)], [0.014, 0.012, 0.008], seg=6),
+                      "glow", spine, nofs=True)
+            self.part("vein2", C.bm_tube([(0, -0.22 * self.TD, 0.27), (0.05 * sx, -0.18 * self.TD, 0.16),
+                                          (0.04 * sx, -0.16 * self.TD, 0.04)], [0.014, 0.012, 0.008], seg=6),
+                      "glow", spine, nofs=True)
         # ceinture d'énergie du noyau
         self.part("coreRing", C.bm_xform(C.bm_torus(20, 6, 0.10, 0.012), loc=(0, -0.21 * self.TD, 0.27),
                   rot=(math.pi / 2, 0, 0)), "glow", spine, nofs=True)
 
 
 class Hunter(GunMixin, Human):
-    """Chasseur arctique : armure grise, capuche fourrée, lunettes orange, fusil cryogénique."""
+    """Chasseur arctique (planche) : soldat massif en armure grise givrée, capuche-casque intégrée, cagoule,
+    grosses lunettes rondes orange, lourd fusil cryogénique noir tenu à deux mains."""
 
     def build_head(self, head) -> None:
-        self.skull(head, "skin")
+        self.skull(head, "armor_dark")
         hb = C.bm_sphere(20, 14, 1.0)
         for v in hb.verts:
             x, y, z = v.co
-            if z < -0.25 and y < 0:
-                z = -0.25
-            v.co = Vector((x * 0.20, y * 0.20, z * 0.19 + 0.22))
+            if y < -0.2 and z < 0.55:
+                y = -0.2 - (y + 0.2) * 0.2     # ouverture du visage (capuche)
+            v.co = Vector((x * 0.205, y * 0.205, z * 0.20 + 0.215))
         self.part("helmet", hb, "armor", head)
-        self.part("mask", C.bm_xform(C.bm_box(0.24, 0.10, 0.11, bevel=0.03), loc=(0, -0.13, 0.10)), "armor_dark", head)
+        self.part("hood", C.bm_xform(C.bm_torus(18, 8, 0.15, 0.05), loc=(0, -0.02, 0.17), rot=(1.35, 0, 0),
+                  scale=(1.0, 1.0, 1.15)), "suit", head)
+        self.part("mask", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(0, -0.11, 0.11), scale=(0.13, 0.09, 0.09)),
+                  "armor_dark", head)
         for sx in (1, -1):
-            self.part("filter", C.bm_xform(C.bm_cyl(10, 0.035, 0.035, 0.05), loc=(0.07 * sx, -0.19, 0.09),
+            self.part("filter", C.bm_xform(C.bm_cyl(10, 0.032, 0.032, 0.05), loc=(0.06 * sx, -0.19, 0.08),
                       rot=(math.pi / 2, 0, 0)), "metal_dark", head)
-            self.part("goggle", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0.062 * sx, -0.17, 0.215),
-                      scale=(0.050, 0.025, 0.036)), "visor", head, nofs=True)
-            self.part("goggleRim", C.bm_xform(C.bm_torus(14, 4, 0.05, 0.012), loc=(0.062 * sx, -0.165, 0.215),
-                      rot=(math.pi / 2, 0, 0), scale=(1.0, 0.75, 1.0)), "armor_dark", head)
-        self.part("strapG", C.bm_xform(C.bm_cyl(20, 0.205, 0.205, 0.035), loc=(0, 0, 0.215)), "armor_dark", head)
-        # capuche fourrée autour du cou
-        self.part("furRing", C.bm_xform(C.bm_torus(18, 8, 0.15, 0.055), loc=(0, 0.01, 0.02), scale=(1.0, 0.9, 0.8)),
-                  "fur", head)
+            self.part("goggleRim", C.bm_xform(C.bm_cyl(14, 0.058, 0.058, 0.05), loc=(0.065 * sx, -0.175, 0.205),
+                      rot=(math.pi / 2 - 0.25, 0, 0)), "armor_dark", head)
+            self.part("goggle", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.065 * sx, -0.20, 0.21),
+                      scale=(0.048, 0.026, 0.045)), "visor", head, nofs=True)
+        self.part("strapG", C.bm_xform(C.bm_cyl(20, 0.21, 0.21, 0.035), loc=(0, 0.01, 0.215)), "armor_dark", head)
 
     def build_torso(self, pelvis, spine) -> None:
         super().build_torso(pelvis, spine)
@@ -1529,8 +1783,12 @@ class Hunter(GunMixin, Human):
         self.part("tankGlow", C.bm_xform(C.bm_cyl(14, 0.062, 0.062, 0.08), loc=(0.0, 0.29 * td, 0.32)), "cryo", spine,
                   nofs=True)
         for sx in (1, -1):
-            self.part("pad", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.25 * sx * tw ** 0.6, 0, 0.40),
-                      scale=(0.11, 0.12, 0.08)), "armor", spine)
+            self.part("pad", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.27 * sx * tw ** 0.6, 0, 0.41),
+                      scale=(0.15, 0.15, 0.10)), "armor", spine)
+            self.part("pad2", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0.30 * sx * tw ** 0.6, 0, 0.34),
+                      scale=(0.12, 0.13, 0.07)), "armor_dark", spine)
+            self.part("chestPlate", C.bm_xform(C.bm_box(0.16 * tw, 0.06, 0.16, bevel=0.03),
+                      loc=(0.09 * sx * tw, -0.17 * td, 0.32), rot=(0.1, 0.2 * sx, 0)), "armor", spine)
         self.part("belt", C.bm_xform(C.bm_cyl(18, 0.20 * tw, 0.20 * tw, 0.05), loc=(0, 0, 0.02),
                   scale=(1, 0.8, 1)), "strap", spine)
 
@@ -1538,16 +1796,25 @@ class Hunter(GunMixin, Human):
         super().build_arms(spine)
         fa = self.j["faR"]
         ll = self.ll
-        self.part("rifle", C.bm_xform(C.bm_box(0.07, 0.10, 0.50, bevel=0.015), loc=(0, -0.02, -ll - 0.08)), "gun", fa)
-        self.part("stock", C.bm_xform(C.bm_box(0.06, 0.12, 0.14, bevel=0.015), loc=(0, 0.0, -ll + 0.20)), "gun", fa)
-        self.part("barrel", C.bm_xform(C.bm_cyl(10, 0.022, 0.022, 0.20), loc=(0, -0.04, -ll - 0.42)), "metal_dark", fa)
-        self.part("muzzleRing", C.bm_xform(C.bm_cyl(10, 0.032, 0.032, 0.04), loc=(0, -0.04, -ll - 0.52)), "cryo", fa,
+        self.part("rifle", C.bm_xform(C.bm_box(0.105, 0.15, 0.62, bevel=0.02), loc=(0, -0.02, -ll - 0.10)), "gun", fa)
+        self.part("stock", C.bm_xform(C.bm_box(0.07, 0.14, 0.18, bevel=0.015), loc=(0, 0.0, -ll + 0.24)), "gun", fa)
+        self.part("mag", C.bm_xform(C.bm_box(0.05, 0.12, 0.10, bevel=0.01), loc=(0, -0.10, -ll - 0.02),
+                  rot=(0.25, 0, 0)), "armor_dark", fa)
+        self.part("barrel", C.bm_xform(C.bm_cyl(10, 0.034, 0.034, 0.26), loc=(0, -0.04, -ll - 0.50)), "metal_dark", fa)
+        self.part("shroud", C.bm_xform(C.bm_cyl(10, 0.055, 0.055, 0.20), loc=(0, -0.04, -ll - 0.36)), "gun", fa)
+        self.part("muzzleRing", C.bm_xform(C.bm_cyl(10, 0.034, 0.034, 0.03), loc=(0, -0.04, -ll - 0.63)), "cryo", fa,
                   nofs=True)
-        self.part("canister", C.bm_xform(C.bm_cyl(12, 0.04, 0.04, 0.16), loc=(0.0, -0.10, -ll - 0.14)), "cryo", fa,
+        self.part("canister", C.bm_xform(C.bm_cyl(12, 0.035, 0.035, 0.10), loc=(0.0, 0.07, -ll - 0.06)), "cryo", fa,
                   nofs=True)
-        self.part("scope", C.bm_xform(C.bm_cyl(10, 0.022, 0.022, 0.14), loc=(0, 0.06, -ll - 0.10)), "metal_dark", fa)
-        self._muzzle_local = (0.0, -0.04, -ll - 0.56)
+        self.part("scope", C.bm_xform(C.bm_cyl(10, 0.034, 0.034, 0.18), loc=(0, 0.10, -ll - 0.16)), "metal_dark", fa)
+        self._muzzle_local = (0.0, -0.04, -ll - 0.65)
         self.muzzle_ref = ("rifle", (0, 0, 0))
+
+    def arms_rest(self, b: float = 0.0) -> None:
+        self.gun_aim(0.50 + 0.02 * b)
+
+    def arms_run(self, s: float) -> None:
+        self.gun_aim(0.55 + 0.05 * s)
 
     def pose_run(self, i: int, n: int) -> None:
         Human.pose_run(self, i, n)
@@ -1633,20 +1900,71 @@ class Armored(Human):
 
 
 class Guardian(SlamMixin, Armored):
-    """Gardien des glaces : golem blindé bleu nuit, couvert de cristaux, visière et cœur cyan."""
+    """Gardien des glaces (planche) : golem en armure lourde bleu nuit givrée, épaulières massives en couches,
+    tête enfoncée dans un haut gorgerin, visage-visière cyan en V, gantelets énormes, voyants cyan."""
+
+    def build_head(self, head) -> None:
+        hb = C.bm_sphere(16, 12, 1.0)
+        for v in hb.verts:
+            x, y, z = v.co
+            v.co = Vector((x * 0.17, y * 0.18 - 0.02 * max(0.0, -y), z * 0.17 + 0.17))
+        self.part("helmet", hb, "armor", head)
+        self.part("crest", C.bm_xform(C.bm_box(0.05, 0.26, 0.10, bevel=0.02), loc=(0, 0.0, 0.33)), "armor_dark", head)
+        self.part("face", C.bm_xform(C.bm_box(0.20, 0.06, 0.15, bevel=0.03), loc=(0, -0.15, 0.17)), "armor_dark", head)
+        for sx in (1, -1):
+            self.part("visor", C.bm_xform(C.bm_box(0.16, 0.05, 0.06, bevel=0.01), loc=(0.065 * sx, -0.19, 0.22),
+                      rot=(-0.35, 0.45 * sx, 0)), "visor", head, nofs=True)
+        self.part("visorC", C.bm_xform(C.bm_box(0.045, 0.04, 0.10, bevel=0.01), loc=(0, -0.19, 0.13)), "visor", head,
+                  nofs=True)
+        self.part("faceHalo", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(0, -0.175, 0.18), scale=(0.09, 0.02, 0.07)),
+                  "glow", head, nofs=True)
 
     def dress(self) -> None:
         sp = self.j["spine"]
-        tw = self.TW
+        tw, td = self.TW, self.TD
+        self.j["neck"].location = (0, -0.14, 0.50)   # tête portée en avant, entre les épaulières
+        # haut gorgerin : la tête s'y enfonce
+        self.part("gorget", C.bm_xform(C.bm_cyl(8, 0.15 * tw, 0.11 * tw, 0.08), loc=(0, 0.05, 0.45),
+                  scale=(1.0, 0.85, 1.0)), "armor_dark", sp, smooth=False)
+        # plaques pectorales et abdominales, voyants
         for sx in (1, -1):
-            crystal_cluster(self, "ice", self.j["ua" + ("L" if sx > 0 else "R")], (0.04 * sx, 0.0, 0.10),
-                            (0.6 * sx, 0.2, 1.0), 4, 0.28, 0.055, 31 + sx)
-            place_shard(self, "backSpire", "frost", sp, (0.10 * sx * tw, 0.18, 0.40), (0.3 * sx, 0.8, 1.0), 0.30, 0.06)
+            self.part("pec", C.bm_xform(C.bm_box(0.20 * tw, 0.07, 0.18, bevel=0.03), loc=(0.11 * sx * tw, -0.17 * td, 0.33),
+                      rot=(0.1, 0.25 * sx, 0.05 * sx)), "armor", sp)
+            for k in range(2):
+                self.part("abPlate", C.bm_xform(C.bm_box(0.11 * tw, 0.06, 0.07, bevel=0.015),
+                          loc=(0.06 * sx * tw, -0.15 * td, 0.16 - 0.08 * k)), "armor_dark", sp)
+            for k in range(3):
+                self.part("lamp", C.bm_xform(C.bm_sphere(8, 6, 0.018), loc=(0.17 * sx * tw, -0.20 * td, 0.40 - 0.06 * k)),
+                          "glow", sp, nofs=True)
+        # épaulières massives en couches (planche)
         for side, sx in (("L", 1), ("R", -1)):
+            ua = self.j["ua" + side]
+            for k in range(3):
+                sh = C.bm_sphere(8, 6, 1.0)
+                for v in sh.verts:
+                    if v.co.z < -0.25:
+                        v.co.z = -0.25
+                r = 0.24 - 0.04 * k
+                self.part("pauldronL%d" % k, C.bm_xform(sh, loc=(0.07 * sx + 0.04 * sx * k, 0, 0.12 - 0.09 * k),
+                          scale=(r, r * 1.05, r * 0.85)), "armor" if k != 1 else "armor_dark", ua, smooth=False)
+                place_shard(self, "pauldronFrost", "frost", ua, (0.07 * sx + 0.04 * sx * k + r * 0.6 * sx, -r * 0.3,
+                            0.12 - 0.09 * k), (sx * 1.0, -0.3, 0.3), 0.06, 0.025)
+            for k in range(3):
+                self.part("pauldronLamp", C.bm_xform(C.bm_sphere(8, 6, 0.024), loc=(0.10 * sx + 0.05 * sx * k,
+                          -0.17 + 0.02 * k, 0.20 - 0.04 * k)), "glow", ua, nofs=True)
+            for k in range(2):
+                self.part("pauldronBand", C.bm_xform(C.bm_box(0.03, 0.40, 0.04, bevel=0.01),
+                          loc=(0.02 * sx + 0.10 * sx * k, 0, 0.30 - 0.06 * k), rot=(0, (0.35 + 0.4 * k) * sx, 0)),
+                          "armor_dark", ua)
+            place_shard(self, "frostShard", "frost", ua, (0.10 * sx, 0.06, 0.18), (0.4 * sx, 0.3, 1.0), 0.12, 0.03)
             fa = self.j["fa" + side]
-            place_shard(self, "fistShard", "ice", fa, (0.06 * sx, 0.0, -self.ll), (0.5 * sx, -0.3, -0.6), 0.14, 0.04)
-            place_shard(self, "fistShard2", "frost", fa, (0.0, -0.06, -self.ll - 0.02), (0.0, -0.8, -0.6), 0.12, 0.035)
-        self.part("helmShard", C.bm_xform(shard(0.16, 0.05), loc=(0, 0.02, 0.32)), "ice", self.j["head"], smooth=False)
+            self.part("gauntlet" + side, C.bm_xform(C.bm_box(0.19 * self.AW, 0.19 * self.AW, 0.22 * self.AL, bevel=0.04),
+                      loc=(0, 0, -0.12 * self.AL)), "armor", fa)
+            self.part("gauntletLamp" + side, C.bm_xform(C.bm_box(0.02, 0.02, 0.10), loc=(0.0, -0.10 * self.AW, -0.12)),
+                      "glow", fa, nofs=True)
+        hump = C.bm_sphere(10, 8, 1.0)
+        self.part("backPlate", C.bm_xform(hump, loc=(0, 0.10 * td, 0.40), scale=(0.20 * tw, 0.12, 0.12)),
+                  "armor", sp, smooth=False)
 
 
 class Mechanic(GunMixin, Armored):
@@ -1658,13 +1976,16 @@ class Mechanic(GunMixin, Armored):
         for v in hb.verts:
             v.co = Vector((v.co.x * 0.20, v.co.y * 0.20, v.co.z * 0.17 + 0.18))
         self.part("dome", hb, "armor", head)
-        self.part("eyeFrame", C.bm_xform(C.bm_cyl(16, 0.075, 0.075, 0.05), loc=(0, -0.17, 0.20),
-                  rot=(math.pi / 2, 0, 0)), "armor_dark", head)
-        self.part("eyeLens", C.bm_xform(C.bm_sphere(12, 8, 1.0), loc=(0, -0.20, 0.20), scale=(0.058, 0.025, 0.058)),
+        ex = -0.04
+        self.part("eyeFrame", C.bm_xform(C.bm_torus(18, 6, 0.125, 0.035), loc=(ex, -0.18, 0.21),
+                  rot=(math.pi / 2, 0, 0)), "brass", head)
+        self.part("eyeLens", C.bm_xform(C.bm_sphere(14, 10, 1.0), loc=(ex, -0.19, 0.21), scale=(0.12, 0.05, 0.12)),
                   "visor", head, nofs=True)
-        self.part("eyeHot", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0, -0.215, 0.20), scale=(0.026, 0.012, 0.026)),
+        self.part("eyeHot", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(ex, -0.235, 0.21), scale=(0.05, 0.015, 0.05)),
                   "core", head, nofs=True)
-        self.part("grill", C.bm_xform(C.bm_box(0.18, 0.10, 0.07, bevel=0.02), loc=(0, -0.10, 0.06)), "armor_dark", head)
+        self.part("eyeSmall", C.bm_xform(C.bm_sphere(8, 6, 1.0), loc=(0.11, -0.16, 0.26), scale=(0.025, 0.012, 0.025)),
+                  "visor", head, nofs=True)
+        self.part("grill", C.bm_xform(C.bm_box(0.18, 0.10, 0.07, bevel=0.02), loc=(0, -0.10, 0.06)), "brass", head)
         self.part("antenna", C.bm_xform(C.bm_cyl(6, 0.012, 0.008, 0.22), loc=(0.10, 0.04, 0.42)), "metal_dark", head)
         self.part("antTip", C.bm_xform(C.bm_sphere(8, 6, 0.025), loc=(0.10, 0.04, 0.54)), "spark", head, nofs=True)
 
@@ -1691,6 +2012,23 @@ class Mechanic(GunMixin, Armored):
         tw, td = self.TW, self.TD
         self.part("pack", C.bm_xform(C.bm_box(0.36 * tw, 0.16, 0.30, bevel=0.03), loc=(0, 0.21 * td, 0.30)),
                   "armor_dark", sp)
+        # plastron et ceinture en laiton (planche)
+        chest = C.bm_box(0.40 * tw, 0.12, 0.30, bevel=0.05, segs=3)
+        self.part("brassChest", C.bm_xform(chest, loc=(0, -0.15 * td, 0.27), rot=(0.12, 0, 0)), "brass", sp)
+        self.part("brassBack", C.bm_xform(C.bm_box(0.26 * tw, 0.20, 0.06, bevel=0.03), loc=(0, 0.08 * td, 0.47)),
+                  "brass", sp)
+        self.part("brassBelt", C.bm_xform(C.bm_cyl(18, 0.17 * tw, 0.17 * tw, 0.08), loc=(0, 0, 0.06),
+                  scale=(1, 0.85, 1)), "brass", sp)
+        for side, sx in (("L", 1), ("R", -1)):
+            self.part("brassRim", C.bm_xform(C.bm_torus(16, 5, 0.12 * self.AW, 0.022), loc=(0.03 * sx, 0, -0.01)),
+                      "brass", self.j["ua" + side])
+            self.part("brassCap", C.bm_xform(C.bm_sphere(10, 6, 1.0), loc=(0.05 * sx, -0.02, 0.17),
+                      scale=(0.10 * self.AW, 0.10 * self.AW, 0.06 * self.AW)), "brass", self.j["ua" + side])
+            self.part("gear", C.bm_xform(C.bm_torus(12, 5, 0.04, 0.014), loc=(0.09 * sx, -0.21 * td, 0.20),
+                      rot=(math.pi / 2, 0, 0)), "brass", sp)
+            for k in range(2):
+                self.part("lamp", C.bm_xform(C.bm_sphere(8, 6, 0.018), loc=(0.14 * sx * tw, -0.18 * td, 0.40 - 0.07 * k)),
+                          "glow", sp, nofs=True)
         for sx in (1, -1):
             self.part("tank", C.bm_xform(C.bm_cyl(12, 0.055, 0.055, 0.30), loc=(0.10 * sx, 0.30 * td, 0.30)),
                       "metal", sp)
@@ -2002,8 +2340,11 @@ def presentation_sheet(kinds) -> None:
     """Planche de présentation (captures de PR) : idle 3/4 face + attaque + cadavre, à l'échelle du jeu,
     sur fond bleu glacier, depuis les images déjà rendues (TMP_DIR)."""
     from PIL import Image, ImageDraw, ImageFont
-    fb = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    fr = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+    def _font(cands):
+        return next((c for c in cands if os.path.exists(c)), cands[0])
+    fb = _font(["/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "/System/Library/Fonts/Supplemental/Arial Bold.ttf"])
+    fr = _font(["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf"])
     title_f = ImageFont.truetype(fb, 30)
     name_f = ImageFont.truetype(fb, 17)
     sub_f = ImageFont.truetype(fr, 13)

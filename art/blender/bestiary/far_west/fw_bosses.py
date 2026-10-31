@@ -19,20 +19,24 @@ KINDS = ["fw_buffalo", "fw_sheriff"]
 BUFFALO = {
     "name": "Le Buffle", "scale": 1.85, "frame": 288, "cam_z": 1.0,
     "withers": 0.86, "hips": 0.70, "length": 1.10,
-    "chest": (0.27, 0.33), "rump": (0.20, 0.24),
+    "chest": (0.31, 0.35), "rump": (0.23, 0.26),
     "neck": 0.16, "neck_r": 0.17, "head": 0.21, "snout": 0.13, "snout_r": 0.10,
-    "leg_r": 0.075, "front_leg": (0.30, 0.26, 0.14), "hind_leg": (0.26, 0.24, 0.16),
+    "leg_r": 0.092, "front_leg": (0.30, 0.26, 0.14), "hind_leg": (0.26, 0.24, 0.16),
     "ears": "round", "mane": False, "tail": "tuft", "collar": None, "teeth": False,
     "head_down": 0.35, "jaw_idle": 0.0, "hooves": True, "dark_legs": True, "heavy": 1.0,
     "dark_snout": True,
+    # planche : cuir gris-noir, grandes plaques de bronze rouillé couvrant le dos et les épaules,
+    # cornes brun clair recourbées vers l'avant, tête basse
     "mats": {
-        "fur": ("pat", [("#6a4430", "#24121a", "#8e6044"), ("#583826", "#1c0e14", "#74503a")], 6.0),
-        "fur_dark": ("#2e1e18", "#0c0608", "#4a3426"),
-        "belly": ("#7a5238", "#2e1a1e", "#9a6c4a"),
-        "muzzle": ("#2a1c18", "#0a0606", "#44302a"),
-        "plate": ("pat", [("#8a8478", "#2c2a36", "#c8c0b0"), ("#7a5a42", "#2c1c22", "#a07a58")], 3.0),
-        "rivet": ("#c8b890", "#4a4038", "#fff0c8"),
-        "eye": "!#ff5a20",
+        "fur": ("pat", [("#585050", "#1a161c", "#80746e"), ("#423a3a", "#121014", "#625856")], 7.0),
+        "fur_dark": ("#2e2828", "#0c0a0c", "#4e4646"),
+        "belly": ("#4a3e38", "#16101a", "#6a5a50"),
+        "muzzle": ("#2a2222", "#0a0606", "#463a38"),
+        "plate": ("pat", [("#a0602e", "#3e1c1a", "#d08a48"), ("#5a4a3e", "#1e1618", "#806a58")], 3.0),
+        "plate2": ("pat", [("#5a524c", "#1c1a1e", "#867c74"), ("#8a5a32", "#30181a", "#b47a48")], 3.5),
+        "rivet": ("#d8b878", "#5a4030", "#fff0c0"),
+        "horn": ("#b48a5a", "#4a3028", "#e0b880"),
+        "eye": "!#ffa030",
     },
 }
 
@@ -54,23 +58,28 @@ HORSE = {
 }
 
 SHERIFF = {
-    "name": "Le Shérif Sable-Fou", "scale": 1.30, "head": 1.32, "leg": 0.84, "frame": 320, "cam_dz": 0.40,
-    "torso": (1.14, 1.06), "arm": 1.10, "belly": 0.3,
-    "hat": "boss", "face": "mustache", "kerchief": True, "coat": "duster", "vest": True,
-    "bandolier": "cartridges", "weapon": "sheriff", "bracers": True,
+    "name": "Le Shérif Sable-Fou", "scale": 1.30, "head": 1.22, "leg": 0.84, "frame": 320, "cam_dz": 0.40,
+    "torso": (1.18, 1.08), "arm": 1.12, "belly": 0.2,
+    # planche : chapeau de cuir fauve, visage de métal sombre aux yeux bleus luisants, cape-poncho rouge
+    # en lambeaux, armure de métal sombre, ceinturon à boucle de laiton, bras-canon mécanique
+    "hat": "boss", "face": "robot", "kerchief": True, "coat": None, "vest": False, "armor": True,
+    "brim_r": 0.31,
+    "bandolier": None, "weapon": "sheriff", "bracers": True, "idle_crouch": 0.35,
     "mats": {
+        "plate": ("pat", [("#4e4c50", "#16161c", "#7a7880"), ("#5a4a40", "#1c1416", "#806a5a")], 3.0),
+        "rivet": ("#b89a60", "#4a3828", "#f0d090"),
         "shirt": ("#3a2e2a", "#100c10", "#5a4a42"),
         "pants": ("pat", [("#3a3028", "#120e12", "#56483a"), ("#2e2620", "#0e0a0e", "#4a3c30")], 7.0),
         "vest": ("#1e1816", "#080606", "#3a302a"),
         "coat": ("pat", [("#4a3a30", "#16101a", "#6e584a"), ("#3c2e26", "#120c12", "#5a4638")], 5.0),
-        "cape": ("pat", [("#b82420", "#420a18", "#e2402e"), ("#9a1c1a", "#360814", "#c4342a")], 4.0),
-        "hat": ("#3a2a20", "#100a0c", "#5e4636"),
-        "hatband": ("#d8a840", "#6a4430", "#ffe490"),
+        "cape": ("pat", [("#a01e1c", "#3a0812", "#cc3a2c"), ("#7e1616", "#2c060e", "#a42a24")], 4.0),
+        "hat": ("#8a5a30", "#2e1818", "#b88048"),
+        "hatband": ("#2a1c14", "#0a0606", "#4a3426"),
         "beard": ("#c8c0b0", "#5a5258", "#f0ece4"),
-        "bandana": ("#b82420", "#420a18", "#e2402e"),
+        "bandana": ("#a01e1c", "#3a0812", "#cc3a2c"),
         "boot": ("#1e1614", "#080606", "#3a2c26"),
         "gold": ("#d8a840", "#6a4430", "#ffe490"),
-        "mech": ("#5a5a62", "#1a1a24", "#9a9aa4"),
+        "mech": ("#4a4a52", "#14141c", "#80808a"),
         "glow": "!#ff7a2a",
         "saddle": ("#5a3420", "#1e0e10", "#80502e"),
         "blanket": ("pat", [("#b82420", "#420a18", "#e2402e"), ("#ece2cc", "#7a7088", "#ffffff")], 5.0),
@@ -87,37 +96,67 @@ class Buffalo(B.Beast):
         zw = A["withers"] - self.HM
         # bosse + toison sombre sur l'avant (garrot, cou, poitrail)
         self.part("hump", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -L * 0.28, zw + 0.12),
-                  scale=(A["chest"][0] * 1.05, L * 0.30, 0.24)), "fur_dark", torso)
+                  scale=(A["chest"][0] * 1.05, L * 0.30, 0.24)), "fur", torso)
         self.part("shag", C.bm_xform(C.bm_sphere(16, 10, 1.0), loc=(0, -L * 0.40, zw - 0.02),
-                  scale=(A["chest"][0] * 1.18, L * 0.22, A["chest"][1] * 1.1)), "fur_dark", torso)
+                  scale=(A["chest"][0] * 1.18, L * 0.22, A["chest"][1] * 1.1)), "fur", torso)
         for k in range(10):
             a = -1.2 + 2.4 * k / 9
             self.part("tuftFur", C.bm_xform(C.bm_cyl(5, 0.06, 0.0, 0.16),
                       loc=(math.sin(a) * A["chest"][0] * 1.15, -L * 0.42, zw - 0.02 + math.cos(a) * A["chest"][1] * 0.6),
                       rot=(math.pi * 0.85, 0, a * 0.6)), "fur_dark", torso, smooth=False)
         # plaques de tôle rivetées sur le dos (bête de guerre des bandits)
-        for k in range(3):
-            y = -L * 0.10 + L * 0.17 * k
+        for k in range(6):
+            y = -L * 0.30 + L * 0.13 * k
             t = (y + L * 0.5) / L
             zc = (A["withers"] - self.HM) * (1 - t) + (A["hips"] - self.HM) * t - 0.03
-            rx = (A["chest"][0] * (1 - t) + A["rump"][0] * t) * 1.08
-            rz = (A["chest"][1] * (1 - t) + A["rump"][1] * t) * 1.02
-            band = arc_strip(1.0, math.pi - 1.15, math.pi + 1.15, -0.08, 0.08, n=12)
+            rx = (A["chest"][0] * (1 - t) + A["rump"][0] * t) * (1.16 if k else 1.20)
+            rz = (A["chest"][1] * (1 - t) + A["rump"][1] * t) * (1.08 if k else 1.22)
+            if k == 0:
+                zc += 0.06
+            band = arc_strip(1.0, math.pi - 1.35, math.pi + 1.35, -0.075, 0.075, n=14)
             C.bm_xform(band, rot=(math.pi / 2, 0, 0))
-            C.bm_xform(band, loc=(0, y, zc), scale=(rx, 1.0, rz))
-            self.part("plate", band, "plate", torso, thick=0.025)
+            C.bm_xform(band, loc=(0, y, zc), scale=(rx, 1.0, rz), rot=(0.12, 0, 0))
+            self.part("plate", band, "plate" if k % 2 == 0 else "plate2", torso, thick=0.03)
             for sx in (1, -1):
-                self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.028),
-                          loc=(rx * 0.55 * sx, y, zc + rz * 0.86)), "rivet", torso)
+                for a in (0.5, 1.0):
+                    self.part("rivet", C.bm_xform(C.bm_sphere(6, 4, 0.026),
+                              loc=(rx * math.sin(a) * sx * 1.02, y - 0.05, zc + rz * math.cos(a) * 1.02)), "rivet", torso)
+        # arête dorsale de plaques sombres + panneaux rouille sur les flancs (carapace de la planche)
+        for k in range(7):
+            t = 0.12 + 0.11 * k
+            y = -L * 0.5 + L * t
+            zc = (A["withers"] - self.HM) * (1 - t) + (A["hips"] - self.HM) * t - 0.03
+            rz = (A["chest"][1] * (1 - t) + A["rump"][1] * t) * 1.14 + (0.10 if k < 2 else 0.0)
+            self.part("ridge", C.bm_xform(C.bm_box(0.12, 0.13, 0.05, bevel=0.015), loc=(0, y, zc + rz),
+                      rot=(0.15, 0, 0)), "plate2", torso)
+        for sx in (1, -1):
+            for k in range(3):
+                t = 0.30 + 0.20 * k
+                y = -L * 0.5 + L * t
+                zc = (A["withers"] - self.HM) * (1 - t) + (A["hips"] - self.HM) * t - 0.03
+                rx = (A["chest"][0] * (1 - t) + A["rump"][0] * t) * 1.22
+                self.part("flankPanel", C.bm_xform(C.bm_box(0.03, 0.17, 0.15, bevel=0.012),
+                          loc=(rx * sx, y, zc + 0.04), rot=(0, 0.35 * sx, 0)), "plate", torso)
+        # épaulières de bronze sur les épaules avant
+        for sx in (1, -1):
+            sp = C.bm_sphere(14, 8, 1.0)
+            for v in sp.verts:
+                if v.co.x * sx < -0.2:
+                    v.co.x = -0.2 * sx
+            C.bm_xform(sp, loc=(A["chest"][0] * 0.85 * sx, -L * 0.36, zw - 0.10),
+                       scale=(0.13, 0.20, 0.20))
+            self.part("shoulderPlate", sp, "plate", torso)
         # tête : cornes recourbées (vers l'extérieur puis le haut), front laineux, barbe
         hr = A["head"]
         for sx in (1, -1):
-            pts = C.bezier((hr * 0.55 * sx, -hr * 0.05, hr * 0.55), (hr * 2.0 * sx, 0.0, hr * 0.40),
-                           (hr * 2.5 * sx, -hr * 0.5, hr * 1.3), (hr * 1.9 * sx, -hr * 0.8, hr * 1.9), 8)
-            self.part("horn", C.bm_tube(pts, [0.09, 0.085, 0.075, 0.065, 0.05, 0.036, 0.02, 0.004], seg=10),
+            pts = C.bezier((hr * 0.55 * sx, -hr * 0.05, hr * 0.55), (hr * 1.9 * sx, 0.1, hr * 0.30),
+                           (hr * 2.3 * sx, -hr * 1.0, hr * 0.9), (hr * 1.5 * sx, -hr * 1.5, hr * 1.5), 8)
+            self.part("horn", C.bm_tube(pts, [0.10, 0.095, 0.085, 0.07, 0.055, 0.04, 0.022, 0.004], seg=10),
                       "horn", head)
+            self.part("hornBase", C.bm_xform(C.bm_sphere(10, 8, 1.0), loc=(hr * 0.75 * sx, -hr * 0.05, hr * 0.52),
+                      scale=(0.10, 0.10, 0.09)), "fur_dark", head)
         self.part("brow", C.bm_xform(C.bm_sphere(14, 8, 1.0), loc=(0, -hr * 0.25, hr * 0.62),
-                  scale=(hr * 1.05, hr * 0.75, hr * 0.55)), "fur_dark", head)
+                  scale=(hr * 1.05, hr * 0.75, hr * 0.55)), "fur", head)
         self.part("beard", C.bm_xform(C.bm_cyl(10, 0.09, 0.02, 0.22), loc=(0, -hr * 0.8, -hr * 0.85),
                   rot=(0.2, 0, 0)), "fur_dark", head)
         self.part("noseRing", C.bm_xform(C.bm_torus(14, 5, 0.045, 0.012), loc=(0, -hr * 0.55 - A["snout"] - 0.02,
@@ -145,7 +184,7 @@ class Buffalo(B.Beast):
     def muzzle_world(self) -> Vector:
         bpy.context.view_layer.update()
         hr = self.A["head"]
-        return self.j["head"].matrix_world @ Vector((hr * 1.9, -hr * 0.8, hr * 1.9))
+        return self.j["head"].matrix_world @ Vector((hr * 1.5, -hr * 1.5, hr * 1.5))
 
 
 # ============================================================================ Le Shérif
@@ -212,6 +251,14 @@ class Sheriff(H.Human):
         j["cape"] = spine
         self.part("capeCollar", C.bm_xform(C.bm_torus(18, 6, 0.15, 0.05), loc=(0, 0.02, 0.44), scale=(1.1, 1.0, 0.7)),
                   "cape", spine)
+        # poncho rouge en lambeaux sur les épaules (ouvert devant, bord déchiqueté)
+        pon = arc_strip(0.19, 0.50, 2 * math.pi - 0.50, 0.14, 0.47, n=28, flare=0.27)
+        for v in pon.verts:
+            if v.co.z < 0.3:
+                k = round((math.atan2(v.co.x, -v.co.y) + math.pi) * 5.0)
+                v.co.z += (0.0, 0.07, 0.02, 0.10, 0.04)[k % 5]
+        C.bm_xform(pon, scale=(tw * 1.05, self.TD, 1.0))
+        self.part("poncho", pon, "cape", spine, thick=0.016)
         for sx in (1, -1):
             self.part("clasp", C.bm_xform(C.bm_cyl(10, 0.03, 0.03, 0.015), loc=(0.12 * sx, -0.13, 0.42),
                       rot=(1.3, 0, 0)), "gold", spine)
@@ -270,6 +317,13 @@ class Sheriff(H.Human):
         lo = Vector((0.20, -0.10, -0.02 + dz))
         hi = Vector((0.14, -0.42, 0.26 + dz))
         self.arm_ik("L", lo.lerp(hi, c) + Vector((0, 0.08 * recoil_c, 0.05 * recoil_c)), L_POLE)
+
+    def pose_idle(self, i: int, n: int) -> None:
+        """Garde : visage relevé (yeux bleus visibles sous le chapeau), bras-canon pointé devant."""
+        super().pose_idle(i, n)
+        b = math.sin(2 * math.pi * i / n)
+        self.j["head"].rotation_euler = (-0.42, 0, 0.0)
+        self.hold(aim=0.0, dz=0.012 * b, cannon=0.55)
 
     def pose_attack(self, i: int, n: int) -> None:
         """Tir de revolver + coup de canon (le canon part une image après le revolver)."""

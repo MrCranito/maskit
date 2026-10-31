@@ -24,7 +24,7 @@ flock /home/claude/.blender_render.lock python3 art/blender/bestiary/mall/build_
 Animations : idle (6), run (8), attack (6 : 0-2 élan, 2 tenue du télégraphe, 3 coup/tir, 4-5 retour),
 hit (3), death (8, dernière image = cadavre) × 8 directions. Cadre 192 px ; Gros brute 256 px ;
 élites 224 px. Boss : rendu 384 px, stocké à 72 % (276 px, `world_per_px` compensé dans la méta)
-avec idle 4 / run 6 / death 6 images, pour garder l'atlas à 2048 × 5152 (< 8192, mobile).
+avec idle 4 / run 6 / death 6 images, pour garder l'atlas à 2048 × 5772 (< 8192, mobile).
 Sorties : `assets/sprites/enemies/<kind>/` (`_atlas.png` compression VRAM, `_frames.tres`, `_meta.json`).
 
 ## Monstres classiques (rangée 1 = plus simples, rangée 2 = plus durs)
@@ -121,3 +121,27 @@ boss, phases) ; `tests/test_mall.gd` adapté (nouveaux kinds, boss générique).
 ## Arène du boss (décision utilisateur, 29/10)
 L'Omnistore reste dans le **bureau du directeur** (dernier étage), et non dans l'atrium « Galeries
 marchandes — Niveau central » de la planche. Pas de changement du plan du centre commercial.
+
+## Refonte « ressemblance aux planches » (31/10)
+Chaque modèle a été comparé à son illustration (planche à gauche, aperçu Blender sud / sud-est à droite)
+et noté sur 6 critères (silhouette, palette, matières, accessoires, posture, lisibilité). Règle : ≥ 7,5
+on garde, sinon on refait sous Blender. Les 9 modèles étaient sous 7,5 et ont été refaits
+(changements limités aux classes `Zombie`, `Flayer`, `SecBot`, `Clone`, `Brute`, `Spider`, `Violent`,
+`Warden`, `Omnistore` et aux entrées `mall_*` de `SPEC` ; `Rig` / `Human` inchangés pour le Carnaval).
+
+| Kind | Note avant | Note après | Principaux changements |
+|---|---|---|---|
+| `mall_zombie` | 4,5 | 7,7 | torse nu brun-ocre pourrissant, côtes, jean gris ceinturé, cheveux courts, bouche béante, mains crochues, tête relevée |
+| `mall_flayer` | 4,5 | 7,5 | écorché brun-rouge, tête allongée à museau denté projetée en avant, très voûté, lames d'os à lueur rouge plus longues, pagne |
+| `mall_security_bot` | 5,5 | 7,5 | acier bleu-gris sombre, visière noire à deux optiques rouges (plus d'antenne), grosses épaulières cerclées, plaques pectorales |
+| `mall_clone` | 5,5 | 7,6 | capuche sombre, visage mat dans l'ombre (yeux violets discrets), blouson gris-bleu ouvert, t-shirt rouge rayé, éclats d'illusion violets ; sans sac |
+| `mall_brute` | 4,0 | 7,5 | chair rose-beige recousue (plus de pierre grise), gantelets de fer rivetés, épaulières, pagne rouge, sangle |
+| `mall_night_spider` | 5,0 | 7,5 | chitine bleu nuit-violet, grosse tête à deux grands yeux violets lumineux, abdomen segmenté plus petit à jointures lumineuses, crocs et articulations orange |
+| `mall_violent` | 5,0 | 7,6 | mutant brun-rouge, orbites creuses et yeux blancs, gueule béante dentée, pantalon en lambeaux, griffes osseuses |
+| `mall_store_warden` | 5,5 | 7,6 | casque rouge à bande blanche courbe, masque facial doré, yeux blancs, plastron noir à logo blanc, cuisses et avant-bras noirs |
+| `mall_omnistore` | 5,0 | 7,6 | chair bordeaux sombre à veines rouges lumineuses, plaques de chitine, tête-gueule 1,75× relevée, écrans plus grands à éclat blanc, queue de scorpion |
+
+Aucune donnée d'équilibrage ni hitbox modifiée (échelles de modèle quasi identiques). Comparaisons :
+`compare_<kind>_v<N>.png` dans le dossier de travail de l'agent (non versionné) ; planche finale :
+`docs/bestiaire/captures/mall/planche_modeles_mall.png`. La planche de présentation utilise
+désormais les polices du projet (Anton / Space Grotesk) pour tourner aussi sous macOS.
