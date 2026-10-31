@@ -40,7 +40,7 @@ func _build_body() -> void:
 static func build_text() -> String:
 	var gold: String = MenuKit.GOLD.to_html(false)
 	var t := ""
-	t += "[center][b][color=#%s]RaidersGo — Tire. Pille. Tire-toi.[/color][/b][/center]\n\n" % gold
+	t += "[center][b][color=#%s]RaidersGo[/color][/b][/center]\n\n" % gold
 	t += "[b][color=#ffffff]Icônes[/color][/b]\n" + ICONS_ATTRIBUTION.replace(
 		"https://creativecommons.org/licenses/by/3.0/",
 		"[url=https://creativecommons.org/licenses/by/3.0/]https://creativecommons.org/licenses/by/3.0/[/url]") + "\n\n"

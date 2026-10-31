@@ -199,7 +199,8 @@ func test_donner_en_raid_arme_en_main_objet_dans_le_sac() -> void:
 		assert_gt(GameState.raid_inventory.count_of(LootDB.weapon_item(held_before).id), 0, "Ancienne arme dans le sac")
 	assert_string_contains(DevTools.give_item(&"bandage", 2), "sac")
 	assert_eq(GameState.raid_inventory.count_of(&"bandage"), 2)
-	GameState.player = old_player
+	# Le joueur d'un test précédent peut avoir été libéré : ne jamais le réaffecter.
+	GameState.player = old_player if is_instance_valid(old_player) else null
 	GameState.raid_inventory = old_inv
 	if cached_id != &"" and not was_cached:
 		LootDB._items.erase(cached_id)

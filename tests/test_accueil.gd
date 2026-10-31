@@ -345,3 +345,92 @@ func test_switch_locked_online_in_coop_room() -> void:
 	m.online_switch.offline_button.pressed.emit()
 	assert_true(OnlineMode.is_online(), "Refus de passer hors ligne dans un salon")
 	assert_true(m.online_switch.online_button.button_pressed)
+
+
+# --- Bandeau DÉPLOYER cliquable de partout ------------------------------------------------
+
+## Doigt simulé comme sur téléphone : événement tactile + souris émulée (emulate_mouse_from_touch).
+func _tap(vp_pos: Vector2) -> void:
+	# Le panneau de sortie de GUT couvre la droite de l'écran en headless : masqué le temps du toucher.
+	var gut_layer := get_tree().root.get_node_or_null(^"GutRunner/GutLayer") as CanvasLayer
+	var was_visible := gut_layer != null and gut_layer.visible
+	if gut_layer != null:
+		gut_layer.visible = false
+	for pressed: bool in [true, false]:
+		var p: Vector2 = get_viewport().get_final_transform() * vp_pos   # coordonnées fenêtre
+		var e := InputEventScreenTouch.new()
+		e.index = 0
+		e.position = p
+		e.pressed = pressed
+		get_viewport().push_input(e)
+		var mb := InputEventMouseButton.new()
+		mb.button_index = MOUSE_BUTTON_LEFT
+		mb.position = p
+		mb.global_position = p
+		mb.pressed = pressed
+		mb.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+		get_viewport().push_input(mb)
+		await wait_process_frames(1)
+	if gut_layer != null:
+		gut_layer.visible = was_visible
+
+
+## Menu dont le bandeau compte les déploiements au lieu de changer de scène.
+func _menu_counting_deploys(counter: Array[int]) -> MainMenu:
+	var m := await _menu()
+	var sl := m.slab as MainMenu.DeploySlab
+	sl.activated.disconnect(m._on_play)
+	sl.activated.connect(func() -> void: counter[0] += 1)
+	return m
+
+
+func test_slab_tap_in_middle_deploys() -> void:
+	var n: Array[int] = [0]
+	var m := await _menu_counting_deploys(n)
+	assert_true(m.slab is MainMenu.DeploySlab, "Bandeau de l'accueil cliquable")
+	assert_eq(m.slab.mouse_filter, Control.MOUSE_FILTER_STOP)
+	var r := m.slab.get_global_rect()
+	await _tap(r.position + r.size * Vector2(0.6, 0.4))
+	assert_eq(n[0], 1, "Un toucher au milieu du bandeau lance DÉPLOYER")
+	# Haut du bandeau, à droite du biais : déploie aussi.
+	await _tap(r.position + Vector2(r.size.x * 0.8, 30.0))
+	assert_eq(n[0], 2, "Tout le bandeau est cliquable, pas seulement le mot")
+
+
+func test_slab_tap_on_switch_does_not_deploy() -> void:
+	OnlineMode.set_online(true)
+	var n: Array[int] = [0]
+	var m := await _menu_counting_deploys(n)
+	var sw := m.online_switch
+	await _tap(sw.offline_button.get_global_rect().get_center())
+	assert_eq(n[0], 0, "L'interrupteur En ligne / Hors ligne ne déploie pas")
+	assert_false(OnlineMode.is_online(), "L'interrupteur garde son comportement (passe hors ligne)")
+	await _tap(sw.online_button.get_global_rect().get_center())
+	assert_eq(n[0], 0)
+	assert_true(OnlineMode.is_online())
+
+
+func test_slab_hit_area_follows_slant() -> void:
+	var n: Array[int] = [0]
+	var m := await _menu_counting_deploys(n)
+	var sl := m.slab as MainMenu.DeploySlab
+	var r := sl.get_global_rect()
+	# Coin haut gauche du rectangle : partie transparente à gauche du biais.
+	assert_false(sl._has_point(Vector2(4.0, 4.0)), "Pas de zone cliquable à gauche du biais")
+	assert_true(sl._has_point(Vector2(sl.cut + 10.0, 4.0)))
+	await _tap(r.position + Vector2(4.0, 4.0))
+	assert_eq(n[0], 0, "Toucher dans la partie transparente : rien")
+
+
+func test_slab_press_feedback_lightens() -> void:
+	var m := await _menu()
+	var sl := m.slab as MainMenu.DeploySlab
+	var base := sl.fill_color()
+	sl.held = true
+	assert_gt(sl.fill_color().get_luminance(), base.get_luminance(), "Appui : le bandeau s'éclaircit")
+	sl.held = false
+	assert_eq(sl.fill_color(), base)
+	m.play_button.button_down.emit()
+	assert_true(sl.held, "Appui sur le mot DÉPLOYER : tout le bandeau réagit")
+	m.play_button.button_up.emit()
+	assert_false(sl.held)
