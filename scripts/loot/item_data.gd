@@ -38,6 +38,7 @@ const TYPES: Array[StringName] = [TYPE_WEAPON, TYPE_AMMO, TYPE_CONSUMABLE, TYPE_
 @export var heal_amount: float = 0.0
 ## Type weapon : id de l'arme (data/weapons/<weapon_id>.tres) que cet objet représente.
 ## Un objet arme dans le sac peut être équipé ; extrait, il rejoint l'arsenal (Profile).
+## Type key : équipement que la clef devient dans la réserve à l'extraction (clef de trappe).
 @export var weapon_id: StringName = &""
 ## Type weapon : affixes tirés au drop de CET exemplaire (objet dupliqué par Affixes.make_item ;
 ## vide sur les objets data/items/wpn_*.tres partagés).
@@ -46,6 +47,12 @@ const TYPES: Array[StringName] = [TYPE_WEAPON, TYPE_AMMO, TYPE_CONSUMABLE, TYPE_
 
 func is_weapon() -> bool:
 	return type == TYPE_WEAPON and not String(weapon_id).is_empty()
+
+
+## Arme ou équipement que l'objet devient dans la réserve à l'extraction (&"" : objet gardé
+## tel quel) : armes du sac, clef de trappe → gadget.
+func reserve_weapon_id() -> StringName:
+	return weapon_id if is_weapon() or (type == TYPE_KEY and not String(weapon_id).is_empty()) else &""
 
 
 ## Exemplaire d'arme représenté (affixes compris), null si ce n'est pas une arme.

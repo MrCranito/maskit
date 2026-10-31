@@ -347,11 +347,12 @@ func finish_extraction(carried: Array, bag: Inventory) -> Dictionary:
 			var count: int = int(slot.get("count", 1))
 			if item == null:
 				continue
-			if item.is_weapon():
+			var wid := item.reserve_weapon_id()
+			if wid != &"":
 				for _n in count:
-					if add_weapon(item.weapon_id, item.weapon_affixes) > 0:
-						got_weapons.append(item.weapon_id)
-						entries.append({"id": item.weapon_id, "affixes": Affixes.normalized(item.weapon_affixes)})
+					if add_weapon(wid, item.weapon_affixes) > 0:
+						got_weapons.append(wid)
+						entries.append({"id": wid, "affixes": Affixes.normalized(item.weapon_affixes)})
 			else:
 				items[String(item.id)] = int(items.get(String(item.id), 0)) + count
 				got_items[item.id] = int(got_items.get(item.id, 0)) + count

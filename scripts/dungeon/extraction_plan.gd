@@ -1,33 +1,49 @@
 class_name ExtractionPlan
 extends RefCounted
-## Zones d'extraction d'un étage à durée de vie ([extraction] de data/balance.cfg).
+## Extractions d'un étage ([extraction] de data/balance.cfg) : une permanente, des temporaires
+## à durée de vie et des trappes d'urgence fermées à clef.
 ##
 ## Appliqué par Raid._generate_floors APRÈS la génération et l'aménagement (le peuplement des
-## générateurs et les cartes pré-rendues ne changent pas) :
-##   - un étage sans case d'extraction reste sans extraction ;
-##   - sinon l'étage reçoit `zones_per_floor` zones (3) : les zones des générateurs sont gardées,
-##     les manquantes sont posées sur des blocs 2×2 libres (rue ou plancher, atteignables sans
-##     clef, hors décors / conteneurs / cachettes / emprise rendue, loin des portes et escaliers),
-##     à des distances de marche différentes du point d'apparition ;
-##   - chaque zone ferme à `closes_at` s (horloge du raid) : base + distance × per_cell (+ bonus
-##     par étage), au moins `min_gap` s après la précédente : la plus proche ferme la première ;
-##   - une zone d'urgence (la plus loin possible du départ) reste éteinte puis s'ouvre quand la
-##     dernière zone ferme ; elle ne ferme plus, mais sa canalisation est plus longue.
+## générateurs et les cartes pré-rendues ne changent pas). Un étage sans case d'extraction
+## reste sans extraction. Sinon, les emplacements possibles (blocs 2×2 libres : rue ou
+## plancher, atteignables sans clef, hors décors / conteneurs / cachettes / emprise rendue,
+## loin des portes et escaliers) sont classés en quatre options :
+##   A. au bout du parcours : le plus loin du départ, de préférence en extérieur (rue, place) ;
+##   B. à mi-parcours : distance de marche la plus proche de mid_ratio × distance de A ;
+##   C. près d'un escalier (à stairs_max_cells cases au plus) ;
+##   D. la zone d'extraction posée par le générateur de l'étage.
+## A devient l'extraction PERMANENTE (toujours ouverte). B, C et D deviennent les extractions
+## TEMPORAIRES (complétées si besoin jusqu'à temporary_zones) : chacune ferme à `closes_at` s
+## (horloge du raid) = base + distance × per_cell (+ bonus par étage), au moins `min_gap` s
+## après la précédente : la plus proche ferme la première.
+## Trappes d'urgence (hatches_per_floor, +1 sur un grand étage) : ailleurs, de préférence en
+## intérieur ; s'ouvrent avec une clef de trappe, jamais affichées sur la carte.
 ## Déterministe : un RandomNumberGenerator initialisé par `seed_value` (même étage chez l'hôte
 ## et l'invité en coop).
+
+const KIND_PERMANENT := &"permanent"
+const KIND_TEMPORARY := &"temporary"
+const KIND_HATCH := &"hatch"
 
 ## Une zone : cases, nom de direction, ouverture / fermeture (s, horloge du raid).
 class Spec:
 	var cells: Array[Vector2i] = []
 	var name: String = ""
+	## KIND_PERMANENT, KIND_TEMPORARY ou KIND_HATCH.
+	var kind: StringName = KIND_TEMPORARY
+	## Option de placement (« A » bout du parcours, « B » mi-parcours, « C » escalier,
+	## « D » générateur, « + » complément, « T » trappe) : debug et tests.
+	var option: String = ""
 	## Distance de marche (cases) depuis le point d'apparition de l'étage.
 	var distance: float = 0.0
 	var opens_at: float = 0.0
 	## INF : ne ferme jamais.
 	var closes_at: float = INF
-	var emergency: bool = false
-	## Rang par distance (0 = la plus proche) ; -1 pour la zone d'urgence.
+	## Rang des temporaires par distance (0 = la plus proche) ; -1 pour les autres.
 	var rank: int = 0
+
+	func is_hatch() -> bool:
+		return kind == KIND_HATCH
 
 
 static func cfg_f(key: String, def: float) -> float:
@@ -38,8 +54,18 @@ static func cfg_i(key: String, def: int) -> int:
 	return int(Balance.get_value("extraction", key, def))
 
 
-## Calcule L.extraction_specs (et complète L.extraction_cells). `blocked` : rectangles monde
-## infranchissables en plus des tuiles (emprise d'une carte pré-rendue).
+static func _make(cd: Dictionary, kind: StringName, option: String) -> Spec:
+	var s := Spec.new()
+	s.cells.assign(cd["cells"])
+	s.distance = float(cd["d"])
+	s.kind = kind
+	s.option = option
+	return s
+
+
+## Calcule L.extraction_specs (et remplace L.extraction_cells par les cases de la permanente
+## et des temporaires ; les trappes n'y sont pas). `blocked` : rectangles monde infranchissables
+## en plus des tuiles (emprise d'une carte pré-rendue).
 static func apply(L: FloorLayout, seed_value: int, blocked: Array[Rect2] = []) -> void:
 	L.extraction_specs.clear()
 	if L.extraction_cells.is_empty():
@@ -47,40 +73,57 @@ static func apply(L: FloorLayout, seed_value: int, blocked: Array[Rect2] = []) -
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var dist := walk_distances(L)
-	var specs: Array[Spec] = []
+	var gen: Array[Spec] = []
 	for g: Array in ExtractionZone.group_cells(L.extraction_cells):
 		var s := Spec.new()
 		s.cells.assign(g)
 		s.distance = _zone_distance(s.cells, dist, L)
-		specs.append(s)
-	var want := maxi(cfg_i("zones_per_floor", 3), 1)
-	if not bool(Balance.get_value("extraction", "timed_zones", true)):
-		want = specs.size()
-	# Trop de zones : on garde la plus proche, la plus lointaine et des intermédiaires.
-	if specs.size() > want:
-		specs.sort_custom(func(a: Spec, b: Spec) -> bool: return a.distance < b.distance)
-		var kept: Array[Spec] = []
-		for i in want:
-			var idx := 0 if want == 1 else roundi(float(i) * float(specs.size() - 1) / float(want - 1))
-			if not kept.has(specs[idx]):
-				kept.append(specs[idx])
-		specs = kept
-	var cands: Array = []
-	if specs.size() < want or bool(Balance.get_value("extraction", "emergency_zone", true)):
-		cands = candidates(L, dist, blocked)
-	while specs.size() < want:
-		var s2 := _pick_spread(cands, specs, L, rng)
+		s.option = "D"
+		gen.append(s)
+	gen.sort_custom(func(a: Spec, b: Spec) -> bool: return a.distance < b.distance)
+	var cands := candidates(L, dist, blocked)
+	var chosen: Array[Spec] = []
+	# A : permanente au bout du parcours (sinon la zone du générateur la plus lointaine).
+	var perm := _pick_far_open(cands, L, rng)
+	if perm == null:
+		perm = gen.pop_back()
+	perm.kind = KIND_PERMANENT
+	perm.option = "A"
+	chosen.append(perm)
+	# Temporaires : options B, C, D dans cet ordre, puis compléments.
+	var want := maxi(cfg_i("temporary_zones", 3), 0)
+	var temps: Array[Spec] = []
+	if want > 0:
+		var b := _pick_mid(cands, chosen, perm.distance * cfg_f("mid_ratio", 0.55))
+		if b != null:
+			temps.append(b)
+			chosen.append(b)
+	if temps.size() < want:
+		var c := _pick_stairs(cands, chosen, L)
+		if c != null:
+			temps.append(c)
+			chosen.append(c)
+	for d: Spec in gen:
+		if temps.size() >= want:
+			break
+		if not _too_close(d.cells, chosen):
+			temps.append(d)
+			chosen.append(d)
+	while temps.size() < want:
+		var s2 := _pick_spread(cands, chosen, L, rng)
 		if s2 == null:
 			break
-		specs.append(s2)
-	specs.sort_custom(func(a: Spec, b: Spec) -> bool: return a.distance < b.distance)
+		s2.option = "+"
+		temps.append(s2)
+		chosen.append(s2)
+	temps.sort_custom(func(a: Spec, b2: Spec) -> bool: return a.distance < b2.distance)
 	var timed := bool(Balance.get_value("extraction", "timed_zones", true))
 	var prev := -INF
-	for i in specs.size():
-		var s3 := specs[i]
+	for i in temps.size():
+		var s3 := temps[i]
+		s3.kind = KIND_TEMPORARY
 		s3.rank = i
 		if not timed:
-			s3.closes_at = INF
 			continue
 		var t := cfg_f("lifetime_base", 180.0) + s3.distance * cfg_f("lifetime_per_cell", 3.0) \
 			+ absf(float(L.floor_index)) * cfg_f("lifetime_floor_bonus", 60.0)
@@ -88,24 +131,122 @@ static func apply(L: FloorLayout, seed_value: int, blocked: Array[Rect2] = []) -
 		t = maxf(t, prev + cfg_f("lifetime_min_gap", 75.0))
 		s3.closes_at = t
 		prev = t
-	# Zone d'urgence : la plus lointaine possible, ouverte quand la dernière zone ferme.
-	if timed and not specs.is_empty() and bool(Balance.get_value("extraction", "emergency_zone", true)):
-		var em := _pick_farthest(cands, specs)
-		if em == null:
-			# Pas de place : la zone la plus lointaine ne ferme jamais.
-			specs[specs.size() - 1].closes_at = INF
-		else:
-			em.emergency = true
-			em.rank = -1
-			em.opens_at = specs[specs.size() - 1].closes_at
-			em.closes_at = INF
-			specs.append(em)
+	perm.rank = -1
+	var specs: Array[Spec] = []
+	specs.append_array(temps)
+	specs.append(perm)
 	_name_zones(specs, L)
 	var all_cells: Array[Vector2i] = []
 	for s4: Spec in specs:
 		all_cells.append_array(s4.cells)
 	L.extraction_cells = all_cells
+	var hatches := _pick_hatches(cands, specs, L, rng)
+	_name_zones(hatches, L, "Trappe ")
+	specs.append_array(hatches)
 	L.extraction_specs.assign(specs)
+
+
+## Nombre de trappes de l'étage : hatches_per_floor, +1 au-delà de hatch_big_floor_cells cases
+## praticables.
+static func hatch_count(L: FloorLayout) -> int:
+	var n := maxi(cfg_i("hatches_per_floor", 1), 0)
+	if n == 0:
+		return 0
+	var walk := 0
+	for t: int in L.tiles:
+		if t == FloorLayout.Tile.STREET or t == FloorLayout.Tile.FLOOR:
+			walk += 1
+	if walk >= cfg_i("hatch_big_floor_cells", 2600):
+		n += 1
+	return n
+
+
+## Option A : candidat le plus loin du départ, de préférence tout en rue (extérieur).
+static func _pick_far_open(cands: Array, L: FloorLayout, rng: RandomNumberGenerator) -> Spec:
+	var jitter := cfg_f("zone_pick_jitter", 4.0)
+	for outdoor: bool in [true, false]:
+		var best: Dictionary = {}
+		var best_score := -INF
+		for cd: Dictionary in cands:
+			if outdoor and not _all_tiles(L, cd["cells"], FloorLayout.Tile.STREET):
+				continue
+			var score := float(cd["d"]) + rng.randf() * jitter
+			if score > best_score:
+				best_score = score
+				best = cd
+		if not best.is_empty():
+			return _make(best, KIND_PERMANENT, "A")
+	return null
+
+
+## Option B : distance de marche la plus proche de `target`.
+static func _pick_mid(cands: Array, chosen: Array[Spec], target: float) -> Spec:
+	var best: Dictionary = {}
+	var best_gap := INF
+	for cd: Dictionary in cands:
+		if _too_close(cd["cells"], chosen):
+			continue
+		var gap := absf(float(cd["d"]) - target)
+		if gap < best_gap:
+			best_gap = gap
+			best = cd
+	return null if best.is_empty() else _make(best, KIND_TEMPORARY, "B")
+
+
+## Option C : candidat le plus proche d'un escalier (stairs_max_cells cases au plus).
+static func _pick_stairs(cands: Array, chosen: Array[Spec], L: FloorLayout) -> Spec:
+	if L.stairs.is_empty():
+		return null
+	var best: Dictionary = {}
+	var best_d := cfg_f("stairs_max_cells", 12.0)
+	for cd: Dictionary in cands:
+		if _too_close(cd["cells"], chosen):
+			continue
+		var p := Vector2(cd["cells"][0]) + Vector2(0.5, 0.5)
+		for st: FloorLayout.Stairs in L.stairs:
+			var d := p.distance_to(Vector2(st.cell))
+			if d <= best_d:
+				best_d = d
+				best = cd
+	return null if best.is_empty() else _make(best, KIND_TEMPORARY, "C")
+
+
+## Trappes : loin des extractions et entre elles, à hatch_min_spawn_cells du départ au moins,
+## de préférence en intérieur (plancher) ; tirage au hasard parmi les emplacements restants.
+static func _pick_hatches(cands: Array, specs: Array[Spec], L: FloorLayout, rng: RandomNumberGenerator) -> Array[Spec]:
+	var out: Array[Spec] = []
+	var n := hatch_count(L)
+	var min_d := cfg_i("hatch_min_spawn_cells", 14)
+	var gap := float(cfg_i("hatch_min_gap_cells", 12))
+	for k in n:
+		var placed: Array[Spec] = []
+		placed.append_array(specs)
+		placed.append_array(out)
+		var pick: Dictionary = {}
+		for indoor: bool in [true, false]:
+			var pool: Array = []
+			for cd: Dictionary in cands:
+				if int(cd["d"]) < min_d or _too_close(cd["cells"], placed, gap):
+					continue
+				if indoor and not _all_tiles(L, cd["cells"], FloorLayout.Tile.FLOOR):
+					continue
+				pool.append(cd)
+			if not pool.is_empty():
+				pick = pool[rng.randi_range(0, pool.size() - 1)]
+				break
+		if pick.is_empty():
+			break
+		var s := _make(pick, KIND_HATCH, "T")
+		s.rank = -1
+		out.append(s)
+	return out
+
+
+static func _all_tiles(L: FloorLayout, cells: Array, tile: int) -> bool:
+	for c: Vector2i in cells:
+		if L.get_tile(c) != tile:
+			return false
+	return true
 
 
 ## Distance de marche (cases, 4-voisinage) depuis le point d'apparition ; portes verrouillées
@@ -197,8 +338,9 @@ static func candidates(L: FloorLayout, dist: Dictionary, blocked: Array[Rect2] =
 	return out
 
 
-static func _too_close(cells: Array, specs: Array[Spec]) -> bool:
-	var gap := float(cfg_i("zone_min_gap_cells", 14))
+static func _too_close(cells: Array, specs: Array[Spec], gap: float = -1.0) -> bool:
+	if gap < 0.0:
+		gap = float(cfg_i("zone_min_gap_cells", 14))
 	for s: Spec in specs:
 		for a: Vector2i in s.cells:
 			if Vector2(a).distance_to(Vector2(cells[0])) < gap:
@@ -242,27 +384,12 @@ static func _pick_spread(cands: Array, specs: Array[Spec], L: FloorLayout, rng: 
 	return null
 
 
-static func _pick_farthest(cands: Array, specs: Array[Spec]) -> Spec:
-	var best: Dictionary = {}
-	for cd: Dictionary in cands:
-		if _too_close(cd["cells"], specs):
-			continue
-		if best.is_empty() or int(cd["d"]) > int(best["d"]):
-			best = cd
-	if best.is_empty():
-		return null
-	var out := Spec.new()
-	out.cells.assign(best["cells"])
-	out.distance = float(best["d"])
-	return out
-
-
 const DIRS := ["Est", "Sud-Est", "Sud", "Sud-Ouest", "Ouest", "Nord-Ouest", "Nord", "Nord-Est"]
 const DIRS4 := ["Est", "Sud", "Ouest", "Nord"]
 
 
 ## Nom de direction (par rapport au centre de l'étage), unique sur l'étage.
-static func _name_zones(specs: Array[Spec], L: FloorLayout) -> void:
+static func _name_zones(specs: Array[Spec], L: FloorLayout, prefix: String = "") -> void:
 	var used := {}
 	var center := Vector2(L.size) * 0.5
 	for s: Spec in specs:
@@ -283,4 +410,4 @@ static func _name_zones(specs: Array[Spec], L: FloorLayout) -> void:
 			nm = "%s %d" % [base, k]
 			k += 1
 		used[nm] = true
-		s.name = nm
+		s.name = prefix + nm

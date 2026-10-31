@@ -314,6 +314,7 @@ func _finish_search() -> void:
 		rng.seed = loot_seed
 		var ctx := LootRoller.Context.make(difficulty, floor_index, room_type)
 		entries = LootRoller.roll(LootDB.get_table(kind), rng, ctx)
+		_add_hatch_key()
 	state = State.OPENED
 	_play(&"container_open")
 	if LootRoller.best_rarity(entries) >= ItemData.Rarity.EPIC:
@@ -397,6 +398,14 @@ func is_emptied() -> bool:
 	return state == State.EMPTIED
 
 
+## Coffres : clef de trappe d'urgence en plus (HatchKeys.container_chance, graine du conteneur :
+## même tirage chez l'hôte et l'invité).
+func _add_hatch_key() -> void:
+	var hk := HatchKeys.roll(loot_seed, HatchKeys.container_chance(kind))
+	if not hk.is_empty():
+		entries.append(hk)
+
+
 func _set_emptied() -> void:
 	entries.clear()
 	state = State.EMPTIED
@@ -420,6 +429,7 @@ func net_open_silently() -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = loot_seed
 		entries = LootRoller.roll(LootDB.get_table(kind), rng, LootRoller.Context.make(difficulty, floor_index, room_type))
+		_add_hatch_key()
 	state = State.OPENED
 	if entries.is_empty():
 		_set_emptied()

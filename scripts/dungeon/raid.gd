@@ -109,6 +109,8 @@ var _active_zone: ExtractionZone = null
 var raid_clock: float = 0.0
 ## Zones déjà averties avant fermeture (nœud → true).
 var _warned_zones: Dictionary = {}
+## Trappe → horloge du dernier toast « clef requise ».
+var _hatch_denied: Dictionary = {}
 ## Calque plein écran de la canalisation (vignette, compte à rebours, flash final).
 var extraction_overlay: ExtractionOverlay = null
 var end_screen: RaidEndScreen = null
@@ -882,9 +884,12 @@ func _play_extraction_outro(zone: ExtractionZone) -> void:
 	var tw := create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	if is_instance_valid(player):
 		var vis: Node2D = player.get(&"visual") as Node2D if player.get(&"visual") is Node2D else player
-		tw.tween_property(vis, "position:y", vis.position.y - Balance.get_float("extraction", "outro_rise", 90.0), d * 0.75).set_delay(d * 0.15)
+		# Trappe : le joueur descend l'échelle (s'enfonce et s'assombrit) au lieu de monter.
+		var down := zone != null and is_instance_valid(zone) and zone.is_hatch()
+		var rise := Balance.get_float("extraction", "outro_rise", 90.0) * (-0.35 if down else 1.0)
+		tw.tween_property(vis, "position:y", vis.position.y - rise, d * 0.75).set_delay(d * 0.15)
 		tw.tween_property(vis, "scale", vis.scale * 0.55, d * 0.75).set_delay(d * 0.15)
-		tw.tween_property(vis, "modulate", Color(2.0, 2.4, 2.0, 0.0), d * 0.75).set_delay(d * 0.15)
+		tw.tween_property(vis, "modulate", Color(0.25, 0.3, 0.28, 0.0) if down else Color(2.0, 2.4, 2.0, 0.0), d * 0.75).set_delay(d * 0.15)
 	var cam := get_viewport().get_camera_2d()
 	if cam != null:
 		tw.tween_property(cam, "zoom", cam.zoom * Balance.get_float("extraction", "outro_zoom", 1.18), d).set_ease(Tween.EASE_OUT)
@@ -985,16 +990,16 @@ static func extraction_channel_time() -> float:
 	return maxf(Balance.get_float("extraction", "channel_time", 5.0), 0.05)
 
 
-## Durée de canalisation de la zone en cours (zone d'urgence : × emergency_channel_mult).
+## Durée de canalisation de la zone en cours (trappe d'urgence : × hatch_channel_mult).
 func current_channel_time() -> float:
 	var t := extraction_channel_time()
-	if _active_zone != null and is_instance_valid(_active_zone) and _active_zone.emergency:
-		t *= maxf(Balance.get_float("extraction", "emergency_channel_mult", 2.0), 1.0)
+	if _active_zone != null and is_instance_valid(_active_zone) and _active_zone.is_hatch():
+		t *= maxf(Balance.get_float("extraction", "hatch_channel_mult", 1.0), 0.05)
 	return t
 
 
 ## Avance l'horloge des zones de l'étage : avertissement avant fermeture, fermeture (la
-## canalisation en cours s'interrompt), ouverture de la zone d'urgence.
+## canalisation en cours s'interrompt).
 func _update_zone_clocks() -> void:
 	if _raid_over:
 		return
@@ -1016,9 +1021,6 @@ func _update_zone_clocks() -> void:
 					show_toast("Extraction %s fermée : canalisation interrompue" % z.zone_name)
 				else:
 					show_toast("Extraction %s fermée" % z.zone_name)
-			ExtractionZone.State.OPEN:
-				if before == ExtractionZone.State.DORMANT:
-					show_toast("Extraction d'urgence ouverte : %s" % z.zone_name)
 
 
 ## Zones ouvertes de l'étage courant.
@@ -1045,6 +1047,8 @@ func _update_extraction(cell: Vector2i, delta: float) -> void:
 	var alive := (not player.has_method("is_alive") or bool(player.call("is_alive"))) \
 		and not (NetHooks.active and NetHooks.is_downed(player))
 	var zone := get_extraction_zone_at(cell) if alive else null
+	if zone != null and zone.is_hatch() and zone.locked:
+		_try_open_hatch(zone)
 	var on_zone := zone != null and zone.is_open()
 	if is_extracting() and _active_zone != null and zone != _active_zone:
 		on_zone = false
@@ -1074,10 +1078,41 @@ func _start_extraction() -> void:
 		add_child(extraction_overlay)
 	extraction_overlay.set_progress(0.0, current_channel_time())
 	var alert_r := Balance.get_float("extraction", "alert_radius", 520.0)
-	if _active_zone != null and _active_zone.emergency:
-		alert_r *= Balance.get_float("extraction", "emergency_alert_mult", 1.5)
+	if _active_zone != null and _active_zone.is_hatch():
+		alert_r *= Balance.get_float("extraction", "hatch_alert_mult", 1.0)
 	var n := alert_enemies_near(player.global_position, alert_r)
 	show_toast("Extraction… reste dans la zone !" if n == 0 else "Extraction… ils arrivent !")
+
+
+## Joueur sur une trappe verrouillée : consomme une clef de trappe (sac, sinon gadget) et
+## l'ouvre ; sans clef, toast « clef requise » (au plus toutes les hatch_denied_cooldown s).
+func _try_open_hatch(zone: ExtractionZone) -> void:
+	var used := HatchKeys.consume(GameState.raid_inventory, player)
+	if used == "":
+		var last: float = _hatch_denied.get(zone, -INF)
+		if raid_clock - last >= Balance.get_float("extraction", "hatch_denied_cooldown", 3.0):
+			_hatch_denied[zone] = raid_clock
+			show_toast("Trappe d'urgence verrouillée : clef de trappe requise")
+		return
+	open_hatch(zone)
+	show_toast("Clef de trappe utilisée : trappe ouverte")
+
+
+## Ouvre une trappe (clef utilisée ici, ou par le coéquipier si `remote`).
+func open_hatch(zone: ExtractionZone, remote: bool = false) -> void:
+	if zone == null or not zone.unlock():
+		return
+	if not remote:
+		NetHooks.on_hatch_opened(zone.cells[0])
+
+
+## Coop : le coéquipier a ouvert la trappe qui contient `cell`. False si aucune.
+func open_hatch_at(cell: Vector2i) -> bool:
+	var z := get_extraction_zone_at(cell)
+	if z == null or not z.is_hatch():
+		return false
+	open_hatch(z, true)
+	return true
 
 
 ## Alerte les ennemis vivants dans `radius` autour de `pos` ; renvoie le nombre alerté.
@@ -1224,7 +1259,7 @@ func _on_debug_toggled(_enabled: bool) -> void:
 
 
 ## Raccourcis de debug (F3 actif) : F5 = extraction instantanée, F6 = mort instantanée,
-## F7 = horloge des extractions + 60 s.
+## F7 = horloge des extractions + 60 s, F8 = une clef de trappe dans le sac.
 func _unhandled_input(event: InputEvent) -> void:
 	if not GameState.debug_enabled or _raid_over:
 		return
@@ -1240,6 +1275,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				# Avance l'horloge des extractions d'une minute (tester les fermetures).
 				get_viewport().set_input_as_handled()
 				raid_clock += 60.0
+			KEY_F8:
+				get_viewport().set_input_as_handled()
+				if GameState.raid_inventory != null and GameState.raid_inventory.add_item(LootDB.get_item(HatchKeys.ITEM_ID), 1) > 0:
+					show_toast("Debug : clef de trappe ajoutée au sac")
 
 
 # --- UI -------------------------------------------------------------------------
@@ -1715,8 +1754,10 @@ func _debug_zones_text() -> String:
 		if not is_instance_valid(z):
 			continue
 		var t := "∞" if z.closes_at == INF else ExtractionZone.format_time(z.closes_at)
-		parts.append("%s%s %s→%s [%s]" % ["!" if z.emergency else "", z.zone_name,
-			ExtractionZone.format_time(z.opens_at), t, ExtractionZone.State.keys()[z.state]])
+		var tag := "T" if z.is_hatch() else ("P" if z.is_permanent() else "t")
+		var lock := " verrouillée" if z.locked else ""
+		parts.append("%s(%s) %s %s→%s [%s%s]" % [tag, z.option, z.zone_name,
+			ExtractionZone.format_time(z.opens_at), t, ExtractionZone.State.keys()[z.state], lock])
 	return ", ".join(parts) if not parts.is_empty() else "—"
 
 
@@ -1737,6 +1778,7 @@ func _draw_debug_info(canvas: Node2D) -> void:
 			("%.1f / %.1f s" % [_extraction_time, current_channel_time()]) if is_extracting() else "—",
 			current_channel_time()],
 		"Horloge %s · zones : %s · F7 +60 s" % [ExtractionZone.format_time(raid_clock), _debug_zones_text()],
+		"Clefs de trappe : %d · F8 +1 clef · P permanente, t temporaire, T trappe ; options A bout, B mi-parcours, C escalier, D générateur" % HatchKeys.count(GameState.raid_inventory, player),
 	])
 	var font := ThemeDB.fallback_font
 	var origin := player.global_position + Vector2(-150, -150)

@@ -9,9 +9,10 @@ extends Control
 ##     lissée par assets/shaders/minimap_fog.gdshader (bords doux et irréguliers, liseré) ;
 ##   - cadre direction D (CutBox, coins coupés, liseré violet), léger vignettage ;
 ##   - position et orientation (visée) du joueur, au centre ;
-##   - zones d'extraction toujours affichées avec leur minuteur (orange avant fermeture, grise
-##     et barrée une fois fermée, zone d'urgence cachée tant qu'elle est éteinte) ; si la plus
-##     proche zone OUVERTE sort du cadre, flèche au bord vers elle (distance · temps restant) ;
+##   - extractions (permanente et temporaires) toujours affichées avec leur minuteur (orange
+##     avant fermeture, grise et barrée une fois fermée) ; celles des AUTRES étages aussi, en
+##     transparence, avec l'étage (« -1 · 3:05 ») ; trappes d'urgence jamais affichées ; si la
+##     plus proche zone OUVERTE de l'étage sort du cadre, flèche au bord vers elle ;
 ##   - toucher / clic (ou touche M) = carte plein écran (jeu en pause), zoomable et déplaçable
 ##     (voir FullMapOverlay) ; bouton ×, toucher hors du panneau, M ou Échap pour fermer.
 ## Performance : rafraîchie par un Timer ([minimap] refresh_interval ≈ 0,1 s), sans allocation :
@@ -63,6 +64,9 @@ var _last_dist: int = -1
 var _last_arrow_text: String = ""
 ## Zones d'extraction (ExtractionZone) alignées sur _zone_centers ; vide = cases seules.
 var _zones: Array[Node2D] = []
+## Extractions des autres étages, à la suite des zones de l'étage dans _zone_centers :
+## {"spec": ExtractionPlan.Spec, "floor": int}.
+var _ghosts: Array[Dictionary] = []
 var _scan_radius: int = 12
 var _box: float = 168.0
 ## Raisons d'effacement en cours (fouille, inventaire) : mini-carte invisible et sans saisie.
@@ -135,15 +139,19 @@ func rebuild() -> void:
 	_build_fog_mask()
 	_zone_centers.clear()
 	_zones.clear()
+	_ghosts.clear()
 	var zones: Variant = raid.get("extraction_zones")
 	if zones is Array:
 		for z: Variant in zones:
+			if z is ExtractionZone and is_instance_valid(z) and (z as ExtractionZone).is_hatch():
+				continue
 			if z is Node2D and is_instance_valid(z):
 				_zone_centers.append((z as Node2D).global_position)
 				_zones.append(z as Node2D)
 	if _zone_centers.is_empty():
 		for c: Vector2i in layout.extraction_cells:
 			_zone_centers.append(FloorLayout.cell_to_world(c))
+	_add_other_floors()
 	var fv: Variant = fog.get("view_radius") if fog != null else null
 	_scan_radius = (int(fv) if fv != null else 10) + 2
 	var view_cells := Balance.get_float("minimap", "view_cells", 24.0)
@@ -153,6 +161,35 @@ func rebuild() -> void:
 		full_map.close()
 	_tick()
 	_timer.start()
+
+
+## Extractions des autres étages (Raid.floors) : à la suite, affichées en transparence.
+func _add_other_floors() -> void:
+	var fl: Variant = raid.get("floors")
+	var cur: Variant = raid.get("current_floor")
+	if not (fl is Dictionary) or cur == null:
+		return
+	var keys: Array = (fl as Dictionary).keys()
+	keys.sort()
+	for idx: int in keys:
+		if idx == int(cur):
+			continue
+		var L := (fl as Dictionary)[idx] as FloorLayout
+		if L == null:
+			continue
+		for sp: Variant in L.extraction_specs:
+			if not (sp is ExtractionPlan.Spec) or (sp as ExtractionPlan.Spec).is_hatch():
+				continue
+			var c := Vector2.ZERO
+			for cell: Vector2i in sp.cells:
+				c += FloorLayout.cell_to_world(cell)
+			_zone_centers.append(c / maxf(sp.cells.size(), 1.0))
+			_ghosts.append({"spec": sp, "floor": idx})
+
+
+## Libellé d'étage d'une extraction d'un autre étage (« +1 », « -1 », « RDC »).
+static func floor_label(floor_index: int) -> String:
+	return "%+d" % floor_index if floor_index != 0 else "RDC"
 
 
 ## Fond : image réduite du paquet pré-rendu (étage 0) ou plan vectoriel de l'étage.
@@ -238,20 +275,37 @@ func zone_states() -> Array:
 	var out: Array = []
 	var clock: Variant = raid.get("raid_clock") if raid != null and is_instance_valid(raid) else null
 	var t := float(clock) if clock != null else 0.0
+	var nz := _zone_centers.size() - _ghosts.size()
 	for i in _zone_centers.size():
+		if i >= nz:
+			out.append(ghost_state(_ghosts[i - nz], t))
+			continue
 		var z: ExtractionZone = _zones[i] as ExtractionZone if i < _zones.size() else null
 		if z == null or not is_instance_valid(z):
 			out.append({"state": ExtractionZone.State.OPEN, "text": ""})
 			continue
 		var txt := ""
-		if z.state == ExtractionZone.State.CLOSED:
-			txt = ""
-		elif z.closes_at != INF:
+		if z.state != ExtractionZone.State.CLOSED and z.closes_at != INF:
 			txt = ExtractionZone.format_time(z.closes_at - t)
-		elif z.emergency:
-			txt = "!"
 		out.append({"state": z.state, "text": txt})
 	return out
+
+
+## État affiché d'une extraction d'un autre étage à l'instant `t` : même règle que
+## ExtractionZone.state_at, texte « étage · minuteur », `ghost` (transparence).
+static func ghost_state(g: Dictionary, t: float) -> Dictionary:
+	var sp: ExtractionPlan.Spec = g["spec"]
+	var st := ExtractionZone.State.OPEN
+	if t < sp.opens_at:
+		st = ExtractionZone.State.DORMANT
+	elif t >= sp.closes_at:
+		st = ExtractionZone.State.CLOSED
+	elif sp.closes_at - t <= Balance.get_float("extraction", "close_warning", 30.0):
+		st = ExtractionZone.State.CLOSING
+	var txt := floor_label(int(g["floor"]))
+	if st != ExtractionZone.State.CLOSED and sp.closes_at != INF:
+		txt += " · " + ExtractionZone.format_time(sp.closes_at - t)
+	return {"state": st, "text": txt, "ghost": true}
 
 
 func _aim_angle() -> float:
@@ -289,7 +343,7 @@ func _update_arrow(pos: Vector2, states: Array = []) -> void:
 	var best := -1
 	var best_d := INF
 	for i in _zone_centers.size():
-		if i < states.size() and int(states[i]["state"]) >= ExtractionZone.State.CLOSED:
+		if i < states.size() and (int(states[i]["state"]) >= ExtractionZone.State.CLOSED or bool(states[i].get("ghost", false))):
 			continue
 		var d := pos.distance_squared_to(_zone_centers[i])
 		if d < best_d:
@@ -314,7 +368,7 @@ func _update_arrow(pos: Vector2, states: Array = []) -> void:
 	_arrow.rotation = rel.angle()
 	var meters := int(round(sqrt(best_d) / TS * Balance.get_float("minimap", "meters_per_cell", 2.0)))
 	var tt := String(states[best]["text"]) if best < states.size() else ""
-	var at := "%d m · %s" % [meters, tt] if tt != "" and tt != "!" else "%d m" % meters
+	var at := "%d m · %s" % [meters, tt] if tt != "" else "%d m" % meters
 	if meters != _last_dist or at != _last_arrow_text:
 		_last_dist = meters
 		_last_arrow_text = at
@@ -589,7 +643,7 @@ class MapView extends Control:
 		for i in mini(states.size(), _icons.size()):
 			var ic := _icons[i] as ExtractIcon
 			if ic != null:
-				ic.set_state(int(states[i]["state"]), String(states[i]["text"]))
+				ic.set_state(int(states[i]["state"]), String(states[i]["text"]), bool(states[i].get("ghost", false)))
 
 	func world_to_local(p: Vector2) -> Vector2:
 		return content.position + p * px_per_world
@@ -614,17 +668,21 @@ class PlayerMark extends Node2D:
 
 ## Icône d'extraction (pastille verte + pictogramme de sortie).
 ## Minuteur sous l'icône ; orange avant fermeture ; grise et barrée une fois fermée ; cachée
-## tant que la zone (d'urgence) est éteinte.
+## tant que la zone est éteinte. Autre étage (`ghost`) : transparente ([minimap] ghost_alpha),
+## l'étage en tête du texte.
 class ExtractIcon extends Node2D:
 	var state: int = 0
 	var text: String = ""
+	var ghost: bool = false
 
-	func set_state(st: int, t: String) -> void:
-		if st == state and t == text:
+	func set_state(st: int, t: String, g: bool = false) -> void:
+		if st == state and t == text and g == ghost:
 			return
 		state = st
 		text = t
+		ghost = g
 		visible = st != ExtractionZone.State.DORMANT
+		modulate.a = Balance.get_float("minimap", "ghost_alpha", 0.4) if g else 1.0
 		queue_redraw()
 
 	func _draw() -> void:
@@ -632,7 +690,7 @@ class ExtractIcon extends Node2D:
 		var col := EXTRACT
 		if closed:
 			col = Color(0.55, 0.56, 0.62)
-		elif state == ExtractionZone.State.CLOSING or text == "!":
+		elif state == ExtractionZone.State.CLOSING:
 			col = ExtractionZone.COL_WARN
 		draw_circle(Vector2(0, 1.5), 11.0, Color(0, 0, 0, 0.4), true, -1.0, true)
 		draw_circle(Vector2.ZERO, 10.0, Color(0.04, 0.05, 0.09, 0.95) if closed else Color(0.04, 0.12, 0.09, 0.95), true, -1.0, true)
@@ -641,7 +699,7 @@ class ExtractIcon extends Node2D:
 		if closed:
 			draw_line(Vector2(-8, -8), Vector2(8, 8), Color(0.85, 0.3, 0.28), 2.5, true)
 			draw_line(Vector2(-8, 8), Vector2(8, -8), Color(0.85, 0.3, 0.28), 2.5, true)
-		if text != "" and text != "!":
+		if text != "":
 			var font := LootVisuals.text_font(800)
 			var fs := 11
 			var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
