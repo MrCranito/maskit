@@ -30,6 +30,8 @@ var claimed: Dictionary = {}
 var last_gain: Dictionary = {}
 
 var _loaded: bool = false
+## « Tout débloquer » (DevMode) actif : pass de développement en mémoire.
+var _dev_active: bool = false
 var _raid_kills: int = 0
 var _raid_start_ms: int = -1
 
@@ -84,6 +86,10 @@ func _ensure_loaded() -> void:
 	_loaded = true
 	_load()
 	_connect_bus()
+	if not DevMode.notifier.unlock_changed.is_connected(_on_dev_unlock_changed):
+		DevMode.notifier.unlock_changed.connect(_on_dev_unlock_changed)
+	if DevMode.is_all_unlocked():
+		_on_dev_unlock_changed(true)
 
 
 # --- Saison et paliers ------------------------------------------------------------------
@@ -390,7 +396,25 @@ func reset() -> void:
 	save()
 
 
+## « Tout débloquer » (DevMode) : pass complet en mémoire (premium, tous les paliers), jamais
+## sauvegardé ; désactivé : le vrai pass est relu depuis SaveManager.
+func _on_dev_unlock_changed(on: bool) -> void:
+	if on == _dev_active:
+		return
+	if on:
+		save()
+		_dev_active = true
+		from_dict(DevTools.build_battle_pass(self))
+	else:
+		_dev_active = false
+		_load()
+	changed.emit()
+
+
 func save() -> void:
+	if _dev_active:
+		changed.emit()
+		return
 	var ml := Engine.get_main_loop() as SceneTree
 	var sm: Node = ml.root.get_node_or_null(^"SaveManager") if ml != null else null
 	if sm != null:
@@ -400,6 +424,8 @@ func save() -> void:
 
 
 func _load() -> void:
+	if _dev_active:
+		return
 	var ml := Engine.get_main_loop() as SceneTree
 	var sm: Node = ml.root.get_node_or_null(^"SaveManager") if ml != null else null
 	if sm == null:
