@@ -152,21 +152,39 @@ static func event_card_for_slot(slot: int) -> MapCard:
 # --- API --------------------------------------------------------------------------
 
 ## Cartes disponibles à l'instant t : [{card, category, starts_at, ends_at}]
-## (ends_at = 0 : sans limite). Ordre : événement, hebdomadaires, mensuelles, permanentes.
+## (ends_at = 0 : sans limite). Ordre : événement, hebdomadaires, mensuelles, permanentes ;
+## seulement les catégories de [maps] categories.
 static func available_cards(unix_time: int) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var ev: Dictionary = active_event(unix_time)
 	if not ev.is_empty():
 		out.append(ev)
-	var wb: Vector2i = week_bounds(unix_time)
-	for c: MapCard in weekly_cards(unix_time):
-		out.append(_entry(c, wb.x, wb.y))
-	var mb: Vector2i = month_bounds(unix_time)
-	for c: MapCard in monthly_cards(unix_time):
-		out.append(_entry(c, mb.x, mb.y))
-	for c: MapCard in MapCard.by_category(MapCard.CATEGORY_PERMANENT):
-		out.append(_entry(c, 0, 0))
+	if is_enabled(MapCard.CATEGORY_WEEKLY):
+		var wb: Vector2i = week_bounds(unix_time)
+		for c: MapCard in weekly_cards(unix_time):
+			out.append(_entry(c, wb.x, wb.y))
+	if is_enabled(MapCard.CATEGORY_MONTHLY):
+		var mb: Vector2i = month_bounds(unix_time)
+		for c: MapCard in monthly_cards(unix_time):
+			out.append(_entry(c, mb.x, mb.y))
+	if is_enabled(MapCard.CATEGORY_PERMANENT):
+		for c: MapCard in MapCard.by_category(MapCard.CATEGORY_PERMANENT):
+			out.append(_entry(c, 0, 0))
 	return out
+
+
+## Catégories proposées au joueur ([maps] categories), dans l'ordre de MapCard.CATEGORIES.
+static func enabled_categories() -> Array[StringName]:
+	var v: Variant = Balance.get_value("maps", "categories", [])
+	var out: Array[StringName] = []
+	for cat: StringName in MapCard.CATEGORIES:
+		if not (v is Array) or (v as Array).is_empty() or (v as Array).has(String(cat)):
+			out.append(cat)
+	return out
+
+
+static func is_enabled(cat: StringName) -> bool:
+	return enabled_categories().has(cat)
 
 
 ## Cartes proposées au joueur : available_cards filtrées par [maps] only_ids (build de test ;
@@ -202,8 +220,7 @@ static func dev_all_cards() -> Array[Dictionary]:
 	var only: Variant = Balance.get_value("maps", "only_ids", [])
 	var filter: bool = only is Array and not (only as Array).is_empty()
 	var out: Array[Dictionary] = []
-	for cat: StringName in [MapCard.CATEGORY_EVENT, MapCard.CATEGORY_WEEKLY, MapCard.CATEGORY_MONTHLY,
-			MapCard.CATEGORY_PERMANENT]:
+	for cat: StringName in enabled_categories():
 		for c: MapCard in MapCard.by_category(cat):
 			if filter and not (only as Array).has(String(c.id)):
 				continue

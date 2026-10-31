@@ -78,7 +78,9 @@ func build_messages(unix_time: int = -1) -> void:
 				messages.append({"icon": &"clock", "title": "Prochain événement",
 					"text": "%s dans %s" % [(nx["card"] as MapCard).display_name,
 						MapRotation.format_short(int(nx["starts_at"]) - t)]})
-		var weekly := MapRotation.weekly_cards(t)
+		var weekly: Array[MapCard] = []
+		if MapRotation.is_enabled(MapCard.CATEGORY_WEEKLY):
+			weekly = MapRotation.weekly_cards(t)
 		if not weekly.is_empty():
 			var names: PackedStringArray = []
 			for c2: MapCard in weekly:
